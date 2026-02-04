@@ -3,6 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "description": "Privacy-first family organization platform",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "author": "Benjamin Gröner <bgroener@coqoon.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/COQOON-labs/qoomb.git"
+  },
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",

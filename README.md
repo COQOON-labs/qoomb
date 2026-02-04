@@ -157,8 +157,57 @@ See [claude.md](claude.md) for detailed architecture documentation, including:
 
 ## License
 
-MIT
+**Qoomb** is licensed under the **[Fair Source License v1.0](LICENSE.md)** with a **20-employee threshold**.
+
+### What does this mean?
+
+✅ **Free to use for:**
+
+- Personal, non-commercial use
+- Development, testing, and evaluation
+- Small organizations with **< 20 employees**
+- Non-profit organizations with < 20 employees
+- Educational and research purposes
+
+❌ **Requires commercial license for:**
+
+- Organizations with **≥ 20 employees** using it internally
+- Offering Qoomb as a hosted service (SaaS)
+- Redistributing Qoomb as part of a commercial product
+
+**Why Fair Source?**
+
+We believe in sustainable open-source. Small teams and individuals can use Qoomb freely. Larger organizations that benefit from Qoomb should contribute back through commercial licensing.
+
+📄 **More Information:**
+
+- [Full License Text](LICENSE.md)
+- [Commercial Licensing](COMMERCIAL-LICENSE.md)
+- Contact: <bgroener@coqoon.com>
 
 ## Contributing
 
-This is currently a personal project. Contributions welcome once Phase 2 is complete.
+We welcome contributions from the community! By contributing, you agree that your contributions will be licensed under the same Fair Source License.
+
+**How to contribute:**
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feat/amazing-feature`)
+3. Follow our commit conventions (see `.commitlintrc.json`)
+4. Submit a pull request
+
+**Before contributing:**
+
+- Check existing issues and PRs
+- Discuss major changes in GitHub Discussions first
+- Ensure all tests pass and code follows our linting rules
+
+**Contributor License Agreement:**
+
+By submitting a pull request, you agree to the terms outlined in the [Contributor License Agreement](LICENSE.md#contributor-license-agreement-cla) section of the license. In summary:
+
+- You grant Benjamin Gröner a license to use your contributions
+- You certify that you have the right to submit the contribution
+- You acknowledge that Benjamin Gröner retains the right to offer commercial licenses for Qoomb, including your contributions
+
+See the full CLA terms in [LICENSE.md](LICENSE.md#contributor-license-agreement-cla).

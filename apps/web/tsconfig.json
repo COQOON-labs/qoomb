@@ -1,11 +1,6 @@
 {
   "extends": "@qoomb/tsconfig/react.json",
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  },
+  "compilerOptions": {},
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

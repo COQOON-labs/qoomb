@@ -1,4 +1,4 @@
-import { BaseEntity, UUID } from './common';
+import { type BaseEntity, type UUID } from './common';
 
 export enum PersonRole {
   PARENT = 'parent',

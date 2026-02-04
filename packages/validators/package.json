@@ -2,17 +2,24 @@
   "name": "@qoomb/validators",
   "version": "0.1.0",
   "private": true,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
-    "lint": "tsc --noEmit"
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts",
+    "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts --fix",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "^3.22.4"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@qoomb/eslint-config": "workspace:^",
     "@qoomb/tsconfig": "workspace:*",
     "@qoomb/types": "workspace:*",
-    "typescript": "^5.3.3"
+    "@types/node": "^25.2.0",
+    "typescript": "^5.9.3"
   }
 }

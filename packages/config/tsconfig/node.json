@@ -6,7 +6,7 @@
     "target": "ES2022",
     "module": "commonjs",
     "lib": ["ES2022"],
-    "moduleResolution": "node",
+    "moduleResolution": "node10",
     "outDir": "./dist",
     "rootDir": "./src",
     "resolveJsonModule": true,

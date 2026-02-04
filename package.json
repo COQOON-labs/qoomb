@@ -7,18 +7,42 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
     "test": "turbo run test",
     "clean": "turbo run clean && rm -rf node_modules",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\"",
+    "type-check": "turbo run type-check",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:restart": "pnpm docker:down && pnpm docker:up",
+    "docker:logs": "docker-compose logs -f",
+    "docker:clean": "docker-compose down -v",
+    "docker:status": "docker-compose ps",
+    "db:generate": "pnpm --filter @qoomb/api prisma generate",
+    "db:migrate": "pnpm --filter @qoomb/api prisma migrate deploy",
+    "db:migrate:dev": "pnpm --filter @qoomb/api prisma migrate dev",
+    "db:studio": "pnpm --filter @qoomb/api prisma studio",
+    "db:push": "pnpm --filter @qoomb/api prisma db push",
+    "db:reset": "pnpm --filter @qoomb/api prisma migrate reset",
+    "setup": "pnpm install && pnpm docker:up && pnpm db:generate && pnpm db:migrate",
+    "start": "pnpm docker:up",
+    "stop": "pnpm docker:down",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "turbo": "^2.0.0",
-    "prettier": "^3.2.5",
-    "typescript": "^5.3.3"
+    "@commitlint/cli": "^20.4.1",
+    "@commitlint/config-conventional": "^20.4.1",
+    "dotenv-cli": "^11.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
+    "turbo": "^2.8.2",
+    "typescript": "^5.9.3"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
   },
-  "packageManager": "pnpm@8.15.0"
+  "packageManager": "pnpm@9.15.3"
 }

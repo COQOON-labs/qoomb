@@ -2,9 +2,13 @@
   "extends": "@qoomb/tsconfig/base.json",
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
+    "module": "node16",
     "lib": ["ES2022"],
-    "moduleResolution": "bundler",
+    "types": ["node"],
+    "moduleResolution": "node16",
+    "esModuleInterop": true,
+    "declaration": true,
+    "declarationMap": true,
     "outDir": "./dist",
     "rootDir": "./src"
   },

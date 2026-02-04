@@ -11,11 +11,7 @@ function App() {
       <div style={{ marginTop: '2rem' }}>
         <h2>Backend Connection Status</h2>
         {healthQuery.isLoading && <p>Loading...</p>}
-        {healthQuery.error && (
-          <p style={{ color: 'red' }}>
-            Error: {healthQuery.error.message}
-          </p>
-        )}
+        {healthQuery.error && <p style={{ color: 'red' }}>Error: {healthQuery.error.message}</p>}
         {healthQuery.data && (
           <div>
             <p style={{ color: 'green' }}>✅ Connected to backend!</p>
@@ -39,10 +35,18 @@ function App() {
       <div style={{ marginTop: '2rem' }}>
         <h2>Next Steps</h2>
         <ul>
-          <li>Install dependencies: <code>pnpm install</code></li>
-          <li>Start services: <code>docker-compose up -d</code></li>
-          <li>Run migrations: <code>pnpm --filter @qoomb/api db:migrate</code></li>
-          <li>Start dev servers: <code>pnpm dev</code></li>
+          <li>
+            Install dependencies: <code>pnpm install</code>
+          </li>
+          <li>
+            Start services: <code>docker-compose up -d</code>
+          </li>
+          <li>
+            Run migrations: <code>pnpm --filter @qoomb/api db:migrate</code>
+          </li>
+          <li>
+            Start dev servers: <code>pnpm dev</code>
+          </li>
         </ul>
       </div>
     </div>

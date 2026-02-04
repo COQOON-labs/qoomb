@@ -1,0 +1,30 @@
+# Build outputs
+dist
+build
+.turbo
+.next
+.cache
+
+# Dependencies
+node_modules
+pnpm-lock.yaml
+
+# Coverage
+coverage
+.nyc_output
+
+# Generated files
+.eslintrc.js
+
+# Prisma
+**/prisma/migrations
+
+# Environment
+.env
+.env.*
+
+# OS files
+.DS_Store
+
+# Documentation
+CHANGELOG.md

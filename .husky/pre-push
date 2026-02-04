@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-push checks..."
+
+# Type check all packages
+echo "📝 Type checking..."
+pnpm turbo run type-check
+
+# Run tests
+echo "🧪 Running tests..."
+pnpm turbo run test --filter='!@qoomb/web'
+
+# Build check
+echo "🏗️  Build check..."
+pnpm turbo run build --dry-run=json > /dev/null
+
+echo "✅ Pre-push checks passed!"

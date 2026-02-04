@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+
 import App from './App';
 import { TrpcProvider } from './lib/trpc/Provider';
 import './styles/index.css';

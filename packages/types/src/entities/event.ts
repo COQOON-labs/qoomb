@@ -1,4 +1,4 @@
-import { BaseEntity, EncryptedEntity, UUID } from './common';
+import { type BaseEntity, type EncryptedEntity, type UUID } from './common';
 
 export interface Event extends BaseEntity, EncryptedEntity {
   hiveId: UUID;

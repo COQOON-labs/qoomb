@@ -1,12 +1,11 @@
 // Prisma Schema for Qoomb
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema", "postgresqlExtensions"]
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider   = "postgresql"
-  url        = env("DATABASE_URL")
   extensions = [vector, uuid_ossp]
   schemas    = ["public"]
 }
@@ -36,9 +35,32 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  hive Hive @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  hive          Hive           @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
 
   @@map("users")
+  @@schema("public")
+}
+
+model RefreshToken {
+  id               String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  token            String    @unique @db.Text
+  userId           String    @map("user_id") @db.Uuid
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz
+  replacedByToken  String?   @map("replaced_by_token") @db.Text
+  ipAddress        String?   @map("ip_address") @db.Inet
+  userAgent        String?   @map("user_agent") @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@index([userId, token], name: "idx_refresh_tokens_active")
+  @@map("refresh_tokens")
   @@schema("public")
 }
 

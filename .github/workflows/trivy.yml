@@ -42,7 +42,7 @@ jobs:
 
       # Upload filesystem scan results to GitHub Security tab
       - name: Upload Trivy (Filesystem) results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results-fs.sarif'
@@ -61,7 +61,7 @@ jobs:
 
       # Upload config scan results
       - name: Upload Trivy (Config) results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results-config.sarif'
@@ -102,7 +102,7 @@ jobs:
           exit-code: '0'
 
       - name: Upload Trivy secret scan results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-secret-results.sarif'

@@ -9,7 +9,7 @@ export const createTaskSchema = z.object({
   description: z.string().optional(),
   assigneeId: z.string().uuid().optional(),
   contributors: z.array(z.string().uuid()).default([]),
-  status: taskStatusSchema.default(TaskStatus.TODO),
+  status: taskStatusSchema.default('todo' as TaskStatus),
   dueDate: z.date().optional(),
   dueTimeOfDay: z
     .string()
@@ -18,7 +18,7 @@ export const createTaskSchema = z.object({
   reminderOffset: z.number().min(0).optional(),
   recurrenceRule: z.string().optional(),
   relatedEventId: z.string().uuid().optional(),
-  priority: taskPrioritySchema.default(TaskPriority.NORMAL),
+  priority: taskPrioritySchema.default(0 as TaskPriority),
 });
 
 export const updateTaskSchema = z.object({

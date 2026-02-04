@@ -1,33 +1,97 @@
-# Qoomb - Family Organization Platform
+# Qoomb - Technical Context for Claude Code
 
-## Project Overview
+> **Purpose:** This document provides technical context for AI assistants (Claude Code) to understand and consistently develop the Qoomb project.
+>
+> **For Human Developers:** See [README.md](README.md) and [docs/](docs/) directory.
 
-Qoomb is a privacy-first, Notion-inspired family organization platform designed to help families manage events, tasks, and daily coordination with offline-first capabilities and hybrid encryption.
+---
 
-## Architecture Decisions
+## Project Essence
 
-### Technology Stack
+**Qoomb** is a **privacy-first, self-hosted hive organization platform** (think Notion for families/teams/groups) with:
 
-| Component | Technology | Rationale |
-|-----------|-----------|-----------|
-| **Monorepo** | Turborepo + pnpm | Efficient workspace management, shared dependencies |
-| **Backend** | NestJS + TypeScript | Professional structure, type-safety, dependency injection |
-| **API Layer** | tRPC | End-to-end type safety, no schema sync needed |
-| **Frontend** | React 18 + Vite | Fast HMR, modern tooling, large ecosystem |
-| **Database** | PostgreSQL 16 | pgvector support, JSONB, multi-schema isolation |
-| **Cache/Queue** | Redis 7 | Session store, pub/sub, job queue |
-| **ORM** | Prisma | Type-safe queries, migration management |
-| **Offline Storage** | SQLite (client-side) | Offline-first, sync with server |
-| **Encryption** | Hybrid (AES-256-GCM + libsodium) | Balance between features and privacy |
+- **Offline-first architecture** (Notion-style selective sync)
+- **Multi-tenant isolation** (per-hive PostgreSQL schemas)
+- **Hybrid encryption** (server-side + optional E2E)
+- **Self-hosting first** (cloud-agnostic, Docker-based)
 
-### Key Features
+**Core Philosophy:**
 
-- **Offline-First**: Notion-style "Offline Forest" for selective sync
-- **Multi-Tenant**: Per-family PostgreSQL schemas for data isolation
-- **Hybrid Encryption**: Server-side for searchable data, E2E for sensitive content
-- **Real-time Sync**: Vector clock-based conflict resolution
-- **Semantic Search**: pgvector for AI-powered search
-- **Pluggable AI**: Support for OpenAI, Anthropic, Ollama, or none
+- Privacy over convenience where it matters
+- Self-hosting over SaaS (but SaaS-ready)
+- Type-safety everywhere (TypeScript + tRPC + Prisma)
+- Security by design, not afterthought
+- Simple by default, powerful when needed
+
+---
+
+## Architecture Decisions (Rationale)
+
+### Why Monorepo (Turborepo + pnpm)?
+
+- **Shared types** between frontend/backend (tRPC)
+- **Atomic changes** across packages
+- **Efficient caching** via Turborepo
+
+### Why NestJS (not Express)?
+
+- **Dependency Injection** (testable, modular)
+- **Professional structure** (scales with team)
+- **Type-safety** (first-class TypeScript)
+
+### Why tRPC (not REST/GraphQL)?
+
+- **End-to-end type safety** (no schema drift)
+- **No code generation** (types flow automatically)
+- **Simple** (just TypeScript functions)
+
+### Why Prisma (not raw SQL)?
+
+- **Type-safe queries** (catch bugs at compile-time)
+- **Migration management** (version-controlled)
+- **Multi-schema support** (critical for multi-tenancy)
+- **But:** Use raw SQL for complex queries (see docs/PRISMA_PATTERNS.md)
+
+### Why Per-Hive Schemas (not Row-Level-Security only)?
+
+- **Complete isolation** (physical separation)
+- **Easy backups** (dump one schema)
+- **Scalability** (can move schemas to different DBs)
+- **Defense-in-depth** (RLS on top of schema isolation)
+
+### Why Decorator-Based Encryption?
+
+- **Can't forget** (compile-time safety)
+- **Implicit** (DRY principle)
+- **Explicit** (visible in code)
+- **Performance** (only when needed)
+
+### Why CommonJS for NestJS + Node16 for Packages?
+
+- **NestJS + CommonJS:** Mature, stable ecosystem with proven compatibility
+- **Packages + Node16:** Modern ESM output for shared libraries
+- **Base config + Bundler:** TypeScript 7.0 compatible module resolution
+- **Intentional choice:** Not using full ESM yet (NestJS ESM support is newer)
+- **Future-proof:** Can migrate to full ESM when ecosystem matures
+- **See:** `OPTION_A_IMPLEMENTATION_SUMMARY.md` for details
+
+---
+
+## Technology Stack
+
+| Component          | Choice                         | Why                           |
+| ------------------ | ------------------------------ | ----------------------------- |
+| **Monorepo**       | Turborepo + pnpm               | Shared types, atomic changes  |
+| **Backend**        | NestJS + TypeScript            | DI, professional structure    |
+| **API**            | tRPC                           | End-to-end type safety        |
+| **Frontend**       | React 18 + Vite                | Fast HMR, large ecosystem     |
+| **Database**       | PostgreSQL 17                  | pgvector, JSONB, multi-schema |
+| **Cache/Queue**    | Redis 7.4                      | Session store, pub/sub        |
+| **ORM**            | Prisma                         | Type-safe, migrations         |
+| **Encryption**     | AES-256-GCM + libsodium        | Server-side + E2E             |
+| **Key Management** | Pluggable (Env/File/KMS/Vault) | Flexible, cloud-agnostic      |
+
+---
 
 ## Project Structure
 
@@ -37,370 +101,728 @@ qoomb/
 │   ├── api/                    # NestJS backend
 │   │   ├── src/
 │   │   │   ├── modules/
-│   │   │   │   ├── auth/      # Authentication & authorization
-│   │   │   │   ├── events/    # Calendar events
-│   │   │   │   ├── tasks/     # Task management
-│   │   │   │   ├── persons/   # Family members
-│   │   │   │   ├── sync/      # Sync engine
-│   │   │   │   └── encryption/ # Encryption service
-│   │   │   ├── trpc/          # tRPC router setup
-│   │   │   ├── config/        # Configuration
-│   │   │   └── main.ts
-│   │   ├── prisma/
-│   │   │   └── schema.prisma
-│   │   ├── package.json
-│   │   └── tsconfig.json
+│   │   │   │   ├── auth/           # JWT auth, hive registration
+│   │   │   │   ├── encryption/     # Key management, @EncryptFields
+│   │   │   │   ├── events/         # [TODO] Calendar events
+│   │   │   │   ├── tasks/          # [TODO] Task management
+│   │   │   │   └── persons/        # [TODO] Hive members
+│   │   │   ├── trpc/               # tRPC setup, context, routers
+│   │   │   ├── config/             # Env validation, security config
+│   │   │   ├── common/             # Guards, interceptors
+│   │   │   └── prisma/             # Prisma service (multi-tenant)
+│   │   └── prisma/
+│   │       ├── schema.prisma       # DB schema (public + template)
+│   │       └── migrations/         # Version-controlled migrations
 │   │
-│   └── web/                    # React frontend (PWA)
-│       ├── src/
-│       │   ├── components/    # React components
-│       │   ├── pages/         # Page components
-│       │   ├── hooks/         # Custom React hooks
-│       │   ├── lib/
-│       │   │   ├── trpc/      # tRPC client setup
-│       │   │   ├── db/        # SQLite local DB
-│       │   │   └── sync/      # Sync engine
-│       │   ├── workers/       # Service worker
-│       │   ├── App.tsx
-│       │   └── main.tsx
-│       ├── package.json
-│       └── vite.config.ts
+│   └── web/                    # React frontend [MINIMAL]
+│       └── src/
+│           └── lib/trpc/           # tRPC client
 │
 ├── packages/
 │   ├── types/                  # Shared TypeScript types
-│   │   ├── src/
-│   │   │   ├── entities/      # Entity types (Event, Task, Person)
-│   │   │   ├── api/           # API request/response types
-│   │   │   └── sync/          # Sync-related types
-│   │   └── package.json
-│   │
-│   ├── validators/             # Shared Zod validators
-│   │   ├── src/
-│   │   │   └── schemas/
-│   │   └── package.json
-│   │
-│   └── config/                 # Shared configuration
-│       └── tsconfig/           # Base TypeScript configs
+│   ├── validators/             # Shared Zod schemas + sanitizers
+│   └── config/                 # Shared tsconfig
 │
-├── docker/
-│   ├── postgres/
-│   │   └── init.sql           # Initial DB setup
-│   └── redis/
-│       └── redis.conf
+├── docs/                       # Documentation for humans
+│   ├── SECURITY.md                        # Security architecture
+│   ├── JWT_REFRESH_TOKEN_IMPLEMENTATION.md # JWT refresh token guide
+│   ├── PERFORMANCE.md                     # Prisma performance guide
+│   └── PRISMA_PATTERNS.md                 # When to use Prisma vs raw SQL
 │
-├── docker-compose.yml          # Development environment
-├── docker-compose.prod.yml     # Production (self-hosting)
-├── turbo.json                  # Turborepo configuration
-├── pnpm-workspace.yaml         # pnpm workspace config
-├── package.json                # Root package.json
-├── .env.example
-└── README.md
+├── docker-compose.yml          # PostgreSQL + Redis
+├── claude.md                   # This file (for AI)
+└── README.md                   # For humans
 ```
 
-## Setup Progress
+---
 
-### Phase 1: Foundation ✅ (COMPLETED)
+## Implementation Status
 
-- [x] Initialize monorepo with Turborepo and pnpm workspaces
-- [x] Set up NestJS backend with basic module structure
-- [x] Set up React frontend with Vite and TypeScript
-- [x] Create shared types package (types + validators)
-- [x] Configure Docker Compose for PostgreSQL and Redis
-- [x] Set up Prisma with initial schema
-- [x] Configure tRPC routers (basic health check)
-- [x] Environment configuration and .env templates
-- [x] Created README.md with setup instructions
+### ✅ Production-Ready
 
-### Phase 2: Core Features (Next)
+**Infrastructure:**
 
-- [ ] Authentication system (JWT + session)
-- [ ] Multi-tenant middleware (per-family schema routing)
-- [ ] Events module (CRUD + recurrence rules)
+- Monorepo (Turborepo + pnpm)
+- NestJS backend
+- React frontend (minimal)
+- Docker Compose (PostgreSQL 16 + Redis 7)
+- Prisma with multi-schema
+
+**Security & Auth (PRODUCTION-READY):**
+
+- JWT authentication with refresh tokens (15min access, 7d refresh)
+- Token rotation and revocation
+- Token blacklisting (Redis-based)
+- Per-hive schema isolation
+- Row-Level Security (RLS)
+- Input validation (Zod) + sanitization
+- Rate limiting (Redis-based, distributed)
+- Account lockout (exponential backoff)
+- Security headers (Helmet.js: CSP, HSTS, etc.)
+- Info-leakage prevention (generic errors)
+- SQL injection protection (UUID validation)
+- Device tracking (IP + User-Agent)
+- Audit logging foundation
+- **Location:** `apps/api/src/modules/auth/`, `apps/api/src/common/`
+
+**Encryption (NEW):**
+
+- Pluggable key providers (Environment, File, AWS KMS, Vault)
+- Decorator-based field encryption (`@EncryptFields`, `@DecryptFields`)
+- HKDF per-hive key derivation
+- AES-256-GCM authenticated encryption
+- Startup self-test
+- **Location:** `apps/api/src/modules/encryption/`
+
+### 🚧 TODO (Next)
+
+**Phase 2 (Core Features):**
+
+- [ ] Events module (CRUD + recurrence)
 - [ ] Tasks module (CRUD + assignees)
-- [ ] Persons module (family members + roles)
-- [ ] Basic React UI for events/tasks
-- [ ] tRPC integration between frontend/backend
+- [ ] Persons module (hive members + roles)
+- [ ] Apply encryption decorators to sensitive fields
+- [ ] React UI components
 
-### Phase 3: Advanced Features (Later)
+**Phase 3 (Advanced):**
 
-- [ ] Sync engine (vector clock, conflict resolution)
-- [ ] Offline storage (SQLite client-side)
-- [ ] Service worker for PWA
-- [ ] Encryption service (hybrid mode)
-- [ ] Semantic search (pgvector + embeddings)
-- [ ] External calendar sync (Google, Apple)
-- [ ] Template system
-- [ ] Background workers (BullMQ)
+- [ ] Client-side SQLite (offline-first)
+- [ ] Sync engine (vector clock)
+- [ ] E2E encryption option (libsodium)
+- [ ] Semantic search (pgvector)
 
-### Phase 4: Polish & Deployment
+---
 
-- [ ] Self-hosting Docker image (all-in-one)
-- [ ] Production Docker Compose files
-- [ ] Documentation
-- [ ] Testing (unit + E2E)
-- [ ] Performance optimization
-- [ ] Security audit
+## Development Principles
 
-## Database Schema
-
-### Core Tables (per family schema)
-
-```sql
--- Public schema (shared)
-CREATE TABLE families (
-  id UUID PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  family_id UUID REFERENCES families(id),
-  person_id UUID, -- Links to person in family schema
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Per-family schema (e.g., family_<uuid>)
-CREATE TABLE persons (
-  id UUID PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  role VARCHAR(50) NOT NULL,
-  birthdate DATE,
-  age_group VARCHAR(20),
-  permission_level INT DEFAULT 0,
-  public_key TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  version INT NOT NULL DEFAULT 1
-);
-
-CREATE TABLE events (
-  id UUID PRIMARY KEY,
-  title VARCHAR(500) NOT NULL,
-  description TEXT,
-  start_time TIMESTAMPTZ NOT NULL,
-  end_time TIMESTAMPTZ NOT NULL,
-  all_day BOOLEAN DEFAULT FALSE,
-  timezone VARCHAR(50) DEFAULT 'Europe/Berlin',
-  recurrence_rule TEXT,
-  participants UUID[],
-  organizer_id UUID REFERENCES persons(id),
-  location VARCHAR(500),
-  encryption_mode VARCHAR(20) DEFAULT 'server_side',
-  encrypted_data BYTEA,
-  embedding vector(1536),
-  created_by UUID REFERENCES persons(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  version INT NOT NULL DEFAULT 1
-);
-
-CREATE TABLE tasks (
-  id UUID PRIMARY KEY,
-  title VARCHAR(500) NOT NULL,
-  description TEXT,
-  assignee_id UUID REFERENCES persons(id),
-  status VARCHAR(20) DEFAULT 'todo',
-  due_date TIMESTAMPTZ,
-  priority INT DEFAULT 0,
-  encryption_mode VARCHAR(20) DEFAULT 'server_side',
-  encrypted_data BYTEA,
-  embedding vector(1536),
-  created_by UUID REFERENCES persons(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  version INT NOT NULL DEFAULT 1
-);
-```
-
-## Development Workflow
-
-### Prerequisites
-
-- Node.js 20+
-- pnpm 8+
-- Docker & Docker Compose
-- PostgreSQL 16 (via Docker)
-- Redis 7 (via Docker)
-- Make (optional, but recommended)
-
-### Quick Setup (Using Makefile)
-
-The project includes a comprehensive Makefile that simplifies common tasks:
-
-```bash
-# Complete initial setup (one command!)
-make setup
-
-# Start development servers
-make dev
-
-# View all available commands
-make help
-```
-
-**Common Make Commands:**
-
-| Command            | Description                                           |
-| ------------------ | ----------------------------------------------------- |
-| `make setup`       | Complete initial setup (install + docker + database)  |
-| `make dev`         | Start both frontend and backend                       |
-| `make dev-api`     | Start only the backend                                |
-| `make dev-web`     | Start only the frontend                               |
-| `make docker-up`   | Start PostgreSQL and Redis                            |
-| `make docker-down` | Stop Docker services                                  |
-| `make db-migrate`  | Run database migrations                               |
-| `make db-studio`   | Open Prisma Studio (DB GUI)                           |
-| `make status`      | Check status of all services                          |
-| `make clean`       | Clean build artifacts                                 |
-| `make fresh`       | Complete fresh start (clean + setup)                  |
-
-### Manual Setup Commands
-
-If you prefer not to use Make:
-
-```bash
-# Install dependencies
-pnpm install
-
-# Start development services (Postgres, Redis)
-docker-compose up -d
-
-# Run database migrations
-pnpm --filter @qoomb/api db:migrate
-
-# Start development servers
-pnpm dev
-
-# Backend: http://localhost:3001
-# Frontend: http://localhost:5173
-```
-
-### Environment Variables
-
-```env
-# Database
-DATABASE_URL="postgresql://qoomb:password@localhost:5432/qoomb"
-
-# Redis
-REDIS_URL="redis://localhost:6379"
-
-# JWT
-JWT_SECRET="your-secret-key"
-JWT_EXPIRES_IN="7d"
-
-# Encryption
-ENCRYPTION_KEY="base64-encoded-key"
-
-# AI (optional)
-AI_PROVIDER="openai" # openai | anthropic | ollama | disabled
-OPENAI_API_KEY="sk-..."
-ANTHROPIC_API_KEY="sk-ant-..."
-OLLAMA_BASE_URL="http://localhost:11434"
-```
-
-## API Structure (tRPC)
-
-### Router Organization
+### 1. Type Safety Everywhere
 
 ```typescript
-// apps/api/src/trpc/router.ts
-export const appRouter = router({
-  auth: authRouter,      // login, register, logout
-  events: eventsRouter,  // CRUD for events
-  tasks: tasksRouter,    // CRUD for tasks
-  persons: personsRouter, // CRUD for persons
-  sync: syncRouter,      // Sync operations
-  search: searchRouter,  // Semantic search
-});
-
-export type AppRouter = typeof appRouter;
-```
-
-### Example Router
-
-```typescript
-// apps/api/src/modules/events/events.router.ts
+// ✅ GOOD: End-to-end types via tRPC
 export const eventsRouter = router({
-  list: protectedProcedure
-    .input(z.object({
-      startDate: z.date(),
-      endDate: z.date(),
-    }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.event.findMany({
-        where: {
-          start_time: { gte: input.startDate },
-          end_time: { lte: input.endDate },
-        },
-      });
-    }),
+  create: hiveProcedure.input(createEventSchema).mutation(...)
+});
 
-  create: protectedProcedure
-    .input(createEventSchema)
-    .mutation(async ({ ctx, input }) => {
-      return ctx.db.event.create({
-        data: {
-          ...input,
-          created_by: ctx.user.personId,
-        },
-      });
-    }),
+// ❌ BAD: Untyped or `any`
+async createEvent(data: any) { ... }
+```
+
+### 2. Explicit over Implicit (except where safety benefits)
+
+```typescript
+// ✅ GOOD: Explicit config (no hidden defaults)
+if (!process.env.KEY_PROVIDER) {
+  throw new Error('KEY_PROVIDER must be set explicitly');
+}
+
+// ✅ GOOD: Implicit where it prevents errors
+@EncryptFields(['sensitiveField'])  // Can't forget!
+async create() { ... }
+```
+
+### 3. Multi-Tenant Always
+
+```typescript
+// ✅ GOOD: Always use hiveProcedure for hive-specific ops
+export const eventsRouter = router({
+  create: hiveProcedure.mutation(async ({ ctx, input }) => {
+    // ctx.prisma already has hive schema set
+  })
+});
+
+// ❌ BAD: Forgetting hive context
+export const eventsRouter = router({
+  create: protectedProcedure.mutation(...)  // Missing hive schema!
 });
 ```
 
-## Security Considerations
+### 4. Security by Design
 
-### Authentication Flow
+```typescript
+// ✅ GOOD: Validate, sanitize, then process
+const data = createEventSchema.parse(input);  // Zod validation
+const sanitized = sanitizeHtml(data.description);
 
-1. User registers with email/password
-2. Server creates user account + generates JWT
-3. JWT contains: userId, familyId, personId
-4. All API calls validate JWT and set family schema context
+// ✅ GOOD: Use decorators for encryption
+@EncryptFields(['sensitiveData'])
+async create() { ... }
 
-### Encryption Strategy
+// ❌ BAD: Manual encryption (easy to forget)
+const encrypted = await encryptionService.encrypt(...);
+```
 
-- **Server-Side (default)**: Events, tasks, persons
-  - Searchable on server
-  - AI features available
-  - Encrypted at rest with AES-256-GCM
+### 5. Fail-Safe over Fail-Open
 
-- **End-to-End (opt-in)**: Sensitive documents, private notes
-  - Client-side encryption with libsodium
-  - Server cannot read content
-  - No search/AI on encrypted content
+```typescript
+// ✅ GOOD: Explicit required config
+KEY_PROVIDER = environment; // Must be set, no default
 
-### Multi-Tenant Isolation
+// ✅ GOOD: RLS as defense-in-depth
+// Even if app logic fails, RLS prevents data leaks
 
-- Each family gets dedicated PostgreSQL schema
-- Middleware sets `search_path` based on JWT familyId
-- Row-level security (RLS) as additional safety layer
-- No cross-family data leakage possible
+// ❌ BAD: Default to insecure
+const keyProvider = process.env.KEY_PROVIDER || 'environment';
+```
 
-## Next Steps
+### 6. SOLID Principles (Critical)
 
-1. **Start with Phase 1**: Get basic monorepo + backend + frontend running
-2. **Add authentication**: Simple email/password auth with JWT
-3. **Implement first feature**: Event CRUD operations
-4. **Build basic UI**: Calendar view for events
-5. **Add sync gradually**: Start with simple polling, evolve to WebSocket + vector clock
+These principles apply to **all code** in the project - backend, frontend, scripts, configuration.
 
-## Resources
+#### Single Responsibility Principle (SRP)
 
-- [NestJS Documentation](https://docs.nestjs.com/)
-- [tRPC Documentation](https://trpc.io/)
-- [Prisma Documentation](https://www.prisma.io/docs)
-- [Vite Documentation](https://vitejs.dev/)
-- [Turborepo Documentation](https://turbo.build/repo/docs)
-- [pgvector Documentation](https://github.com/pgvector/pgvector)
+**One module = one reason to change**
 
-## Notes
+```typescript
+// ✅ GOOD: Separate concerns
+class UserRepository {
+  findById(id: string) { ... }  // Only DB access
+}
 
-- Focus on **self-hosting first**, SaaS mode can come later
-- Keep **AI optional** - core features must work without it
-- **Offline-first** is complex - start with online-only, add offline incrementally
-- **Don't over-engineer** - build what's needed, refactor when necessary
-- **Type safety everywhere** - leverage TypeScript + tRPC + Prisma for full stack type safety
+class UserService {
+  validateUser(user: User) { ... }  // Only business logic
+}
+
+// ❌ BAD: Mixed concerns
+class UserService {
+  findById(id: string) { ... }       // DB access
+  validateUser(user: User) { ... }  // Business logic
+  sendEmail(user: User) { ... }     // Email sending
+}
+```
+
+**In Makefile:**
+
+```makefile
+# ✅ GOOD: Atomic, reusable commands
+_docker-volumes-remove:  # Does ONE thing
+    docker-compose down -v
+
+docker-clean:  # Adds UI layer
+    [confirmation] + $(MAKE) _docker-volumes-remove
+
+# ❌ BAD: Duplicate logic
+docker-clean:
+    docker-compose down -v
+
+db-reset:
+    docker-compose down -v  # Duplication!
+```
+
+#### Open/Closed Principle (OCP)
+
+**Open for extension, closed for modification**
+
+```typescript
+// ✅ GOOD: Extensible via abstraction
+interface KeyProvider {
+  getKey(): Promise<string>;
+}
+
+class EnvironmentKeyProvider implements KeyProvider { ... }
+class VaultKeyProvider implements KeyProvider { ... }
+// Add new providers WITHOUT modifying existing code
+
+// ❌ BAD: Requires modification to extend
+function getKey(type: string) {
+  if (type === 'env') { ... }
+  else if (type === 'vault') { ... }
+  // Must modify this function to add new types
+}
+```
+
+#### Liskov Substitution Principle (LSP)
+
+**Subtypes must be substitutable for base types**
+
+```typescript
+// ✅ GOOD: All implementations work the same
+const keyProvider: KeyProvider = getKeyProvider(config.KEY_PROVIDER);
+const key = await keyProvider.getKey(); // Works for ANY provider
+
+// ❌ BAD: Subtype changes behavior
+class BrokenKeyProvider implements KeyProvider {
+  getKey() {
+    throw new Error('Not implemented');
+  } // Breaks contract!
+}
+```
+
+#### Interface Segregation Principle (ISP)
+
+**Don't force clients to depend on unused methods**
+
+```typescript
+// ✅ GOOD: Small, focused interfaces
+interface Encryptable {
+  encrypt(data: string): string;
+}
+
+interface Decryptable {
+  decrypt(data: string): string;
+}
+
+// ❌ BAD: Fat interface
+interface CryptoService {
+  encrypt(data: string): string;
+  decrypt(data: string): string;
+  hash(data: string): string;
+  sign(data: string): string;
+  verify(data: string): boolean;
+  // Not all clients need all methods!
+}
+```
+
+#### Dependency Inversion Principle (DIP)
+
+**Depend on abstractions, not concretions**
+
+```typescript
+// ✅ GOOD: Depend on interface
+class UserService {
+  constructor(private keyProvider: KeyProvider) {} // Abstraction
+}
+
+// ❌ BAD: Depend on concrete class
+class UserService {
+  constructor(private keyProvider: EnvironmentKeyProvider) {} // Concrete
+}
+```
+
+### 7. Clean Code Principles (Critical)
+
+#### Don't Repeat Yourself (DRY)
+
+**Every piece of knowledge must have a single, unambiguous representation**
+
+```typescript
+// ✅ GOOD: Extract common logic
+function validateEmail(email: string): boolean {
+  return emailSchema.parse(email);
+}
+
+// Use everywhere
+validateEmail(user.email);
+validateEmail(input.email);
+
+// ❌ BAD: Duplicate validation
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+if (!emailRegex.test(user.email)) { ... }  // Duplicated
+if (!emailRegex.test(input.email)) { ... }  // Duplicated
+```
+
+**In Makefile:**
+
+```makefile
+# ✅ GOOD: DRY
+_docker-volumes-remove:
+    docker-compose down -v
+
+docker-clean: $(MAKE) _docker-volumes-remove
+db-reset: $(MAKE) _docker-volumes-remove
+
+# ❌ BAD: Duplication
+docker-clean:
+    docker-compose down -v  # Repeated
+
+db-reset:
+    docker-compose down -v  # Repeated
+```
+
+#### Keep It Simple, Stupid (KISS)
+
+**Simplicity should be a key goal**
+
+```typescript
+// ✅ GOOD: Simple and clear
+function isAdmin(user: User): boolean {
+  return user.role === 'admin';
+}
+
+// ❌ BAD: Over-engineered
+function isAdmin(user: User): boolean {
+  const roleHierarchy = ['user', 'moderator', 'admin'];
+  const adminLevel = roleHierarchy.indexOf('admin');
+  const userLevel = roleHierarchy.indexOf(user.role);
+  return userLevel >= adminLevel;
+}
+```
+
+#### You Aren't Gonna Need It (YAGNI)
+
+**Don't add functionality until it's necessary**
+
+```typescript
+// ✅ GOOD: Only implement what's needed NOW
+class User {
+  id: string;
+  email: string;
+  hiveId: string;
+}
+
+// ❌ BAD: Premature optimization/features
+class User {
+  id: string;
+  email: string;
+  hiveId: string;
+  preferences?: UserPreferences; // Not needed yet
+  socialLinks?: SocialLinks[]; // Not needed yet
+  futureFeatureFlag?: boolean; // Not needed yet
+}
+```
+
+#### Composition over Inheritance
+
+**Prefer composing objects over class hierarchies**
+
+```typescript
+// ✅ GOOD: Composition
+class AuthService {
+  constructor(
+    private userRepo: UserRepository,
+    private tokenService: TokenService,
+    private encryptionService: EncryptionService
+  ) {}
+}
+
+// ❌ BAD: Deep inheritance
+class BaseService extends LoggingService
+  extends CacheService
+  extends MetricsService { }
+```
+
+#### Separation of Concerns (SoC)
+
+**Different concerns should be in different modules**
+
+```
+✅ GOOD Structure:
+apps/api/src/
+├── modules/
+│   ├── auth/           # Authentication concern
+│   ├── encryption/     # Encryption concern
+│   └── events/         # Events concern
+├── common/             # Shared utilities
+└── config/             # Configuration
+
+❌ BAD Structure:
+apps/api/src/
+└── services/
+    └── user-service.ts  # Auth + Encryption + Events mixed!
+```
+
+---
+
+## Key Code Patterns
+
+### Pattern: Multi-Tenant tRPC Procedure
+
+```typescript
+// Use hiveProcedure for all hive-specific operations
+export const eventsRouter = router({
+  create: hiveProcedure.input(createEventSchema).mutation(async ({ ctx, input }) => {
+    // ctx.prisma has hive schema already set
+    // ctx.user has { id, hiveId, personId }
+
+    return ctx.prisma.event.create({
+      data: { ...input, created_by: ctx.user.personId },
+    });
+  }),
+});
+```
+
+### Pattern: Decorator-Based Encryption
+
+```typescript
+@Injectable()
+export class EventsService {
+  // Encrypt on return (before storing/sending)
+  @EncryptFields(['title', 'description'])
+  async createEvent(data: CreateEventInput, hiveId: string) {
+    return this.prisma.event.create({ data });
+    // title & description automatically encrypted
+  }
+
+  // Decrypt on return (after loading)
+  @DecryptFields(['title', 'description'])
+  async getEvent(id: string, hiveId: string) {
+    return this.prisma.event.findUnique({ where: { id } });
+    // title & description automatically decrypted
+  }
+
+  // Works with arrays automatically
+  @DecryptFields(['title', 'description'])
+  async listEvents(hiveId: string) {
+    return this.prisma.event.findMany();
+  }
+}
+```
+
+### Pattern: Schema-Safe Raw SQL
+
+```typescript
+// When Prisma is insufficient, use raw SQL safely
+async complexQuery(hiveId: string) {
+  // 1. Set hive schema context
+  await this.prisma.setHiveSchema(hiveId);
+
+  // 2. Use parameterized queries (NEVER interpolate!)
+  const result = await this.prisma.$queryRawUnsafe(`
+    SELECT * FROM events WHERE id = $1
+  `, eventId);  // ✅ Parameterized
+
+  // ❌ NEVER: `SELECT * FROM events WHERE id = '${eventId}'`
+
+  return result;
+}
+```
+
+### Pattern: Validation & Sanitization
+
+```typescript
+// 1. Zod validation at API boundary
+const createEventSchema = z.object({
+  title: z.string().trim().max(500),
+  description: z.string().trim().max(10000),
+});
+
+// 2. Additional sanitization if needed
+import { sanitizeHtml } from '@qoomb/validators';
+
+async create(input: CreateEventInput) {
+  const validated = createEventSchema.parse(input);
+  const sanitized = {
+    ...validated,
+    description: sanitizeHtml(validated.description)
+  };
+  return this.prisma.event.create({ data: sanitized });
+}
+```
+
+---
+
+## Security Architecture (Critical for LLMs to understand)
+
+### Multi-Tenant Isolation (Defense-in-Depth)
+
+```
+Layer 1: JWT Authentication
+    ↓
+Layer 2: Authorization Middleware (hiveProcedure)
+    ↓
+Layer 3: Schema Isolation (SET search_path TO hive_<uuid>)
+    ↓
+Layer 4: Row-Level Security (RLS policies)
+    ↓
+Layer 5: Audit Logging
+```
+
+**Key Point:** Each layer is independent. If one fails, others still protect.
+
+### Encryption Architecture
+
+```
+Master Key (from KEY_PROVIDER)
+    ↓ HKDF (deterministic derivation)
+Hive-Specific Keys (one per hive, 32 bytes)
+    ↓ AES-256-GCM (authenticated encryption)
+Encrypted Data (IV + AuthTag + Ciphertext)
+```
+
+**Key Decisions:**
+
+- **Per-hive keys:** Compromise of one hive ≠ all hives
+- **HKDF:** Deterministic, no storage needed
+- **AES-256-GCM:** Authenticated (prevents tampering)
+- **Pluggable providers:** Cloud-agnostic
+
+### Key Provider Strategy
+
+| Provider        | Production Use            | Why                             |
+| --------------- | ------------------------- | ------------------------------- |
+| **Environment** | ✅ Most deployments       | Simple, Docker-friendly         |
+| **File**        | ✅ Advanced self-hosting  | Key rotation, separate from env |
+| **AWS KMS**     | ✅ Enterprise AWS         | Compliance, auto-rotation       |
+| **Vault**       | ✅ Enterprise self-hosted | No cloud, centralized secrets   |
+
+**Critical:** NO DEFAULT! Must be explicitly set. Prevents accidental production misconfig.
+
+---
+
+## When to Use What
+
+### When to use Prisma vs Raw SQL?
+
+**Use Prisma for:**
+
+- Simple CRUD operations
+- Type-safe queries
+- Relationships with includes/joins
+
+**Use Raw SQL for:**
+
+- Complex aggregations
+- Window functions
+- Full-text search
+- Performance-critical queries
+
+**See:** `docs/PRISMA_PATTERNS.md` for details.
+
+### When to encrypt fields?
+
+**Encrypt (server-side):**
+
+- Personal notes, descriptions
+- Private event details
+- Sensitive task information
+
+**Don't encrypt:**
+
+- Titles (needed for search)
+- Public metadata
+- Timestamps, IDs
+
+**Future E2E:**
+
+- Ultra-sensitive documents
+- Medical/financial data
+- When user explicitly opts in
+
+### When to use which tRPC procedure?
+
+```typescript
+publicProcedure; // Unauth: login, register
+protectedProcedure; // Auth but no hive: user profile
+hiveProcedure; // Auth + hive: events, tasks, persons (MOST COMMON)
+```
+
+---
+
+## Common Pitfalls (for LLMs to avoid)
+
+### ❌ DON'T: Forget hive context
+
+```typescript
+// BAD: Using protectedProcedure for hive data
+export const eventsRouter = router({
+  create: protectedProcedure.mutation(...)  // Missing hive schema!
+});
+```
+
+### ✅ DO: Always use hiveProcedure
+
+```typescript
+export const eventsRouter = router({
+  create: hiveProcedure.mutation(...)  // Correct!
+});
+```
+
+### ❌ DON'T: Manual encryption (easy to forget)
+
+```typescript
+// BAD: Manual encryption
+const encrypted = await encryptionService.encrypt(data.title, hiveId);
+await prisma.event.create({ data: { title: encrypted } });
+```
+
+### ✅ DO: Use decorators
+
+```typescript
+// GOOD: Decorator (can't forget!)
+@EncryptFields(['title'])
+async createEvent(data, hiveId) {
+  return prisma.event.create({ data });
+}
+```
+
+### ❌ DON'T: SQL injection via string interpolation
+
+```typescript
+// DANGEROUS!
+await prisma.$queryRawUnsafe(`SELECT * FROM events WHERE id = '${eventId}'`);
+```
+
+### ✅ DO: Parameterized queries
+
+```typescript
+// SAFE
+await prisma.$queryRawUnsafe(`SELECT * FROM events WHERE id = $1`, eventId);
+```
+
+### ❌ DON'T: Use `any` types
+
+```typescript
+// BAD
+async createEvent(data: any) { ... }
+```
+
+### ✅ DO: Use Zod schemas
+
+```typescript
+// GOOD
+async createEvent(data: CreateEventInput) {
+  const validated = createEventSchema.parse(data);
+  ...
+}
+```
+
+---
+
+## Environment Configuration
+
+**Critical Environment Variables:**
+
+```bash
+# REQUIRED (no defaults!)
+KEY_PROVIDER=environment  # environment|file|aws-kms|vault
+ENCRYPTION_KEY=<base64>   # Generate: openssl rand -base64 32
+DATABASE_URL=postgresql://...
+REDIS_URL=redis://...
+JWT_SECRET=<32+ chars>    # Generate: openssl rand -base64 32
+```
+
+**See:** `.env.example` for complete configuration.
+
+---
+
+## Documentation Structure
+
+```
+README.md              → Human onboarding
+claude.md              → This file (AI context)
+docs/
+  ├── SECURITY.md      → Security architecture details
+  ├── PERFORMANCE.md   → Prisma performance guide
+  └── PRISMA_PATTERNS.md → When to use Prisma vs SQL
+
+apps/api/src/modules/encryption/
+  ├── README.md        → Encryption quick start
+  └── examples/        → Example usage
+```
+
+---
+
+## Notes for LLMs
+
+1. **Always use `hiveProcedure`** for hive-specific operations
+2. **Always use `@EncryptFields`** for sensitive data (don't manually encrypt)
+3. **Always validate with Zod** at API boundaries
+4. **Always use parameterized queries** (never string interpolation)
+5. **Always consider multi-tenant** context (which hive?)
+6. **Never create default configs** for security-critical settings
+7. **Never use `any`** types (use proper TypeScript/Zod)
+8. **Prefer Prisma** for CRUD, **raw SQL** for complex queries
+9. **Follow existing patterns** (see Key Code Patterns section)
+10. **Document architectural decisions** in this file
+
+**When adding new features:**
+
+- Create module in `apps/api/src/modules/`
+- Create tRPC router with `hiveProcedure`
+- Add Zod schemas in `packages/validators`
+- Use `@EncryptFields` for sensitive data
+- Add to Implementation Status section in this file
+
+---
+
+**Last Updated:** 2026-02-04
+**Version:** 0.2.2 (TypeScript 7.0 ready, Strict mode enabled, Phase 2 in progress)

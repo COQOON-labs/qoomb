@@ -1,6 +1,7 @@
 import { initTRPC, TRPCError } from '@trpc/server';
-import { TrpcContext } from './trpc.context';
 import superjson from 'superjson';
+
+import { type TrpcContext } from './trpc.context';
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -30,10 +31,11 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   });
 });
 
-// Middleware to set hive schema context
+// Middleware to set hive schema context with RLS enforcement
 export const hiveProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   if (ctx.user?.hiveId) {
-    await ctx.prisma.setHiveSchema(ctx.user.hiveId);
+    // Set hive schema context AND user context for Row-Level Security
+    await ctx.prisma.setHiveSchema(ctx.user.hiveId, ctx.user.id);
   }
 
   return next({ ctx });

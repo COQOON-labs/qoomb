@@ -1,25 +1,40 @@
+import { authRouter } from '../modules/auth/auth.router';
+import { type AuthService } from '../modules/auth/auth.service';
+
 import { router, publicProcedure } from './trpc.router';
 
-// Import sub-routers (to be created)
-// import { authRouter } from '../modules/auth/auth.router';
+// Import sub-routers (to be created in future)
 // import { eventsRouter } from '../modules/events/events.router';
 // import { tasksRouter } from '../modules/tasks/tasks.router';
 // import { personsRouter } from '../modules/persons/persons.router';
 
-export const appRouter = router({
-  // Health check
-  health: publicProcedure.query(() => {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-    };
-  }),
+/**
+ * Create the main application router
+ *
+ * This function takes all required services and returns
+ * the composed tRPC router with all sub-routers attached.
+ */
+export const createAppRouter = (authService: AuthService) =>
+  router({
+    // Health check endpoint
+    health: publicProcedure.query(() => {
+      return {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+      };
+    }),
 
-  // Sub-routers will be added here
-  // auth: authRouter,
-  // events: eventsRouter,
-  // tasks: tasksRouter,
-  // persons: personsRouter,
-});
+    // Authentication router
+    auth: authRouter(authService),
 
-export type AppRouter = typeof appRouter;
+    // Future sub-routers will be added here:
+    // events: eventsRouter(eventsService),
+    // tasks: tasksRouter(tasksService),
+    // persons: personsRouter(personsService),
+  });
+
+/**
+ * App Router Type
+ * This type is used by the tRPC client for type-safe API calls
+ */
+export type AppRouter = ReturnType<typeof createAppRouter>;

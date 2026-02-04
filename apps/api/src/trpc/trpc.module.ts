@@ -1,8 +1,14 @@
 import { Module } from '@nestjs/common';
-import { TrpcService } from './trpc.service';
+
+import { AuthModule } from '../modules/auth/auth.module';
+import { PrismaModule } from '../prisma/prisma.module';
+
 import { TrpcRouter } from './trpc.controller';
+import { TrpcService } from './trpc.service';
 
 @Module({
-  providers: [TrpcService, TrpcRouter],
+  imports: [AuthModule, PrismaModule],
+  controllers: [TrpcRouter],
+  providers: [TrpcService],
 })
 export class TrpcModule {}

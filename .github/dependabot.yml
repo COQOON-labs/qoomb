@@ -1,0 +1,87 @@
+# Dependabot Configuration
+# Automatically checks for dependency updates and creates PRs
+# Docs: https://docs.github.com/en/code-security/dependabot
+
+version: 2
+updates:
+  # npm/pnpm dependencies (root + all workspaces)
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+    open-pull-requests-limit: 10
+    groups:
+      # Group all patch updates together
+      patch-updates:
+        patterns:
+          - '*'
+        update-types:
+          - 'patch'
+      # Group TypeScript-related updates
+      typescript:
+        patterns:
+          - '@typescript-eslint/*'
+          - 'typescript'
+          - 'ts-*'
+      # Group NestJS updates
+      nestjs:
+        patterns:
+          - '@nestjs/*'
+      # Group React updates
+      react:
+        patterns:
+          - 'react*'
+          - '@types/react*'
+      # Group testing frameworks
+      testing:
+        patterns:
+          - 'jest*'
+          - '@types/jest'
+          - 'ts-jest'
+      # Group Prisma updates
+      prisma:
+        patterns:
+          - '@prisma/*'
+          - 'prisma'
+    ignore:
+      # Ignore major version updates for stable dependencies
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+    labels:
+      - 'dependencies'
+      - 'automated'
+    reviewers:
+      - 'ben' # Replace with your GitHub username
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+
+  # GitHub Actions updates
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+    open-pull-requests-limit: 5
+    labels:
+      - 'github-actions'
+      - 'automated'
+    commit-message:
+      prefix: 'ci'
+
+  # Docker updates (if you add Dockerfile later)
+  - package-ecosystem: 'docker'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+    open-pull-requests-limit: 5
+    labels:
+      - 'docker'
+      - 'automated'
+    commit-message:
+      prefix: 'chore'

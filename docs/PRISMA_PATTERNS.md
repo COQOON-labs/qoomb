@@ -11,7 +11,7 @@ class EventsService {
   async getEvent(id: string) {
     // Holt ALLES, auch das riesige embedding vector!
     return this.prisma.event.findUnique({
-      where: { id }
+      where: { id },
     });
     // Performance: 🐌 Langsam (viele KB pro Event)
   }
@@ -37,17 +37,17 @@ class EventsService {
           select: {
             id: true,
             name: true,
-            role: true
-          }
+            role: true,
+          },
         },
         organizer: {
           select: {
             id: true,
-            name: true
-          }
-        }
+            name: true,
+          },
+        },
         // embedding, encryptedData NICHT laden
-      }
+      },
     });
     // Performance: ⚡ Schnell (nur nötige Felder)
   }
@@ -476,14 +476,14 @@ async filterEvents(
 
 ## Wann was nutzen?
 
-| Use Case | Tool | Warum |
-| -------- | ---- | ----- |
-| Simple CRUD | Prisma | Type-safe, clean |
-| Complex Joins | Prisma (include/select) | OK für 2-3 tables |
-| Analytics/Aggregations | Raw SQL | DB ist besser darin |
-| Vector Search | Raw SQL | pgvector-spezifisch |
-| Bulk Updates | Raw SQL | Viel schneller |
-| Transactions | Prisma $transaction | Sauber, sicher |
-| Full Text Search | Depends | Index + Prisma OK, sonst pgvector |
+| Use Case               | Tool                    | Warum                             |
+| ---------------------- | ----------------------- | --------------------------------- |
+| Simple CRUD            | Prisma                  | Type-safe, clean                  |
+| Complex Joins          | Prisma (include/select) | OK für 2-3 tables                 |
+| Analytics/Aggregations | Raw SQL                 | DB ist besser darin               |
+| Vector Search          | Raw SQL                 | pgvector-spezifisch               |
+| Bulk Updates           | Raw SQL                 | Viel schneller                    |
+| Transactions           | Prisma $transaction     | Sauber, sicher                    |
+| Full Text Search       | Depends                 | Index + Prisma OK, sonst pgvector |
 
 **Bottom Line:** Prisma für 80% der Queries, Raw SQL für die anderen 20% wo Performance kritisch ist!

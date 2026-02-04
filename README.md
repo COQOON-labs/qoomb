@@ -121,6 +121,7 @@ See [claude.md](claude.md) for detailed architecture documentation, including:
 ## Features (Planned)
 
 ### Phase 1: Foundation ✅
+
 - [x] Monorepo setup
 - [x] Backend foundation (NestJS + tRPC)
 - [x] Frontend foundation (React + Vite)
@@ -128,6 +129,7 @@ See [claude.md](claude.md) for detailed architecture documentation, including:
 - [x] Type-safe API layer (tRPC)
 
 ### Phase 2: Core Features 🚧
+
 - [ ] Authentication system
 - [ ] Multi-tenant routing
 - [ ] Events management
@@ -136,6 +138,7 @@ See [claude.md](claude.md) for detailed architecture documentation, including:
 - [ ] Basic UI components
 
 ### Phase 3: Advanced Features 📋
+
 - [ ] Offline sync engine
 - [ ] Conflict resolution
 - [ ] Hybrid encryption
@@ -145,6 +148,7 @@ See [claude.md](claude.md) for detailed architecture documentation, including:
 - [ ] Background workers
 
 ### Phase 4: Polish & Deployment 📋
+
 - [ ] Self-hosting Docker image
 - [ ] Production deployment
 - [ ] Testing suite

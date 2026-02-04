@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { TaskStatus, TaskPriority } from '@qoomb/types';
+import { z } from 'zod';
 
 export const taskStatusSchema = z.nativeEnum(TaskStatus);
 export const taskPrioritySchema = z.nativeEnum(TaskPriority);
@@ -11,7 +11,10 @@ export const createTaskSchema = z.object({
   contributors: z.array(z.string().uuid()).default([]),
   status: taskStatusSchema.default(TaskStatus.TODO),
   dueDate: z.date().optional(),
-  dueTimeOfDay: z.string().regex(/^([0-1]\d|2[0-3]):[0-5]\d$/).optional(), // HH:mm format
+  dueTimeOfDay: z
+    .string()
+    .regex(/^([0-1]\d|2[0-3]):[0-5]\d$/)
+    .optional(), // HH:mm format
   reminderOffset: z.number().min(0).optional(),
   recurrenceRule: z.string().optional(),
   relatedEventId: z.string().uuid().optional(),
@@ -26,7 +29,10 @@ export const updateTaskSchema = z.object({
   status: taskStatusSchema.optional(),
   completedAt: z.date().optional(),
   dueDate: z.date().optional(),
-  dueTimeOfDay: z.string().regex(/^([0-1]\d|2[0-3]):[0-5]\d$/).optional(),
+  dueTimeOfDay: z
+    .string()
+    .regex(/^([0-1]\d|2[0-3]):[0-5]\d$/)
+    .optional(),
   reminderOffset: z.number().min(0).optional(),
   recurrenceRule: z.string().optional(),
   relatedEventId: z.string().uuid().optional(),

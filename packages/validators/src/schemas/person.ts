@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { PersonRole, AgeGroup } from '@qoomb/types';
+import { z } from 'zod';
 
 export const personRoleSchema = z.nativeEnum(PersonRole);
 export const ageGroupSchema = z.nativeEnum(AgeGroup);

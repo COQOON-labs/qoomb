@@ -7,6 +7,7 @@ This document explains the core terminology used throughout Qoomb and the reason
 ### Why "Hive"?
 
 Qoomb's name is inspired by **honeycomb** (the structure bees build). Following this theme:
+
 - **Qoomb** ≈ Comb (Wabe)
 - **Hive** = Bienenstock (where the community lives)
 
@@ -24,6 +25,7 @@ interface Hive {
 ```
 
 **Examples:**
+
 - "Mustermann Hive" (Familie Mustermann)
 - "Schmidt Family Hive"
 - "Müller Household"
@@ -34,13 +36,13 @@ interface Hive {
 
 ### Old vs New
 
-| Old Term | New Term | Deutsch | Notes |
-| -------- | -------- | ------- | ----- |
-| Family | **Hive** | Bienenstock / Gruppe | Generic name for any group |
-| Family ID | **Hive ID** | Hive-ID | Unique identifier |
-| Family member | **Hive member** | Mitglied | Person in a hive |
-| Family schema | **Hive schema** | Schema | Database schema per hive |
-| Multi-tenant | **Multi-hive** | Multi-Hive | Multiple isolated hives |
+| Old Term      | New Term        | Deutsch              | Notes                      |
+| ------------- | --------------- | -------------------- | -------------------------- |
+| Family        | **Hive**        | Bienenstock / Gruppe | Generic name for any group |
+| Family ID     | **Hive ID**     | Hive-ID              | Unique identifier          |
+| Family member | **Hive member** | Mitglied             | Person in a hive           |
+| Family schema | **Hive schema** | Schema               | Database schema per hive   |
+| Multi-tenant  | **Multi-hive**  | Multi-Hive           | Multiple isolated hives    |
 
 ---
 
@@ -66,6 +68,7 @@ CREATE TABLE hive_550e8400.tasks (...);
 ```
 
 **Benefits:**
+
 - ✅ Complete data isolation
 - ✅ Easy backups (per-hive)
 - ✅ Scalable (can move hives to different databases)
@@ -76,19 +79,23 @@ CREATE TABLE hive_550e8400.tasks (...);
 ## Why "Hive" Instead of "Family"?
 
 ### 1. Future Flexibility
+
 While families are the primary use case, using "Hive" allows the codebase to grow without major refactoring.
 
 ### 2. Consistent Theme
+
 - Qoomb (≈ Comb/Wabe) 🐝
 - Hive (Bienenstock) = where the community lives
 - Members (Bienen) working together
 
 ### 3. Professional & Unique
+
 - Not too generic ("Group", "Space")
 - Not too specific ("Family")
 - Memorable branding
 
 ### 4. Technical Benefits
+
 - Clean, professional naming in code
 - International (works in English & German)
 - Extendable without breaking changes
@@ -97,13 +104,13 @@ While families are the primary use case, using "Hive" allows the codebase to gro
 
 ## Quick Reference
 
-| Term | What it is | Example |
-| ---- | ---------- | ------- |
-| **Hive** | Top-level organization | "Mustermann Hive" |
-| **Person** | Member of a hive | "Max Mustermann" |
-| **User** | Login account | max@example.com |
-| **Hive ID** | Unique identifier | 550e8400-e29b-41d4-a716-446655440000 |
-| **Hive Schema** | Database schema | `hive_550e8400` |
+| Term            | What it is             | Example                              |
+| --------------- | ---------------------- | ------------------------------------ |
+| **Hive**        | Top-level organization | "Mustermann Hive"                    |
+| **Person**      | Member of a hive       | "Max Mustermann"                     |
+| **User**        | Login account          | max@example.com                      |
+| **Hive ID**     | Unique identifier      | 550e8400-e29b-41d4-a716-446655440000 |
+| **Hive Schema** | Database schema        | `hive_550e8400`                      |
 
 ---
 

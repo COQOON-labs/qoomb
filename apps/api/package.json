@@ -2,6 +2,13 @@
   "name": "@qoomb/api",
   "version": "0.1.0",
   "private": true,
+  "main": "./src/main.ts",
+  "types": "./src/main.ts",
+  "exports": {
+    "./src/trpc/app.router": {
+      "types": "./src/trpc/app.router.ts"
+    }
+  },
   "scripts": {
     "dev": "dotenv -e ../../.env -- nest start --watch",
     "build": "nest build",
@@ -10,9 +17,9 @@
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts",
     "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts --fix",
     "type-check": "tsc --noEmit",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
+    "test:cov": "jest --coverage --passWithNoTests",
     "db:migrate": "dotenv -e ../../.env -- prisma migrate deploy",
     "db:generate": "dotenv -e ../../.env -- prisma generate",
     "db:push": "dotenv -e ../../.env -- prisma db push",

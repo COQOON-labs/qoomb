@@ -53,8 +53,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
    * SECURITY: Only use with validated input!
    */
   private async executeRawSql(sql: string): Promise<void> {
-    // TypeScript workaround: Cast to any to access $executeRawUnsafe
+    // TypeScript workaround: We need to use $executeRawUnsafe for SET commands
     // This is safe because we validate all inputs before calling this method
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await (this as any).$executeRawUnsafe(sql);
   }
 

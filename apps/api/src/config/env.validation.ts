@@ -180,7 +180,7 @@ export function validateEnv(): Env {
       const missingVars: string[] = [];
       const invalidVars: string[] = [];
 
-      error.issues.forEach((err: any) => {
+      error.issues.forEach((err) => {
         const path = err.path.join('.');
 
         if (err.code === 'invalid_type' && err.received === 'undefined') {

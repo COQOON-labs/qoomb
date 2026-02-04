@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../prisma/prisma.service';
-import {
-  EncryptFields,
-  DecryptFields,
-  EncryptDecryptFields,
-} from '../decorators/encrypt-fields.decorator';
+import { EncryptFields, DecryptFields } from '../decorators/encrypt-fields.decorator';
+
+interface EventData {
+  title: string;
+  description: string;
+  startTime: Date;
+  endTime: Date;
+}
 
 /**
  * Example Service: Events with Automatic Encryption
@@ -36,7 +39,7 @@ export class EventsExampleService {
    * 4. Encrypted result is returned
    */
   @EncryptFields(['title', 'description'])
-  async createEvent(data: any, hiveId: string) {
+  async createEvent(data: EventData, hiveId: string) {
     // Just write your normal business logic
     // No encryption code needed here!
 
@@ -54,7 +57,7 @@ export class EventsExampleService {
 
     // The decorator will automatically encrypt title and description
     // before this return value reaches the caller
-    return event;
+    return event as EventData;
   }
 
   /**
@@ -91,7 +94,7 @@ export class EventsExampleService {
    * Each item in the array gets its fields decrypted.
    */
   @DecryptFields(['title', 'description'])
-  async listEvents(hiveId: string, startDate: Date, endDate: Date) {
+  async listEvents(hiveId: string, startDate: Date, endDate: Date): Promise<EventData[]> {
     const events = await this.prisma.$queryRawUnsafe(
       `
       SELECT * FROM hive_${hiveId}.events
@@ -103,7 +106,7 @@ export class EventsExampleService {
     );
 
     // Array of events - decorator decrypts each one
-    return events;
+    return events as EventData[];
   }
 
   /**
@@ -118,7 +121,7 @@ export class EventsExampleService {
    * just use @EncryptFields on the return value.
    */
   @EncryptFields(['title', 'description'])
-  async updateEvent(eventId: string, data: any, hiveId: string) {
+  async updateEvent(eventId: string, data: EventData, hiveId: string) {
     const updated = await this.prisma.$executeRawUnsafe(
       `
       UPDATE hive_${hiveId}.events
@@ -132,7 +135,7 @@ export class EventsExampleService {
     );
 
     // Decorator encrypts the result
-    return updated;
+    return updated as EventData;
   }
 
   /**
@@ -160,7 +163,7 @@ export class EventsExampleService {
    * (maybe title is needed for search).
    */
   @EncryptFields(['description']) // Only description is encrypted
-  async createPublicEvent(data: any, hiveId: string) {
+  async createPublicEvent(data: EventData, hiveId: string) {
     const event = await this.prisma.$executeRawUnsafe(
       `
       INSERT INTO hive_${hiveId}.events (title, description, start_time, end_time)
@@ -174,7 +177,7 @@ export class EventsExampleService {
     );
 
     // Only description is encrypted, title remains plaintext
-    return event;
+    return event as EventData;
   }
 
   /**
@@ -187,7 +190,7 @@ export class EventsExampleService {
     fields: ['title', 'description'],
     hiveIdParam: 'organizationId', // Custom parameter name
   })
-  async createEventCustomParam(data: any, organizationId: string) {
+  createEventCustomParam(data: EventData, _organizationId: string): EventData & { id: string } {
     // The decorator will look for 'organizationId' instead of 'hiveId'
     return { ...data, id: 'new-id' };
   }

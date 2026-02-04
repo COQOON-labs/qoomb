@@ -75,7 +75,7 @@ export const authRouter = (authService: AuthService) =>
         const result = await authService.login(input.email, input.password, ipAddress, userAgent);
 
         return result;
-      } catch (error) {
+      } catch (_error) {
         // Don't leak information about whether email exists
         // Always return generic "Invalid credentials" message
         throw new TRPCError({
@@ -110,7 +110,7 @@ export const authRouter = (authService: AuthService) =>
           const result = await authService.refresh(input.refreshToken, ipAddress, userAgent);
 
           return result;
-        } catch (error) {
+        } catch (_error) {
           throw new TRPCError({
             code: 'UNAUTHORIZED',
             message: 'Invalid or expired refresh token',
@@ -134,7 +134,7 @@ export const authRouter = (authService: AuthService) =>
         try {
           await authService.logout(input.accessToken, input.refreshToken);
           return { success: true, message: 'Logged out successfully' };
-        } catch (error) {
+        } catch (_error) {
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Logout failed',
@@ -154,7 +154,7 @@ export const authRouter = (authService: AuthService) =>
           success: true,
           message: 'Logged out from all devices successfully',
         };
-      } catch (error) {
+      } catch (_error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Logout from all devices failed',
@@ -171,7 +171,7 @@ export const authRouter = (authService: AuthService) =>
       try {
         const sessions = await authService.getActiveSessions(ctx.user.id);
         return { sessions };
-      } catch (error) {
+      } catch (_error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to retrieve active sessions',
@@ -185,7 +185,7 @@ export const authRouter = (authService: AuthService) =>
      * Requires authentication
      * Returns user and hive information from JWT context
      */
-    me: protectedProcedure.query(async ({ ctx }) => {
+    me: protectedProcedure.query(({ ctx }) => {
       return {
         user: {
           id: ctx.user.id,
@@ -213,7 +213,7 @@ export const authRouter = (authService: AuthService) =>
         try {
           const user = await authService.validateToken(input.token);
           return { valid: true, user };
-        } catch (error) {
+        } catch (_error) {
           return { valid: false, user: null };
         }
       }),

@@ -62,7 +62,7 @@ export class EncryptionService implements OnModuleInit {
 
       // Step 2: Run self-test
       this.logger.log('Running encryption self-test...');
-      await this.runSelfTest();
+      this.runSelfTest();
 
       this.logger.log(
         '✅ Encryption service initialized successfully ' +
@@ -71,12 +71,13 @@ export class EncryptionService implements OnModuleInit {
       );
     } catch (error) {
       this.logger.error('❌ Failed to initialize encryption service');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(
         '═══════════════════════════════════════════════════════\n' +
           '  ENCRYPTION SERVICE INITIALIZATION FAILED\n' +
           '═══════════════════════════════════════════════════════\n' +
           '\n' +
-          `${error.message}\n` +
+          `${errorMessage}\n` +
           '\n' +
           'The application cannot start without a working encryption\n' +
           'service. Please fix the configuration and try again.\n' +
@@ -211,7 +212,7 @@ export class EncryptionService implements OnModuleInit {
    * If this test fails, there's a critical problem with the
    * encryption setup and the application should not start.
    */
-  private async runSelfTest(): Promise<void> {
+  private runSelfTest(): void {
     const testData = 'qoomb-encryption-test-' + crypto.randomBytes(16).toString('hex');
     const testHiveId = crypto.randomUUID();
 
@@ -245,20 +246,22 @@ export class EncryptionService implements OnModuleInit {
         throw new Error('Decryption succeeded with wrong hive ID.\n' + 'This should have failed!');
       } catch (error) {
         // Expected to fail - this is correct
-        if (error.message.includes('This should have failed')) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('This should have failed')) {
           throw error;
         }
       }
 
       this.logger.log('✅ Encryption self-test passed');
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(
         '❌ Encryption self-test failed!\n' +
           '\n' +
           'The encryption/decryption process is not working correctly.\n' +
           'This indicates a critical problem with the encryption setup.\n' +
           '\n' +
-          `Error: ${error.message}\n` +
+          `Error: ${errorMessage}\n` +
           '\n' +
           'Possible causes:\n' +
           '- Invalid encryption key\n' +

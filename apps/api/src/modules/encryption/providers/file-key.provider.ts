@@ -81,7 +81,7 @@ export class FileKeyProvider implements KeyProvider {
       const encryptedData = await fs.readFile(this.filePath);
 
       // Decrypt with password
-      this.cachedKey = await this.decryptKeyFile(encryptedData, this.password);
+      this.cachedKey = this.decryptKeyFile(encryptedData, this.password);
 
       // Validate key length
       if (this.cachedKey.length !== 32) {
@@ -94,21 +94,23 @@ export class FileKeyProvider implements KeyProvider {
 
       return this.cachedKey;
     } catch (error) {
-      if (error.code === 'ENOENT') {
+      const err = error as { code?: string; message?: string };
+      if (err.code === 'ENOENT') {
         throw new Error(
           `Key file not found: ${this.filePath}\n` +
             `Generate a key file with: node scripts/generate-key-file.js --output ${this.filePath}`
         );
       }
 
-      if (error.code === 'EACCES') {
+      if (err.code === 'EACCES') {
         throw new Error(
           `Permission denied reading key file: ${this.filePath}\n` +
             `Ensure the file is readable by the application.`
         );
       }
 
-      if (error.message.includes('Unsupported state or unable to authenticate data')) {
+      const errorMessage = err.message ?? 'Unknown error';
+      if (errorMessage.includes('Unsupported state or unable to authenticate data')) {
         throw new Error(
           'Failed to decrypt key file. Wrong password?\n' +
             'Ensure KEY_FILE_PASSWORD matches the password used to encrypt the file.'
@@ -116,7 +118,7 @@ export class FileKeyProvider implements KeyProvider {
       }
 
       throw new Error(
-        `Failed to load key from file: ${this.filePath}\n` + `Error: ${error.message}`
+        `Failed to load key from file: ${this.filePath}\n` + `Error: ${errorMessage}`
       );
     }
   }
@@ -134,7 +136,7 @@ export class FileKeyProvider implements KeyProvider {
     const newKey = crypto.randomBytes(32);
 
     // Encrypt new key
-    const encryptedData = await this.encryptKeyFile(newKey, this.password);
+    const encryptedData = this.encryptKeyFile(newKey, this.password);
 
     // Create backup of old key
     const backupPath = `${this.filePath}.backup.${Date.now()}`;
@@ -142,7 +144,8 @@ export class FileKeyProvider implements KeyProvider {
       await fs.copyFile(this.filePath, backupPath);
       this.logger.log(`✅ Backup created: ${backupPath}`);
     } catch (error) {
-      throw new Error(`Failed to create backup during rotation: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to create backup during rotation: ${errorMessage}`);
     }
 
     // Write new key (atomic write)
@@ -163,7 +166,7 @@ export class FileKeyProvider implements KeyProvider {
    * Format: [salt (16)][iv (12)][authTag (16)][ciphertext (32)]
    * Total: 76 bytes
    */
-  private async decryptKeyFile(encrypted: Buffer, password: string): Promise<Buffer> {
+  private decryptKeyFile(encrypted: Buffer, password: string): Buffer {
     if (encrypted.length !== 76) {
       throw new Error(
         `Invalid encrypted key file format. Expected 76 bytes, got ${encrypted.length}`
@@ -191,7 +194,7 @@ export class FileKeyProvider implements KeyProvider {
    *
    * Uses PBKDF2 (100,000 iterations) + AES-256-GCM
    */
-  private async encryptKeyFile(key: Buffer, password: string): Promise<Buffer> {
+  private encryptKeyFile(key: Buffer, password: string): Buffer {
     // Generate random salt and IV
     const salt = crypto.randomBytes(16);
     const iv = crypto.randomBytes(12);

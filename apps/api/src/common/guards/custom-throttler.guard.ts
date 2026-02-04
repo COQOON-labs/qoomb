@@ -19,14 +19,14 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
    * For authenticated requests: use user ID
    * For unauthenticated requests: use IP address
    */
-  protected async getTracker(req: FastifyRequest & { user?: any }): Promise<string> {
+  protected getTracker(req: FastifyRequest & { user?: { id: string } }): Promise<string> {
     // If user is authenticated, track by user ID
     if (req.user?.id) {
-      return `user:${req.user.id}`;
+      return Promise.resolve(`user:${req.user.id}`);
     }
 
     // Otherwise, track by IP address
-    return this.getIpFromRequest(req);
+    return Promise.resolve(this.getIpFromRequest(req));
   }
 
   /**
@@ -61,7 +61,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     context: ExecutionContext,
     throttlerLimitDetail: ThrottlerLimitDetail
   ): Promise<void> {
-    const request = context.switchToHttp().getRequest<FastifyRequest & { user?: any }>();
+    const request = context.switchToHttp().getRequest<FastifyRequest & { user?: { id: string } }>();
     const tracker = await this.getTracker(request);
     const url = request.url;
 

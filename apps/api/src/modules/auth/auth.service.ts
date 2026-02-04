@@ -150,7 +150,7 @@ export class AuthService {
     // Check if account is locked
     const lockStatus = await this.accountLockout.isLocked(email);
     if (lockStatus.locked) {
-      const minutes = Math.ceil(lockStatus.remainingSeconds! / 60);
+      const minutes = Math.ceil((lockStatus.remainingSeconds ?? 0) / 60);
       throw new UnauthorizedException(
         `Account temporarily locked. Please try again in ${minutes} minute(s).`
       );
@@ -178,7 +178,7 @@ export class AuthService {
       const result = await this.accountLockout.recordFailedAttempt(email);
 
       if (result.isLocked) {
-        const minutes = Math.ceil(result.remainingLockoutSeconds! / 60);
+        const minutes = Math.ceil((result.remainingLockoutSeconds ?? 0) / 60);
         throw new UnauthorizedException(
           `Too many failed attempts. Account locked for ${minutes} minute(s).`
         );
@@ -228,7 +228,7 @@ export class AuthService {
    */
   async validateToken(token: string) {
     try {
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify<{ jti?: string; sub: string }>(token);
 
       // Check if token is blacklisted
       if (payload.jti) {
@@ -263,7 +263,7 @@ export class AuthService {
         personId: user.personId,
         hiveName: user.hive.name,
       };
-    } catch (error) {
+    } catch (_error) {
       // SECURITY: Generic error for all token validation failures
       throw new UnauthorizedException('Authentication failed');
     }
@@ -338,8 +338,8 @@ export class AuthService {
    */
   async logout(accessToken: string, refreshToken: string): Promise<void> {
     // Decode access token to get JWT ID and expiration
-    const decoded = this.jwtService.decode(accessToken);
-    if (decoded?.jti) {
+    const decoded = this.jwtService.decode<{ jti?: string; exp?: number }>(accessToken);
+    if (decoded?.jti && decoded.exp) {
       // Calculate remaining TTL
       const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
       if (expiresIn > 0) {

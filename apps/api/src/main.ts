@@ -1,4 +1,5 @@
 import helmet from '@fastify/helmet';
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 
@@ -6,6 +7,7 @@ import { AppModule } from './app.module';
 import { CORS_CONFIG, SECURITY_HEADERS } from './config/security.config';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
@@ -23,7 +25,7 @@ async function bootstrap() {
     noSniff: SECURITY_HEADERS.noSniff,
     xssFilter: SECURITY_HEADERS.xssFilter,
   };
-  await app.register(helmet as any, helmetOptions);
+  await app.register(helmet, helmetOptions);
 
   // Enable CORS with comprehensive configuration
   app.enableCors({
@@ -40,7 +42,7 @@ async function bootstrap() {
 
   await app.listen(port, host);
 
-  console.log(`
+  logger.log(`
 ┌─────────────────────────────────────────────────────────┐
 │                                                         │
 │   🚀 Qoomb API Server Running                          │
@@ -55,4 +57,4 @@ async function bootstrap() {
   `);
 }
 
-bootstrap();
+void bootstrap();

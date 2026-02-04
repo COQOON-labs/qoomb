@@ -96,7 +96,7 @@ export class CloudKmsKeyProvider implements KeyProvider {
     // this.kmsClient = new KMS({ region: this.region });
   }
 
-  async getMasterKey(): Promise<Buffer> {
+  getMasterKey(): Promise<Buffer> {
     // TODO: Uncomment implementation when SDK is installed
     /*
     if (this.cachedDataKey) {
@@ -123,8 +123,9 @@ export class CloudKmsKeyProvider implements KeyProvider {
 
       return this.cachedDataKey;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(
-        `Failed to generate data key from AWS KMS: ${error.message}\n` +
+        `Failed to generate data key from AWS KMS: ${errorMessage}\n` +
         'Ensure AWS credentials and KMS key ID are correct.',
       );
     }
@@ -133,7 +134,7 @@ export class CloudKmsKeyProvider implements KeyProvider {
     throw new Error('AWS KMS provider not fully implemented');
   }
 
-  async rotate(): Promise<void> {
+  rotate(): Promise<void> {
     // TODO: Uncomment when SDK is installed
     /*
     try {

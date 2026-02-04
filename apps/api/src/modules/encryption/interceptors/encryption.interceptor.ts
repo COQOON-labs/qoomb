@@ -37,6 +37,7 @@ export class EncryptionInterceptor implements NestInterceptor {
     private readonly encryptionService: EncryptionService
   ) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     // Get metadata from decorator
     const encryptFields = this.reflector.get<string[]>(ENCRYPT_FIELDS_KEY, context.getHandler());
@@ -50,7 +51,6 @@ export class EncryptionInterceptor implements NestInterceptor {
     }
 
     // Extract method arguments
-    const request = context.switchToHttp().getRequest();
     const args = context.getArgs();
 
     // Find hiveId in method parameters
@@ -73,21 +73,26 @@ export class EncryptionInterceptor implements NestInterceptor {
 
     // Execute method and decrypt fields in response
     return next.handle().pipe(
-      map((data) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      map((data: any) => {
         if (!data) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           return data;
         }
 
         // Decrypt fields if specified
         if (decryptFields && decryptFields.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           return this.processFields(data, decryptFields, hiveId, 'decrypt');
         }
 
         // Encrypt fields if specified
         if (encryptFields && encryptFields.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           return this.processFields(data, encryptFields, hiveId, 'encrypt');
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return data;
       })
     );
@@ -102,11 +107,14 @@ export class EncryptionInterceptor implements NestInterceptor {
    * @param paramName - Name of the hiveId parameter
    * @returns hiveId or null if not found
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private extractHiveId(args: any[], paramName: string): string | null {
     // Check each argument
     for (const arg of args) {
       // If arg is an object, check if it has the hiveId property
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (arg && typeof arg === 'object' && paramName in arg) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
         return arg[paramName];
       }
 
@@ -120,8 +128,11 @@ export class EncryptionInterceptor implements NestInterceptor {
     }
 
     // Also check if it's in an ExecutionContext (NestJS request)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const request = args.find((arg) => arg?.user?.hiveId);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (request?.user?.hiveId) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
       return request.user.hiveId;
     }
 
@@ -142,11 +153,14 @@ export class EncryptionInterceptor implements NestInterceptor {
    * @param operation - 'encrypt' or 'decrypt'
    * @returns Processed data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private processFields(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any,
     fields: string[],
     hiveId: string,
     operation: 'encrypt' | 'decrypt'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): any {
     // Handle null/undefined
     if (data === null || data === undefined) {
@@ -155,11 +169,13 @@ export class EncryptionInterceptor implements NestInterceptor {
 
     // Handle arrays
     if (Array.isArray(data)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return data.map((item) => this.processFields(item, fields, hiveId, operation));
     }
 
     // Handle objects
     if (typeof data === 'object') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const processed = { ...data };
 
       for (const fieldPath of fields) {
@@ -169,15 +185,20 @@ export class EncryptionInterceptor implements NestInterceptor {
         if (parts.length === 1) {
           // Simple field
           const field = parts[0];
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           if (field in processed && processed[field] !== null) {
             try {
               if (operation === 'encrypt') {
                 const encrypted = this.encryptionService.encrypt(
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                   typeof processed[field] === 'string'
-                    ? processed[field]
-                    : JSON.stringify(processed[field]),
+                    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+                      processed[field]
+                    : // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+                      JSON.stringify(processed[field]),
                   hiveId
                 );
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 processed[field] = encrypted.data.toString('base64');
               } else {
                 // Decrypt
@@ -188,12 +209,15 @@ export class EncryptionInterceptor implements NestInterceptor {
                 const encryptedData: EncryptedData = {
                   version: 1, // FIXME: Hardcoded - read from stored data instead
                   provider: this.encryptionService.getProviderName(),
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
                   data: Buffer.from(processed[field], 'base64'),
                 };
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 processed[field] = this.encryptionService.decrypt(encryptedData, hiveId);
               }
             } catch (error) {
-              this.logger.error(`Failed to ${operation} field '${field}': ${error.message}`);
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              this.logger.error(`Failed to ${operation} field '${field}': ${errorMessage}`);
               // Keep original value on error
             }
           }
@@ -204,6 +228,7 @@ export class EncryptionInterceptor implements NestInterceptor {
         }
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return processed;
     }
 

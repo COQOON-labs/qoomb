@@ -32,7 +32,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
     ttl: number,
     limit: number,
     blockDuration: number,
-    throttlerName: string
+    _throttlerName: string
   ): Promise<{
     totalHits: number;
     timeToExpire: number;

@@ -118,7 +118,7 @@ export class VaultKeyProvider implements KeyProvider {
     */
   }
 
-  async getMasterKey(): Promise<Buffer> {
+  getMasterKey(): Promise<Buffer> {
     // TODO: Uncomment implementation when node-vault is installed
     /*
     if (this.cachedKey) {
@@ -149,8 +149,9 @@ export class VaultKeyProvider implements KeyProvider {
 
       return this.cachedKey;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(
-        `Failed to load key from Vault: ${error.message}\n` +
+        `Failed to load key from Vault: ${errorMessage}\n` +
         'Check VAULT_ADDR, VAULT_TOKEN, and key path.',
       );
     }
@@ -159,7 +160,7 @@ export class VaultKeyProvider implements KeyProvider {
     throw new Error('Vault provider not fully implemented');
   }
 
-  async rotate(): Promise<void> {
+  rotate(): Promise<void> {
     // TODO: Uncomment when node-vault is installed
     /*
     try {

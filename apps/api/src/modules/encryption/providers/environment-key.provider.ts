@@ -33,6 +33,7 @@ export class EnvironmentKeyProvider implements KeyProvider {
   private readonly logger = new Logger(EnvironmentKeyProvider.name);
   private cachedKey: Buffer | null = null;
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async getMasterKey(): Promise<Buffer> {
     // Return cached key if already loaded
     if (this.cachedKey) {
@@ -89,7 +90,8 @@ export class EnvironmentKeyProvider implements KeyProvider {
 
       return this.cachedKey;
     } catch (error) {
-      if (error.message.includes('ENCRYPTION_KEY')) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage.includes('ENCRYPTION_KEY')) {
         throw error; // Re-throw our custom errors
       }
 
@@ -97,7 +99,7 @@ export class EnvironmentKeyProvider implements KeyProvider {
         'Failed to decode ENCRYPTION_KEY from base64.\n' +
           'Ensure the key is properly base64-encoded.\n' +
           'Generate a new key with: openssl rand -base64 32\n' +
-          `Error: ${error.message}`
+          `Error: ${errorMessage}`
       );
     }
   }

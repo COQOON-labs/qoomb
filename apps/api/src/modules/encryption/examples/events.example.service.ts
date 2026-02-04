@@ -57,7 +57,7 @@ export class EventsExampleService {
 
     // The decorator will automatically encrypt title and description
     // before this return value reaches the caller
-    return event as EventData;
+    return event as unknown as EventData;
   }
 
   /**
@@ -135,7 +135,7 @@ export class EventsExampleService {
     );
 
     // Decorator encrypts the result
-    return updated as EventData;
+    return updated as unknown as EventData;
   }
 
   /**
@@ -177,7 +177,7 @@ export class EventsExampleService {
     );
 
     // Only description is encrypted, title remains plaintext
-    return event as EventData;
+    return event as unknown as EventData;
   }
 
   /**

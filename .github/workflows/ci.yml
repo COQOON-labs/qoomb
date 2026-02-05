@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main] # Only after merge to main
   pull_request:
     branches: [main, develop]
 
@@ -32,7 +32,6 @@ jobs:
 
       - name: Security audit
         run: pnpm audit --audit-level moderate
-        continue-on-error: true # Don't fail build, just warn
 
       - name: Lint
         run: pnpm run lint

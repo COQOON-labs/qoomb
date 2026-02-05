@@ -59,9 +59,8 @@ jobs:
           # Customize config if needed
           # config-file: ./.github/codeql/codeql-config.yml
 
-      # Autobuild attempts to build compiled languages (not needed for JS/TS but harmless)
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
+      # Note: Autobuild is not strictly needed for JS/TS but doesn't hurt
+      # It helps CodeQL understand the project structure
 
       # Perform CodeQL Analysis
       - name: Perform CodeQL Analysis

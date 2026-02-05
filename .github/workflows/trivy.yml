@@ -35,8 +35,8 @@ jobs:
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results-fs.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0' # Don't fail the build, just report
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1' # Fail on critical/high vulnerabilities
           # Ignore unfixed vulnerabilities (optional)
           # ignore-unfixed: true
 
@@ -56,8 +56,8 @@ jobs:
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results-config.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1' # Fail on critical/high misconfigurations
 
       # Upload config scan results
       - name: Upload Trivy (Config) results to GitHub Security
@@ -99,7 +99,7 @@ jobs:
           scanners: 'secret'
           format: 'sarif'
           output: 'trivy-secret-results.sarif'
-          exit-code: '0'
+          exit-code: '1' # Fail if secrets are found - this is critical!
 
       - name: Upload Trivy secret scan results
         uses: github/codeql-action/upload-sarif@v4

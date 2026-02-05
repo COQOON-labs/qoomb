@@ -53,11 +53,11 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   // Expose Prisma methods
   async $connect() {
-    return this.client.$connect();
+    return await this.client.$connect();
   }
 
   async $disconnect() {
-    return this.client.$disconnect();
+    return await this.client.$disconnect();
   }
 
   async $executeRawUnsafe<T = unknown>(query: string, ...values: unknown[]): Promise<T> {
@@ -76,7 +76,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       isolationLevel?: Prisma.TransactionIsolationLevel;
     }
   ): Promise<T> {
-    return this.client.$transaction(fn, options);
+    return await this.client.$transaction(fn, options);
   }
 
   async onModuleInit() {

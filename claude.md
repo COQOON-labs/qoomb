@@ -84,7 +84,9 @@
 | **Monorepo**       | Turborepo + pnpm               | Shared types, atomic changes  |
 | **Backend**        | NestJS + TypeScript            | DI, professional structure    |
 | **API**            | tRPC                           | End-to-end type safety        |
-| **Frontend**       | React 18 + Vite                | Fast HMR, large ecosystem     |
+| **Frontend**       | React 19 + Vite                | Fast HMR, large ecosystem     |
+| **Mobile**         | Capacitor                      | Native iOS/Android wrapper    |
+| **PWA**            | vite-plugin-pwa + Workbox      | Offline-first, installable    |
 | **Database**       | PostgreSQL 17                  | pgvector, JSONB, multi-schema |
 | **Cache/Queue**    | Redis 7.4                      | Session store, pub/sub        |
 | **ORM**            | Prisma                         | Type-safe, migrations         |
@@ -114,13 +116,24 @@ qoomb/
 │   │       ├── schema.prisma       # DB schema (public + template)
 │   │       └── migrations/         # Version-controlled migrations
 │   │
-│   └── web/                    # React frontend [MINIMAL]
-│       └── src/
-│           └── lib/trpc/           # tRPC client
+│   ├── web/                    # React PWA frontend
+│   │   ├── public/                 # PWA assets (icons, manifest)
+│   │   ├── scripts/                # Build scripts (icon generation)
+│   │   └── src/
+│   │       └── lib/trpc/           # tRPC client
+│   │
+│   └── mobile/                 # Capacitor mobile wrapper
+│       ├── capacitor.config.ts     # iOS/Android configuration
+│       ├── ios/                    # [Generated] Xcode project
+│       └── android/                # [Generated] Android Studio project
 │
 ├── packages/
 │   ├── types/                  # Shared TypeScript types
 │   ├── validators/             # Shared Zod schemas + sanitizers
+│   ├── ui/                     # Shared React components + hooks
+│   │   ├── src/components/         # Button, Input, Card, etc.
+│   │   ├── src/hooks/              # useMediaQuery, useOnlineStatus
+│   │   └── src/utils/              # cn() class merger
 │   └── config/                 # Shared tsconfig
 │
 ├── docs/                       # Documentation for humans
@@ -144,9 +157,11 @@ qoomb/
 
 - Monorepo (Turborepo + pnpm)
 - NestJS backend
-- React frontend (minimal)
-- Docker Compose (PostgreSQL 16 + Redis 7)
+- React 19 PWA frontend with vite-plugin-pwa
+- Capacitor mobile wrapper (iOS/Android)
+- Docker Compose (PostgreSQL 17 + Redis 7.4)
 - Prisma with multi-schema
+- Shared UI component library (@qoomb/ui)
 
 **Security & Auth (PRODUCTION-READY):**
 
@@ -165,7 +180,24 @@ qoomb/
 - Audit logging foundation
 - **Location:** `apps/api/src/modules/auth/`, `apps/api/src/common/`
 
-**Encryption (NEW):**
+**Mobile & PWA (NEW):**
+
+- PWA manifest with app icons
+- Service worker with Workbox (offline caching)
+- Apple mobile web app support
+- Capacitor configuration for iOS/Android
+- Native plugins: Push Notifications, Haptics, Splash Screen
+- **Location:** `apps/web/`, `apps/mobile/`
+
+**Shared UI Library (NEW):**
+
+- Button, Input, Card components
+- Responsive hooks (useMediaQuery, useIsMobile, useIsDesktop)
+- Offline detection (useOnlineStatus)
+- Tailwind class merger utility (cn)
+- **Location:** `packages/ui/`
+
+**Encryption:**
 
 - Pluggable key providers (Environment, File, AWS KMS, Vault)
 - Decorator-based field encryption (`@EncryptFields`, `@DecryptFields`)

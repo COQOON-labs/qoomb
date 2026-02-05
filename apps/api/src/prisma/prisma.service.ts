@@ -6,24 +6,77 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { Pool } from 'pg';
 
+// Create a properly typed Prisma Client instance
+function createPrismaClient(): PrismaClient {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+  });
+
+  const adapter = new PrismaPg(pool);
+
+  return new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  });
+}
+
+// Type for transaction client - exported for use in services
+export type TransactionClient = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
+
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
+  private readonly client: PrismaClient;
 
   constructor() {
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-    });
+    this.client = createPrismaClient();
+  }
 
-    const adapter = new PrismaPg(pool);
+  // Expose Prisma models with proper typing
+  get user() {
+    return this.client.user;
+  }
 
-    super({
-      adapter,
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-    });
+  get hive() {
+    return this.client.hive;
+  }
+
+  get refreshToken() {
+    return this.client.refreshToken;
+  }
+
+  // Expose Prisma methods
+  async $connect() {
+    return this.client.$connect();
+  }
+
+  async $disconnect() {
+    return this.client.$disconnect();
+  }
+
+  async $executeRawUnsafe<T = unknown>(query: string, ...values: unknown[]): Promise<T> {
+    return this.client.$executeRawUnsafe(query, ...values) as Promise<T>;
+  }
+
+  async $queryRawUnsafe<T = unknown>(query: string, ...values: unknown[]): Promise<T> {
+    return this.client.$queryRawUnsafe(query, ...values) as Promise<T>;
+  }
+
+  async $transaction<T>(
+    fn: (tx: TransactionClient) => Promise<T>,
+    options?: {
+      maxWait?: number;
+      timeout?: number;
+      isolationLevel?: Prisma.TransactionIsolationLevel;
+    }
+  ): Promise<T> {
+    return this.client.$transaction(fn, options);
   }
 
   async onModuleInit() {
@@ -55,8 +108,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private async executeRawSql(sql: string): Promise<void> {
     // TypeScript workaround: We need to use $executeRawUnsafe for SET commands
     // This is safe because we validate all inputs before calling this method
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    await (this as any).$executeRawUnsafe(sql);
+    await this.$executeRawUnsafe(sql);
   }
 
   /**
@@ -64,7 +116,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
    * @throws {UnauthorizedException} if hive does not exist
    */
   private async verifyHiveExists(hiveId: string): Promise<void> {
-    const hive = await this.hive.findUnique({
+    const hive: { id: string } | null = await this.hive.findUnique({
       where: { id: hiveId },
       select: { id: true },
     });
@@ -83,7 +135,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     this.validateUUID(userId);
     this.validateUUID(hiveId);
 
-    const user = await this.user.findFirst({
+    const user: { id: string } | null = await this.user.findFirst({
       where: {
         id: userId,
         hiveId: hiveId,

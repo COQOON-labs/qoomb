@@ -39,11 +39,11 @@ export class EventsExampleService {
    * 4. Encrypted result is returned
    */
   @EncryptFields(['title', 'description'])
-  async createEvent(data: EventData, hiveId: string) {
+  async createEvent(data: EventData, hiveId: string): Promise<EventData> {
     // Just write your normal business logic
     // No encryption code needed here!
 
-    const event = await this.prisma.$executeRawUnsafe(
+    const result: EventData[] = await this.prisma.$executeRawUnsafe<EventData[]>(
       `
       INSERT INTO hive_${hiveId}.events (title, description, start_time, end_time)
       VALUES ($1, $2, $3, $4)
@@ -57,7 +57,11 @@ export class EventsExampleService {
 
     // The decorator will automatically encrypt title and description
     // before this return value reaches the caller
-    return event as unknown as EventData;
+    const event: EventData | undefined = result[0];
+    if (!event) {
+      throw new Error('Failed to create event');
+    }
+    return event;
   }
 
   /**
@@ -73,9 +77,9 @@ export class EventsExampleService {
    * 4. Decrypted result is returned
    */
   @DecryptFields(['title', 'description'])
-  async getEvent(eventId: string, hiveId: string) {
+  async getEvent(eventId: string, hiveId: string): Promise<EventData | null> {
     // Load data (encrypted in DB)
-    const event = await this.prisma.$queryRawUnsafe(
+    const result: EventData[] = await this.prisma.$queryRawUnsafe<EventData[]>(
       `
       SELECT * FROM hive_${hiveId}.events WHERE id = $1
     `,
@@ -84,7 +88,7 @@ export class EventsExampleService {
 
     // The decorator will automatically decrypt title and description
     // before returning
-    return event;
+    return result[0] ?? null;
   }
 
   /**
@@ -95,7 +99,7 @@ export class EventsExampleService {
    */
   @DecryptFields(['title', 'description'])
   async listEvents(hiveId: string, startDate: Date, endDate: Date): Promise<EventData[]> {
-    const events = await this.prisma.$queryRawUnsafe(
+    const events: EventData[] = await this.prisma.$queryRawUnsafe<EventData[]>(
       `
       SELECT * FROM hive_${hiveId}.events
       WHERE start_time >= $1 AND end_time <= $2
@@ -106,7 +110,7 @@ export class EventsExampleService {
     );
 
     // Array of events - decorator decrypts each one
-    return events as EventData[];
+    return events;
   }
 
   /**
@@ -121,8 +125,8 @@ export class EventsExampleService {
    * just use @EncryptFields on the return value.
    */
   @EncryptFields(['title', 'description'])
-  async updateEvent(eventId: string, data: EventData, hiveId: string) {
-    const updated = await this.prisma.$executeRawUnsafe(
+  async updateEvent(eventId: string, data: EventData, hiveId: string): Promise<EventData> {
+    const result: EventData[] = await this.prisma.$executeRawUnsafe<EventData[]>(
       `
       UPDATE hive_${hiveId}.events
       SET title = $1, description = $2
@@ -135,7 +139,11 @@ export class EventsExampleService {
     );
 
     // Decorator encrypts the result
-    return updated as unknown as EventData;
+    const updated: EventData | undefined = result[0];
+    if (!updated) {
+      throw new Error('Failed to update event');
+    }
+    return updated;
   }
 
   /**
@@ -144,7 +152,7 @@ export class EventsExampleService {
    * For operations that don't return sensitive data,
    * you don't need any decorator.
    */
-  async deleteEvent(eventId: string, hiveId: string) {
+  async deleteEvent(eventId: string, hiveId: string): Promise<{ success: boolean }> {
     await this.prisma.$executeRawUnsafe(
       `
       DELETE FROM hive_${hiveId}.events WHERE id = $1
@@ -163,8 +171,8 @@ export class EventsExampleService {
    * (maybe title is needed for search).
    */
   @EncryptFields(['description']) // Only description is encrypted
-  async createPublicEvent(data: EventData, hiveId: string) {
-    const event = await this.prisma.$executeRawUnsafe(
+  async createPublicEvent(data: EventData, hiveId: string): Promise<EventData> {
+    const result: EventData[] = await this.prisma.$executeRawUnsafe<EventData[]>(
       `
       INSERT INTO hive_${hiveId}.events (title, description, start_time, end_time)
       VALUES ($1, $2, $3, $4)
@@ -177,7 +185,11 @@ export class EventsExampleService {
     );
 
     // Only description is encrypted, title remains plaintext
-    return event as unknown as EventData;
+    const event: EventData | undefined = result[0];
+    if (!event) {
+      throw new Error('Failed to create public event');
+    }
+    return event;
   }
 
   /**
@@ -202,11 +214,16 @@ export class EventsExampleService {
    * No performance overhead.
    */
   async getEventCount(hiveId: string): Promise<number> {
-    const result = await this.prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
-      `SELECT COUNT(*) as count FROM hive_${hiveId}.events`
-    );
+    const result: Array<{ count: bigint }> = await this.prisma.$queryRawUnsafe<
+      Array<{ count: bigint }>
+    >(`SELECT COUNT(*) as count FROM hive_${hiveId}.events`);
 
-    return Number(result[0].count);
+    const countResult: { count: bigint } | undefined = result[0];
+    if (!countResult) {
+      return 0;
+    }
+
+    return Number(countResult.count);
   }
 }
 

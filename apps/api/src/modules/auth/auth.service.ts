@@ -2,15 +2,34 @@ import * as crypto from 'crypto';
 
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import type { Hive, User } from '@prisma/client';
 import type { CreateHiveInput } from '@qoomb/types';
 import * as bcrypt from 'bcrypt';
 
 import { AccountLockoutService } from '../../common/services/account-lockout.service';
 import { TokenBlacklistService } from '../../common/services/token-blacklist.service';
 import { PASSWORD_CONFIG, JWT_CONFIG } from '../../config/security.config';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService, TransactionClient } from '../../prisma/prisma.service';
 
 import { RefreshTokenService } from './refresh-token.service';
+
+// Type definitions for raw SQL query results
+interface PersonIdResult {
+  id: string;
+}
+
+interface JwtPayload {
+  jti?: string;
+  sub: string;
+  exp?: number;
+  hiveId?: string;
+  personId?: string;
+  type?: string;
+}
+
+interface UserWithHive extends User {
+  hive: Hive;
+}
 
 @Injectable()
 export class AuthService {
@@ -32,7 +51,7 @@ export class AuthService {
    */
   async register(input: CreateHiveInput, ipAddress?: string, userAgent?: string) {
     // Check if email already exists
-    const existingUser = await this.prisma.user.findUnique({
+    const existingUser: User | null = await this.prisma.user.findUnique({
       where: { email: input.adminEmail },
     });
 
@@ -47,9 +66,9 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(input.adminPassword, PASSWORD_CONFIG.SALT_ROUNDS);
 
     // Create hive and user in a transaction
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: TransactionClient) => {
       // 1. Create the hive
-      const hive = await tx.hive.create({
+      const hive: Hive = await tx.hive.create({
         data: {
           name: input.name,
         },
@@ -77,7 +96,7 @@ export class AuthService {
       `);
 
       // 4. Create admin person in hive schema
-      const personResult = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+      const personResult = await tx.$queryRawUnsafe<PersonIdResult[]>(
         `
         INSERT INTO hive_${hive.id}.persons (name, role, permission_level)
         VALUES ($1, $2, $3)
@@ -88,10 +107,13 @@ export class AuthService {
         100
       );
 
-      const personId = personResult[0].id;
+      const personId: string | undefined = personResult[0]?.id;
+      if (!personId) {
+        throw new BadRequestException('Failed to create admin person');
+      }
 
       // 5. Create user account
-      const user = await tx.user.create({
+      const user: User = await tx.user.create({
         data: {
           email: input.adminEmail,
           passwordHash,
@@ -104,32 +126,36 @@ export class AuthService {
     });
 
     // Generate access token (short-lived)
-    const { token: accessToken } = this.generateAccessToken(
-      result.user.id,
-      result.hive.id,
-      result.personId
-    );
+    const userId: string = result.user.id;
+    const hiveId: string = result.hive.id;
+    const personId: string = result.personId;
+
+    const { token: accessToken } = this.generateAccessToken(userId, hiveId, personId);
 
     // Generate refresh token (long-lived)
     const refreshTokenData = await this.refreshTokenService.createRefreshToken(
-      result.user.id,
+      userId,
       ipAddress,
       userAgent
     );
+
+    const userEmail: string = result.user.email;
+    const hiveIdReturn: string = result.hive.id;
+    const hiveName: string = result.hive.name;
 
     return {
       accessToken,
       refreshToken: refreshTokenData.token,
       expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
       user: {
-        id: result.user.id,
-        email: result.user.email,
-        hiveId: result.hive.id,
-        personId: result.personId,
+        id: userId,
+        email: userEmail,
+        hiveId: hiveIdReturn,
+        personId: personId,
       },
       hive: {
-        id: result.hive.id,
-        name: result.hive.name,
+        id: hiveIdReturn,
+        name: hiveName,
       },
     };
   }
@@ -157,7 +183,7 @@ export class AuthService {
     }
 
     // Find user
-    const user = await this.prisma.user.findUnique({
+    const user: UserWithHive | null = await this.prisma.user.findUnique({
       where: { email },
       include: {
         hive: true,
@@ -191,28 +217,36 @@ export class AuthService {
     await this.accountLockout.resetAttempts(email);
 
     // Generate access token (short-lived)
-    const { token: accessToken } = this.generateAccessToken(user.id, user.hiveId, user.personId);
+    const userId: string = user.id;
+    const hiveId: string = user.hiveId;
+    const personId: string | null = user.personId;
+
+    const { token: accessToken } = this.generateAccessToken(userId, hiveId, personId);
 
     // Generate refresh token (long-lived)
     const refreshTokenData = await this.refreshTokenService.createRefreshToken(
-      user.id,
+      userId,
       ipAddress,
       userAgent
     );
+
+    const userEmail: string = user.email;
+    const hiveIdValue: string = user.hive.id;
+    const hiveName: string = user.hive.name;
 
     return {
       accessToken,
       refreshToken: refreshTokenData.token,
       expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
       user: {
-        id: user.id,
-        email: user.email,
-        hiveId: user.hiveId,
-        personId: user.personId,
+        id: userId,
+        email: userEmail,
+        hiveId: hiveId,
+        personId: personId,
       },
       hive: {
-        id: user.hive.id,
-        name: user.hive.name,
+        id: hiveIdValue,
+        name: hiveName,
       },
     };
   }
@@ -228,7 +262,7 @@ export class AuthService {
    */
   async validateToken(token: string) {
     try {
-      const payload = this.jwtService.verify<{ jti?: string; sub: string }>(token);
+      const payload = this.jwtService.verify<JwtPayload>(token);
 
       // Check if token is blacklisted
       if (payload.jti) {
@@ -244,7 +278,7 @@ export class AuthService {
         throw new UnauthorizedException('All sessions have been terminated');
       }
 
-      const user = await this.prisma.user.findUnique({
+      const user: UserWithHive | null = await this.prisma.user.findUnique({
         where: { id: payload.sub },
         include: {
           hive: true,
@@ -256,12 +290,18 @@ export class AuthService {
         throw new UnauthorizedException('Authentication failed');
       }
 
+      const userId: string = user.id;
+      const userEmail: string = user.email;
+      const hiveId: string = user.hiveId;
+      const personId: string | null = user.personId;
+      const hiveName: string = user.hive.name;
+
       return {
-        id: user.id,
-        email: user.email,
-        hiveId: user.hiveId,
-        personId: user.personId,
-        hiveName: user.hive.name,
+        id: userId,
+        email: userEmail,
+        hiveId: hiveId,
+        personId: personId,
+        hiveName: hiveName,
       };
     } catch (_error) {
       // SECURITY: Generic error for all token validation failures
@@ -314,7 +354,7 @@ export class AuthService {
     );
 
     // Get user details
-    const user = await this.prisma.user.findUnique({
+    const user: UserWithHive | null = await this.prisma.user.findUnique({
       where: { id: rotated.userId },
       include: { hive: true },
     });
@@ -324,7 +364,11 @@ export class AuthService {
     }
 
     // Generate new access token
-    const { token: accessToken } = this.generateAccessToken(user.id, user.hiveId, user.personId);
+    const userId: string = user.id;
+    const hiveId: string = user.hiveId;
+    const personId: string | null = user.personId;
+
+    const { token: accessToken } = this.generateAccessToken(userId, hiveId, personId);
 
     return {
       accessToken,
@@ -338,8 +382,8 @@ export class AuthService {
    */
   async logout(accessToken: string, refreshToken: string): Promise<void> {
     // Decode access token to get JWT ID and expiration
-    const decoded = this.jwtService.decode<{ jti?: string; exp?: number }>(accessToken);
-    if (decoded?.jti && decoded.exp) {
+    const decoded = this.jwtService.decode<JwtPayload>(accessToken);
+    if (decoded && typeof decoded === 'object' && decoded.jti && decoded.exp) {
       // Calculate remaining TTL
       const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
       if (expiresIn > 0) {
@@ -371,7 +415,7 @@ export class AuthService {
   /**
    * Get active sessions for a user
    */
-  async getActiveSessions(userId: string) {
+  getActiveSessions(userId: string) {
     return this.refreshTokenService.getActiveTokensForUser(userId);
   }
 }

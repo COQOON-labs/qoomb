@@ -28,16 +28,21 @@ export const authRouter = (authService: AuthService) =>
     register: publicProcedure.input(registerSchema).mutation(async ({ input, ctx }) => {
       try {
         // Extract IP and User-Agent for device tracking
-        const ipAddress = ctx.req?.ip || undefined;
-        const userAgent = ctx.req?.headers?.['user-agent'] || undefined;
+        const ipAddress: string | undefined = ctx.req?.ip ?? undefined;
+        const userAgent: string | undefined = ctx.req?.headers?.['user-agent'] ?? undefined;
 
         // Map registerSchema to CreateHiveInput
+        const name: string = input.hiveName;
+        const adminEmail: string = input.email;
+        const adminPassword: string = input.password;
+        const adminName: string = input.adminName;
+
         const result = await authService.register(
           {
-            name: input.hiveName,
-            adminEmail: input.email,
-            adminPassword: input.password,
-            adminName: input.adminName,
+            name,
+            adminEmail,
+            adminPassword,
+            adminName,
           },
           ipAddress,
           userAgent
@@ -69,10 +74,13 @@ export const authRouter = (authService: AuthService) =>
     login: publicProcedure.input(loginSchema).mutation(async ({ input, ctx }) => {
       try {
         // Extract IP and User-Agent for device tracking
-        const ipAddress = ctx.req?.ip || undefined;
-        const userAgent = ctx.req?.headers?.['user-agent'] || undefined;
+        const ipAddress: string | undefined = ctx.req?.ip ?? undefined;
+        const userAgent: string | undefined = ctx.req?.headers?.['user-agent'] ?? undefined;
 
-        const result = await authService.login(input.email, input.password, ipAddress, userAgent);
+        const email: string = input.email;
+        const password: string = input.password;
+
+        const result = await authService.login(email, password, ipAddress, userAgent);
 
         return result;
       } catch (_error) {
@@ -104,8 +112,8 @@ export const authRouter = (authService: AuthService) =>
       .mutation(async ({ input, ctx }) => {
         try {
           // Extract IP and User-Agent for device tracking
-          const ipAddress = ctx.req?.ip || undefined;
-          const userAgent = ctx.req?.headers?.['user-agent'] || undefined;
+          const ipAddress: string | undefined = ctx.req?.ip ?? undefined;
+          const userAgent: string | undefined = ctx.req?.headers?.['user-agent'] ?? undefined;
 
           const result = await authService.refresh(input.refreshToken, ipAddress, userAgent);
 
@@ -169,7 +177,8 @@ export const authRouter = (authService: AuthService) =>
      */
     getActiveSessions: protectedProcedure.query(async ({ ctx }) => {
       try {
-        const sessions = await authService.getActiveSessions(ctx.user.id);
+        const userId: string = ctx.user.id;
+        const sessions = await authService.getActiveSessions(userId);
         return { sessions };
       } catch (_error) {
         throw new TRPCError({
@@ -186,13 +195,19 @@ export const authRouter = (authService: AuthService) =>
      * Returns user and hive information from JWT context
      */
     me: protectedProcedure.query(({ ctx }) => {
+      const id: string = ctx.user.id;
+      const email: string | undefined = ctx.user.email;
+      const hiveId: string = ctx.user.hiveId;
+      const personId: string | undefined = ctx.user.personId;
+      const hiveName: string | undefined = ctx.user.hiveName;
+
       return {
         user: {
-          id: ctx.user.id,
-          email: ctx.user.email,
-          hiveId: ctx.user.hiveId,
-          personId: ctx.user.personId,
-          hiveName: ctx.user.hiveName,
+          id,
+          email,
+          hiveId,
+          personId,
+          hiveName,
         },
       };
     }),

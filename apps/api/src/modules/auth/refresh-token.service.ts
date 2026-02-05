@@ -1,8 +1,14 @@
 import * as crypto from 'crypto';
 
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import type { RefreshToken, User } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
+
+// Type for refresh token with user relation
+interface RefreshTokenWithUser extends RefreshToken {
+  user: User;
+}
 
 /**
  * Refresh Token Service
@@ -52,7 +58,7 @@ export class RefreshTokenService {
     expiresAt.setDate(expiresAt.getDate() + this.REFRESH_TOKEN_LIFETIME_DAYS);
 
     // Store hashed token in database
-    const refreshToken = await this.prisma.refreshToken.create({
+    const refreshToken: RefreshToken = await this.prisma.refreshToken.create({
       data: {
         token: tokenHash,
         userId,
@@ -65,10 +71,13 @@ export class RefreshTokenService {
     this.logger.log(`Created refresh token for user ${userId}`);
 
     // Return plaintext token (only time it's available)
+    const tokenId: string = refreshToken.id;
+    const tokenExpiresAt: Date = refreshToken.expiresAt;
+
     return {
       token, // Plaintext for client
-      id: refreshToken.id,
-      expiresAt: refreshToken.expiresAt,
+      id: tokenId,
+      expiresAt: tokenExpiresAt,
     };
   }
 
@@ -97,7 +106,7 @@ export class RefreshTokenService {
     const tokenHash = this.hashToken(token);
 
     // Find token in database
-    const refreshToken = await this.prisma.refreshToken.findUnique({
+    const refreshToken: RefreshTokenWithUser | null = await this.prisma.refreshToken.findUnique({
       where: { token: tokenHash },
       include: { user: true },
     });
@@ -110,38 +119,41 @@ export class RefreshTokenService {
 
     // Check if token is revoked
     if (refreshToken.revokedAt) {
-      this.logger.warn(`Attempted use of revoked token for user ${refreshToken.userId}`);
+      const userId: string = refreshToken.userId;
+      this.logger.warn(`Attempted use of revoked token for user ${userId}`);
       throw new UnauthorizedException('Token has been revoked');
     }
 
     // Check if token is expired
     if (refreshToken.expiresAt < new Date()) {
-      this.logger.warn(`Attempted use of expired token for user ${refreshToken.userId}`);
+      const userId: string = refreshToken.userId;
+      this.logger.warn(`Attempted use of expired token for user ${userId}`);
       throw new UnauthorizedException('Token has expired');
     }
 
     // Create new refresh token
-    const newRefreshToken = await this.createRefreshToken(
-      refreshToken.userId,
-      ipAddress,
-      userAgent
-    );
+    const userId: string = refreshToken.userId;
+    const newRefreshToken = await this.createRefreshToken(userId, ipAddress, userAgent);
 
     // Revoke old token and link to new one
+    const refreshTokenId: string = refreshToken.id;
     await this.prisma.refreshToken.update({
-      where: { id: refreshToken.id },
+      where: { id: refreshTokenId },
       data: {
         revokedAt: new Date(),
         replacedByToken: this.hashToken(newRefreshToken.token),
       },
     });
 
-    this.logger.log(`Rotated refresh token for user ${refreshToken.userId}`);
+    this.logger.log(`Rotated refresh token for user ${userId}`);
+
+    const newTokenValue: string = newRefreshToken.token;
+    const expiresAt: Date = newRefreshToken.expiresAt;
 
     return {
-      userId: refreshToken.userId,
-      newToken: newRefreshToken.token,
-      expiresAt: newRefreshToken.expiresAt,
+      userId: userId,
+      newToken: newTokenValue,
+      expiresAt: expiresAt,
     };
   }
 
@@ -193,7 +205,7 @@ export class RefreshTokenService {
    * @param userId - User ID
    * @returns Array of active refresh tokens with metadata
    */
-  async getActiveTokensForUser(userId: string) {
+  getActiveTokensForUser(userId: string) {
     return this.prisma.refreshToken.findMany({
       where: {
         userId,
@@ -233,11 +245,12 @@ export class RefreshTokenService {
       },
     });
 
-    if (result.count > 0) {
-      this.logger.log(`Cleaned up ${result.count} expired refresh tokens`);
+    const count: number = result.count;
+    if (count > 0) {
+      this.logger.log(`Cleaned up ${count} expired refresh tokens`);
     }
 
-    return result.count;
+    return count;
   }
 
   /**

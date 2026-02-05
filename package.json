@@ -34,7 +34,10 @@
     "setup": "pnpm install && pnpm docker:up && pnpm db:generate && pnpm db:migrate",
     "start": "pnpm docker:up",
     "stop": "pnpm docker:down",
-    "prepare": "husky"
+    "prepare": "husky",
+    "licenses": "pnpm licenses list",
+    "licenses:json": "pnpm licenses list --json > licenses.json",
+    "sbom": "npx @cyclonedx/cyclonedx-npm --output-file sbom.json --output-format JSON"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.1",

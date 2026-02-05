@@ -1,0 +1,86 @@
+# SBOM (Software Bill of Materials) Generation
+# Generates CycloneDX SBOM and third-party license report
+# Runs on releases and can be triggered manually
+
+name: SBOM
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+  # Also run weekly to keep license info current
+  schedule:
+    - cron: '0 6 * * 1' # Every Monday at 6:00 AM UTC
+
+permissions:
+  contents: write
+  security-events: write
+
+jobs:
+  generate-sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Generate CycloneDX SBOM
+      - name: Generate CycloneDX SBOM
+        run: |
+          npx @cyclonedx/cyclonedx-npm --output-file sbom.json --output-format JSON
+          npx @cyclonedx/cyclonedx-npm --output-file sbom.xml --output-format XML
+
+      # Generate license report
+      - name: Generate License Report
+        run: |
+          pnpm licenses list --json > licenses.json 2>/dev/null || echo '{}' > licenses.json
+          pnpm licenses list > THIRD-PARTY-LICENSES.txt 2>/dev/null || echo 'No license information available' > THIRD-PARTY-LICENSES.txt
+
+      # Upload SBOM as artifact
+      - name: Upload SBOM Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: |
+            sbom.json
+            sbom.xml
+            licenses.json
+            THIRD-PARTY-LICENSES.txt
+          retention-days: 90
+
+      # Attach SBOM to release (if triggered by release)
+      - name: Attach SBOM to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            sbom.json
+            sbom.xml
+            THIRD-PARTY-LICENSES.txt
+
+      # Submit SBOM to GitHub Dependency Graph
+      - name: Submit SBOM to Dependency Graph
+        uses: advanced-security/sbom-generator-action@v1
+        id: sbom-action
+        continue-on-error: true
+
+      - name: Upload SBOM to Dependency Submission API
+        if: steps.sbom-action.outcome == 'success'
+        uses: actions/dependency-submission-action@v3
+        continue-on-error: true
+        with:
+          sbom-file: sbom.json

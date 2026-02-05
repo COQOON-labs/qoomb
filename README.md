@@ -193,8 +193,14 @@ We welcome contributions from the community! By contributing, you agree that you
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feat/amazing-feature`)
-3. Follow our commit conventions (see `.commitlintrc.json`)
+3. Follow our [Conventional Commits](https://www.conventionalcommits.org/) conventions
 4. Submit a pull request
+
+📖 **Documentation:**
+
+- [Release Process](docs/RELEASING.md) - How releases are managed
+- [Contributors](CONTRIBUTORS.md) - Our amazing contributors
+- [Changelog](CHANGELOG.md) - Version history
 
 **Before contributing:**
 

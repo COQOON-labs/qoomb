@@ -4,8 +4,7 @@
 # See: https://git-scm.com/docs/gitmailmap
 
 # Benjamin Gröner - normalize all email variations to primary email
-Benjamin Gröner <bgroener@coqoon.com> Benjamin Gröner <benjamin.groener@team-one.de>
-Benjamin Gröner <bgroener@coqoon.com> <benjamin.groener@team-one.de>
+Benjamin Gröner <bgroener@coqoon.com>
 
 # Bots - keep as-is for clarity
 # dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>

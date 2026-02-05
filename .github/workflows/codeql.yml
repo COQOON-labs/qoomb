@@ -24,6 +24,8 @@ jobs:
       # Required for workflows in private repositories
       contents: read
       actions: read
+      # Required for status reports
+      statuses: write
 
     strategy:
       fail-fast: false

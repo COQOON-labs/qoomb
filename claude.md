@@ -75,6 +75,15 @@
 - **Future-proof:** Can migrate to full ESM when ecosystem matures
 - **See:** `OPTION_A_IMPLEMENTATION_SUMMARY.md` for details
 
+### Why Fair Source License (not MIT/Apache)?
+
+- **Sustainable Open Source:** Free for individuals and small teams, commercial licensing for enterprises
+- **Prevents exploitation:** Large companies can't use it for free without contributing back
+- **Contributor Protection:** CLA ensures contributors grant necessary rights while protecting IP
+- **Dual Licensing Rights:** Enables offering commercial licenses while keeping code open
+- **20-Employee Threshold:** Generous for small businesses, ensures fairness for larger ones
+- **See:** `LICENSE.md` and `COMMERCIAL-LICENSE.md` for details
+
 ---
 
 ## Technology Stack
@@ -92,6 +101,11 @@
 | **ORM**            | Prisma                         | Type-safe, migrations         |
 | **Encryption**     | AES-256-GCM + libsodium        | Server-side + E2E             |
 | **Key Management** | Pluggable (Env/File/KMS/Vault) | Flexible, cloud-agnostic      |
+| **Code Quality**   | ESLint + Prettier              | Consistent style, type safety |
+| **Git Hooks**      | Husky + lint-staged            | Pre-commit/push quality gates |
+| **Commit Format**  | Commitlint + Conventional      | Structured commit messages    |
+| **CI/CD**          | GitHub Actions                 | Automated testing & security  |
+| **License**        | Fair Source v1.0 (20-user)     | Sustainable open source       |
 
 ---
 
@@ -142,7 +156,22 @@ qoomb/
 │   ├── PERFORMANCE.md                     # Prisma performance guide
 │   └── PRISMA_PATTERNS.md                 # When to use Prisma vs raw SQL
 │
+├── .github/                    # GitHub configuration
+│   ├── workflows/                  # CI/CD pipelines
+│   │   ├── ci.yml                 # Main CI pipeline
+│   │   ├── codeql.yml             # Security scanning (SAST)
+│   │   ├── trivy.yml              # Vulnerability & secrets scanning
+│   │   └── pr-checks.yml          # PR validation
+│   └── dependabot.yml              # Automated dependency updates
+│
+├── .husky/                     # Git hooks
+│   ├── pre-commit                  # Fast checks (Prettier)
+│   ├── pre-push                    # Thorough checks (types, tests)
+│   └── commit-msg                  # Conventional commits validation
+│
 ├── docker-compose.yml          # PostgreSQL + Redis
+├── LICENSE.md                  # Fair Source License v1.0 + CLA
+├── COMMERCIAL-LICENSE.md       # Commercial licensing details
 ├── claude.md                   # This file (for AI)
 └── README.md                   # For humans
 ```
@@ -189,13 +218,37 @@ qoomb/
 - Native plugins: Push Notifications, Haptics, Splash Screen
 - **Location:** `apps/web/`, `apps/mobile/`
 
-**Shared UI Library (NEW):**
+**Shared UI Library:**
 
 - Button, Input, Card components
 - Responsive hooks (useMediaQuery, useIsMobile, useIsDesktop)
 - Offline detection (useOnlineStatus)
 - Tailwind class merger utility (cn)
 - **Location:** `packages/ui/`
+
+**Code Quality & CI/CD (PRODUCTION-READY):**
+
+- **ESLint:** Shared configuration (@qoomb/eslint-config) with strict TypeScript rules
+- **Prettier:** Consistent code formatting across monorepo
+- **Husky + lint-staged:** Pre-commit hooks (Prettier auto-fix)
+- **Pre-push hooks:** Type checking, testing, build validation
+- **Commitlint:** Conventional Commits enforcement
+- **GitHub Actions CI:** Lint, type-check, test, build
+- **CodeQL:** Static Application Security Testing (SAST)
+- **Trivy:** Container & dependency vulnerability scanning
+- **Dependabot:** Automated dependency updates (grouped by type)
+- **3-Layer Defense:** pre-commit (fast) → pre-push (thorough) → CI/CD (complete)
+- **Zero ESLint Errors:** All 182 API + 11 UI errors fixed, strict type safety enforced
+- **Location:** `.github/workflows/`, `.husky/`, `packages/eslint-config/`
+
+**Licensing (PRODUCTION-READY):**
+
+- **Fair Source License v1.0:** 20-employee threshold for commercial use
+- **Contributor License Agreement (CLA):** Protects both contributors and project
+- **Dual Licensing:** Free for individuals/small teams, commercial for enterprises
+- **Copyright:** Benjamin Gröner (bgroener@coqoon.com)
+- **Commercial Options:** Perpetual, Subscription, SaaS/Hosting, OEM licenses
+- **Location:** `LICENSE.md`, `COMMERCIAL-LICENSE.md`
 
 **Encryption:**
 
@@ -835,6 +888,8 @@ apps/api/src/modules/encryption/
 
 ## Notes for LLMs
 
+### Critical Rules (MUST Follow)
+
 1. **Always use `hiveProcedure`** for hive-specific operations
 2. **Always use `@EncryptFields`** for sensitive data (don't manually encrypt)
 3. **Always validate with Zod** at API boundaries
@@ -842,9 +897,27 @@ apps/api/src/modules/encryption/
 5. **Always consider multi-tenant** context (which hive?)
 6. **Never create default configs** for security-critical settings
 7. **Never use `any`** types (use proper TypeScript/Zod)
-8. **Prefer Prisma** for CRUD, **raw SQL** for complex queries
-9. **Follow existing patterns** (see Key Code Patterns section)
-10. **Document architectural decisions** in this file
+8. **Never bypass ESLint rules** without explicit disable comments + explanation
+9. **Prefer Prisma** for CRUD, **raw SQL** for complex queries
+10. **Follow existing patterns** (see Key Code Patterns section)
+11. **Document architectural decisions** in this file
+
+### Code Quality Standards
+
+- **All code MUST pass ESLint** with zero errors (warnings acceptable only with justification)
+- **All code MUST be formatted** with Prettier before commit
+- **All commits MUST follow** Conventional Commits format (feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert)
+- **Type safety is mandatory** - no implicit `any`, proper type annotations for all Prisma queries
+- **Pre-commit hooks will auto-fix** Prettier issues, but ESLint errors must be fixed manually
+- **Pre-push hooks will block** if type-check, tests, or build fails
+
+### Licensing & Contributions
+
+- **Copyright:** Benjamin Gröner (all new code contributions)
+- **License:** Fair Source v1.0 (20-employee threshold) - see LICENSE.md
+- **Contributors must agree** to CLA when submitting code
+- **Commercial licensing** available for enterprises (≥20 employees, SaaS, OEM)
+- **Never modify license files** without explicit user request
 
 **When adding new features:**
 
@@ -856,5 +929,5 @@ apps/api/src/modules/encryption/
 
 ---
 
-**Last Updated:** 2026-02-04
-**Version:** 0.2.2 (TypeScript 7.0 ready, Strict mode enabled, Phase 2 in progress)
+**Last Updated:** 2026-02-08
+**Version:** 0.2.3 (Fair Source License, Code Quality Infrastructure, Zero ESLint Errors)

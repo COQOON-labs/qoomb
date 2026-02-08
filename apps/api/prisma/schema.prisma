@@ -20,7 +20,7 @@ model Hive {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  users User[]
+  memberships UserHiveMembership[]
 
   @@map("hives")
   @@schema("public")
@@ -30,15 +30,34 @@ model User {
   id           String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   email        String   @unique @db.VarChar(255)
   passwordHash String   @map("password_hash") @db.Text
-  hiveId       String   @map("hive_id") @db.Uuid
-  personId     String?  @map("person_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  hive          Hive           @relation(fields: [hiveId], references: [id], onDelete: Cascade)
   refreshTokens RefreshToken[]
+  memberships   UserHiveMembership[]
 
   @@map("users")
+  @@schema("public")
+}
+
+model UserHiveMembership {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  hiveId    String   @map("hive_id") @db.Uuid
+  personId  String   @map("person_id") @db.Uuid
+  role      String   @default("member") @db.VarChar(50)
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hive Hive @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hiveId])
+  @@index([userId])
+  @@index([hiveId])
+  @@index([personId])
+  @@map("user_hive_memberships")
   @@schema("public")
 }
 

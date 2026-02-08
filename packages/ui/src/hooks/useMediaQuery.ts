@@ -20,7 +20,6 @@ export function useMediaQuery(query: string): boolean {
     if (typeof window === 'undefined') return;
 
     const mediaQuery = window.matchMedia(query);
-    setMatches(mediaQuery.matches);
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
@@ -37,7 +36,9 @@ export function useIsMobile(): boolean {
 }
 
 export function useIsTablet(): boolean {
-  return useMediaQuery('(min-width: 768px)') && !useMediaQuery('(min-width: 1024px)');
+  const isMinTablet = useMediaQuery('(min-width: 768px)');
+  const isMinDesktop = useMediaQuery('(min-width: 1024px)');
+  return isMinTablet && !isMinDesktop;
 }
 
 export function useIsDesktop(): boolean {

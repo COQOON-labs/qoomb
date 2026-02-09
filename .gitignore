@@ -12,6 +12,10 @@ dist
 build
 .next
 out
+dev-dist
+
+# TypeScript
+*.tsbuildinfo
 
 # Environment
 .env

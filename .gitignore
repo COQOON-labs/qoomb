@@ -17,6 +17,9 @@ out
 .env
 .env*.local
 
+# Local SSL certificates (mkcert)
+certs/
+
 # Turbo
 .turbo
 
@@ -47,3 +50,4 @@ prisma/migrations
 *.db-journal
 *.sqlite
 *.sqlite3
+apps/web/.env.local

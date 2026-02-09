@@ -1,4 +1,4 @@
-.PHONY: help install setup dev build clean docker-up docker-down docker-logs docker-clean _docker-volumes-remove db-migrate db-generate db-studio db-reset test lint format check-ports check-deps db-shell redis-cli type-check generate-secrets start stop restart clean-all fresh
+.PHONY: help install setup setup-extended dev dev-extended build clean docker-up docker-down docker-logs docker-clean _docker-volumes-remove db-migrate db-generate db-studio db-reset test lint format check-ports check-deps db-shell redis-cli type-check generate-secrets start stop restart clean-all fresh stop-extended
 
 # Colors for output
 BLUE := \033[0;34m
@@ -88,26 +88,110 @@ install: ## Install all dependencies
 	pnpm install
 	@echo "$(GREEN)✓ Dependencies installed$(NC)"
 
-setup: check-deps check-ports install docker-up db-generate db-migrate ## Complete initial setup (deps + docker + db)
+setup: check-deps check-ports install docker-up db-generate db-migrate ## Standard setup (Docker + DB, works everywhere)
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
 	@echo "$(GREEN)✓ Setup complete!$(NC)"
 	@echo "$(GREEN)========================================$(NC)"
 	@echo ""
+	@echo "$(YELLOW)Next steps (choose one):$(NC)"
+	@echo ""
+	@echo "$(CYAN)Option A: Basic Development (localhost only)$(NC)"
+	@echo "  $(GREEN)make dev$(NC)           - Start on localhost:5173 & :3001"
+	@echo ""
+	@echo "$(CYAN)Option B: Extended Development (HTTPS + Mobile)$(NC)"
+	@echo "  $(GREEN)make setup-extended$(NC) - Setup HTTPS & mobile certificates (one-time)"
+	@echo "  $(GREEN)make dev-extended$(NC)   - Start with HTTPS on :8443"
+	@echo ""
+	@echo "$(CYAN)Database Tools:$(NC)"
+	@echo "  $(GREEN)make db-studio$(NC)      - Open Prisma Studio (DB GUI)"
+	@echo ""
+
+setup-extended: ## Extended setup with HTTPS & local domain (macOS/Linux)
+	@echo "$(BLUE)Setting up extended development environment...$(NC)"
+	@if [ ! -f scripts/setup-local-domain.sh ]; then \
+		echo "$(RED)✗ Setup script not found at scripts/setup-local-domain.sh$(NC)"; \
+		exit 1; \
+	fi
+	@bash scripts/setup-local-domain.sh
+	@echo ""
+	@echo "$(GREEN)✓ Extended setup complete!$(NC)"
+	@echo ""
 	@echo "$(YELLOW)Next steps:$(NC)"
-	@echo "  $(GREEN)make dev$(NC)       - Start development server"
-	@echo "  $(GREEN)make db-studio$(NC) - Open Prisma Studio (DB GUI)"
-	@echo "  $(GREEN)make status$(NC)    - Check service status"
-	@echo "  $(GREEN)make logs$(NC)      - View logs"
+	@echo "  $(GREEN)make dev-extended$(NC)  - Start with HTTPS & mobile certificate server"
+	@echo ""
+	@echo "$(BLUE)ℹ️  Mobile certificate server will run automatically on http://localhost:8888$(NC)"
 	@echo ""
 
 # =============================================================================
 # Development Commands
 # =============================================================================
 
-dev: ## Start all development servers (frontend + backend)
+dev: ## Start development servers (localhost, works everywhere)
 	@echo "$(BLUE)Starting development servers...$(NC)"
-	pnpm dev
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)  🚀 Development servers starting...$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Access your app:$(NC)"
+	@echo "  💻 Desktop:  $(GREEN)http://localhost:5173$(NC)"
+	@LOCAL_IP=$$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo ""); \
+	if [ -n "$$LOCAL_IP" ]; then \
+		echo "  📱 Mobile:   $(GREEN)http://$$LOCAL_IP:5173$(NC)"; \
+		echo "             $(YELLOW)(Note: No HTTPS, limited PWA features)$(NC)"; \
+	fi
+	@echo ""
+	@echo "$(YELLOW)⏳ Browser will open automatically in 5 seconds...$(NC)"
+	@echo ""
+	@(sleep 5 && (open http://localhost:5173 2>/dev/null || xdg-open http://localhost:5173 2>/dev/null || true)) &
+	@pnpm dev
+
+dev-extended: ## Start with HTTPS & local domain (macOS/Linux)
+	@echo "$(BLUE)Starting extended development environment...$(NC)"
+	@# Check if Caddy is installed
+	@if ! command -v caddy &> /dev/null; then \
+		echo "$(RED)✗ Caddy not installed. Run 'make setup-extended' first$(NC)"; \
+		exit 1; \
+	fi
+	@# Check if mkcert certificates exist (flexible matching for +4 or +5)
+	@if [ ! -d certs ] || ! ls certs/qoomb.localhost+*.pem >/dev/null 2>&1; then \
+		echo "$(RED)✗ SSL certificates not found. Run 'make setup-extended' first$(NC)"; \
+		exit 1; \
+	fi
+	@# Ensure Docker services are running
+	@echo "$(BLUE)Ensuring Docker services are running...$(NC)"
+	@$(MAKE) docker-up
+	@# Start Caddy in background (port 8443, no sudo needed)
+	@echo "$(BLUE)Starting Caddy reverse proxy...$(NC)"
+	@caddy stop 2>/dev/null || true
+	@caddy start --config Caddyfile.dev
+	@sleep 2
+	@echo "$(GREEN)✓ Caddy started on port 8443$(NC)"
+	@# Start dev servers (.env.local will be automatically loaded)
+	@echo "$(BLUE)Starting API and Web servers...$(NC)"
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)  🚀 qoomb.localhost is ready!$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Access your app:$(NC)"
+	@echo "  💻 Desktop:  $(GREEN)https://qoomb.localhost:8443$(NC)"
+	@LOCAL_IP=$$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo ""); \
+	if [ -n "$$LOCAL_IP" ]; then \
+		echo "  📱 Mobile:   $(GREEN)https://$$LOCAL_IP:8443$(NC)"; \
+		echo "             $(YELLOW)(Same WiFi network required)$(NC)"; \
+	fi
+	@echo ""
+	@echo "$(YELLOW)Endpoints:$(NC)"
+	@echo "  🔧 Backend:  $(GREEN)https://qoomb.localhost:8443/api$(NC)"
+	@echo "  📡 tRPC:     $(GREEN)https://qoomb.localhost:8443/trpc$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Starting development servers (Ctrl+C to stop)...$(NC)"
+	@echo "$(YELLOW)⏳ Browser will open automatically in 5 seconds...$(NC)"
+	@echo ""
+	@(sleep 5 && (open https://qoomb.localhost:8443 2>/dev/null || xdg-open https://qoomb.localhost:8443 2>/dev/null || true)) &
+	@pnpm dev
 
 dev-api: ## Start only the backend API server
 	@echo "$(BLUE)Starting API server...$(NC)"
@@ -121,6 +205,11 @@ build: ## Build all applications for production
 	@echo "$(BLUE)Building applications...$(NC)"
 	pnpm build
 	@echo "$(GREEN)✓ Build complete$(NC)"
+
+stop-extended: ## Stop extended development (Caddy reverse proxy)
+	@echo "$(BLUE)Stopping Caddy...$(NC)"
+	@caddy stop 2>/dev/null || echo "$(YELLOW)Caddy was not running$(NC)"
+	@echo "$(GREEN)✓ Extended dev stopped$(NC)"
 
 # =============================================================================
 # Docker Commands

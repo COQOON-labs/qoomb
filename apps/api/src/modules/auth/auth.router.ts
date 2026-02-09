@@ -213,6 +213,49 @@ export const authRouter = (authService: AuthService) =>
     }),
 
     /**
+     * Switch to a different hive
+     *
+     * Generates a new access token for the specified hive
+     * User must have membership in the target hive
+     */
+    switchHive: protectedProcedure
+      .input(
+        z.object({
+          hiveId: z.string().uuid('Invalid hive ID'),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const userId: string = ctx.user.id;
+          const result = await authService.switchHive(userId, input.hiveId);
+          return result;
+        } catch (_error) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'No access to this hive',
+          });
+        }
+      }),
+
+    /**
+     * Get all hives for the current user
+     *
+     * Returns list of all hives the user has access to
+     */
+    getUserHives: protectedProcedure.query(async ({ ctx }) => {
+      try {
+        const userId: string = ctx.user.id;
+        const hives = await authService.getUserHives(userId);
+        return { hives };
+      } catch (_error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to retrieve user hives',
+        });
+      }
+    }),
+
+    /**
      * Validate a JWT token
      *
      * Used for token refresh and validation

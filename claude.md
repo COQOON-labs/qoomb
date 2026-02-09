@@ -134,6 +134,10 @@ qoomb/
 │   │   ├── public/                 # PWA assets (icons, manifest)
 │   │   ├── scripts/                # Build scripts (icon generation)
 │   │   └── src/
+│   │       ├── components/dev/     # Dev-only debugging panel
+│   │       │   ├── DevPanel.tsx    # Main sliding panel
+│   │       │   ├── DevPanelTab.tsx # Floating button
+│   │       │   └── sections/       # Panel sections
 │   │       └── lib/trpc/           # tRPC client
 │   │
 │   └── mobile/                 # Capacitor mobile wrapper
@@ -191,6 +195,7 @@ qoomb/
 - Docker Compose (PostgreSQL 17 + Redis 7.4)
 - Prisma with multi-schema
 - Shared UI component library (@qoomb/ui)
+- Local development with qoomb.localhost (Caddy + mkcert)
 
 **Security & Auth (PRODUCTION-READY):**
 
@@ -225,6 +230,18 @@ qoomb/
 - Offline detection (useOnlineStatus)
 - Tailwind class merger utility (cn)
 - **Location:** `packages/ui/`
+
+**Developer Experience (DEV MODE ONLY):**
+
+- **Dev Panel:** Sliding debug panel (right side, dev mode only)
+  - Mobile Setup: QR codes for certificate & app access
+  - Environment Info: URLs, API endpoints, env variables
+  - Backend Health: Auto-refreshing health checks
+  - Network Status: Online/offline detection, connection type
+  - Quick Actions: Cache controls, Prisma Studio, console logs
+- **Qoomb Branding:** Yellow/black theme matching project identity
+- **Zero Production Impact:** Completely invisible in production builds
+- **Location:** `apps/web/src/components/dev/`
 
 **Code Quality & CI/CD (PRODUCTION-READY):**
 
@@ -875,9 +892,10 @@ JWT_SECRET=<32+ chars>    # Generate: openssl rand -base64 32
 README.md              → Human onboarding
 claude.md              → This file (AI context)
 docs/
-  ├── SECURITY.md      → Security architecture details
-  ├── PERFORMANCE.md   → Prisma performance guide
-  └── PRISMA_PATTERNS.md → When to use Prisma vs SQL
+  ├── SECURITY.md          → Security architecture details
+  ├── PERFORMANCE.md       → Prisma performance guide
+  ├── PRISMA_PATTERNS.md   → When to use Prisma vs SQL
+  └── LOCAL_DEVELOPMENT.md → qoomb.localhost setup for mobile/PWA testing
 
 apps/api/src/modules/encryption/
   ├── README.md        → Encryption quick start
@@ -911,6 +929,40 @@ apps/api/src/modules/encryption/
 - **Pre-commit hooks will auto-fix** Prettier issues, but ESLint errors must be fixed manually
 - **Pre-push hooks will block** if type-check, tests, or build fails
 
+### Versioning Policy (CRITICAL)
+
+**⚠️ Version numbers are ONLY changed for actual releases, not for incremental development!**
+
+- **Current Version:** `0.1.0` (defined in `apps/web/src/App.tsx` as `APP_VERSION`)
+- **Single Source of Truth:** `apps/web/src/App.tsx` exports `APP_VERSION`
+- **Semantic Versioning:** `MAJOR.MINOR.PATCH` (following semver.org)
+
+**When to bump versions:**
+
+- **0.1.0 → 0.2.0:** Phase 2 complete (Auth, Events, Tasks, Persons production-ready)
+- **0.2.0 → 0.3.0:** Phase 3 complete (Offline sync, E2E encryption, semantic search)
+- **0.x.0 → 1.0.0:** First production release (all core features stable)
+- **PATCH (0.1.x):** Critical bugfixes only, no new features
+
+**When NOT to bump:**
+
+- ❌ Adding dev tools (e.g., dev panel, debug utilities)
+- ❌ Refactoring code without user-visible changes
+- ❌ Improving documentation
+- ❌ Internal optimizations
+- ❌ Infrastructure changes (CI/CD, build config)
+- ❌ Work-in-progress features
+
+**Version changes require:**
+
+1. **Explicit user approval** - Never change version without asking
+2. Update `apps/web/src/App.tsx` (`APP_VERSION` constant)
+3. Update `claude.md` (this file, at bottom)
+4. Update `README.md` if version is mentioned
+5. Git commit: `chore: bump version to X.Y.Z`
+
+**LLM Instruction:** NEVER increment version numbers autonomously. Always keep `APP_VERSION = '0.1.0'` unless explicitly instructed by user for a release.
+
 ### Licensing & Contributions
 
 - **Copyright:** Benjamin Gröner (all new code contributions)
@@ -929,5 +981,5 @@ apps/api/src/modules/encryption/
 
 ---
 
-**Last Updated:** 2026-02-08
-**Version:** 0.2.3 (Fair Source License, Code Quality Infrastructure, Zero ESLint Errors)
+**Last Updated:** 2026-02-09
+**Version:** 0.1.0 (Phase 1 - Foundation with PWA, Mobile, Dev Tools)

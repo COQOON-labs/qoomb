@@ -43,6 +43,20 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
+            // Match tRPC endpoints (both localhost and IP-based URLs)
+            urlPattern: /\/trpc\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'trpc-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 5, // 5 minutes (short cache for dev)
+              },
+              networkTimeoutSeconds: 10,
+            },
+          },
+          {
+            // Legacy pattern for api.* subdomains (if used in production)
             urlPattern: /^https:\/\/api\..*/i,
             handler: 'NetworkFirst',
             options: {
@@ -59,7 +73,7 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: true,
+        enabled: false, // Disable service worker in dev to prevent caching issues
       },
     }),
   ],
@@ -70,6 +84,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: 'localhost',
+    host: true, // Listen on all network interfaces (0.0.0.0)
+    // Allow all hosts in dev for mobile testing (IP addresses, localhost, etc.)
+    // In production, this would be restricted to specific domains
   },
 });

@@ -1,0 +1,108 @@
+# Version Validation Workflow
+# Ensures version consistency and prevents unauthorized version bumps
+#
+# Rules:
+# 1. APP_VERSION must match .release-please-manifest.json
+# 2. Version changes only allowed in release-please PRs
+# 3. Prevents manual version bumps in regular PRs
+
+name: Version Check
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'apps/web/src/App.tsx'
+      - '.release-please-manifest.json'
+      - 'package.json'
+
+jobs:
+  version-consistency:
+    name: Check Version Consistency
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract APP_VERSION from App.tsx
+        id: app_version
+        run: |
+          APP_VERSION=$(grep -oP "APP_VERSION = '\K[^']*" apps/web/src/App.tsx)
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 APP_VERSION: $APP_VERSION"
+
+      - name: Extract version from release-please manifest
+        id: manifest_version
+        run: |
+          MANIFEST_VERSION=$(jq -r '."."' .release-please-manifest.json)
+          echo "manifest_version=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Release Please Manifest: $MANIFEST_VERSION"
+
+      - name: Validate version consistency
+        run: |
+          if [ "${{ steps.app_version.outputs.app_version }}" != "${{ steps.manifest_version.outputs.manifest_version }}" ]; then
+            echo "❌ Version mismatch detected!"
+            echo ""
+            echo "APP_VERSION (apps/web/src/App.tsx): ${{ steps.app_version.outputs.app_version }}"
+            echo "Manifest (.release-please-manifest.json): ${{ steps.manifest_version.outputs.manifest_version }}"
+            echo ""
+            echo "These versions MUST match!"
+            echo "Version changes should only happen through Release Please."
+            echo ""
+            echo "See claude.md 'Versioning Policy' for details."
+            exit 1
+          fi
+          echo "✅ Version consistency validated: ${{ steps.app_version.outputs.app_version }}"
+
+  prevent-manual-bump:
+    name: Prevent Manual Version Bumps
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.pull_request.title, 'chore: Release')"
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+
+      - name: Get base APP_VERSION
+        id: base_version
+        run: |
+          BASE_VERSION=$(grep -oP "APP_VERSION = '\K[^']*" apps/web/src/App.tsx || echo "0.1.0")
+          echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Base APP_VERSION: $BASE_VERSION"
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Get PR APP_VERSION
+        id: pr_version
+        run: |
+          PR_VERSION=$(grep -oP "APP_VERSION = '\K[^']*" apps/web/src/App.tsx)
+          echo "pr_version=$PR_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 PR APP_VERSION: $PR_VERSION"
+
+      - name: Check for unauthorized version bump
+        run: |
+          if [ "${{ steps.base_version.outputs.base_version }}" != "${{ steps.pr_version.outputs.pr_version }}" ]; then
+            echo "❌ Unauthorized version bump detected!"
+            echo ""
+            echo "Base version: ${{ steps.base_version.outputs.base_version }}"
+            echo "PR version: ${{ steps.pr_version.outputs.pr_version }}"
+            echo ""
+            echo "⚠️  Version bumps are only allowed in Release Please PRs!"
+            echo ""
+            echo "Versions should only change when:"
+            echo "  • Release Please creates an automated release PR"
+            echo "  • The PR title starts with 'chore: Release'"
+            echo ""
+            echo "For regular development PRs:"
+            echo "  • Keep APP_VERSION unchanged"
+            echo "  • Use conventional commits (feat:, fix:, etc.)"
+            echo "  • Release Please will handle versioning automatically"
+            echo ""
+            echo "See claude.md 'Versioning Policy' for details."
+            exit 1
+          fi
+          echo "✅ No unauthorized version changes detected"

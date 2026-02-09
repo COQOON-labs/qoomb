@@ -135,15 +135,16 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.validateUUID(userId);
     this.validateUUID(hiveId);
 
-    const user: { id: string } | null = await this.user.findFirst({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const membership: { id: string } | null = await (this as any).userHiveMembership.findFirst({
       where: {
-        id: userId,
+        userId: userId,
         hiveId: hiveId,
       },
       select: { id: true },
     });
 
-    if (!user) {
+    if (!membership) {
       this.logger.error(`User ${userId} attempted unauthorized access to hive ${hiveId}`);
       throw new UnauthorizedException('Access to this hive is not authorized');
     }

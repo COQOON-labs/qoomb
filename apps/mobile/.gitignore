@@ -1,0 +1,18 @@
+# Native project directories (generated)
+ios/
+android/
+
+# Build outputs
+dist/
+
+# Dependencies
+node_modules/
+
+# IDE
+.idea/
+*.xcworkspace
+*.xcuserdata
+
+# OS files
+.DS_Store
+Thumbs.db

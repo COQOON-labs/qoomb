@@ -1,0 +1,31 @@
+{
+  "name": "@qoomb/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "license": "SEE LICENSE IN ../../LICENSE.md",
+  "description": "Qoomb mobile app - iOS and Android wrapper for the web app",
+  "scripts": {
+    "dev": "pnpm --filter @qoomb/web dev",
+    "build": "pnpm --filter @qoomb/web build && pnpm sync",
+    "sync": "cap sync",
+    "open:ios": "cap open ios",
+    "open:android": "cap open android",
+    "run:ios": "cap run ios",
+    "run:android": "cap run android",
+    "add:ios": "cap add ios",
+    "add:android": "cap add android"
+  },
+  "dependencies": {
+    "@capacitor/app": "^7.0.1",
+    "@capacitor/core": "^7.0.1",
+    "@capacitor/haptics": "^7.0.1",
+    "@capacitor/keyboard": "^7.0.1",
+    "@capacitor/preferences": "^7.0.1",
+    "@capacitor/push-notifications": "^7.0.1",
+    "@capacitor/splash-screen": "^7.0.1",
+    "@capacitor/status-bar": "^7.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.1"
+  }
+}

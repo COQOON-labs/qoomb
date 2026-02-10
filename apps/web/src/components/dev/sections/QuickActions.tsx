@@ -31,6 +31,7 @@ export function QuickActions() {
   };
 
   const clearConsole = () => {
+    // eslint-disable-next-line no-console
     console.clear();
     addLog('✓ Console cleared');
   };
@@ -72,7 +73,9 @@ export function QuickActions() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {/* Clear All Cache */}
         <button
-          onClick={clearCache}
+          onClick={() => {
+            void clearCache();
+          }}
           style={buttonStyle}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#334155';

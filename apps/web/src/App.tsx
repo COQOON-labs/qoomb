@@ -1,5 +1,5 @@
-import { trpc } from './lib/trpc/client';
 import { DevPanel } from './components/dev/DevPanel';
+import { trpc } from './lib/trpc/client';
 
 /**
  * Application Version
@@ -14,12 +14,10 @@ export const APP_VERSION = '0.1.0';
 
 // Debug: Unregister any existing service workers (dev only)
 if (import.meta.env.DEV && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((registration) => {
-      registration.unregister();
-      console.log('🗑️ Unregistered service worker:', registration.scope);
-    });
-  });
+  void (async () => {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((r) => r.unregister()));
+  })();
 }
 
 function Footer() {

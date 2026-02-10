@@ -40,7 +40,9 @@ export function HealthCheck() {
           💓 Backend Health
         </h3>
         <button
-          onClick={() => refetch()}
+          onClick={() => {
+            void refetch();
+          }}
           style={{
             backgroundColor: 'transparent',
             border: '1px solid #475569',

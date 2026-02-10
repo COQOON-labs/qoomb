@@ -1,11 +1,13 @@
 import { useState } from 'react';
+
+import { APP_VERSION } from '../../App';
+
 import { DevPanelTab } from './DevPanelTab';
-import { MobileSetup } from './sections/MobileSetup';
 import { EnvironmentInfo } from './sections/EnvironmentInfo';
 import { HealthCheck } from './sections/HealthCheck';
+import { MobileSetup } from './sections/MobileSetup';
 import { NetworkStatus } from './sections/NetworkStatus';
 import { QuickActions } from './sections/QuickActions';
-import { APP_VERSION } from '../../App';
 
 export function DevPanel() {
   const [isOpen, setIsOpen] = useState(false);

@@ -1,3 +1,5 @@
+import * as os from 'os';
+
 import { authRouter } from '../modules/auth/auth.router';
 import { type AuthService } from '../modules/auth/auth.service';
 
@@ -18,9 +20,29 @@ export const createAppRouter = (authService: AuthService) =>
   router({
     // Health check endpoint
     health: publicProcedure.query(() => {
+      // Get server's local network IP address (for mobile testing)
+      const getLocalIp = (): string | null => {
+        const interfaces = os.networkInterfaces();
+        for (const name of Object.keys(interfaces)) {
+          const iface = interfaces[name];
+          if (!iface) continue;
+
+          for (const addr of iface) {
+            // Skip internal (localhost) and non-IPv4 addresses
+            if (addr.family === 'IPv4' && !addr.internal) {
+              return addr.address;
+            }
+          }
+        }
+        return null;
+      };
+
+      const localIp = getLocalIp();
+
       return {
         status: 'ok',
         timestamp: new Date().toISOString(),
+        localIp: localIp,
       };
     }),
 

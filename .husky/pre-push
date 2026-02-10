@@ -1,5 +1,13 @@
 echo "🔍 Running pre-push checks..."
 
+# Generate Prisma client (required for type-check)
+echo "🗄️  Generating Prisma client..."
+pnpm run db:generate
+
+# Lint all packages
+echo "🔎 Linting..."
+pnpm run lint
+
 # Type check all packages
 echo "📝 Type checking..."
 pnpm turbo run type-check

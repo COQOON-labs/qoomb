@@ -7,23 +7,5 @@
     "@typescript-eslint/interface-name-prefix": "off",
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off"
-  },
-  "overrides": [
-    {
-      "files": [
-        "**/prisma/**/*.ts",
-        "**/modules/auth/*.service.ts",
-        "**/modules/auth/*.router.ts",
-        "**/modules/encryption/examples/*.ts"
-      ],
-      "rules": {
-        "@typescript-eslint/no-unsafe-assignment": "off",
-        "@typescript-eslint/no-unsafe-member-access": "off",
-        "@typescript-eslint/no-unsafe-call": "off",
-        "@typescript-eslint/no-unsafe-return": "off",
-        "@typescript-eslint/no-unsafe-argument": "off",
-        "@typescript-eslint/no-redundant-type-constituents": "off"
-      }
-    }
-  ]
+  }
 }

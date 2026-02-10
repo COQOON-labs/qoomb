@@ -1,0 +1,151 @@
+{
+    # Enable admin API on 127.0.0.1 only
+    admin 127.0.0.1:2019
+    # Skip installing Caddy's own CA (we use mkcert certificates)
+    skip_install_trust
+}
+
+# Main domain - serves both frontend and backend
+# Using port 8443 to avoid needing sudo/root privileges
+qoomb.localhost:8443 {
+    # Use mkcert generated certificates (includes local IP for mobile testing)
+    tls ./certs/qoomb.localhost+5.pem ./certs/qoomb.localhost+5-key.pem
+
+    # Enable logging
+    log {
+        output stdout
+        format console
+    }
+
+    # Frontend (Vite dev server)
+    handle {
+        reverse_proxy 127.0.0.1:5173 {
+            # WebSocket support for Vite HMR
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Backend API (NestJS)
+    handle /api/* {
+        uri strip_prefix /api
+        reverse_proxy 127.0.0.1:3001 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # tRPC endpoint
+    handle /trpc/* {
+        reverse_proxy 127.0.0.1:3001 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # CORS headers for development
+    header {
+        Access-Control-Allow-Origin "*"
+        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization"
+    }
+}
+
+# API subdomain (optional, if you prefer api.qoomb.localhost)
+api.qoomb.localhost:8443 {
+    # Use mkcert generated certificates (includes local IP for mobile testing)
+    tls ./certs/qoomb.localhost+5.pem ./certs/qoomb.localhost+5-key.pem
+
+    log {
+        output stdout
+        format console
+    }
+
+    reverse_proxy 127.0.0.1:3001 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
+
+# Catch-all for IP address access (mobile testing)
+# This block handles direct IP access like https://192.168.178.68:8443
+:8443 {
+    # Use mkcert generated certificates (includes local IP for mobile testing)
+    tls ./certs/qoomb.localhost+5.pem ./certs/qoomb.localhost+5-key.pem
+
+    log {
+        output stdout
+        format console
+    }
+
+    # Frontend (Vite dev server)
+    reverse_proxy localhost:5173 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Backend API (tRPC endpoints) - use handle instead of handle_path to preserve /trpc prefix
+    handle /trpc/* {
+        reverse_proxy 127.0.0.1:3001 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Backend API (REST endpoints, if any) - use handle instead of handle_path to preserve /api prefix
+    handle /api/* {
+        reverse_proxy 127.0.0.1:3001 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # CORS headers for development
+    header {
+        Access-Control-Allow-Origin "*"
+        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization"
+    }
+}
+
+# Certificate server for mobile setup (HTTP only - no chicken-and-egg problem!)
+# Serves mkcert root CA in multiple formats (.crt, .pem, .cer, .mobileconfig) for mobile installation
+:8888 {
+    # Static file server for certificate directory
+    root * ./apps/web/public/dev-cert
+    file_server
+
+    log {
+        output stdout
+        format console
+    }
+
+    # Set correct MIME types for different certificate formats
+    @mobileconfig {
+        path *.mobileconfig
+    }
+    header @mobileconfig {
+        Content-Type "application/x-apple-aspen-config"
+        Content-Disposition "attachment"
+        Access-Control-Allow-Origin "*"
+    }
+
+    @certificates {
+        path *.crt *.pem *.cer
+    }
+    header @certificates {
+        Content-Type "application/x-x509-ca-cert"
+        Content-Disposition "attachment"
+        Access-Control-Allow-Origin "*"
+    }
+}

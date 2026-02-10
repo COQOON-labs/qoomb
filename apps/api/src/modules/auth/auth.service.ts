@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import type { Hive, User } from '@prisma/client';
+import type { Hive, User, UserHiveMembership } from '@prisma/client';
 import type { CreateHiveInput } from '@qoomb/types';
 import * as bcrypt from 'bcrypt';
 
@@ -27,8 +27,12 @@ interface JwtPayload {
   type?: string;
 }
 
-interface UserWithHive extends User {
+interface MembershipWithHive extends UserHiveMembership {
   hive: Hive;
+}
+
+interface UserWithMemberships extends User {
+  memberships: MembershipWithHive[];
 }
 
 @Injectable()
@@ -117,8 +121,32 @@ export class AuthService {
         data: {
           email: input.adminEmail,
           passwordHash,
+        },
+      });
+
+      // 6. Create membership linking user to hive
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      await (
+        tx as unknown as {
+          userHiveMembership: {
+            create: (args: {
+              data: {
+                userId: string;
+                hiveId: string;
+                personId: string;
+                role: string;
+                isPrimary: boolean;
+              };
+            }) => Promise<UserHiveMembership>;
+          };
+        }
+      ).userHiveMembership.create({
+        data: {
+          userId: user.id,
           hiveId: hive.id,
           personId,
+          role: 'admin',
+          isPrimary: true, // First hive is always primary
         },
       });
 
@@ -182,11 +210,15 @@ export class AuthService {
       );
     }
 
-    // Find user
-    const user: UserWithHive | null = await this.prisma.user.findUnique({
+    // Find user with memberships
+    const user: UserWithMemberships | null = await this.prisma.user.findUnique({
       where: { email },
       include: {
-        hive: true,
+        memberships: {
+          include: {
+            hive: true,
+          },
+        },
       },
     });
 
@@ -194,6 +226,11 @@ export class AuthService {
       // Record failed attempt even if user doesn't exist (prevents enumeration)
       await this.accountLockout.recordFailedAttempt(email);
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Check if user has at least one membership
+    if (user.memberships.length === 0) {
+      throw new UnauthorizedException('No hive access');
     }
 
     // Verify password
@@ -216,10 +253,13 @@ export class AuthService {
     // Successful login - reset failed attempts
     await this.accountLockout.resetAttempts(email);
 
+    // Get primary membership (or first membership if no primary set)
+    const primaryMembership = user.memberships.find((m) => m.isPrimary) || user.memberships[0];
+
     // Generate access token (short-lived)
     const userId: string = user.id;
-    const hiveId: string = user.hiveId;
-    const personId: string | null = user.personId;
+    const hiveId: string = primaryMembership.hiveId;
+    const personId: string = primaryMembership.personId;
 
     const { token: accessToken } = this.generateAccessToken(userId, hiveId, personId);
 
@@ -231,8 +271,7 @@ export class AuthService {
     );
 
     const userEmail: string = user.email;
-    const hiveIdValue: string = user.hive.id;
-    const hiveName: string = user.hive.name;
+    const hiveName: string = primaryMembership.hive.name;
 
     return {
       accessToken,
@@ -245,9 +284,15 @@ export class AuthService {
         personId: personId,
       },
       hive: {
-        id: hiveIdValue,
+        id: hiveId,
         name: hiveName,
       },
+      availableHives: user.memberships.map((m) => ({
+        id: m.hiveId,
+        name: m.hive.name,
+        role: m.role,
+        isPrimary: m.isPrimary,
+      })),
     };
   }
 
@@ -278,11 +323,8 @@ export class AuthService {
         throw new UnauthorizedException('All sessions have been terminated');
       }
 
-      const user: UserWithHive | null = await this.prisma.user.findUnique({
+      const user: User | null = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        include: {
-          hive: true,
-        },
       });
 
       if (!user) {
@@ -290,11 +332,43 @@ export class AuthService {
         throw new UnauthorizedException('Authentication failed');
       }
 
+      // Validate that the hiveId in the token is valid for this user
+      const hiveId = payload.hiveId;
+      if (!hiveId) {
+        throw new UnauthorizedException('Invalid token: missing hive context');
+      }
+
+      // Verify membership exists
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      const membership: MembershipWithHive | null = await (
+        this.prisma as unknown as {
+          userHiveMembership: {
+            findUnique: (args: {
+              where: { userId_hiveId: { userId: string; hiveId: string } };
+              include: { hive: boolean };
+            }) => Promise<MembershipWithHive | null>;
+          };
+        }
+      ).userHiveMembership.findUnique({
+        where: {
+          userId_hiveId: {
+            userId: user.id,
+            hiveId: hiveId,
+          },
+        },
+        include: {
+          hive: true,
+        },
+      });
+
+      if (!membership) {
+        throw new UnauthorizedException('Invalid hive access');
+      }
+
       const userId: string = user.id;
       const userEmail: string = user.email;
-      const hiveId: string = user.hiveId;
-      const personId: string | null = user.personId;
-      const hiveName: string = user.hive.name;
+      const personId: string = membership.personId;
+      const hiveName: string = membership.hive.name;
 
       return {
         id: userId,
@@ -317,7 +391,7 @@ export class AuthService {
   private generateAccessToken(
     userId: string,
     hiveId: string,
-    personId?: string | null
+    personId: string | null
   ): { token: string; jti: string } {
     // Generate unique JWT ID for blacklisting
     const jti = crypto.randomUUID();
@@ -353,20 +427,31 @@ export class AuthService {
       userAgent
     );
 
-    // Get user details
-    const user: UserWithHive | null = await this.prisma.user.findUnique({
+    // Get user with primary membership
+    const user: UserWithMemberships | null = await this.prisma.user.findUnique({
       where: { id: rotated.userId },
-      include: { hive: true },
+      include: {
+        memberships: {
+          include: { hive: true },
+        },
+      },
     });
 
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
+    if (user.memberships.length === 0) {
+      throw new UnauthorizedException('No hive access');
+    }
+
+    // Use primary membership for refresh
+    const primaryMembership = user.memberships.find((m) => m.isPrimary) || user.memberships[0];
+
     // Generate new access token
     const userId: string = user.id;
-    const hiveId: string = user.hiveId;
-    const personId: string | null = user.personId;
+    const hiveId: string = primaryMembership.hiveId;
+    const personId: string = primaryMembership.personId;
 
     const { token: accessToken } = this.generateAccessToken(userId, hiveId, personId);
 
@@ -417,5 +502,100 @@ export class AuthService {
    */
   getActiveSessions(userId: string) {
     return this.refreshTokenService.getActiveTokensForUser(userId);
+  }
+
+  /**
+   * Switch to a different hive
+   * Generates a new access token for the specified hive
+   */
+  async switchHive(
+    userId: string,
+    targetHiveId: string
+  ): Promise<{
+    accessToken: string;
+    expiresIn: number;
+    hive: { id: string; name: string; role: string };
+  }> {
+    // Verify membership exists
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    const membership: MembershipWithHive | null = await (
+      this.prisma as unknown as {
+        userHiveMembership: {
+          findUnique: (args: {
+            where: { userId_hiveId: { userId: string; hiveId: string } };
+            include: { hive: boolean };
+          }) => Promise<MembershipWithHive | null>;
+        };
+      }
+    ).userHiveMembership.findUnique({
+      where: {
+        userId_hiveId: {
+          userId: userId,
+          hiveId: targetHiveId,
+        },
+      },
+      include: {
+        hive: true,
+      },
+    });
+
+    if (!membership) {
+      throw new UnauthorizedException('No access to this hive');
+    }
+
+    // Generate new access token for the target hive
+    const { token: accessToken } = this.generateAccessToken(
+      userId,
+      membership.hiveId,
+      membership.personId
+    );
+
+    return {
+      accessToken,
+      expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
+      hive: {
+        id: membership.hiveId,
+        name: membership.hive.name,
+        role: membership.role,
+      },
+    };
+  }
+
+  /**
+   * Get all hives for a user
+   */
+  async getUserHives(userId: string): Promise<
+    Array<{
+      id: string;
+      name: string;
+      role: string;
+      isPrimary: boolean;
+      personId: string;
+    }>
+  > {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    const memberships: MembershipWithHive[] = await (
+      this.prisma as unknown as {
+        userHiveMembership: {
+          findMany: (args: {
+            where: { userId: string };
+            include: { hive: boolean };
+            orderBy: Array<{ isPrimary?: string; createdAt?: string }>;
+          }) => Promise<MembershipWithHive[]>;
+        };
+      }
+    ).userHiveMembership.findMany({
+      where: { userId },
+      include: { hive: true },
+      orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+    });
+
+    return memberships.map((m) => ({
+      id: m.hiveId,
+      name: m.hive.name,
+      role: m.role,
+      isPrimary: m.isPrimary,
+      personId: m.personId,
+    }));
   }
 }

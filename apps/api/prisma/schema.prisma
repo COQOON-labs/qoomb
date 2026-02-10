@@ -6,8 +6,7 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
-  extensions = [vector, uuid_ossp]
-  schemas    = ["public"]
+  extensions = [vector]
 }
 
 // ============================================
@@ -15,35 +14,51 @@ datasource db {
 // ============================================
 
 model Hive {
-  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String   @db.VarChar(255)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  users User[]
+  memberships UserHiveMembership[]
 
   @@map("hives")
-  @@schema("public")
 }
 
 model User {
-  id           String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email        String   @unique @db.VarChar(255)
   passwordHash String   @map("password_hash") @db.Text
-  hiveId       String   @map("hive_id") @db.Uuid
-  personId     String?  @map("person_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  hive          Hive           @relation(fields: [hiveId], references: [id], onDelete: Cascade)
   refreshTokens RefreshToken[]
+  memberships   UserHiveMembership[]
 
   @@map("users")
-  @@schema("public")
+}
+
+model UserHiveMembership {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  hiveId    String   @map("hive_id") @db.Uuid
+  personId  String   @map("person_id") @db.Uuid
+  role      String   @default("member") @db.VarChar(50)
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hive Hive @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hiveId])
+  @@index([userId])
+  @@index([hiveId])
+  @@index([personId])
+  @@map("user_hive_memberships")
 }
 
 model RefreshToken {
-  id               String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   token            String    @unique @db.Text
   userId           String    @map("user_id") @db.Uuid
   expiresAt        DateTime  @map("expires_at") @db.Timestamptz
@@ -61,7 +76,6 @@ model RefreshToken {
   @@index([revokedAt])
   @@index([userId, token], name: "idx_refresh_tokens_active")
   @@map("refresh_tokens")
-  @@schema("public")
 }
 
 // ============================================

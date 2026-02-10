@@ -18,14 +18,12 @@ jobs:
         with:
           configFile: .commitlintrc.json
 
-  changed-files:
-    name: Lint Changed Files
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -37,14 +35,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint changed TypeScript files
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(ts|tsx)$' || true)
-          if [ ! -z "$CHANGED_FILES" ]; then
-            echo "Linting changed files:"
-            echo "$CHANGED_FILES"
-            echo "$CHANGED_FILES" | xargs pnpm exec eslint
-          else
-            echo "No TypeScript files changed"
-          fi
+      - name: Generate Prisma Client
+        run: pnpm run db:generate
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost/dummy
+
+      - name: Lint
+        run: pnpm run lint

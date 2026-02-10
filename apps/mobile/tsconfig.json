@@ -1,0 +1,9 @@
+{
+  "extends": "@qoomb/tsconfig/node.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "."
+  },
+  "include": ["*.ts"],
+  "exclude": ["node_modules", "ios", "android"]
+}

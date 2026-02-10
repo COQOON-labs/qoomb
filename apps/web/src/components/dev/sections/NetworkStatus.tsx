@@ -54,7 +54,8 @@ export function NetworkStatus() {
               fontFamily: 'monospace',
             }}
           >
-            {(navigator as any).connection?.effectiveType || 'Unknown'}
+            {(navigator as Navigator & { connection?: { effectiveType?: string } }).connection
+              ?.effectiveType ?? 'Unknown'}
           </div>
         </div>
       </div>

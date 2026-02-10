@@ -1,6 +1,7 @@
+import * as os from 'os';
+
 import { authRouter } from '../modules/auth/auth.router';
 import { type AuthService } from '../modules/auth/auth.service';
-import * as os from 'os';
 
 import { router, publicProcedure } from './trpc.router';
 

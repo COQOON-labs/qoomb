@@ -7,7 +7,6 @@ generator client {
 datasource db {
   provider   = "postgresql"
   extensions = [vector]
-  schemas    = ["public"]
 }
 
 // ============================================
@@ -23,7 +22,6 @@ model Hive {
   memberships UserHiveMembership[]
 
   @@map("hives")
-  @@schema("public")
 }
 
 model User {
@@ -37,7 +35,6 @@ model User {
   memberships   UserHiveMembership[]
 
   @@map("users")
-  @@schema("public")
 }
 
 model UserHiveMembership {
@@ -58,7 +55,6 @@ model UserHiveMembership {
   @@index([hiveId])
   @@index([personId])
   @@map("user_hive_memberships")
-  @@schema("public")
 }
 
 model RefreshToken {
@@ -80,7 +76,6 @@ model RefreshToken {
   @@index([revokedAt])
   @@index([userId, token], name: "idx_refresh_tokens_active")
   @@map("refresh_tokens")
-  @@schema("public")
 }
 
 // ============================================

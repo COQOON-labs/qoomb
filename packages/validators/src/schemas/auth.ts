@@ -48,6 +48,7 @@ export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   hiveName: hiveNameSchema,
+  hiveType: z.enum(['family', 'organization']),
   adminName: nameSchema,
 });
 
@@ -66,6 +67,7 @@ export const loginSchema = z.object({
  */
 export const createHiveSchema = z.object({
   name: hiveNameSchema,
+  type: z.enum(['family', 'organization']),
   adminEmail: emailSchema,
   adminPassword: passwordSchema,
   adminName: nameSchema,

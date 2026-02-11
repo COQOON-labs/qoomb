@@ -8,17 +8,17 @@
 
 ## Project Essence
 
-**Qoomb** is a **privacy-first, self-hosted hive organization platform** (think Notion for families/teams/groups) with:
+**Qoomb** is a **privacy-first SaaS hive organization platform** (think Notion for families/teams/groups) with:
 
 - **Offline-first architecture** (Notion-style selective sync)
-- **Multi-tenant isolation** (per-hive PostgreSQL schemas)
+- **Multi-tenant isolation** (shared schema + Row-Level Security)
 - **Hybrid encryption** (server-side + optional E2E)
-- **Self-hosting first** (cloud-agnostic, Docker-based)
+- **SaaS-first** (cloud-agnostic — works on AWS, GCP, Azure, or bare metal; self-hosting as a supported deployment option)
 
 **Core Philosophy:**
 
 - Privacy over convenience where it matters
-- Self-hosting over SaaS (but SaaS-ready)
+- SaaS-first, self-hosting as a supported option
 - Type-safety everywhere (TypeScript + tRPC + Prisma)
 - Security by design, not afterthought
 - Simple by default, powerful when needed
@@ -52,12 +52,14 @@
 - **Multi-schema support** (critical for multi-tenancy)
 - **But:** Use raw SQL for complex queries (see docs/PRISMA_PATTERNS.md)
 
-### Why Per-Hive Schemas (not Row-Level-Security only)?
+### Why Shared Schema + Row-Level Security (not per-hive schemas)?
 
-- **Complete isolation** (physical separation)
-- **Easy backups** (dump one schema)
-- **Scalability** (can move schemas to different DBs)
-- **Defense-in-depth** (RLS on top of schema isolation)
+- **SaaS-first** (many small tenants — per-hive schemas don't scale)
+- **Simple migrations** (one migration updates all tenants instantly)
+- **Connection pooling works** (PgBouncer/pgpool compatible)
+- **Easy analytics** (cross-tenant queries for billing, usage, monitoring)
+- **RLS enforced at DB level** — even if app logic fails, data stays isolated
+- **`app.hive_id` session variable** set by `hiveProcedure` before every handler
 
 ### Why Decorator-Based Encryption?
 
@@ -96,7 +98,7 @@
 | **Frontend**       | React 19 + Vite                | Fast HMR, large ecosystem     |
 | **Mobile**         | Capacitor                      | Native iOS/Android wrapper    |
 | **PWA**            | vite-plugin-pwa + Workbox      | Offline-first, installable    |
-| **Database**       | PostgreSQL 17                  | pgvector, JSONB, multi-schema |
+| **Database**       | PostgreSQL 17                  | pgvector, JSONB, RLS          |
 | **Cache/Queue**    | Redis 7.4                      | Session store, pub/sub        |
 | **ORM**            | Prisma                         | Type-safe, migrations         |
 | **Encryption**     | AES-256-GCM + libsodium        | Server-side + E2E             |
@@ -202,8 +204,8 @@ qoomb/
 - JWT authentication with refresh tokens (15min access, 7d refresh)
 - Token rotation and revocation
 - Token blacklisting (Redis-based)
-- Per-hive schema isolation
-- Row-Level Security (RLS)
+- Shared schema + Row-Level Security (RLS) on all hive-scoped tables
+- `app.hive_id` session variable enforced by `hiveProcedure`
 - Input validation (Zod) + sanitization
 - Rate limiting (Redis-based, distributed)
 - Account lockout (exponential backoff)
@@ -278,20 +280,34 @@ qoomb/
 
 ### 🚧 TODO (Next)
 
-**Phase 2 (Core Features):**
+**Phase 2 (Core Content):**
 
-- [ ] Events module (CRUD + recurrence)
-- [ ] Tasks module (CRUD + assignees)
-- [ ] Persons module (hive members + roles)
-- [ ] Apply encryption decorators to sensitive fields
-- [ ] React UI components
+- [ ] Persons module (hive member management)
+- [ ] Events module (CRUD + simple recurrence + resource-access guard)
+- [ ] Tasks module (CRUD + assignees + event→task spawning)
+- [ ] `resource-access.ts` guard (visibility resolution, shared across all content types)
 
-**Phase 3 (Advanced):**
+**Phase 3 (Pages + Files):**
 
-- [ ] Client-side SQLite (offline-first)
-- [ ] Sync engine (vector clock)
+- [ ] Pages module (Tiptap editor, tree hierarchy, version history)
+- [ ] Documents module (file upload + envelope encryption)
+- [ ] Activity log (change feed / "what changed since last login")
+
+**Phase 4 (Offline + Search):**
+
+- [ ] Client-side SQLite sync (vector clock conflict resolution)
+- [ ] Full local search (all non-file content synced to client)
 - [ ] E2E encryption option (libsodium)
-- [ ] Semantic search (pgvector)
+- [ ] pgvector semantic search (server-side complement)
+
+**Phase 5 (Calendar Integration):**
+
+- [ ] Google Calendar (OAuth + webhook)
+- [ ] Apple Calendar (CalDAV)
+- [ ] Microsoft Outlook (Graph API)
+- [ ] Bidirectional sync + conflict resolution UI
+
+**See:** `docs/CONTENT_ARCHITECTURE.md` for the complete content model, schema sketches, encryption strategy, and phase details.
 
 ---
 
@@ -702,6 +718,62 @@ async create(input: CreateEventInput) {
 
 ---
 
+## RBAC & Resource Permission Architecture
+
+### Roles
+
+**Family Hive** (minimum 1 `parent` required, enforced by DB trigger `enforce_minimum_admin`)
+| Role | Permissions |
+|---|---|
+| `parent` | Everything |
+| `child` | members:view, events:view/create/update:own/delete:own, tasks:view/create/update:own/delete:own |
+
+**Organization Hive** (minimum 1 `org_admin` required)
+| Role | Permissions |
+|---|---|
+| `org_admin` | Everything |
+| `manager` | events:_, tasks:_, members:view/invite/remove |
+| `member` | members:view, events:view/create/update:own, tasks:view/create/update:own |
+| `guest` | members:view, events:view, tasks:view |
+
+Global defaults defined in `packages/types/src/permissions.ts`. Per-hive overrides stored in `hive_role_permissions` table.
+
+### Resource Permission Resolution (canDo check)
+
+```
+1. Explicit ResourceShare for this person+resource?
+   → use share.canView / canEdit / canDelete
+
+2. resource.visibility = 'private'?
+   → creator + parents / org_admin only
+
+3. resource.visibility = 'parents'?
+   → parents / org_admin only
+
+4. visibility = 'hive' or 'shared' (no direct share):
+   a. Load global HIVE_ROLE_PERMISSIONS defaults
+   b. Apply hive_role_permissions DB overrides (grant/revoke)
+   c. Check resulting set includes required permission
+
+Note: parents / org_admin always see everything, no exceptions.
+```
+
+### Resource Visibility Values
+
+Each resource (event, task, note, …) carries a `visibility` field:
+
+- `'hive'` — all hive members (default)
+- `'parents'` — parents / org_admin only
+- `'private'` — creator + parents only
+- `'shared'` — specific persons via `resource_shares` table
+
+### DB Tables
+
+- `hive_role_permissions` — per-hive role permission overrides (currently empty, UI to manage TBD)
+- `resource_shares` — per-resource explicit person grants (`canView`, `canEdit`, `canDelete`)
+
+---
+
 ## Security Architecture (Critical for LLMs to understand)
 
 ### Multi-Tenant Isolation (Defense-in-Depth)
@@ -711,9 +783,9 @@ Layer 1: JWT Authentication
     ↓
 Layer 2: Authorization Middleware (hiveProcedure)
     ↓
-Layer 3: Schema Isolation (SET search_path TO hive_<uuid>)
+Layer 3: RLS Session Context (SET app.hive_id = '<uuid>')
     ↓
-Layer 4: Row-Level Security (RLS policies)
+Layer 4: Row-Level Security (RLS policy on every hive-scoped table)
     ↓
 Layer 5: Audit Logging
 ```
@@ -981,5 +1053,5 @@ apps/api/src/modules/encryption/
 
 ---
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-02-10
 **Version:** 0.1.0 (Phase 1 - Foundation with PWA, Mobile, Dev Tools)

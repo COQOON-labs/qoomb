@@ -31,12 +31,38 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   });
 });
 
-// Middleware to set hive schema context with RLS enforcement
+// Middleware to set hive schema context with RLS enforcement,
+// and eagerly fetch hiveType + person.role for permission checks.
 export const hiveProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-  if (ctx.user?.hiveId) {
-    // Set hive schema context AND user context for Row-Level Security
-    await ctx.prisma.setHiveSchema(ctx.user.hiveId, ctx.user.id);
+  if (!ctx.user?.hiveId) {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Missing hive context' });
   }
 
-  return next({ ctx });
+  // Set RLS session variables
+  await ctx.prisma.setHiveSchema(ctx.user.hiveId, ctx.user.id);
+
+  // Parallel-fetch hive type + person role for in-memory permission checks
+  const [hive, person] = await Promise.all([
+    ctx.prisma.hive.findUnique({
+      where: { id: ctx.user.hiveId },
+      select: { type: true },
+    }),
+    ctx.user.personId
+      ? ctx.prisma.person.findUnique({
+          where: { id: ctx.user.personId },
+          select: { role: true },
+        })
+      : null,
+  ]);
+
+  return next({
+    ctx: {
+      ...ctx,
+      user: {
+        ...ctx.user,
+        hiveType: hive?.type,
+        role: person?.role ?? undefined,
+      },
+    },
+  });
 });

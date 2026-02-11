@@ -16,23 +16,33 @@ datasource db {
 model Hive {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String   @db.VarChar(255)
+  type      String   @db.VarChar(50)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  memberships UserHiveMembership[]
+  memberships          UserHiveMembership[]
+  persons              Person[]
+  hiveRolePermissions  HiveRolePermission[]
+  resourceShares       ResourceShare[]
 
   @@map("hives")
 }
 
 model User {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email        String   @unique @db.VarChar(255)
-  passwordHash String   @map("password_hash") @db.Text
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String    @unique @db.VarChar(255)
+  passwordHash   String    @map("password_hash") @db.Text
+  emailVerified  Boolean   @default(false) @map("email_verified")
+  fullName       String?   @map("full_name") @db.VarChar(255)
+  nickname       String?   @db.VarChar(255)
+  birthday       DateTime? @db.Date
+  avatarUrl      String?   @map("avatar_url") @db.Text
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   refreshTokens RefreshToken[]
   memberships   UserHiveMembership[]
+  persons       Person[]
 
   @@map("users")
 }
@@ -42,13 +52,13 @@ model UserHiveMembership {
   userId    String   @map("user_id") @db.Uuid
   hiveId    String   @map("hive_id") @db.Uuid
   personId  String   @map("person_id") @db.Uuid
-  role      String   @default("member") @db.VarChar(50)
   isPrimary Boolean  @default(false) @map("is_primary")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  hive Hive @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hive   Hive   @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   @@unique([userId, hiveId])
   @@index([userId])
@@ -79,10 +89,73 @@ model RefreshToken {
 }
 
 // ============================================
-// PER-HIVE SCHEMA
-// Note: Actual hive schemas (hive_<uuid>) are created dynamically
-// This is a template for what each hive schema contains
+// HIVE-SCOPED TABLES (shared schema, isolated via RLS)
+// Row-Level Security ensures each hive only sees its own rows.
+// RLS policy: hive_id = current_setting('app.hive_id')::uuid
 // ============================================
 
-// We'll manage per-hive schemas through migrations
-// For now, this serves as documentation of the structure
+model Person {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hiveId          String    @map("hive_id") @db.Uuid
+  userId          String?   @map("user_id") @db.Uuid
+  role        String  @db.VarChar(50)
+  displayName String? @map("display_name") @db.VarChar(255)
+  avatarUrl   String? @map("avatar_url") @db.Text
+  birthdate DateTime? @db.Date
+  publicKey String?   @map("public_key") @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  hive           Hive                 @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  memberships    UserHiveMembership[]
+  resourceShares ResourceShare[]
+
+  @@index([hiveId])
+  @@index([userId])
+  @@map("persons")
+}
+
+// ============================================
+// PERMISSION EXTENSION TABLES
+// ============================================
+
+model HiveRolePermission {
+  // Per-hive override: grant or revoke a default role permission.
+  // Allows parents to customize what 'child' can do in their specific family.
+  // Empty = use global HIVE_ROLE_PERMISSIONS defaults.
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hiveId     String  @map("hive_id") @db.Uuid
+  role       String  @db.VarChar(50)
+  permission String  @db.VarChar(100)
+  granted    Boolean // true = grant above default, false = revoke from default
+
+  hive Hive @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+
+  @@unique([hiveId, role, permission])
+  @@index([hiveId])
+  @@map("hive_role_permissions")
+}
+
+model ResourceShare {
+  // Explicit per-person grant on a specific resource.
+  // Used when resource.visibility = 'shared', or as a direct override.
+  // resourceId is polymorphic (references events, tasks, notes, etc.) — no FK.
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hiveId       String   @map("hive_id") @db.Uuid
+  resourceType String   @map("resource_type") @db.VarChar(50)
+  resourceId   String   @map("resource_id") @db.Uuid
+  personId     String   @map("person_id") @db.Uuid
+  canView      Boolean  @default(false) @map("can_view")
+  canEdit      Boolean  @default(false) @map("can_edit")
+  canDelete    Boolean  @default(false) @map("can_delete")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  hive   Hive   @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceType, resourceId, personId])
+  @@index([hiveId, resourceType, resourceId])
+  @@map("resource_shares")
+}

@@ -40,6 +40,7 @@ export const authRouter = (authService: AuthService) =>
         const result = await authService.register(
           {
             name,
+            type: input.hiveType,
             adminEmail,
             adminPassword,
             adminName,

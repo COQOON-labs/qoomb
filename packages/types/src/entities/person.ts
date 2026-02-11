@@ -1,41 +1,35 @@
 import { type BaseEntity, type UUID } from './common';
 
 export enum PersonRole {
+  // Family hive roles
   PARENT = 'parent',
   CHILD = 'child',
-  GRANDPARENT = 'grandparent',
-  BABYSITTER = 'babysitter',
-  OTHER = 'other',
-}
 
-export enum AgeGroup {
-  BABY = 'baby',
-  TODDLER = 'toddler',
-  CHILD = 'child',
-  TEEN = 'teen',
-  ADULT = 'adult',
+  // Organization hive roles
+  ORG_ADMIN = 'org_admin',
+  MANAGER = 'manager',
+  MEMBER = 'member',
+  GUEST = 'guest',
 }
 
 export interface Person extends BaseEntity {
   hiveId: UUID;
-  name: string;
   role: PersonRole;
+  displayName?: string;
+  avatarUrl?: string;
   birthdate?: Date;
-  ageGroup?: AgeGroup;
-  permissionLevel: number; // 0-100
   publicKey?: string; // For E2E encryption
 }
 
 export interface CreatePersonInput {
-  name: string;
   role: PersonRole;
+  displayName?: string;
   birthdate?: Date;
-  ageGroup?: AgeGroup;
 }
 
 export interface UpdatePersonInput {
-  name?: string;
   role?: PersonRole;
+  displayName?: string;
+  avatarUrl?: string;
   birthdate?: Date;
-  ageGroup?: AgeGroup;
 }

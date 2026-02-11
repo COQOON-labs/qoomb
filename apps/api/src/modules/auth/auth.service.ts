@@ -2,8 +2,8 @@ import * as crypto from 'crypto';
 
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import type { Hive, User, UserHiveMembership } from '@prisma/client';
-import type { CreateHiveInput } from '@qoomb/types';
+import type { Hive, Person, User, UserHiveMembership } from '@prisma/client';
+import { type CreateHiveInput } from '@qoomb/types';
 import * as bcrypt from 'bcrypt';
 
 import { AccountLockoutService } from '../../common/services/account-lockout.service';
@@ -12,11 +12,6 @@ import { PASSWORD_CONFIG, JWT_CONFIG } from '../../config/security.config';
 import { PrismaService, TransactionClient } from '../../prisma/prisma.service';
 
 import { RefreshTokenService } from './refresh-token.service';
-
-// Type definitions for raw SQL query results
-interface PersonIdResult {
-  id: string;
-}
 
 interface JwtPayload {
   jti?: string;
@@ -27,12 +22,13 @@ interface JwtPayload {
   type?: string;
 }
 
-interface MembershipWithHive extends UserHiveMembership {
+interface MembershipWithHiveAndPerson extends UserHiveMembership {
   hive: Hive;
+  person: Person;
 }
 
 interface UserWithMemberships extends User {
-  memberships: MembershipWithHive[];
+  memberships: MembershipWithHiveAndPerson[];
 }
 
 @Injectable()
@@ -69,88 +65,47 @@ export class AuthService {
     // Hash password with configured salt rounds
     const passwordHash = await bcrypt.hash(input.adminPassword, PASSWORD_CONFIG.SALT_ROUNDS);
 
-    // Create hive and user in a transaction
+    // Create hive, person, and user in a transaction
     const result = await this.prisma.$transaction(async (tx: TransactionClient) => {
       // 1. Create the hive
       const hive: Hive = await tx.hive.create({
+        data: { name: input.name, type: input.type },
+      });
+
+      // 2. Create admin person — role depends on hive type
+      const adminRole = input.type === 'family' ? 'parent' : 'org_admin';
+      const person = await tx.person.create({
         data: {
-          name: input.name,
+          hiveId: hive.id,
+          role: adminRole,
         },
       });
 
-      // 2. Create dynamic schema for this hive
-      await tx.$executeRawUnsafe(`
-        CREATE SCHEMA IF NOT EXISTS hive_${hive.id}
-      `);
-
-      // 3. Create persons table in hive schema
-      await tx.$executeRawUnsafe(`
-        CREATE TABLE hive_${hive.id}.persons (
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          name VARCHAR(255) NOT NULL,
-          role VARCHAR(50) NOT NULL,
-          birthdate DATE,
-          age_group VARCHAR(20),
-          permission_level INT NOT NULL DEFAULT 100,
-          public_key TEXT,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-          version INT NOT NULL DEFAULT 1
-        )
-      `);
-
-      // 4. Create admin person in hive schema
-      const personResult = await tx.$queryRawUnsafe<PersonIdResult[]>(
-        `
-        INSERT INTO hive_${hive.id}.persons (name, role, permission_level)
-        VALUES ($1, $2, $3)
-        RETURNING id
-      `,
-        input.adminName,
-        'parent',
-        100
-      );
-
-      const personId: string | undefined = personResult[0]?.id;
-      if (!personId) {
-        throw new BadRequestException('Failed to create admin person');
-      }
-
-      // 5. Create user account
+      // 3. Create user account
       const user: User = await tx.user.create({
         data: {
           email: input.adminEmail,
           passwordHash,
+          fullName: input.adminName,
         },
       });
 
-      // 6. Create membership linking user to hive
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      await (
-        tx as unknown as {
-          userHiveMembership: {
-            create: (args: {
-              data: {
-                userId: string;
-                hiveId: string;
-                personId: string;
-                role: string;
-                isPrimary: boolean;
-              };
-            }) => Promise<UserHiveMembership>;
-          };
-        }
-      ).userHiveMembership.create({
+      // 4. Link person to user and create membership
+      await tx.person.update({
+        where: { id: person.id },
+        data: { userId: user.id },
+      });
+
+      await tx.userHiveMembership.create({
         data: {
           userId: user.id,
           hiveId: hive.id,
-          personId,
-          role: 'admin',
-          isPrimary: true, // First hive is always primary
+          personId: person.id,
+          isPrimary: true,
         },
       });
 
-      return { hive, user, personId };
+      return { hive, user, personId: person.id };
     });
 
     // Generate access token (short-lived)
@@ -217,6 +172,7 @@ export class AuthService {
         memberships: {
           include: {
             hive: true,
+            person: true,
           },
         },
       },
@@ -290,7 +246,7 @@ export class AuthService {
       availableHives: user.memberships.map((m) => ({
         id: m.hiveId,
         name: m.hive.name,
-        role: m.role,
+        role: m.person.role,
         isPrimary: m.isPrimary,
       })),
     };
@@ -339,27 +295,11 @@ export class AuthService {
       }
 
       // Verify membership exists
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      const membership: MembershipWithHive | null = await (
-        this.prisma as unknown as {
-          userHiveMembership: {
-            findUnique: (args: {
-              where: { userId_hiveId: { userId: string; hiveId: string } };
-              include: { hive: boolean };
-            }) => Promise<MembershipWithHive | null>;
-          };
-        }
-      ).userHiveMembership.findUnique({
-        where: {
-          userId_hiveId: {
-            userId: user.id,
-            hiveId: hiveId,
-          },
-        },
-        include: {
-          hive: true,
-        },
-      });
+      const membership: MembershipWithHiveAndPerson | null =
+        await this.prisma.userHiveMembership.findUnique({
+          where: { userId_hiveId: { userId: user.id, hiveId: hiveId } },
+          include: { hive: true, person: true },
+        });
 
       if (!membership) {
         throw new UnauthorizedException('Invalid hive access');
@@ -432,7 +372,7 @@ export class AuthService {
       where: { id: rotated.userId },
       include: {
         memberships: {
-          include: { hive: true },
+          include: { hive: true, person: true },
         },
       },
     });
@@ -517,27 +457,11 @@ export class AuthService {
     hive: { id: string; name: string; role: string };
   }> {
     // Verify membership exists
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    const membership: MembershipWithHive | null = await (
-      this.prisma as unknown as {
-        userHiveMembership: {
-          findUnique: (args: {
-            where: { userId_hiveId: { userId: string; hiveId: string } };
-            include: { hive: boolean };
-          }) => Promise<MembershipWithHive | null>;
-        };
-      }
-    ).userHiveMembership.findUnique({
-      where: {
-        userId_hiveId: {
-          userId: userId,
-          hiveId: targetHiveId,
-        },
-      },
-      include: {
-        hive: true,
-      },
-    });
+    const membership: MembershipWithHiveAndPerson | null =
+      await this.prisma.userHiveMembership.findUnique({
+        where: { userId_hiveId: { userId: userId, hiveId: targetHiveId } },
+        include: { hive: true, person: true },
+      });
 
     if (!membership) {
       throw new UnauthorizedException('No access to this hive');
@@ -556,7 +480,7 @@ export class AuthService {
       hive: {
         id: membership.hiveId,
         name: membership.hive.name,
-        role: membership.role,
+        role: membership.person.role,
       },
     };
   }
@@ -573,27 +497,17 @@ export class AuthService {
       personId: string;
     }>
   > {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    const memberships: MembershipWithHive[] = await (
-      this.prisma as unknown as {
-        userHiveMembership: {
-          findMany: (args: {
-            where: { userId: string };
-            include: { hive: boolean };
-            orderBy: Array<{ isPrimary?: string; createdAt?: string }>;
-          }) => Promise<MembershipWithHive[]>;
-        };
-      }
-    ).userHiveMembership.findMany({
-      where: { userId },
-      include: { hive: true },
-      orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-    });
+    const memberships: MembershipWithHiveAndPerson[] =
+      await this.prisma.userHiveMembership.findMany({
+        where: { userId },
+        include: { hive: true, person: true },
+        orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+      });
 
     return memberships.map((m) => ({
       id: m.hiveId,
       name: m.hive.name,
-      role: m.role,
+      role: m.person.role,
       isPrimary: m.isPrimary,
       personId: m.personId,
     }));

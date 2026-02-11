@@ -234,3 +234,77 @@ CREATE POLICY "resource_shares_isolation" ON "resource_shares"
   WITH CHECK (hive_id = current_setting('app.hive_id', true)::uuid);
 
 ALTER TABLE "resource_shares" FORCE ROW LEVEL SECURITY;
+
+-- ============================================
+-- CONTENT TABLES (Phase 2)
+-- title, description, location, url, category encrypted by service layer.
+-- recurrence_rule is unencrypted — needed for server-side occurrence expansion.
+-- ============================================
+
+CREATE TABLE "events" (
+  "id"               UUID        NOT NULL DEFAULT gen_random_uuid(),
+  "hive_id"          UUID        NOT NULL,
+  "creator_id"       UUID        NOT NULL,
+  "title"            TEXT        NOT NULL,
+  "description"      TEXT,
+  "start_at"         TIMESTAMPTZ NOT NULL,
+  "end_at"           TIMESTAMPTZ NOT NULL,
+  "all_day"          BOOLEAN     NOT NULL DEFAULT false,
+  "location"         TEXT,
+  "url"              TEXT,
+  "color"            VARCHAR(20),
+  "category"         TEXT,
+  "visibility"       VARCHAR(20) NOT NULL DEFAULT 'hive' CHECK (visibility IN ('hive', 'parents', 'private', 'shared')),
+  "recurrence_rule"  JSONB,
+  "created_at"       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"       TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY ("id"),
+  FOREIGN KEY ("hive_id")    REFERENCES "hives"("id")   ON DELETE CASCADE,
+  FOREIGN KEY ("creator_id") REFERENCES "persons"("id") ON DELETE CASCADE
+);
+CREATE INDEX ON "events"("hive_id", "start_at");
+CREATE INDEX ON "events"("hive_id", "creator_id");
+
+ALTER TABLE "events" ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "events_hive_isolation" ON "events"
+  USING (hive_id = current_setting('app.hive_id', true)::uuid)
+  WITH CHECK (hive_id = current_setting('app.hive_id', true)::uuid);
+
+ALTER TABLE "events" FORCE ROW LEVEL SECURITY;
+
+-- title and description encrypted by service layer.
+-- status and priority are unencrypted — needed for server-side filtering.
+
+CREATE TABLE "tasks" (
+  "id"           UUID        NOT NULL DEFAULT gen_random_uuid(),
+  "hive_id"      UUID        NOT NULL,
+  "creator_id"   UUID        NOT NULL,
+  "event_id"     UUID,
+  "assignee_id"  UUID,
+  "title"        TEXT        NOT NULL,
+  "description"  TEXT,
+  "due_at"       TIMESTAMPTZ,
+  "completed_at" TIMESTAMPTZ,
+  "status"       VARCHAR(20) NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'done', 'cancelled')),
+  "priority"     SMALLINT    NOT NULL DEFAULT 0,
+  "visibility"   VARCHAR(20) NOT NULL DEFAULT 'hive' CHECK (visibility IN ('hive', 'parents', 'private', 'shared')),
+  "created_at"   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"   TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY ("id"),
+  FOREIGN KEY ("hive_id")     REFERENCES "hives"("id")   ON DELETE CASCADE,
+  FOREIGN KEY ("creator_id")  REFERENCES "persons"("id") ON DELETE CASCADE,
+  FOREIGN KEY ("event_id")    REFERENCES "events"("id")  ON DELETE SET NULL,
+  FOREIGN KEY ("assignee_id") REFERENCES "persons"("id") ON DELETE SET NULL
+);
+CREATE INDEX ON "tasks"("hive_id", "status");
+CREATE INDEX ON "tasks"("hive_id", "assignee_id");
+CREATE INDEX ON "tasks"("hive_id", "creator_id");
+
+ALTER TABLE "tasks" ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "tasks_hive_isolation" ON "tasks"
+  USING (hive_id = current_setting('app.hive_id', true)::uuid)
+  WITH CHECK (hive_id = current_setting('app.hive_id', true)::uuid);
+
+ALTER TABLE "tasks" FORCE ROW LEVEL SECURITY;

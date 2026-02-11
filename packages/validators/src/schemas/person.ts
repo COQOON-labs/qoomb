@@ -1,21 +1,27 @@
-import { PersonRole, AgeGroup } from '@qoomb/types';
 import { z } from 'zod';
 
-export const personRoleSchema = z.nativeEnum(PersonRole);
-export const ageGroupSchema = z.nativeEnum(AgeGroup);
+// Use z.enum (not z.nativeEnum) to prevent TS2742 inferred type portability errors
+// when PersonRole flows through AppRouter into the web client type chain.
+export const personRoleSchema = z.enum([
+  'parent',
+  'child',
+  'org_admin',
+  'manager',
+  'member',
+  'guest',
+]);
 
 export const createPersonSchema = z.object({
-  name: z.string().min(1).max(255),
   role: personRoleSchema,
+  displayName: z.string().min(1).max(255).optional(),
   birthdate: z.date().optional(),
-  ageGroup: ageGroupSchema.optional(),
 });
 
 export const updatePersonSchema = z.object({
-  name: z.string().min(1).max(255).optional(),
   role: personRoleSchema.optional(),
+  displayName: z.string().min(1).max(255).optional(),
+  avatarUrl: z.string().url().optional(),
   birthdate: z.date().optional(),
-  ageGroup: ageGroupSchema.optional(),
 });
 
 export const personIdSchema = z.string().uuid();

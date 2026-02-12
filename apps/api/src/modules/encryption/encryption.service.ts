@@ -308,30 +308,26 @@ export class EncryptionService implements OnModuleInit {
   /**
    * Parse a storage string back into EncryptedData
    *
-   * Supports:
-   * - New format: v{version}:{base64(data)}
-   * - Legacy format: {base64(data)} — treated as version 1 for backward-compat
+   * Expected format: v{version}:{base64(data)}
+   * Example: v1:AAABBBCCC...
    *
    * @param stored - Storage string from the database
    * @returns EncryptedData ready to pass to decrypt()
+   * @throws Error if the storage string does not match the expected format
    */
   parseFromStorage(stored: string): EncryptedData {
     const match = /^v(\d+):(.+)$/.exec(stored);
 
-    if (match) {
-      return {
-        version: parseInt(match[1], 10),
-        provider: this.keyProvider.getName(),
-        data: Buffer.from(match[2], 'base64'),
-      };
+    if (!match) {
+      throw new Error(
+        `Invalid encrypted data format: expected v{version}:{base64}, got: ${stored.slice(0, 20)}...`
+      );
     }
 
-    // Legacy: no version prefix — data was stored before versioning was introduced
-    this.logger.warn('Decrypting legacy unversioned data — assuming key version 1');
     return {
-      version: 1,
+      version: parseInt(match[1], 10),
       provider: this.keyProvider.getName(),
-      data: Buffer.from(stored, 'base64'),
+      data: Buffer.from(match[2], 'base64'),
     };
   }
 

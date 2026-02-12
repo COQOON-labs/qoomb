@@ -25,7 +25,7 @@
     "docker:logs": "docker-compose logs -f",
     "docker:clean": "docker-compose down -v",
     "docker:status": "docker-compose ps",
-    "db:generate": "pnpm --filter @qoomb/api prisma generate",
+    "db:generate": "pnpm --filter @qoomb/api run db:generate",
     "db:migrate": "pnpm --filter @qoomb/api prisma migrate deploy",
     "db:migrate:dev": "pnpm --filter @qoomb/api prisma migrate dev",
     "db:studio": "pnpm --filter @qoomb/api prisma studio",
@@ -57,7 +57,9 @@
   "pnpm": {
     "overrides": {
       "lodash@>=4.0.0 <=4.17.22": ">=4.17.23",
-      "hono@<4.11.7": ">=4.11.7"
+      "hono@<4.11.7": ">=4.11.7",
+      "tar@<7.5.7": ">=7.5.7",
+      "@types/node": "^25.2.2"
     }
   }
 }

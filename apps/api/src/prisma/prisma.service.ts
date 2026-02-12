@@ -9,8 +9,10 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { Pool } from 'pg';
 
-// Create a properly typed Prisma Client instance
-function createPrismaClient(): PrismaClient {
+// Create a properly typed Prisma Client instance.
+// No return type annotation: TypeScript infers the full generic type so model
+// accessors (e.g. .person) retain their correct delegate types.
+function createPrismaClient() {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
   });
@@ -23,16 +25,14 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
-// Type for transaction client - exported for use in services
-export type TransactionClient = Omit<
-  PrismaClient,
-  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
->;
+// Re-export Prisma's generated TransactionClient from the Prisma namespace.
+// This matches exactly what $transaction's callback receives.
+export type TransactionClient = Prisma.TransactionClient;
 
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
-  private readonly client: PrismaClient;
+  private readonly client: ReturnType<typeof createPrismaClient>;
 
   constructor() {
     this.client = createPrismaClient();
@@ -49,6 +49,14 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   get refreshToken() {
     return this.client.refreshToken;
+  }
+
+  get userHiveMembership() {
+    return this.client.userHiveMembership;
+  }
+
+  get person() {
+    return this.client.person;
   }
 
   // Expose Prisma methods
@@ -135,22 +143,19 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.validateUUID(userId);
     this.validateUUID(hiveId);
 
-    const user: { id: string } | null = await this.user.findFirst({
-      where: {
-        id: userId,
-        hiveId: hiveId,
-      },
+    const membership: { id: string } | null = await this.userHiveMembership.findFirst({
+      where: { userId, hiveId },
       select: { id: true },
     });
 
-    if (!user) {
+    if (!membership) {
       this.logger.error(`User ${userId} attempted unauthorized access to hive ${hiveId}`);
       throw new UnauthorizedException('Access to this hive is not authorized');
     }
   }
 
   /**
-   * Set the search_path for multi-hive isolation with security validation
+   * Set RLS session variables for hive-scoped data isolation.
    *
    * Security measures:
    * 1. UUID format validation to prevent SQL injection
@@ -159,13 +164,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    * 4. Logging for audit trail
    *
    * SECURITY NOTE:
-   * This function uses $executeRaw instead of $executeRawUnsafe where possible.
-   * For search_path, PostgreSQL requires identifier-based syntax that cannot be
-   * parameterized. However, UUIDs are strictly validated before use, making this
-   * safe from SQL injection.
+   * PostgreSQL SET commands require literal values, not parameters.
+   * UUIDs are strictly validated (only [0-9a-f-] chars) before use,
+   * making this safe from SQL injection.
    *
-   * @param hiveId - The UUID of the hive to set as active schema
-   * @param userId - Optional user ID to set for RLS policies
+   * @param hiveId - The UUID of the hive to activate
+   * @param userId - Optional user ID to set for fine-grained RLS policies
    * @throws {UnauthorizedException} if validation fails
    */
   async setHiveSchema(hiveId: string, userId?: string): Promise<void> {
@@ -176,33 +180,16 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       this.validateUUID(userId);
     }
 
-    // Step 2: Verify hive exists (prevents access to non-existent schemas)
+    // Step 2: Verify hive exists
     await this.verifyHiveExists(hiveId);
 
     // Step 3: Set session variables for Row-Level Security (RLS)
-    // SECURITY: PostgreSQL SET commands require literal values, not parameters
-    // However, we've validated the UUID format (only [0-9a-f-] chars), making this safe
     await this.executeRawSql(`SET app.hive_id = '${hiveId}'`);
 
     if (userId) {
       await this.executeRawSql(`SET app.user_id = '${userId}'`);
     }
 
-    // Step 4: Set search_path
-    // SECURITY: PostgreSQL requires schema names as identifiers, not parameters
-    // Since we've validated the UUID format (only [0-9a-f-] chars), this is safe
-    // Prisma does not support identifier parameterization for SET search_path
-    await this.executeRawSql(`SET search_path TO hive_${hiveId}, public`);
-
-    this.logger.debug(`Schema context set to hive_${hiveId}${userId ? ` for user ${userId}` : ''}`);
-  }
-
-  /**
-   * Reset search_path to public schema only
-   * Useful for operations that should not have hive context
-   */
-  async resetSchema(): Promise<void> {
-    await this.executeRawSql(`SET search_path TO public`);
-    this.logger.debug('Schema context reset to public');
+    this.logger.debug(`RLS context set for hive ${hiveId}${userId ? ` / user ${userId}` : ''}`);
   }
 }

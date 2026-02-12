@@ -1,0 +1,8 @@
+# Qoomb - Privacy-first family organization platform
+# https://qoomb.io
+
+User-agent: *
+Allow: /
+
+# Sitemap will be added when SEO is implemented
+# Sitemap: https://qoomb.io/sitemap.xml

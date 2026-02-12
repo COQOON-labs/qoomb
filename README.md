@@ -1,6 +1,6 @@
 # Qoomb - Privacy-First Family Organization Platform
 
-A Notion-inspired family organization platform with offline-first capabilities, hybrid encryption, and multi-tenant architecture.
+A family organization platform with offline-first capabilities, hybrid encryption, and multi-tenant architecture.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ A Notion-inspired family organization platform with offline-first capabilities, 
 ### Option 1: Using Makefile (Recommended) ⭐
 
 ```bash
-# Complete setup in one command
+# Standard setup (works on all platforms)
 make setup
 
 # Start development servers
@@ -23,19 +23,49 @@ make dev
 That's it! Visit:
 
 - **Frontend**: <http://localhost:5173>
-- **Backend**: <http://localhost:3001/trpc/health>
+- **Backend**: <http://localhost:3001>
+
+**Optional: Extended setup with HTTPS** (for mobile/PWA testing on macOS/Linux):
+
+```bash
+make setup-extended
+make dev-extended
+# Visit: https://qoomb.localhost:8443
+```
+
+Extended setup includes:
+
+- ✅ HTTPS with trusted certificates (via mkcert)
+- ✅ Local domain (qoomb.localhost)
+- ✅ Mobile/PWA testing ready
+- ✅ Production-like environment
 
 #### Available Make Commands
 
 ```bash
 make help          # Show all available commands
-make setup         # Complete initial setup
-make dev           # Start both frontend and backend
+
+# Setup
+make setup         # Standard setup (Docker + DB, works everywhere)
+make setup-extended # Extended setup with HTTPS (macOS/Linux)
+
+# Development
+make dev           # Start on localhost (standard, works everywhere)
+make dev-extended  # Start with HTTPS & qoomb.localhost (extended)
+make dev-api       # Start only backend API
+make dev-web       # Start only frontend
+
+# Docker
 make docker-up     # Start PostgreSQL and Redis
 make docker-down   # Stop Docker services
+
+# Database
 make db-migrate    # Run database migrations
 make db-studio     # Open Prisma Studio (DB GUI)
+
+# Utilities
 make status        # Check service status
+make stop-extended # Stop extended development
 make clean         # Clean build artifacts
 ```
 
@@ -97,6 +127,33 @@ docker-compose up -d            # Start services
 docker-compose down             # Stop services
 docker-compose logs -f          # View logs
 ```
+
+### Development Tools
+
+#### 🔧 Dev Panel (Development Mode Only)
+
+When running in development mode (`pnpm dev`), a **Dev Tools panel** is available on the right side of the screen:
+
+**Features:**
+
+- **Mobile Setup** - QR codes for certificate installation and mobile testing
+- **Environment Info** - URLs, API endpoints, environment variables
+- **Backend Health** - Auto-refreshing health checks
+- **Network Status** - Online/offline detection and connection type
+- **Quick Actions**:
+  - Clear all caches (Service Workers, localStorage, sessionStorage)
+  - Clear console
+  - Reload page
+  - Open Prisma Studio
+  - Action logs
+
+**How to use:**
+
+1. Look for the **"🔧 DEV TOOLS"** tab on the right edge
+2. Click to open the sliding panel
+3. All debugging tools are organized in sections
+
+**Note:** The dev panel is completely invisible in production builds.
 
 ### Technology Stack
 

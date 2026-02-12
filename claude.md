@@ -8,17 +8,17 @@
 
 ## Project Essence
 
-**Qoomb** is a **privacy-first, self-hosted hive organization platform** (think Notion for families/teams/groups) with:
+**Qoomb** is a **privacy-first SaaS hive organization platform** with:
 
 - **Offline-first architecture** (Notion-style selective sync)
-- **Multi-tenant isolation** (per-hive PostgreSQL schemas)
+- **Multi-tenant isolation** (shared schema + Row-Level Security)
 - **Hybrid encryption** (server-side + optional E2E)
-- **Self-hosting first** (cloud-agnostic, Docker-based)
+- **SaaS-first** (cloud-agnostic — works on AWS, GCP, Azure, or bare metal; self-hosting as a supported deployment option)
 
 **Core Philosophy:**
 
 - Privacy over convenience where it matters
-- Self-hosting over SaaS (but SaaS-ready)
+- SaaS-first, self-hosting as a supported option
 - Type-safety everywhere (TypeScript + tRPC + Prisma)
 - Security by design, not afterthought
 - Simple by default, powerful when needed
@@ -52,12 +52,14 @@
 - **Multi-schema support** (critical for multi-tenancy)
 - **But:** Use raw SQL for complex queries (see docs/PRISMA_PATTERNS.md)
 
-### Why Per-Hive Schemas (not Row-Level-Security only)?
+### Why Shared Schema + Row-Level Security (not per-hive schemas)?
 
-- **Complete isolation** (physical separation)
-- **Easy backups** (dump one schema)
-- **Scalability** (can move schemas to different DBs)
-- **Defense-in-depth** (RLS on top of schema isolation)
+- **SaaS-first** (many small tenants — per-hive schemas don't scale)
+- **Simple migrations** (one migration updates all tenants instantly)
+- **Connection pooling works** (PgBouncer/pgpool compatible)
+- **Easy analytics** (cross-tenant queries for billing, usage, monitoring)
+- **RLS enforced at DB level** — even if app logic fails, data stays isolated
+- **`app.hive_id` session variable** set by `hiveProcedure` before every handler
 
 ### Why Decorator-Based Encryption?
 
@@ -75,6 +77,15 @@
 - **Future-proof:** Can migrate to full ESM when ecosystem matures
 - **See:** `OPTION_A_IMPLEMENTATION_SUMMARY.md` for details
 
+### Why Fair Source License (not MIT/Apache)?
+
+- **Sustainable Open Source:** Free for individuals and small teams, commercial licensing for enterprises
+- **Prevents exploitation:** Large companies can't use it for free without contributing back
+- **Contributor Protection:** CLA ensures contributors grant necessary rights while protecting IP
+- **Dual Licensing Rights:** Enables offering commercial licenses while keeping code open
+- **20-Employee Threshold:** Generous for small businesses, ensures fairness for larger ones
+- **See:** `LICENSE.md` and `COMMERCIAL-LICENSE.md` for details
+
 ---
 
 ## Technology Stack
@@ -84,12 +95,19 @@
 | **Monorepo**       | Turborepo + pnpm               | Shared types, atomic changes  |
 | **Backend**        | NestJS + TypeScript            | DI, professional structure    |
 | **API**            | tRPC                           | End-to-end type safety        |
-| **Frontend**       | React 18 + Vite                | Fast HMR, large ecosystem     |
-| **Database**       | PostgreSQL 17                  | pgvector, JSONB, multi-schema |
+| **Frontend**       | React 19 + Vite                | Fast HMR, large ecosystem     |
+| **Mobile**         | Capacitor                      | Native iOS/Android wrapper    |
+| **PWA**            | vite-plugin-pwa + Workbox      | Offline-first, installable    |
+| **Database**       | PostgreSQL 17                  | pgvector, JSONB, RLS          |
 | **Cache/Queue**    | Redis 7.4                      | Session store, pub/sub        |
 | **ORM**            | Prisma                         | Type-safe, migrations         |
 | **Encryption**     | AES-256-GCM + libsodium        | Server-side + E2E             |
 | **Key Management** | Pluggable (Env/File/KMS/Vault) | Flexible, cloud-agnostic      |
+| **Code Quality**   | ESLint + Prettier              | Consistent style, type safety |
+| **Git Hooks**      | Husky + lint-staged            | Pre-commit/push quality gates |
+| **Commit Format**  | Commitlint + Conventional      | Structured commit messages    |
+| **CI/CD**          | GitHub Actions                 | Automated testing & security  |
+| **License**        | Fair Source v1.0 (20-user)     | Sustainable open source       |
 
 ---
 
@@ -114,13 +132,28 @@ qoomb/
 │   │       ├── schema.prisma       # DB schema (public + template)
 │   │       └── migrations/         # Version-controlled migrations
 │   │
-│   └── web/                    # React frontend [MINIMAL]
-│       └── src/
-│           └── lib/trpc/           # tRPC client
+│   ├── web/                    # React PWA frontend
+│   │   ├── public/                 # PWA assets (icons, manifest)
+│   │   ├── scripts/                # Build scripts (icon generation)
+│   │   └── src/
+│   │       ├── components/dev/     # Dev-only debugging panel
+│   │       │   ├── DevPanel.tsx    # Main sliding panel
+│   │       │   ├── DevPanelTab.tsx # Floating button
+│   │       │   └── sections/       # Panel sections
+│   │       └── lib/trpc/           # tRPC client
+│   │
+│   └── mobile/                 # Capacitor mobile wrapper
+│       ├── capacitor.config.ts     # iOS/Android configuration
+│       ├── ios/                    # [Generated] Xcode project
+│       └── android/                # [Generated] Android Studio project
 │
 ├── packages/
 │   ├── types/                  # Shared TypeScript types
 │   ├── validators/             # Shared Zod schemas + sanitizers
+│   ├── ui/                     # Shared React components + hooks
+│   │   ├── src/components/         # Button, Input, Card, etc.
+│   │   ├── src/hooks/              # useMediaQuery, useOnlineStatus
+│   │   └── src/utils/              # cn() class merger
 │   └── config/                 # Shared tsconfig
 │
 ├── docs/                       # Documentation for humans
@@ -129,7 +162,22 @@ qoomb/
 │   ├── PERFORMANCE.md                     # Prisma performance guide
 │   └── PRISMA_PATTERNS.md                 # When to use Prisma vs raw SQL
 │
+├── .github/                    # GitHub configuration
+│   ├── workflows/                  # CI/CD pipelines
+│   │   ├── ci.yml                 # Main CI pipeline
+│   │   ├── codeql.yml             # Security scanning (SAST)
+│   │   ├── trivy.yml              # Vulnerability & secrets scanning
+│   │   └── pr-checks.yml          # PR validation
+│   └── dependabot.yml              # Automated dependency updates
+│
+├── .husky/                     # Git hooks
+│   ├── pre-commit                  # Fast checks (Prettier)
+│   ├── pre-push                    # Thorough checks (types, tests)
+│   └── commit-msg                  # Conventional commits validation
+│
 ├── docker-compose.yml          # PostgreSQL + Redis
+├── LICENSE.md                  # Fair Source License v1.0 + CLA
+├── COMMERCIAL-LICENSE.md       # Commercial licensing details
 ├── claude.md                   # This file (for AI)
 └── README.md                   # For humans
 ```
@@ -144,17 +192,20 @@ qoomb/
 
 - Monorepo (Turborepo + pnpm)
 - NestJS backend
-- React frontend (minimal)
-- Docker Compose (PostgreSQL 16 + Redis 7)
+- React 19 PWA frontend with vite-plugin-pwa
+- Capacitor mobile wrapper (iOS/Android)
+- Docker Compose (PostgreSQL 17 + Redis 7.4)
 - Prisma with multi-schema
+- Shared UI component library (@qoomb/ui)
+- Local development with qoomb.localhost (Caddy + mkcert)
 
 **Security & Auth (PRODUCTION-READY):**
 
 - JWT authentication with refresh tokens (15min access, 7d refresh)
 - Token rotation and revocation
 - Token blacklisting (Redis-based)
-- Per-hive schema isolation
-- Row-Level Security (RLS)
+- Shared schema + Row-Level Security (RLS) on all hive-scoped tables
+- `app.hive_id` session variable enforced by `hiveProcedure`
 - Input validation (Zod) + sanitization
 - Rate limiting (Redis-based, distributed)
 - Account lockout (exponential backoff)
@@ -165,7 +216,60 @@ qoomb/
 - Audit logging foundation
 - **Location:** `apps/api/src/modules/auth/`, `apps/api/src/common/`
 
-**Encryption (NEW):**
+**Mobile & PWA (NEW):**
+
+- PWA manifest with app icons
+- Service worker with Workbox (offline caching)
+- Apple mobile web app support
+- Capacitor configuration for iOS/Android
+- Native plugins: Push Notifications, Haptics, Splash Screen
+- **Location:** `apps/web/`, `apps/mobile/`
+
+**Shared UI Library:**
+
+- Button, Input, Card components
+- Responsive hooks (useMediaQuery, useIsMobile, useIsDesktop)
+- Offline detection (useOnlineStatus)
+- Tailwind class merger utility (cn)
+- **Location:** `packages/ui/`
+
+**Developer Experience (DEV MODE ONLY):**
+
+- **Dev Panel:** Sliding debug panel (right side, dev mode only)
+  - Mobile Setup: QR codes for certificate & app access
+  - Environment Info: URLs, API endpoints, env variables
+  - Backend Health: Auto-refreshing health checks
+  - Network Status: Online/offline detection, connection type
+  - Quick Actions: Cache controls, Prisma Studio, console logs
+- **Qoomb Branding:** Yellow/black theme matching project identity
+- **Zero Production Impact:** Completely invisible in production builds
+- **Location:** `apps/web/src/components/dev/`
+
+**Code Quality & CI/CD (PRODUCTION-READY):**
+
+- **ESLint:** Shared configuration (@qoomb/eslint-config) with strict TypeScript rules
+- **Prettier:** Consistent code formatting across monorepo
+- **Husky + lint-staged:** Pre-commit hooks (Prettier auto-fix)
+- **Pre-push hooks:** Type checking, testing, build validation
+- **Commitlint:** Conventional Commits enforcement
+- **GitHub Actions CI:** Lint, type-check, test, build
+- **CodeQL:** Static Application Security Testing (SAST)
+- **Trivy:** Container & dependency vulnerability scanning
+- **Dependabot:** Automated dependency updates (grouped by type)
+- **3-Layer Defense:** pre-commit (fast) → pre-push (thorough) → CI/CD (complete)
+- **Zero ESLint Errors:** All 182 API + 11 UI errors fixed, strict type safety enforced
+- **Location:** `.github/workflows/`, `.husky/`, `packages/eslint-config/`
+
+**Licensing (PRODUCTION-READY):**
+
+- **Fair Source License v1.0:** 20-employee threshold for commercial use
+- **Contributor License Agreement (CLA):** Protects both contributors and project
+- **Dual Licensing:** Free for individuals/small teams, commercial for enterprises
+- **Copyright:** Benjamin Gröner (bgroener@coqoon.com)
+- **Commercial Options:** Perpetual, Subscription, SaaS/Hosting, OEM licenses
+- **Location:** `LICENSE.md`, `COMMERCIAL-LICENSE.md`
+
+**Encryption:**
 
 - Pluggable key providers (Environment, File, AWS KMS, Vault)
 - Decorator-based field encryption (`@EncryptFields`, `@DecryptFields`)
@@ -176,20 +280,34 @@ qoomb/
 
 ### 🚧 TODO (Next)
 
-**Phase 2 (Core Features):**
+**Phase 2 (Core Content):**
 
-- [ ] Events module (CRUD + recurrence)
-- [ ] Tasks module (CRUD + assignees)
-- [ ] Persons module (hive members + roles)
-- [ ] Apply encryption decorators to sensitive fields
-- [ ] React UI components
+- [ ] Persons module (hive member management)
+- [ ] Events module (CRUD + simple recurrence + resource-access guard)
+- [ ] Tasks module (CRUD + assignees + event→task spawning)
+- [ ] `resource-access.ts` guard (visibility resolution, shared across all content types)
 
-**Phase 3 (Advanced):**
+**Phase 3 (Pages + Files):**
 
-- [ ] Client-side SQLite (offline-first)
-- [ ] Sync engine (vector clock)
+- [ ] Pages module (Tiptap editor, tree hierarchy, version history)
+- [ ] Documents module (file upload + envelope encryption)
+- [ ] Activity log (change feed / "what changed since last login")
+
+**Phase 4 (Offline + Search):**
+
+- [ ] Client-side SQLite sync (vector clock conflict resolution)
+- [ ] Full local search (all non-file content synced to client)
 - [ ] E2E encryption option (libsodium)
-- [ ] Semantic search (pgvector)
+- [ ] pgvector semantic search (server-side complement)
+
+**Phase 5 (Calendar Integration):**
+
+- [ ] Google Calendar (OAuth + webhook)
+- [ ] Apple Calendar (CalDAV)
+- [ ] Microsoft Outlook (Graph API)
+- [ ] Bidirectional sync + conflict resolution UI
+
+**See:** `docs/CONTENT_ARCHITECTURE.md` for the complete content model, schema sketches, encryption strategy, and phase details.
 
 ---
 
@@ -600,6 +718,62 @@ async create(input: CreateEventInput) {
 
 ---
 
+## RBAC & Resource Permission Architecture
+
+### Roles
+
+**Family Hive** (minimum 1 `parent` required, enforced by DB trigger `enforce_minimum_admin`)
+| Role | Permissions |
+| -------- | ----------------------------------------------------------------------------------------------- |
+| `parent` | Everything |
+| `child` | members:view, events:view/create/update:own/delete:own, tasks:view/create/update:own/delete:own |
+
+**Organization Hive** (minimum 1 `org_admin` required)
+| Role | Permissions |
+| ----------- | ------------------------------------------------------------------------- |
+| `org_admin` | Everything |
+| `manager` | events:_, tasks:_, members:view/invite/remove |
+| `member` | members:view, events:view/create/update:own, tasks:view/create/update:own |
+| `guest` | members:view, events:view, tasks:view |
+
+Global defaults defined in `packages/types/src/permissions.ts`. Per-hive overrides stored in `hive_role_permissions` table.
+
+### Resource Permission Resolution (canDo check)
+
+```
+1. Explicit ResourceShare for this person+resource?
+   → use share.canView / canEdit / canDelete
+
+2. resource.visibility = 'private'?
+   → creator + parents / org_admin only
+
+3. resource.visibility = 'parents'?
+   → parents / org_admin only
+
+4. visibility = 'hive' or 'shared' (no direct share):
+   a. Load global HIVE_ROLE_PERMISSIONS defaults
+   b. Apply hive_role_permissions DB overrides (grant/revoke)
+   c. Check resulting set includes required permission
+
+Note: parents / org_admin always see everything, no exceptions.
+```
+
+### Resource Visibility Values
+
+Each resource (event, task, note, …) carries a `visibility` field:
+
+- `'hive'` — all hive members (default)
+- `'parents'` — parents / org_admin only
+- `'private'` — creator + parents only
+- `'shared'` — specific persons via `resource_shares` table
+
+### DB Tables
+
+- `hive_role_permissions` — per-hive role permission overrides (currently empty, UI to manage TBD)
+- `resource_shares` — per-resource explicit person grants (`canView`, `canEdit`, `canDelete`)
+
+---
+
 ## Security Architecture (Critical for LLMs to understand)
 
 ### Multi-Tenant Isolation (Defense-in-Depth)
@@ -609,9 +783,9 @@ Layer 1: JWT Authentication
     ↓
 Layer 2: Authorization Middleware (hiveProcedure)
     ↓
-Layer 3: Schema Isolation (SET search_path TO hive_<uuid>)
+Layer 3: RLS Session Context (SET app.hive_id = '<uuid>')
     ↓
-Layer 4: Row-Level Security (RLS policies)
+Layer 4: Row-Level Security (RLS policy on every hive-scoped table)
     ↓
 Layer 5: Audit Logging
 ```
@@ -765,6 +939,59 @@ async createEvent(data: CreateEventInput) {
 }
 ```
 
+### ❌ DON'T: Log user-controlled input directly (Log Injection / CWE-117)
+
+```typescript
+// BAD: request.url could contain \r\n to forge log lines
+console.warn(`[RATE_LIMIT] Throttled request to ${request.url}`);
+```
+
+### ✅ DO: Strip newlines from user-controlled values before logging
+
+```typescript
+// GOOD: newlines removed → no fake log entries possible
+const url = request.url.replace(/[\r\n]/g, '');
+console.warn(`[RATE_LIMIT] Throttled request to ${url}`);
+```
+
+**Rule:** Any value from `request.url`, `request.headers`, query params, or body that is interpolated into a log string must have `\r\n` stripped first.
+
+### ❌ DON'T: Use unbounded negated character classes in regex on user input (ReDoS / CWE-1333)
+
+```typescript
+// BAD: [^>]* can match < which causes polynomial backtracking
+input.replace(/<[^>]*>/g, '');
+```
+
+### ✅ DO: Bound negated classes to exclude all ambiguous delimiters
+
+```typescript
+// GOOD: [^<>]* cannot match either delimiter → O(n) guaranteed
+input.replace(/<[^<>]*>/g, '');
+```
+
+**Rule:** In `[^X]*` patterns applied to untrusted input, exclude ALL characters that could start a new match — not just the closing delimiter.
+
+### ❌ DON'T: Assume a single-pass sanitization removes all dangerous patterns
+
+```typescript
+// BAD: <sc<script>ript> → after one pass → <script> (reconstructed!)
+input.replace(/<[^<>]*>/g, '');
+```
+
+### ✅ DO: Run tag removal twice + encode remaining special characters
+
+```typescript
+// GOOD: two passes + encoding — see sanitizeHtml() in @qoomb/validators
+input
+  .replace(/<[^<>]*>/g, '') // Pass 1
+  .replace(/<[^<>]*>/g, '') // Pass 2: catches reconstructed tags
+  .replace(/</g, '&lt;') // Encode any remaining < (final safety net)
+  .replace(/>/g, '&gt;');
+```
+
+**Use the existing `sanitizeHtml()` utility from `@qoomb/validators` instead of rolling your own.**
+
 ---
 
 ## Environment Configuration
@@ -786,13 +1013,14 @@ JWT_SECRET=<32+ chars>    # Generate: openssl rand -base64 32
 
 ## Documentation Structure
 
-```
+```text
 README.md              → Human onboarding
 claude.md              → This file (AI context)
 docs/
-  ├── SECURITY.md      → Security architecture details
-  ├── PERFORMANCE.md   → Prisma performance guide
-  └── PRISMA_PATTERNS.md → When to use Prisma vs SQL
+  ├── SECURITY.md          → Security architecture details
+  ├── PERFORMANCE.md       → Prisma performance guide
+  ├── PRISMA_PATTERNS.md   → When to use Prisma vs SQL
+  └── LOCAL_DEVELOPMENT.md → qoomb.localhost setup for mobile/PWA testing
 
 apps/api/src/modules/encryption/
   ├── README.md        → Encryption quick start
@@ -803,6 +1031,8 @@ apps/api/src/modules/encryption/
 
 ## Notes for LLMs
 
+### Critical Rules (MUST Follow)
+
 1. **Always use `hiveProcedure`** for hive-specific operations
 2. **Always use `@EncryptFields`** for sensitive data (don't manually encrypt)
 3. **Always validate with Zod** at API boundaries
@@ -810,9 +1040,62 @@ apps/api/src/modules/encryption/
 5. **Always consider multi-tenant** context (which hive?)
 6. **Never create default configs** for security-critical settings
 7. **Never use `any`** types (use proper TypeScript/Zod)
-8. **Prefer Prisma** for CRUD, **raw SQL** for complex queries
-9. **Follow existing patterns** (see Key Code Patterns section)
-10. **Document architectural decisions** in this file
+8. **Never bypass ESLint rules** without explicit disable comments + explanation
+9. **Prefer Prisma** for CRUD, **raw SQL** for complex queries
+10. **Follow existing patterns** (see Key Code Patterns section)
+11. **Document architectural decisions** in this file
+
+### Code Quality Standards
+
+- **All code MUST pass ESLint** with zero errors (warnings acceptable only with justification)
+- **All code MUST be formatted** with Prettier before commit
+- **All commits MUST follow** Conventional Commits format (feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert)
+- **NEVER add `Co-Authored-By:` trailers** to commit messages — not for Claude, not for any AI tool
+- **Type safety is mandatory** - no implicit `any`, proper type annotations for all Prisma queries
+- **Pre-commit hooks will auto-fix** Prettier issues, but ESLint errors must be fixed manually
+- **Pre-push hooks will block** if type-check, tests, or build fails
+
+### Versioning Policy (CRITICAL)
+
+**⚠️ Version numbers are ONLY changed for actual releases, not for incremental development!**
+
+- **Current Version:** `0.1.0` (defined in `apps/web/src/App.tsx` as `APP_VERSION`)
+- **Single Source of Truth:** `apps/web/src/App.tsx` exports `APP_VERSION`
+- **Semantic Versioning:** `MAJOR.MINOR.PATCH` (following semver.org)
+
+**When to bump versions:**
+
+- **0.1.0 → 0.2.0:** Phase 2 complete (Auth, Events, Tasks, Persons production-ready)
+- **0.2.0 → 0.3.0:** Phase 3 complete (Offline sync, E2E encryption, semantic search)
+- **0.x.0 → 1.0.0:** First production release (all core features stable)
+- **PATCH (0.1.x):** Critical bugfixes only, no new features
+
+**When NOT to bump:**
+
+- ❌ Adding dev tools (e.g., dev panel, debug utilities)
+- ❌ Refactoring code without user-visible changes
+- ❌ Improving documentation
+- ❌ Internal optimizations
+- ❌ Infrastructure changes (CI/CD, build config)
+- ❌ Work-in-progress features
+
+**Version changes require:**
+
+1. **Explicit user approval** - Never change version without asking
+2. Update `apps/web/src/App.tsx` (`APP_VERSION` constant)
+3. Update `claude.md` (this file, at bottom)
+4. Update `README.md` if version is mentioned
+5. Git commit: `chore: bump version to X.Y.Z`
+
+**LLM Instruction:** NEVER increment version numbers autonomously. Always keep `APP_VERSION = '0.1.0'` unless explicitly instructed by user for a release.
+
+### Licensing & Contributions
+
+- **Copyright:** Benjamin Gröner (all new code contributions)
+- **License:** Fair Source v1.0 (20-employee threshold) - see LICENSE.md
+- **Contributors must agree** to CLA when submitting code
+- **Commercial licensing** available for enterprises (≥20 employees, SaaS, OEM)
+- **Never modify license files** without explicit user request
 
 **When adding new features:**
 
@@ -824,5 +1107,5 @@ apps/api/src/modules/encryption/
 
 ---
 
-**Last Updated:** 2026-02-04
-**Version:** 0.2.2 (TypeScript 7.0 ready, Strict mode enabled, Phase 2 in progress)
+**Last Updated:** 2026-02-10
+**Version:** 0.1.0 (Phase 1 - Foundation with PWA, Mobile, Dev Tools)

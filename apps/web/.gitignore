@@ -1,0 +1,10 @@
+# Development certificates (should never be committed)
+public/dev-cert/
+
+# Build output
+dist/
+dist-ssr/
+
+# Local env files
+.env.local
+.env.*.local

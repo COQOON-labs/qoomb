@@ -1,3 +1,5 @@
+import sanitizeHtmlLib from 'sanitize-html';
+
 /**
  * Input sanitization utilities for security
  *
@@ -10,18 +12,12 @@
  */
 
 /**
- * Remove HTML tags and encode special characters
- * Prevents XSS attacks by removing potentially dangerous HTML
+ * Strip all HTML tags and return plain text.
+ * Delegates to sanitize-html (battle-tested library) instead of bespoke regex
+ * to avoid incomplete multi-character sanitization (CWE-80, js/incomplete-multi-character-sanitization).
  */
 export function sanitizeHtml(input: string): string {
-  return input
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
+  return sanitizeHtmlLib(input, { allowedTags: [], allowedAttributes: {} });
 }
 
 /**

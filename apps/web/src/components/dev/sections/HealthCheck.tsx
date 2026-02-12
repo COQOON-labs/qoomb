@@ -6,10 +6,10 @@ export function HealthCheck() {
   });
 
   const getStatusColor = () => {
-    if (isLoading) return '#94a3b8';
+    if (isLoading) return 'rgba(255, 255, 255, 0.4)';
     if (error) return '#ef4444';
     if (data?.status === 'ok') return '#10b981';
-    return '#f59e0b';
+    return '#F5C400';
   };
 
   const getStatusText = () => {
@@ -20,7 +20,7 @@ export function HealthCheck() {
   };
 
   return (
-    <div style={{ padding: '16px', borderBottom: '1px solid #334155' }}>
+    <div style={{ padding: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
       <div
         style={{
           display: 'flex',
@@ -31,10 +31,12 @@ export function HealthCheck() {
       >
         <h3
           style={{
-            color: '#eab308',
-            fontSize: '16px',
-            fontWeight: '600',
+            color: '#F5C400',
+            fontSize: '13px',
+            fontWeight: '900',
             margin: 0,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
           }}
         >
           💓 Backend Health
@@ -45,12 +47,15 @@ export function HealthCheck() {
           }}
           style={{
             backgroundColor: 'transparent',
-            border: '1px solid #475569',
-            color: '#cbd5e1',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            color: 'rgba(255, 255, 255, 0.6)',
             padding: '4px 8px',
             borderRadius: '4px',
             cursor: 'pointer',
-            fontSize: '12px',
+            fontSize: '11px',
+            fontWeight: '700',
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
           }}
         >
           Refresh
@@ -67,14 +72,14 @@ export function HealthCheck() {
       >
         <div
           style={{
-            width: '12px',
-            height: '12px',
+            width: '10px',
+            height: '10px',
             borderRadius: '50%',
             backgroundColor: getStatusColor(),
             boxShadow: `0 0 8px ${getStatusColor()}`,
           }}
         />
-        <span style={{ color: '#cbd5e1', fontSize: '14px', fontWeight: '500' }}>
+        <span style={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: '13px', fontWeight: '500' }}>
           {getStatusText()}
         </span>
       </div>
@@ -82,11 +87,11 @@ export function HealthCheck() {
       {data && (
         <div style={{ fontSize: '12px', fontFamily: 'monospace' }}>
           <div style={{ marginBottom: '8px' }}>
-            <span style={{ color: '#94a3b8' }}>Timestamp:</span>
+            <span style={{ color: 'rgba(255, 255, 255, 0.4)' }}>Timestamp:</span>
             <div
               style={{
-                color: '#cbd5e1',
-                backgroundColor: '#1e293b',
+                color: 'rgba(255, 255, 255, 0.75)',
+                backgroundColor: '#1A1A18',
                 padding: '4px 8px',
                 borderRadius: '4px',
                 marginTop: '4px',
@@ -97,11 +102,11 @@ export function HealthCheck() {
           </div>
           {data.localIp && (
             <div>
-              <span style={{ color: '#94a3b8' }}>Server IP:</span>
+              <span style={{ color: 'rgba(255, 255, 255, 0.4)' }}>Server IP:</span>
               <div
                 style={{
-                  color: '#cbd5e1',
-                  backgroundColor: '#1e293b',
+                  color: 'rgba(255, 255, 255, 0.75)',
+                  backgroundColor: '#1A1A18',
                   padding: '4px 8px',
                   borderRadius: '4px',
                   marginTop: '4px',

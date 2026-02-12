@@ -4,19 +4,21 @@ export function NetworkStatus() {
   const isOnline = useOnlineStatus();
 
   return (
-    <div style={{ padding: '16px', borderBottom: '1px solid #334155' }}>
+    <div style={{ padding: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
       <h3
         style={{
-          color: '#eab308',
-          fontSize: '16px',
-          fontWeight: '600',
+          color: '#F5C400',
+          fontSize: '13px',
+          fontWeight: '900',
           marginBottom: '12px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
         }}
       >
         📡 Network Status
       </h3>
 
-      <div style={{ fontSize: '14px' }}>
+      <div style={{ fontSize: '13px' }}>
         {/* Online Status */}
         <div
           style={{
@@ -28,25 +30,27 @@ export function NetworkStatus() {
         >
           <div
             style={{
-              width: '12px',
-              height: '12px',
+              width: '10px',
+              height: '10px',
               borderRadius: '50%',
               backgroundColor: isOnline ? '#10b981' : '#ef4444',
               boxShadow: `0 0 8px ${isOnline ? '#10b981' : '#ef4444'}`,
             }}
           />
-          <span style={{ color: '#cbd5e1', fontWeight: '500' }}>
+          <span style={{ color: 'rgba(255, 255, 255, 0.75)', fontWeight: '600' }}>
             {isOnline ? 'Online' : 'Offline'}
           </span>
         </div>
 
         {/* Connection Type */}
         <div>
-          <span style={{ color: '#94a3b8', fontSize: '12px' }}>Connection Type:</span>
+          <span style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px' }}>
+            Connection Type:
+          </span>
           <div
             style={{
-              color: '#cbd5e1',
-              backgroundColor: '#1e293b',
+              color: 'rgba(255, 255, 255, 0.75)',
+              backgroundColor: '#1A1A18',
               padding: '6px 8px',
               borderRadius: '4px',
               marginTop: '4px',

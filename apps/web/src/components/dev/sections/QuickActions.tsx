@@ -45,26 +45,29 @@ export function QuickActions() {
   };
 
   const buttonStyle: React.CSSProperties = {
-    backgroundColor: '#1e293b',
-    border: '1px solid #475569',
-    color: '#cbd5e1',
+    backgroundColor: '#1A1A18',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    color: 'rgba(255, 255, 255, 0.75)',
     padding: '8px 12px',
     borderRadius: '6px',
     cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: '500',
+    fontSize: '12px',
+    fontWeight: '600',
     width: '100%',
     transition: 'all 0.2s',
+    textAlign: 'left',
   };
 
   return (
-    <div style={{ padding: '16px', borderBottom: '1px solid #334155' }}>
+    <div style={{ padding: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
       <h3
         style={{
-          color: '#eab308',
-          fontSize: '16px',
-          fontWeight: '600',
+          color: '#F5C400',
+          fontSize: '13px',
+          fontWeight: '900',
           marginBottom: '12px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
         }}
       >
         ⚡ Quick Actions
@@ -78,12 +81,12 @@ export function QuickActions() {
           }}
           style={buttonStyle}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#334155';
-            e.currentTarget.style.borderColor = '#eab308';
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+            e.currentTarget.style.borderColor = '#F5C400';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#1e293b';
-            e.currentTarget.style.borderColor = '#475569';
+            e.currentTarget.style.backgroundColor = '#1A1A18';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
           }}
         >
           🗑️ Clear All Cache
@@ -94,12 +97,12 @@ export function QuickActions() {
           onClick={clearConsole}
           style={buttonStyle}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#334155';
-            e.currentTarget.style.borderColor = '#eab308';
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+            e.currentTarget.style.borderColor = '#F5C400';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#1e293b';
-            e.currentTarget.style.borderColor = '#475569';
+            e.currentTarget.style.backgroundColor = '#1A1A18';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
           }}
         >
           🧹 Clear Console
@@ -110,12 +113,12 @@ export function QuickActions() {
           onClick={reloadPage}
           style={buttonStyle}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#334155';
-            e.currentTarget.style.borderColor = '#eab308';
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+            e.currentTarget.style.borderColor = '#F5C400';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#1e293b';
-            e.currentTarget.style.borderColor = '#475569';
+            e.currentTarget.style.backgroundColor = '#1A1A18';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
           }}
         >
           🔄 Reload Page
@@ -133,12 +136,12 @@ export function QuickActions() {
             display: 'block',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#334155';
-            e.currentTarget.style.borderColor = '#eab308';
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+            e.currentTarget.style.borderColor = '#F5C400';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#1e293b';
-            e.currentTarget.style.borderColor = '#475569';
+            e.currentTarget.style.backgroundColor = '#1A1A18';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
           }}
         >
           🗄️ Open Prisma Studio
@@ -149,12 +152,12 @@ export function QuickActions() {
           onClick={() => setShowLogs(!showLogs)}
           style={buttonStyle}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#334155';
-            e.currentTarget.style.borderColor = '#eab308';
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+            e.currentTarget.style.borderColor = '#F5C400';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#1e293b';
-            e.currentTarget.style.borderColor = '#475569';
+            e.currentTarget.style.backgroundColor = '#1A1A18';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
           }}
         >
           📋 {showLogs ? 'Hide' : 'Show'} Action Logs
@@ -166,8 +169,8 @@ export function QuickActions() {
         <div
           style={{
             marginTop: '12px',
-            backgroundColor: '#0f172a',
-            border: '1px solid #334155',
+            backgroundColor: '#111110',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '6px',
             padding: '8px',
             maxHeight: '150px',
@@ -180,7 +183,7 @@ export function QuickActions() {
               style={{
                 fontSize: '11px',
                 fontFamily: 'monospace',
-                color: '#94a3b8',
+                color: 'rgba(255, 255, 255, 0.4)',
                 marginBottom: '4px',
               }}
             >

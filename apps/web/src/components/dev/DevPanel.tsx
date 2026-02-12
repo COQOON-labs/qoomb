@@ -30,8 +30,8 @@ export function DevPanel() {
           right: isOpen ? 0 : '-400px',
           width: '400px',
           height: '100vh',
-          backgroundColor: '#0f172a',
-          borderLeft: '2px solid #eab308',
+          backgroundColor: '#111110',
+          borderLeft: '2px solid #F5C400',
           boxShadow: isOpen ? '-4px 0 16px rgba(0, 0, 0, 0.5)' : 'none',
           transition: 'right 0.3s ease',
           zIndex: 9998,
@@ -44,8 +44,8 @@ export function DevPanel() {
         <div
           style={{
             padding: '16px',
-            borderBottom: '2px solid #eab308',
-            backgroundColor: '#1e293b',
+            borderBottom: '2px solid #F5C400',
+            backgroundColor: '#1A1A18',
             position: 'sticky',
             top: 0,
             zIndex: 1,
@@ -54,21 +54,25 @@ export function DevPanel() {
           <h2
             style={{
               margin: 0,
-              color: '#eab308',
+              color: '#F5C400',
               fontSize: '18px',
-              fontWeight: '700',
+              fontWeight: '900',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
             }}
           >
-            🐝 Qoomb Dev Tools
+            🐝 Dev Tools
           </h2>
           <p
             style={{
               margin: '4px 0 0 0',
-              color: '#94a3b8',
-              fontSize: '12px',
+              color: 'rgba(255, 255, 255, 0.4)',
+              fontSize: '11px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
             }}
           >
             Development mode only
@@ -88,14 +92,16 @@ export function DevPanel() {
         <div
           style={{
             padding: '12px 16px',
-            borderTop: '1px solid #334155',
-            backgroundColor: '#1e293b',
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: '#1A1A18',
             fontSize: '11px',
-            color: '#64748b',
+            color: 'rgba(255, 255, 255, 0.3)',
             textAlign: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
           }}
         >
-          Qoomb v{APP_VERSION} • Dev Mode
+          Qoomb v{APP_VERSION} · Dev Mode
         </div>
       </div>
 

@@ -14,13 +14,15 @@ export function EnvironmentInfo() {
   };
 
   return (
-    <div style={{ padding: '16px', borderBottom: '1px solid #334155' }}>
+    <div style={{ padding: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
       <h3
         style={{
-          color: '#eab308',
-          fontSize: '16px',
-          fontWeight: '600',
+          color: '#F5C400',
+          fontSize: '13px',
+          fontWeight: '900',
           marginBottom: '12px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
         }}
       >
         🌐 Environment Info
@@ -37,11 +39,11 @@ export function EnvironmentInfo() {
               gap: '4px',
             }}
           >
-            <span style={{ color: '#94a3b8', fontWeight: '500' }}>{key}:</span>
+            <span style={{ color: 'rgba(255, 255, 255, 0.4)', fontWeight: '500' }}>{key}:</span>
             <span
               style={{
-                color: '#cbd5e1',
-                backgroundColor: '#1e293b',
+                color: 'rgba(255, 255, 255, 0.75)',
+                backgroundColor: '#1A1A18',
                 padding: '4px 8px',
                 borderRadius: '4px',
                 wordBreak: 'break-all',

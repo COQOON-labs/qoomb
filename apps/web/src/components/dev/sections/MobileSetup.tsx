@@ -15,13 +15,15 @@ export function MobileSetup() {
   const appUrl = `https://${ip}:8443`;
 
   return (
-    <div style={{ padding: '16px', borderBottom: '1px solid #334155' }}>
+    <div style={{ padding: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
       <h3
         style={{
-          color: '#eab308',
-          fontSize: '16px',
-          fontWeight: '600',
+          color: '#F5C400',
+          fontSize: '13px',
+          fontWeight: '900',
           marginBottom: '12px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
         }}
       >
         📱 Mobile Setup
@@ -31,9 +33,9 @@ export function MobileSetup() {
       <div style={{ marginBottom: '16px' }}>
         <h4
           style={{
-            color: '#cbd5e1',
-            fontSize: '14px',
-            fontWeight: '500',
+            color: 'rgba(255, 255, 255, 0.75)',
+            fontSize: '13px',
+            fontWeight: '600',
             marginBottom: '8px',
           }}
         >
@@ -51,7 +53,7 @@ export function MobileSetup() {
         </div>
         <p
           style={{
-            color: '#94a3b8',
+            color: 'rgba(255, 255, 255, 0.4)',
             fontSize: '12px',
             marginTop: '8px',
             lineHeight: '1.5',
@@ -67,9 +69,9 @@ export function MobileSetup() {
       <div>
         <h4
           style={{
-            color: '#cbd5e1',
-            fontSize: '14px',
-            fontWeight: '500',
+            color: 'rgba(255, 255, 255, 0.75)',
+            fontSize: '13px',
+            fontWeight: '600',
             marginBottom: '8px',
           }}
         >
@@ -87,7 +89,7 @@ export function MobileSetup() {
         </div>
         <p
           style={{
-            color: '#94a3b8',
+            color: 'rgba(255, 255, 255, 0.4)',
             fontSize: '12px',
             marginTop: '8px',
           }}

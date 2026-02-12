@@ -1,3 +1,5 @@
+import { cn } from '@qoomb/ui';
+
 import { trpc } from '../../../lib/trpc/client';
 
 export function HealthCheck() {
@@ -5,11 +7,11 @@ export function HealthCheck() {
     refetchInterval: 10000, // Refetch every 10 seconds
   });
 
-  const getStatusColor = () => {
-    if (isLoading) return 'rgba(255, 255, 255, 0.4)';
-    if (error) return '#ef4444';
-    if (data?.status === 'ok') return '#10b981';
-    return '#F5C400';
+  const getStatusClasses = () => {
+    if (isLoading) return 'bg-white/40 shadow-[0_0_8px_rgba(255,255,255,0.4)]';
+    if (error) return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]';
+    if (data?.status === 'ok') return 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,1)]';
+    return 'bg-primary shadow-[0_0_8px_rgba(245,196,0,1)]';
   };
 
   const getStatusText = () => {
@@ -20,98 +22,38 @@ export function HealthCheck() {
   };
 
   return (
-    <div style={{ padding: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '12px',
-        }}
-      >
-        <h3
-          style={{
-            color: '#F5C400',
-            fontSize: '13px',
-            fontWeight: '900',
-            margin: 0,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-          }}
-        >
+    <div className="p-4 border-b border-white/8">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-primary text-[13px] font-black m-0 uppercase tracking-[0.08em]">
           💓 Backend Health
         </h3>
         <button
           onClick={() => {
             void refetch();
           }}
-          style={{
-            backgroundColor: 'transparent',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            color: 'rgba(255, 255, 255, 0.6)',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '11px',
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-          }}
+          className="bg-transparent border border-white/15 text-white/60 px-2 py-1 rounded text-[11px] font-bold uppercase tracking-[0.06em] cursor-pointer hover:border-primary hover:text-white/80 transition-colors"
         >
           Refresh
         </button>
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px',
-        }}
-      >
-        <div
-          style={{
-            width: '10px',
-            height: '10px',
-            borderRadius: '50%',
-            backgroundColor: getStatusColor(),
-            boxShadow: `0 0 8px ${getStatusColor()}`,
-          }}
-        />
-        <span style={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: '13px', fontWeight: '500' }}>
-          {getStatusText()}
-        </span>
+      <div className="flex items-center gap-2 mb-3">
+        <div className={cn('w-2.5 h-2.5 rounded-full', getStatusClasses())} />
+        <span className="text-white/75 text-[13px] font-medium">{getStatusText()}</span>
       </div>
 
       {data && (
-        <div style={{ fontSize: '12px', fontFamily: 'monospace' }}>
-          <div style={{ marginBottom: '8px' }}>
-            <span style={{ color: 'rgba(255, 255, 255, 0.4)' }}>Timestamp:</span>
-            <div
-              style={{
-                color: 'rgba(255, 255, 255, 0.75)',
-                backgroundColor: '#1A1A18',
-                padding: '4px 8px',
-                borderRadius: '4px',
-                marginTop: '4px',
-              }}
-            >
+        <div className="text-xs font-mono">
+          <div className="mb-2">
+            <span className="text-white/40">Timestamp:</span>
+            <div className="text-white/75 bg-dev-surface px-2 py-1 rounded mt-1">
               {new Date(data.timestamp).toLocaleString()}
             </div>
           </div>
           {data.localIp && (
             <div>
-              <span style={{ color: 'rgba(255, 255, 255, 0.4)' }}>Server IP:</span>
-              <div
-                style={{
-                  color: 'rgba(255, 255, 255, 0.75)',
-                  backgroundColor: '#1A1A18',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  marginTop: '4px',
-                }}
-              >
+              <span className="text-white/40">Server IP:</span>
+              <div className="text-white/75 bg-dev-surface px-2 py-1 rounded mt-1">
                 {data.localIp}
               </div>
             </div>
@@ -120,18 +62,7 @@ export function HealthCheck() {
       )}
 
       {error && (
-        <div
-          style={{
-            color: '#fca5a5',
-            fontSize: '12px',
-            backgroundColor: '#450a0a',
-            padding: '8px',
-            borderRadius: '4px',
-            marginTop: '8px',
-          }}
-        >
-          {error.message}
-        </div>
+        <div className="text-red-300 text-xs bg-red-950 p-2 rounded mt-2">{error.message}</div>
       )}
     </div>
   );

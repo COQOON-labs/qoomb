@@ -30,6 +30,10 @@
   --color-success:                var(--success);
   --color-success-foreground:     var(--success-foreground);
 
+  /* Dev panel (always dark, dev-only) */
+  --color-dev-bg:                 var(--dev-bg);
+  --color-dev-surface:            var(--dev-surface);
+
   --font-sans: "Inter", system-ui, sans-serif;
 }
 
@@ -53,6 +57,10 @@
   /* Card */
   --card:                   #FFFFFF; /* clean white */
   --card-foreground:        #111110;
+
+  /* Dev panel (always dark, never changes with theme) */
+  --dev-bg:                 #111110;
+  --dev-surface:            #1A1A18;
 
   /* Status */
   --destructive:            #DC2626; /* red-600 */

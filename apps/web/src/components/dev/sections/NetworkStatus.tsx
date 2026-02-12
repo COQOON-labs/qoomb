@@ -1,59 +1,27 @@
-import { useOnlineStatus } from '@qoomb/ui';
+import { cn, useOnlineStatus } from '@qoomb/ui';
 
 export function NetworkStatus() {
   const isOnline = useOnlineStatus();
 
+  const dotClass = isOnline ? 'bg-emerald-500 glow-success' : 'bg-red-500 glow-destructive';
+
   return (
-    <div style={{ padding: '16px', borderBottom: '1px solid #334155' }}>
-      <h3
-        style={{
-          color: '#eab308',
-          fontSize: '16px',
-          fontWeight: '600',
-          marginBottom: '12px',
-        }}
-      >
+    <div className="p-4 border-b border-white/8">
+      <h3 className="text-primary text-sm font-black mb-3 uppercase tracking-widest">
         📡 Network Status
       </h3>
 
-      <div style={{ fontSize: '14px' }}>
+      <div className="text-sm">
         {/* Online Status */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '12px',
-          }}
-        >
-          <div
-            style={{
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%',
-              backgroundColor: isOnline ? '#10b981' : '#ef4444',
-              boxShadow: `0 0 8px ${isOnline ? '#10b981' : '#ef4444'}`,
-            }}
-          />
-          <span style={{ color: '#cbd5e1', fontWeight: '500' }}>
-            {isOnline ? 'Online' : 'Offline'}
-          </span>
+        <div className="flex items-center gap-2 mb-3">
+          <div className={cn('w-2.5 h-2.5 rounded-full', dotClass)} />
+          <span className="text-white/75 font-semibold">{isOnline ? 'Online' : 'Offline'}</span>
         </div>
 
         {/* Connection Type */}
         <div>
-          <span style={{ color: '#94a3b8', fontSize: '12px' }}>Connection Type:</span>
-          <div
-            style={{
-              color: '#cbd5e1',
-              backgroundColor: '#1e293b',
-              padding: '6px 8px',
-              borderRadius: '4px',
-              marginTop: '4px',
-              fontSize: '12px',
-              fontFamily: 'monospace',
-            }}
-          >
+          <span className="text-white/40 text-xs">Connection Type:</span>
+          <div className="text-white/75 bg-dev-surface px-2 py-1.5 rounded mt-1 text-xs font-mono">
             {(navigator as Navigator & { connection?: { effectiveType?: string } }).connection
               ?.effectiveType ?? 'Unknown'}
           </div>

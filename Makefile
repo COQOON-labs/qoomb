@@ -1,4 +1,4 @@
-.PHONY: help install setup setup-extended dev dev-extended build clean docker-up docker-down docker-logs docker-clean _docker-volumes-remove db-migrate db-generate db-studio db-reset test lint format check-ports check-deps db-shell redis-cli type-check generate-secrets start stop restart clean-all fresh stop-extended
+.PHONY: help install setup setup-extended dev dev-extended build clean docker-up docker-down docker-logs docker-clean _docker-volumes-remove db-migrate db-generate db-studio db-reset test lint format check-ports check-deps db-shell redis-cli type-check generate-secrets start stop restart clean-all fresh stop-extended _dev-stop
 
 # Colors for output
 BLUE := \033[0;34m
@@ -127,7 +127,14 @@ setup-extended: ## Extended setup with HTTPS & local domain (macOS/Linux)
 # Development Commands
 # =============================================================================
 
-dev: ## Start development servers (localhost, works everywhere)
+# Internal: Stop dev servers belonging to THIS project before clean or restart.
+# Uses CURDIR so it only kills processes from this workspace, not other projects.
+_dev-stop:
+	@pkill -f "$(CURDIR)/apps/web" 2>/dev/null || true
+	@pkill -f "$(CURDIR)/apps/api" 2>/dev/null || true
+	@echo "$(GREEN)✓ Dev servers stopped$(NC)"
+
+dev: _dev-stop ## Start development servers (localhost, works everywhere)
 	@echo "$(BLUE)Starting development servers...$(NC)"
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
@@ -147,7 +154,7 @@ dev: ## Start development servers (localhost, works everywhere)
 	@(sleep 5 && (open http://localhost:5173 2>/dev/null || xdg-open http://localhost:5173 2>/dev/null || true)) &
 	@pnpm dev
 
-dev-extended: ## Start with HTTPS & local domain (macOS/Linux)
+dev-extended: _dev-stop ## Start with HTTPS & local domain (macOS/Linux)
 	@echo "$(BLUE)Starting extended development environment...$(NC)"
 	@# Check if Caddy is installed
 	@if ! command -v caddy &> /dev/null; then \
@@ -363,7 +370,7 @@ quality-fix: lint-fix format type-check ## Run all quality checks with fixes
 # Cleanup Commands
 # =============================================================================
 
-clean: ## Clean build artifacts and dependencies
+clean: _dev-stop ## Clean build artifacts and dependencies
 	@echo "$(BLUE)Cleaning project...$(NC)"
 	@if [ -d "node_modules" ]; then \
 		pnpm clean 2>/dev/null || echo "$(YELLOW)⚠ pnpm clean skipped (dependencies missing)$(NC)"; \

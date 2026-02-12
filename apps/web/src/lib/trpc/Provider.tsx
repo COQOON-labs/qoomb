@@ -28,8 +28,8 @@ export function TrpcProvider({ children }: TrpcProviderProps) {
       : `${window.location.origin}/trpc`;
 
     // Debug: Log the tRPC URL to verify it's using the correct origin
-    console.log('🔧 tRPC URL:', tRPCUrl);
-    console.log('🌐 window.location.origin:', window.location.origin);
+    console.warn('🔧 tRPC URL:', tRPCUrl);
+    console.warn('🌐 window.location.origin:', window.location.origin);
 
     return trpc.createClient({
       links: [

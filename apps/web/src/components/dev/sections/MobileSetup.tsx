@@ -15,48 +15,18 @@ export function MobileSetup() {
   const appUrl = `https://${ip}:8443`;
 
   return (
-    <div style={{ padding: '16px', borderBottom: '1px solid #334155' }}>
-      <h3
-        style={{
-          color: '#eab308',
-          fontSize: '16px',
-          fontWeight: '600',
-          marginBottom: '12px',
-        }}
-      >
+    <div className="p-4 border-b border-white/8">
+      <h3 className="text-primary text-sm font-black mb-3 uppercase tracking-widest">
         📱 Mobile Setup
       </h3>
 
       {/* Certificate */}
-      <div style={{ marginBottom: '16px' }}>
-        <h4
-          style={{
-            color: '#cbd5e1',
-            fontSize: '14px',
-            fontWeight: '500',
-            marginBottom: '8px',
-          }}
-        >
-          1. Install Certificate
-        </h4>
-        <div
-          style={{
-            backgroundColor: '#fff',
-            padding: '12px',
-            borderRadius: '8px',
-            display: 'inline-block',
-          }}
-        >
+      <div className="mb-4">
+        <h4 className="text-white/75 text-sm font-semibold mb-2">1. Install Certificate</h4>
+        <div className="bg-white p-3 rounded-lg inline-block">
           <QRCodeSVG value={certUrl} size={120} />
         </div>
-        <p
-          style={{
-            color: '#94a3b8',
-            fontSize: '12px',
-            marginTop: '8px',
-            lineHeight: '1.5',
-          }}
-        >
+        <p className="text-white/40 text-xs mt-2 leading-relaxed">
           Download → Open → Settings → Profile Downloaded → Install →
           <br />
           General → About → Certificate Trust Settings → Enable
@@ -65,35 +35,11 @@ export function MobileSetup() {
 
       {/* App URL */}
       <div>
-        <h4
-          style={{
-            color: '#cbd5e1',
-            fontSize: '14px',
-            fontWeight: '500',
-            marginBottom: '8px',
-          }}
-        >
-          2. Open App
-        </h4>
-        <div
-          style={{
-            backgroundColor: '#fff',
-            padding: '12px',
-            borderRadius: '8px',
-            display: 'inline-block',
-          }}
-        >
+        <h4 className="text-white/75 text-sm font-semibold mb-2">2. Open App</h4>
+        <div className="bg-white p-3 rounded-lg inline-block">
           <QRCodeSVG value={appUrl} size={120} />
         </div>
-        <p
-          style={{
-            color: '#94a3b8',
-            fontSize: '12px',
-            marginTop: '8px',
-          }}
-        >
-          {appUrl}
-        </p>
+        <p className="text-white/40 text-xs mt-2">{appUrl}</p>
       </div>
     </div>
   );

@@ -14,39 +14,16 @@ export function EnvironmentInfo() {
   };
 
   return (
-    <div style={{ padding: '16px', borderBottom: '1px solid #334155' }}>
-      <h3
-        style={{
-          color: '#eab308',
-          fontSize: '16px',
-          fontWeight: '600',
-          marginBottom: '12px',
-        }}
-      >
+    <div className="p-4 border-b border-white/8">
+      <h3 className="text-primary text-sm font-black mb-3 uppercase tracking-widest">
         🌐 Environment Info
       </h3>
 
-      <div style={{ fontSize: '12px', fontFamily: 'monospace' }}>
+      <div className="text-xs font-mono">
         {Object.entries(envVars).map(([key, value]) => (
-          <div
-            key={key}
-            style={{
-              marginBottom: '8px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px',
-            }}
-          >
-            <span style={{ color: '#94a3b8', fontWeight: '500' }}>{key}:</span>
-            <span
-              style={{
-                color: '#cbd5e1',
-                backgroundColor: '#1e293b',
-                padding: '4px 8px',
-                borderRadius: '4px',
-                wordBreak: 'break-all',
-              }}
-            >
+          <div key={key} className="mb-2 flex flex-col gap-1">
+            <span className="text-white/40 font-medium">{key}:</span>
+            <span className="text-white/75 bg-dev-surface px-2 py-1 rounded break-all">
               {value}
             </span>
           </div>

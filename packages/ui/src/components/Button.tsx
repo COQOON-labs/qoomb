@@ -1,28 +1,61 @@
+import { Slot } from '@radix-ui/react-slot';
+import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 
 import { cn } from '../utils/cn';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Visual style variant */
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
-  /** Size of the button */
-  size?: 'sm' | 'md' | 'lg';
-  /** Show loading spinner */
+const buttonVariants = cva(
+  'inline-flex items-center justify-center font-medium transition-colors ' +
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ' +
+    'disabled:pointer-events-none disabled:opacity-50 rounded-lg',
+  {
+    variants: {
+      variant: {
+        primary: 'bg-primary text-primary-foreground hover:bg-primary-hover',
+        secondary: 'bg-muted text-foreground hover:bg-muted/80',
+        outline: 'border border-border bg-transparent text-foreground hover:bg-muted',
+        ghost: 'bg-transparent text-foreground hover:bg-muted',
+        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+      },
+      size: {
+        sm: 'h-8 px-3 text-sm',
+        md: 'h-10 px-4 text-sm',
+        lg: 'h-12 px-6 text-base',
+      },
+    },
+    defaultVariants: { variant: 'primary', size: 'md' },
+  }
+);
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+  /**
+   * Render as a child element (e.g. React Router <Link>).
+   * When true, the Button renders its child instead of a <button>,
+   * merging all props onto it.
+   */
+  asChild?: boolean;
+  /** Show loading spinner and disable interaction */
   isLoading?: boolean;
   /** Full width button */
   fullWidth?: boolean;
 }
 
 /**
- * Button component with multiple variants and sizes
- * Designed to work across web and mobile (Capacitor)
+ * Button component with multiple variants and sizes.
+ * Designed to work across web and mobile (Capacitor).
+ *
+ * @example
+ * <Button variant="primary" size="lg">Save</Button>
+ * <Button asChild><Link to="/login">Log in</Link></Button>
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       className,
-      variant = 'primary',
-      size = 'md',
+      variant,
+      size,
+      asChild = false,
       isLoading = false,
       fullWidth = false,
       disabled,
@@ -31,38 +64,23 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const baseStyles =
-      'inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-lg';
-
-    const variants = {
-      primary: 'bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:ring-indigo-500',
-      secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 focus-visible:ring-slate-500',
-      outline:
-        'border border-slate-300 bg-transparent text-slate-900 hover:bg-slate-100 focus-visible:ring-slate-500',
-      ghost: 'bg-transparent text-slate-900 hover:bg-slate-100 focus-visible:ring-slate-500',
-      destructive: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500',
-    };
-
-    const sizes = {
-      sm: 'h-8 px-3 text-sm',
-      md: 'h-10 px-4 text-sm',
-      lg: 'h-12 px-6 text-base',
-    };
+    const Comp = asChild ? Slot : 'button';
 
     return (
-      <button
+      <Comp
         ref={ref}
-        className={cn(baseStyles, variants[variant], sizes[size], fullWidth && 'w-full', className)}
-        disabled={disabled || isLoading}
+        className={cn(buttonVariants({ variant, size }), fullWidth && 'w-full', className)}
+        disabled={!asChild && (disabled || isLoading)}
         {...props}
       >
-        {isLoading ? (
+        {isLoading && !asChild ? (
           <>
             <svg
               className="mr-2 h-4 w-4 animate-spin"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <circle
                 className="opacity-25"
@@ -83,9 +101,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ) : (
           children
         )}
-      </button>
+      </Comp>
     );
   }
 );
 
 Button.displayName = 'Button';
+
+export { buttonVariants };

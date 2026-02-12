@@ -1,3 +1,4 @@
+import { cn } from '@qoomb/ui';
 import { useState } from 'react';
 
 import { APP_VERSION } from '../../App';
@@ -24,59 +25,25 @@ export function DevPanel() {
 
       {/* Sliding Panel */}
       <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: isOpen ? 0 : '-400px',
-          width: '400px',
-          height: '100vh',
-          backgroundColor: '#0f172a',
-          borderLeft: '2px solid #eab308',
-          boxShadow: isOpen ? '-4px 0 16px rgba(0, 0, 0, 0.5)' : 'none',
-          transition: 'right 0.3s ease',
-          zIndex: 9998,
-          display: 'flex',
-          flexDirection: 'column',
-          overflowY: 'auto',
-        }}
+        className={cn(
+          'fixed top-0 h-screen w-100 bg-dev-bg border-l-2 border-primary',
+          'flex flex-col overflow-y-auto z-9998',
+          'transition-[right] duration-300 ease-in-out',
+          isOpen ? 'right-0 shadow-[-4px_0_16px_rgba(0,0,0,0.5)]' : '-right-100 shadow-none'
+        )}
       >
         {/* Header */}
-        <div
-          style={{
-            padding: '16px',
-            borderBottom: '2px solid #eab308',
-            backgroundColor: '#1e293b',
-            position: 'sticky',
-            top: 0,
-            zIndex: 1,
-          }}
-        >
-          <h2
-            style={{
-              margin: 0,
-              color: '#eab308',
-              fontSize: '18px',
-              fontWeight: '700',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            🐝 Qoomb Dev Tools
+        <div className="p-4 border-b-2 border-primary bg-dev-surface sticky top-0 z-1">
+          <h2 className="m-0 text-primary text-lg font-black flex items-center gap-2 tracking-wider uppercase">
+            🐝 Dev Tools
           </h2>
-          <p
-            style={{
-              margin: '4px 0 0 0',
-              color: '#94a3b8',
-              fontSize: '12px',
-            }}
-          >
+          <p className="mt-1 text-white/40 text-xs uppercase tracking-widest">
             Development mode only
           </p>
         </div>
 
         {/* Sections */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div className="flex-1 overflow-y-auto">
           <MobileSetup />
           <EnvironmentInfo />
           <HealthCheck />
@@ -85,35 +52,14 @@ export function DevPanel() {
         </div>
 
         {/* Footer */}
-        <div
-          style={{
-            padding: '12px 16px',
-            borderTop: '1px solid #334155',
-            backgroundColor: '#1e293b',
-            fontSize: '11px',
-            color: '#64748b',
-            textAlign: 'center',
-          }}
-        >
-          Qoomb v{APP_VERSION} • Dev Mode
+        <div className="py-3 px-4 border-t border-white/8 bg-dev-surface text-xs text-white/30 text-center uppercase tracking-widest">
+          Qoomb v{APP_VERSION} · Dev Mode
         </div>
       </div>
 
       {/* Overlay when panel is open */}
       {isOpen && (
-        <div
-          onClick={() => setIsOpen(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.3)',
-            zIndex: 9997,
-            transition: 'opacity 0.3s ease',
-          }}
-        />
+        <div onClick={() => setIsOpen(false)} className="fixed inset-0 bg-black/30 z-9997" />
       )}
     </>
   );

@@ -1,46 +1,127 @@
+@import "tailwindcss";
+
+/* Scan shared UI package for Tailwind class usage */
+@source "../../packages/ui/src";
+
+/* ─────────────────────────────────────────────────────────────────
+   Design Tokens — CSS variables mapped to Tailwind utilities
+   Usage: bg-primary, text-foreground, border-border, etc.
+   ───────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-primary:                var(--primary);
+  --color-primary-hover:          var(--primary-hover);
+  --color-primary-foreground:     var(--primary-foreground);
+
+  --color-background:             var(--background);
+  --color-foreground:             var(--foreground);
+
+  --color-muted:                  var(--muted);
+  --color-muted-foreground:       var(--muted-foreground);
+
+  --color-border:                 var(--border);
+  --color-ring:                   var(--ring);
+
+  --color-card:                   var(--card);
+  --color-card-foreground:        var(--card-foreground);
+
+  --color-destructive:            var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-success:                var(--success);
+  --color-success-foreground:     var(--success-foreground);
+
+  /* Dev panel (always dark, dev-only) */
+  --color-dev-bg:                 var(--dev-bg);
+  --color-dev-surface:            var(--dev-surface);
+
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Light mode (default)
+   ───────────────────────────────────────────────────────────────── */
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* Brand */
+  --primary:                #F5C400; /* graphic yellow — Adidas archive energy */
+  --primary-hover:          #D9AE00; /* darker yellow */
+  --primary-foreground:     #000000; /* pure black — maximum graphic contrast */
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  /* Neutral surfaces */
+  --background:             #F8F7F5; /* clean warm-white */
+  --foreground:             #111110; /* near-black — strong */
+  --muted:                  #EFEEEB; /* light neutral */
+  --muted-foreground:       #6B6B65; /* warm grey */
+  --border:                 #DDDCDA; /* neutral border */
+  --ring:                   #F5C400;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Card */
+  --card:                   #FFFFFF; /* clean white */
+  --card-foreground:        #111110;
+
+  /* Dev panel (always dark, never changes with theme) */
+  --dev-bg:                 #111110;
+  --dev-surface:            #1A1A18;
+
+  /* Status */
+  --destructive:            #DC2626; /* red-600 */
+  --destructive-foreground: #FAFAF9;
+  --success:                #16A34A; /* green-600 */
+  --success-foreground:     #FAFAF9;
 }
 
-* {
-  box-sizing: border-box;
+/* ─────────────────────────────────────────────────────────────────
+   Dark mode — .dark class (for JS toggle) + system preference fallback
+   ───────────────────────────────────────────────────────────────── */
+.dark,
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background:         #0F0F0E;
+    --foreground:         #FAFAF9;
+    --muted:              #1C1C1A;
+    --muted-foreground:   #A8A29E; /* stone-400 */
+    --border:             #292524; /* stone-800 */
+    --card:               #1C1C1A;
+    --card-foreground:    #FAFAF9;
+  }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
+/* ─────────────────────────────────────────────────────────────────
+   Custom utilities — semantic glow effects for status indicators
+   Usage: glow-success, glow-destructive, glow-primary, glow-muted
+   ───────────────────────────────────────────────────────────────── */
+@utility glow-success {
+  box-shadow: 0 0 8px var(--color-emerald-500);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+@utility glow-destructive {
+  box-shadow: 0 0 8px var(--color-red-500);
 }
 
-code {
-  background-color: rgba(255, 255, 255, 0.1);
-  padding: 0.2em 0.4em;
-  border-radius: 3px;
-  font-family: 'Courier New', monospace;
+@utility glow-primary {
+  box-shadow: 0 0 8px var(--color-primary);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@utility glow-muted {
+  box-shadow: 0 0 8px rgb(255 255 255 / 0.4);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Base reset
+   ───────────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    margin: 0;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   code {
-    background-color: rgba(0, 0, 0, 0.05);
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
   }
 }

@@ -252,6 +252,24 @@ export class EncryptionService implements OnModuleInit {
         }
       }
 
+      // Test 4: Storage serialization round-trip
+      const serialized = this.serializeToStorage(encrypted);
+      if (!serialized.startsWith(`v${this.currentKeyVersion}:`)) {
+        throw new Error(
+          `Serialized data has unexpected format: ${serialized.slice(0, 20)}...\n` +
+            `Expected prefix: v${this.currentKeyVersion}:`
+        );
+      }
+      const parsed = this.parseFromStorage(serialized);
+      const decryptedFromStorage = this.decrypt(parsed, testHiveId);
+      if (decryptedFromStorage !== testData) {
+        throw new Error(
+          'Storage round-trip (serialize → parse → decrypt) failed.\n' +
+            `Expected: ${testData}\n` +
+            `Got: ${decryptedFromStorage}`
+        );
+      }
+
       this.logger.log('✅ Encryption self-test passed');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -269,6 +287,48 @@ export class EncryptionService implements OnModuleInit {
           '- Crypto library issues\n'
       );
     }
+  }
+
+  /**
+   * Serialize encrypted data to a storage string
+   *
+   * Format: v{version}:{base64(data)}
+   * Example: v1:AAABBBCCC...
+   *
+   * Embedding the version in the stored string means we can always
+   * decrypt existing records correctly after a key rotation.
+   *
+   * @param encrypted - EncryptedData returned by encrypt()
+   * @returns Storage string with version prefix
+   */
+  serializeToStorage(encrypted: EncryptedData): string {
+    return `v${encrypted.version}:${encrypted.data.toString('base64')}`;
+  }
+
+  /**
+   * Parse a storage string back into EncryptedData
+   *
+   * Expected format: v{version}:{base64(data)}
+   * Example: v1:AAABBBCCC...
+   *
+   * @param stored - Storage string from the database
+   * @returns EncryptedData ready to pass to decrypt()
+   * @throws Error if the storage string does not match the expected format
+   */
+  parseFromStorage(stored: string): EncryptedData {
+    const match = /^v(\d+):(.+)$/.exec(stored);
+
+    if (!match) {
+      throw new Error(
+        `Invalid encrypted data format: expected v{version}:{base64}, got: ${stored.slice(0, 20)}...`
+      );
+    }
+
+    return {
+      version: parseInt(match[1], 10),
+      provider: this.keyProvider.getName(),
+      data: Buffer.from(match[2], 'base64'),
+    };
   }
 
   /**

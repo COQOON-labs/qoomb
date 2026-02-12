@@ -8,7 +8,7 @@
 
 ## Project Essence
 
-**Qoomb** is a **privacy-first SaaS hive organization platform** (think Notion for families/teams/groups) with:
+**Qoomb** is a **privacy-first SaaS hive organization platform** with:
 
 - **Offline-first architecture** (Notion-style selective sync)
 - **Multi-tenant isolation** (shared schema + Row-Level Security)
@@ -724,13 +724,13 @@ async create(input: CreateEventInput) {
 
 **Family Hive** (minimum 1 `parent` required, enforced by DB trigger `enforce_minimum_admin`)
 | Role | Permissions |
-|---|---|
+| -------- | ----------------------------------------------------------------------------------------------- |
 | `parent` | Everything |
 | `child` | members:view, events:view/create/update:own/delete:own, tasks:view/create/update:own/delete:own |
 
 **Organization Hive** (minimum 1 `org_admin` required)
 | Role | Permissions |
-|---|---|
+| ----------- | ------------------------------------------------------------------------- |
 | `org_admin` | Everything |
 | `manager` | events:_, tasks:_, members:view/invite/remove |
 | `member` | members:view, events:view/create/update:own, tasks:view/create/update:own |

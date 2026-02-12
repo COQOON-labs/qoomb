@@ -1,6 +1,6 @@
 # Qoomb - Privacy-First Family Organization Platform
 
-A Notion-inspired family organization platform with offline-first capabilities, hybrid encryption, and multi-tenant architecture.
+A family organization platform with offline-first capabilities, hybrid encryption, and multi-tenant architecture.
 
 ## Prerequisites
 

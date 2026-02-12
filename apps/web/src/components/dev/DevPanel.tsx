@@ -1,6 +1,5 @@
-import { useState } from 'react';
-
 import { cn } from '@qoomb/ui';
+import { useState } from 'react';
 
 import { APP_VERSION } from '../../App';
 

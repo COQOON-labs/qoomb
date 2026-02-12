@@ -38,21 +38,21 @@
    ───────────────────────────────────────────────────────────────── */
 :root {
   /* Brand */
-  --primary:                #BFA53E; /* muted gold — Qoomb Beeswax */
-  --primary-hover:          #A08C2F; /* deeper gold */
-  --primary-foreground:     #1C1917; /* stone-900 */
+  --primary:                #F5C400; /* graphic yellow — Adidas archive energy */
+  --primary-hover:          #D9AE00; /* darker yellow */
+  --primary-foreground:     #000000; /* pure black — maximum graphic contrast */
 
   /* Neutral surfaces */
-  --background:             #FDF7EE; /* warm cream paper */
-  --foreground:             #1C1917; /* stone-900 */
-  --muted:                  #F0E8D4; /* warm parchment */
-  --muted-foreground:       #78716C; /* stone-500 */
-  --border:                 #E5D9BC; /* warm straw */
-  --ring:                   #BFA53E;
+  --background:             #F8F7F5; /* clean warm-white */
+  --foreground:             #111110; /* near-black — strong */
+  --muted:                  #EFEEEB; /* light neutral */
+  --muted-foreground:       #6B6B65; /* warm grey */
+  --border:                 #DDDCDA; /* neutral border */
+  --ring:                   #F5C400;
 
   /* Card */
-  --card:                   #FFFDF5; /* warm white */
-  --card-foreground:        #1C1917;
+  --card:                   #FFFFFF; /* clean white */
+  --card-foreground:        #111110;
 
   /* Status */
   --destructive:            #DC2626; /* red-600 */

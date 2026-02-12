@@ -369,16 +369,16 @@ export function Dashboard() {
       >
         {/* Logo */}
         <div className="h-14 px-4 flex items-center gap-2.5 border-b border-border shrink-0">
-          <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center text-primary-foreground font-bold text-sm shadow-sm">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black text-sm">
             Q
           </div>
-          <span className="font-semibold text-base text-foreground tracking-tight">Qoomb</span>
+          <span className="font-black text-base text-foreground tracking-tight">Qoomb</span>
         </div>
 
         {/* Hive selector */}
         <div className="px-3 pt-3 pb-2 shrink-0">
           <button className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-muted transition-colors text-left">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0 shadow-sm">
+            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-sm font-black shrink-0">
               {HIVE.initials}
             </div>
             <div className="flex-1 min-w-0">
@@ -531,7 +531,7 @@ export function Dashboard() {
                 <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
                   Donnerstag · Februar 2026
                 </p>
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                <h1 className="text-3xl font-black text-foreground tracking-tight leading-tight">
                   Guten Morgen, {USER.name}! 👋
                 </h1>
                 <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
@@ -552,15 +552,17 @@ export function Dashboard() {
             {nextEvent && (
               <Card padding="none" className="overflow-hidden">
                 <div className="flex items-stretch">
-                  {/* Date column */}
-                  <div className="w-18 bg-primary/10 flex flex-col items-center justify-center py-5 shrink-0 border-r border-primary/20">
-                    <span className="text-[10px] font-bold text-primary uppercase tracking-wide">
+                  {/* Date column — solid yellow block */}
+                  <div className="w-18 bg-primary flex flex-col items-center justify-center py-5 shrink-0">
+                    <span className="text-[10px] font-black text-primary-foreground/70 uppercase tracking-wide">
                       {nextEvent.dateLabel}
                     </span>
-                    <span className="text-3xl font-black text-primary leading-tight">
+                    <span className="text-3xl font-black text-primary-foreground leading-tight">
                       {nextEvent.dateNum}
                     </span>
-                    <span className="text-[10px] text-primary/60">{nextEvent.monthLabel}</span>
+                    <span className="text-[10px] text-primary-foreground/60">
+                      {nextEvent.monthLabel}
+                    </span>
                   </div>
                   {/* Event info */}
                   <div className="px-5 py-4 flex flex-1 items-center justify-between gap-4 min-w-0">
@@ -587,7 +589,7 @@ export function Dashboard() {
               <Card padding="none">
                 <div className="px-5 pt-5 pb-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-semibold text-foreground">Weitere Termine</h2>
+                    <h2 className="font-bold text-foreground">Weitere Termine</h2>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -622,7 +624,7 @@ export function Dashboard() {
                         </div>
                         <span
                           className={cn(
-                            'text-xs px-2 py-0.5 rounded-full font-medium shrink-0',
+                            'text-xs px-2 py-0.5 rounded font-bold shrink-0',
                             event.tagClass
                           )}
                         >
@@ -638,7 +640,7 @@ export function Dashboard() {
               <Card padding="none">
                 <div className="px-5 pt-5 pb-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="font-semibold text-foreground">Aufgaben</h2>
+                    <h2 className="font-bold text-foreground">Aufgaben</h2>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -656,9 +658,9 @@ export function Dashboard() {
                       </span>
                       <span className="text-xs font-semibold text-foreground">{taskProgress}%</span>
                     </div>
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded overflow-hidden">
                       <div
-                        className="h-full bg-primary rounded-full transition-all duration-500"
+                        className="h-full bg-primary rounded transition-all duration-500"
                         style={{ width: `${taskProgress}%` }}
                       />
                     </div>
@@ -673,7 +675,7 @@ export function Dashboard() {
                       >
                         <div
                           className={cn(
-                            'w-4.5 h-4.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all',
+                            'w-4.5 h-4.5 rounded border-2 shrink-0 flex items-center justify-center transition-all',
                             task.done
                               ? 'bg-success border-success'
                               : 'border-border hover:border-primary'
@@ -716,7 +718,7 @@ export function Dashboard() {
 
             {/* ── Quick create ─────────────────────────────────────────────── */}
             <div>
-              <h2 className="font-semibold text-foreground mb-3">Schnell hinzufügen</h2>
+              <h2 className="font-bold text-foreground mb-3">Schnell hinzufügen</h2>
               <div className="flex gap-2 mb-3">
                 <Input
                   placeholder="Was steht als nächstes an?"

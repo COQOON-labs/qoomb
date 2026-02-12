@@ -38,20 +38,20 @@
    ───────────────────────────────────────────────────────────────── */
 :root {
   /* Brand */
-  --primary:                #F59E0B; /* amber-400 — Qoomb Yellow */
-  --primary-hover:          #D97706; /* amber-600 */
+  --primary:                #D97706; /* amber-600 — Qoomb Honey */
+  --primary-hover:          #B45309; /* amber-700 */
   --primary-foreground:     #1C1917; /* stone-900 */
 
   /* Neutral surfaces */
-  --background:             #FAFAF9; /* stone-50 */
+  --background:             #FDF7EE; /* warm cream paper */
   --foreground:             #1C1917; /* stone-900 */
-  --muted:                  #F5F5F4; /* stone-100 */
+  --muted:                  #F0E8D4; /* warm parchment */
   --muted-foreground:       #78716C; /* stone-500 */
-  --border:                 #E7E5E4; /* stone-200 */
-  --ring:                   #F59E0B;
+  --border:                 #E5D9BC; /* warm straw */
+  --ring:                   #D97706;
 
   /* Card */
-  --card:                   #FFFFFF;
+  --card:                   #FFFDF5; /* warm white */
   --card-foreground:        #1C1917;
 
   /* Status */

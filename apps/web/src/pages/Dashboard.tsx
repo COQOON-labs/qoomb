@@ -15,7 +15,7 @@ const EVENTS = [
     monthLabel: 'Feb',
     time: '14:00 Uhr',
     tag: 'Gesundheit',
-    tagClass: 'bg-rose-50 text-rose-600',
+    tagClass: 'bg-rose-100 text-rose-700',
     isNext: true,
   },
   {
@@ -26,7 +26,7 @@ const EVENTS = [
     monthLabel: 'Feb',
     time: '18:30 Uhr',
     tag: 'Familie',
-    tagClass: 'bg-amber-50 text-amber-700',
+    tagClass: 'bg-amber-100 text-amber-800',
     isNext: false,
   },
   {
@@ -37,7 +37,7 @@ const EVENTS = [
     monthLabel: 'Feb',
     time: '09:00 Uhr',
     tag: 'Schule',
-    tagClass: 'bg-sky-50 text-sky-600',
+    tagClass: 'bg-sky-100 text-sky-700',
     isNext: false,
   },
   {
@@ -48,7 +48,7 @@ const EVENTS = [
     monthLabel: 'Feb',
     time: 'Ganztags',
     tag: 'Feier',
-    tagClass: 'bg-violet-50 text-violet-600',
+    tagClass: 'bg-violet-100 text-violet-700',
     isNext: false,
   },
 ];
@@ -96,7 +96,6 @@ const TASKS = [
 const MEMBERS = [
   {
     name: 'Ben',
-    fullName: 'Ben G.',
     role: 'Elternteil',
     initials: 'BG',
     online: true,
@@ -105,7 +104,6 @@ const MEMBERS = [
   },
   {
     name: 'Lisa',
-    fullName: 'Lisa M.',
     role: 'Elternteil',
     initials: 'LM',
     online: true,
@@ -114,7 +112,6 @@ const MEMBERS = [
   },
   {
     name: 'Max',
-    fullName: 'Max',
     role: 'Kind',
     initials: 'M',
     online: false,
@@ -123,7 +120,6 @@ const MEMBERS = [
   },
   {
     name: 'Emma',
-    fullName: 'Emma',
     role: 'Kind',
     initials: 'E',
     online: false,
@@ -132,7 +128,6 @@ const MEMBERS = [
   },
   {
     name: 'Oma H.',
-    fullName: 'Oma Hannelore',
     role: 'Gast',
     initials: 'H',
     online: false,
@@ -468,14 +463,11 @@ export function Dashboard() {
           >
             <MenuIcon />
           </button>
-
           <div className="flex-1" />
-
           <button className="relative p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
             <BellIcon />
             <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
           </button>
-
           <Button size="sm" className="gap-1.5 hidden md:inline-flex">
             <PlusIcon className="w-3.5 h-3.5" />
             Erstellen
@@ -484,58 +476,113 @@ export function Dashboard() {
 
         {/* Content */}
         <main className="flex-1 overflow-auto">
-          {/* ── Warm hero greeting ────────────────────────────────────────── */}
-          <div className="px-4 md:px-8 pt-8 pb-6">
-            <div className="max-w-4xl">
-              <p className="text-sm font-medium text-primary mb-1">Donnerstag, 12. Februar 2026</p>
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                Guten Morgen, {USER.name}! 👋
-              </h1>
-              <p className="text-muted-foreground mt-2 text-base">
-                Heute stehen <span className="text-foreground font-medium">2 Termine</span> an und{' '}
-                <span className="text-foreground font-medium">4 Aufgaben</span> warten auf euch.
-              </p>
+          {/* ── People strip — Locket-style ──────────────────────────────────── */}
+          <div className="px-4 md:px-8 pt-7 pb-3">
+            <div className="flex items-end gap-5 overflow-x-auto pb-1">
+              {MEMBERS.map((member) => (
+                <button
+                  key={member.name}
+                  className="flex flex-col items-center gap-1.5 shrink-0 group outline-none"
+                >
+                  <div className="relative">
+                    <div
+                      className={cn(
+                        'w-14 h-14 rounded-full flex items-center justify-center text-base font-bold shadow-sm',
+                        'transition-transform group-hover:scale-105',
+                        member.avatarBg,
+                        member.avatarText
+                      )}
+                    >
+                      {member.initials}
+                    </div>
+                    <div
+                      className={cn(
+                        'absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background',
+                        member.online ? 'bg-success' : 'bg-border'
+                      )}
+                    />
+                  </div>
+                  <span className="text-xs font-medium text-foreground">{member.name}</span>
+                </button>
+              ))}
+
+              {/* Invite */}
+              <button className="flex flex-col items-center gap-1.5 shrink-0 group outline-none">
+                <div className="w-14 h-14 rounded-full border-2 border-dashed border-border flex items-center justify-center text-muted-foreground group-hover:border-primary group-hover:text-primary transition-colors">
+                  <PlusIcon className="w-5 h-5" />
+                </div>
+                <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                  Einladen
+                </span>
+              </button>
             </div>
           </div>
 
-          <div className="px-4 md:px-8 pb-10 space-y-6 max-w-5xl">
-            {/* ── Featured next event ─────────────────────────────────────── */}
-            {nextEvent && (
-              <div className="rounded-2xl bg-linear-to-br from-amber-400 to-orange-400 p-0.5 shadow-lg shadow-amber-200/50">
-                <div className="rounded-[14px] bg-linear-to-br from-amber-400 to-orange-400 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="bg-white/25 rounded-xl px-4 py-3 text-center shrink-0">
-                      <div className="text-xs font-semibold text-amber-950/70 uppercase tracking-wide leading-tight">
-                        {nextEvent.dateLabel}
-                      </div>
-                      <div className="text-2xl font-bold text-amber-950 leading-tight">
-                        {nextEvent.dateNum}
-                      </div>
-                      <div className="text-xs text-amber-950/70 leading-tight">
-                        {nextEvent.monthLabel}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-amber-950/60 uppercase tracking-wide mb-0.5">
-                        Nächster Termin
-                      </div>
-                      <div className="text-xl font-bold text-amber-950">{nextEvent.title}</div>
-                      <div className="text-sm text-amber-950/70 mt-0.5">{nextEvent.time}</div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="bg-white/30 text-amber-950 hover:bg-white/40 border-0 shrink-0"
-                  >
-                    Details
-                  </Button>
-                </div>
+          {/* ── Editorial greeting ───────────────────────────────────────────── */}
+          <div className="px-4 md:px-8 pt-4 pb-5">
+            <div className="max-w-5xl flex items-start gap-4">
+              {/* Big date number — editorial decoration */}
+              <div className="shrink-0 hidden sm:block select-none -mt-3 leading-none">
+                <span className="text-[88px] font-black leading-none tabular-nums text-foreground/10">
+                  12
+                </span>
               </div>
+              <div className="sm:pt-1">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
+                  Donnerstag · Februar 2026
+                </p>
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                  Guten Morgen, {USER.name}! 👋
+                </h1>
+                <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
+                  Heute: <span className="text-foreground font-medium">{nextEvent?.title}</span>
+                  {nextEvent && ` um ${nextEvent.time}`}
+                  {' · '}
+                  <span className="text-foreground font-medium">
+                    {tasks.filter((t) => !t.done).length} Aufgaben
+                  </span>{' '}
+                  offen
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-4 md:px-8 pb-10 space-y-5 max-w-5xl">
+            {/* ── Next event — editorial card, no gradient ─────────────────── */}
+            {nextEvent && (
+              <Card padding="none" className="overflow-hidden">
+                <div className="flex items-stretch">
+                  {/* Date column */}
+                  <div className="w-18 bg-primary/10 flex flex-col items-center justify-center py-5 shrink-0 border-r border-primary/20">
+                    <span className="text-[10px] font-bold text-primary uppercase tracking-wide">
+                      {nextEvent.dateLabel}
+                    </span>
+                    <span className="text-3xl font-black text-primary leading-tight">
+                      {nextEvent.dateNum}
+                    </span>
+                    <span className="text-[10px] text-primary/60">{nextEvent.monthLabel}</span>
+                  </div>
+                  {/* Event info */}
+                  <div className="px-5 py-4 flex flex-1 items-center justify-between gap-4 min-w-0">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                        Nächster Termin
+                      </p>
+                      <p className="text-lg font-bold text-foreground leading-tight truncate">
+                        {nextEvent.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-0.5">{nextEvent.time}</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="shrink-0">
+                      Details
+                    </Button>
+                  </div>
+                </div>
+              </Card>
             )}
 
-            {/* ── Two-column grid ─────────────────────────────────────────── */}
-            <div className="grid md:grid-cols-2 gap-6">
+            {/* ── Events + Tasks grid ──────────────────────────────────────── */}
+            <div className="grid md:grid-cols-2 gap-5">
               {/* Upcoming events */}
               <Card padding="none">
                 <div className="px-5 pt-5 pb-4">
@@ -550,20 +597,23 @@ export function Dashboard() {
                     </Button>
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-px">
                     {remainingEvents.map((event) => (
                       <div
                         key={event.id}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted transition-colors cursor-pointer group"
+                        className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted transition-colors cursor-pointer"
                       >
-                        <div className="text-center w-9 shrink-0">
-                          <div className="text-xs font-semibold text-primary leading-none">
+                        {/* Date */}
+                        <div className="text-center w-8 shrink-0">
+                          <div className="text-[10px] font-bold text-primary uppercase tracking-wide leading-none">
                             {event.dateLabel}
                           </div>
-                          <div className="text-lg font-bold text-foreground leading-tight">
+                          <div className="text-xl font-black text-foreground leading-tight">
                             {event.dateNum}
                           </div>
                         </div>
+                        {/* Divider */}
+                        <div className="w-px h-8 bg-border shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-foreground truncate">
                             {event.title}
@@ -614,7 +664,7 @@ export function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-px">
                     {tasks.slice(0, 5).map((task) => (
                       <div
                         key={task.id}
@@ -623,12 +673,11 @@ export function Dashboard() {
                       >
                         <div
                           className={cn(
-                            'w-4.5 h-4.5 rounded-md border-2 shrink-0 flex items-center justify-center transition-all',
+                            'w-4.5 h-4.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all',
                             task.done
                               ? 'bg-success border-success'
                               : 'border-border hover:border-primary'
                           )}
-                          style={{ width: '18px', height: '18px' }}
                         >
                           {task.done && <CheckMarkIcon />}
                         </div>
@@ -664,67 +713,6 @@ export function Dashboard() {
                 </div>
               </Card>
             </div>
-
-            {/* ── Members ─────────────────────────────────────────────────── */}
-            <Card padding="none">
-              <div className="px-5 pt-5 pb-5">
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="font-semibold text-foreground">Familienmitglieder</h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    Verwalten
-                  </Button>
-                </div>
-
-                <div className="flex flex-wrap gap-5">
-                  {MEMBERS.map((member) => (
-                    <div
-                      key={member.name}
-                      className="flex flex-col items-center gap-2 cursor-pointer group"
-                    >
-                      <div className="relative">
-                        <div
-                          className={cn(
-                            'w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-bold transition-transform group-hover:scale-105',
-                            member.avatarBg,
-                            member.avatarText
-                          )}
-                        >
-                          {member.initials}
-                        </div>
-                        <div
-                          className={cn(
-                            'absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card',
-                            member.online ? 'bg-success' : 'bg-border'
-                          )}
-                        />
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-semibold text-foreground leading-tight">
-                          {member.name}
-                        </div>
-                        <div className="text-xs text-muted-foreground leading-tight">
-                          {member.role}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Invite */}
-                  <div className="flex flex-col items-center gap-2 cursor-pointer group">
-                    <div className="w-12 h-12 rounded-2xl border-2 border-dashed border-border flex items-center justify-center text-muted-foreground group-hover:border-primary group-hover:text-primary transition-colors">
-                      <PlusIcon className="w-5 h-5" />
-                    </div>
-                    <div className="text-xs text-muted-foreground group-hover:text-foreground transition-colors leading-tight text-center">
-                      Einladen
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
 
             {/* ── Quick create ─────────────────────────────────────────────── */}
             <div>

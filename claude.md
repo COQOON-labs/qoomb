@@ -939,6 +939,59 @@ async createEvent(data: CreateEventInput) {
 }
 ```
 
+### ❌ DON'T: Log user-controlled input directly (Log Injection / CWE-117)
+
+```typescript
+// BAD: request.url could contain \r\n to forge log lines
+console.warn(`[RATE_LIMIT] Throttled request to ${request.url}`);
+```
+
+### ✅ DO: Strip newlines from user-controlled values before logging
+
+```typescript
+// GOOD: newlines removed → no fake log entries possible
+const url = request.url.replace(/[\r\n]/g, '');
+console.warn(`[RATE_LIMIT] Throttled request to ${url}`);
+```
+
+**Rule:** Any value from `request.url`, `request.headers`, query params, or body that is interpolated into a log string must have `\r\n` stripped first.
+
+### ❌ DON'T: Use unbounded negated character classes in regex on user input (ReDoS / CWE-1333)
+
+```typescript
+// BAD: [^>]* can match < which causes polynomial backtracking
+input.replace(/<[^>]*>/g, '');
+```
+
+### ✅ DO: Bound negated classes to exclude all ambiguous delimiters
+
+```typescript
+// GOOD: [^<>]* cannot match either delimiter → O(n) guaranteed
+input.replace(/<[^<>]*>/g, '');
+```
+
+**Rule:** In `[^X]*` patterns applied to untrusted input, exclude ALL characters that could start a new match — not just the closing delimiter.
+
+### ❌ DON'T: Assume a single-pass sanitization removes all dangerous patterns
+
+```typescript
+// BAD: <sc<script>ript> → after one pass → <script> (reconstructed!)
+input.replace(/<[^<>]*>/g, '');
+```
+
+### ✅ DO: Run tag removal twice + encode remaining special characters
+
+```typescript
+// GOOD: two passes + encoding — see sanitizeHtml() in @qoomb/validators
+input
+  .replace(/<[^<>]*>/g, '') // Pass 1
+  .replace(/<[^<>]*>/g, '') // Pass 2: catches reconstructed tags
+  .replace(/</g, '&lt;') // Encode any remaining < (final safety net)
+  .replace(/>/g, '&gt;');
+```
+
+**Use the existing `sanitizeHtml()` utility from `@qoomb/validators` instead of rolling your own.**
+
 ---
 
 ## Environment Configuration
@@ -960,7 +1013,7 @@ JWT_SECRET=<32+ chars>    # Generate: openssl rand -base64 32
 
 ## Documentation Structure
 
-```
+```text
 README.md              → Human onboarding
 claude.md              → This file (AI context)
 docs/

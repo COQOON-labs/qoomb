@@ -63,7 +63,8 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   ): Promise<void> {
     const request = context.switchToHttp().getRequest<FastifyRequest & { user?: { id: string } }>();
     const tracker = await this.getTracker(request);
-    const url = request.url;
+    // Strip newlines/carriage-returns to prevent log injection (CWE-117 / js/log-injection)
+    const url = request.url.replace(/[\r\n]/g, '');
 
     console.warn(
       `[RATE_LIMIT] Throttled request from ${tracker} to ${url} ` +

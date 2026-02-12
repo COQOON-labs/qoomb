@@ -3,8 +3,8 @@ import { useState } from 'react';
 
 // ── Static placeholder data (Phase 2 will replace with tRPC queries) ─────────
 
-const HIVE = { name: 'Mayer Familie', memberCount: 5, initials: 'MF' };
-const USER = { name: 'Ben', fullName: 'Ben Gröner', role: 'parent', initials: 'BG' };
+const HIVE = { name: 'Miller Familie', memberCount: 5, initials: 'MF' };
+const USER = { name: 'Ben', fullName: 'Ben Miller', role: 'parent', initials: 'BM' };
 
 const EVENTS = [
   {
@@ -97,7 +97,7 @@ const MEMBERS = [
   {
     name: 'Ben',
     role: 'Elternteil',
-    initials: 'BG',
+    initials: 'BM',
     online: true,
     avatarBg: 'bg-amber-400',
     avatarText: 'text-amber-950',

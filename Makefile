@@ -118,9 +118,9 @@ setup-extended: ## Extended setup with HTTPS & local domain (macOS/Linux)
 	@echo "$(GREEN)✓ Extended setup complete!$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Next steps:$(NC)"
-	@echo "  $(GREEN)make dev-extended$(NC)  - Start with HTTPS & mobile certificate server"
+	@echo "  $(GREEN)make dev-extended$(NC)  - Start with HTTPS & mobile QR codes in Dev Tools"
 	@echo ""
-	@echo "$(BLUE)ℹ️  Mobile certificate server will run automatically on http://localhost:8888$(NC)"
+	@echo "$(BLUE)ℹ️  Certificate is served via Vite at http://<local-ip>:5173/dev-cert/mkcert-root-ca.mobileconfig$(NC)"
 	@echo ""
 
 # =============================================================================

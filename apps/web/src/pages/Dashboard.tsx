@@ -300,10 +300,10 @@ function MenuIcon() {
   );
 }
 
-function ChevronUpDownIcon() {
+function ChevronUpDownIcon({ className }: { className?: string }) {
   return (
     <svg
-      className="w-3.5 h-3.5 text-muted-foreground"
+      className={cn('w-3.5 h-3.5', className)}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -362,34 +362,32 @@ export function Dashboard() {
       {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-30 w-60 bg-card border-r border-border flex flex-col transition-transform duration-200',
+          'fixed inset-y-0 left-0 z-30 w-60 bg-foreground flex flex-col transition-transform duration-200',
           'md:relative md:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         {/* Logo */}
-        <div className="h-14 px-4 flex items-center gap-2.5 border-b border-border shrink-0">
+        <div className="h-14 px-4 flex items-center gap-2.5 border-b border-white/10 shrink-0">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black text-sm">
             Q
           </div>
-          <span className="font-black text-base text-foreground tracking-tight">Qoomb</span>
+          <span className="font-black text-base text-white tracking-tight">Qoomb</span>
         </div>
 
         {/* Hive selector */}
         <div className="px-3 pt-3 pb-2 shrink-0">
-          <button className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-muted transition-colors text-left">
+          <button className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors text-left">
             <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-sm font-black shrink-0">
               {HIVE.initials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-foreground truncate leading-tight">
-                {HIVE.name}
-              </div>
-              <div className="text-xs text-muted-foreground leading-tight mt-0.5">
+              <div className="text-sm font-bold text-white truncate leading-tight">{HIVE.name}</div>
+              <div className="text-xs text-white/50 leading-tight mt-0.5">
                 {HIVE.memberCount} Mitglieder
               </div>
             </div>
-            <ChevronUpDownIcon />
+            <ChevronUpDownIcon className="text-white/40" />
           </button>
         </div>
 
@@ -404,19 +402,21 @@ export function Dashboard() {
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors',
                     item.active
-                      ? 'bg-primary text-primary-foreground font-medium shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      ? 'bg-primary text-primary-foreground font-bold'
+                      : 'text-white/60 hover:text-white hover:bg-white/10'
                   )}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
-                  <span className="flex-1 text-left">{item.label}</span>
+                  <span className="flex-1 text-left text-xs font-bold uppercase tracking-wider">
+                    {item.label}
+                  </span>
                   {item.badge && (
                     <span
                       className={cn(
                         'text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold',
                         item.active
                           ? 'bg-primary-foreground/20 text-primary-foreground'
-                          : 'bg-primary/10 text-primary'
+                          : 'bg-white/15 text-white'
                       )}
                     >
                       {item.badge}
@@ -427,25 +427,25 @@ export function Dashboard() {
             })}
           </div>
 
-          <div className="mt-3 pt-3 border-t border-border">
-            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+          <div className="mt-3 pt-3 border-t border-white/10">
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors">
               <SettingsIcon className="w-4 h-4 shrink-0" />
-              <span>Einstellungen</span>
+              <span className="text-xs font-bold uppercase tracking-wider">Einstellungen</span>
             </button>
           </div>
         </nav>
 
         {/* User */}
-        <div className="px-3 pb-3 pt-2 border-t border-border shrink-0">
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-muted transition-colors cursor-pointer">
-            <div className="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center text-xs font-bold text-amber-950 shrink-0">
+        <div className="px-3 pb-3 pt-2 border-t border-white/10 shrink-0">
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer">
+            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-xs font-black text-primary-foreground shrink-0">
               {USER.initials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-foreground truncate leading-tight">
+              <div className="text-sm font-bold text-white truncate leading-tight">
                 {USER.fullName}
               </div>
-              <div className="text-xs text-muted-foreground leading-tight mt-0.5 capitalize">
+              <div className="text-xs text-white/50 leading-tight mt-0.5 uppercase tracking-wide">
                 {USER.role === 'parent' ? 'Elternteil' : USER.role}
               </div>
             </div>
@@ -456,7 +456,7 @@ export function Dashboard() {
       {/* ── Main ────────────────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-14 bg-background border-b border-border flex items-center gap-3 px-4 shrink-0">
+        <header className="h-14 bg-background border-b-2 border-primary flex items-center gap-3 px-4 shrink-0">
           <button
             className="md:hidden p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground"
             onClick={() => setSidebarOpen(true)}
@@ -589,7 +589,9 @@ export function Dashboard() {
               <Card padding="none">
                 <div className="px-5 pt-5 pb-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-bold text-foreground">Weitere Termine</h2>
+                    <h2 className="font-black text-foreground uppercase tracking-wide text-sm">
+                      Weitere Termine
+                    </h2>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -640,7 +642,9 @@ export function Dashboard() {
               <Card padding="none">
                 <div className="px-5 pt-5 pb-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="font-bold text-foreground">Aufgaben</h2>
+                    <h2 className="font-black text-foreground uppercase tracking-wide text-sm">
+                      Aufgaben
+                    </h2>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -718,7 +722,9 @@ export function Dashboard() {
 
             {/* ── Quick create ─────────────────────────────────────────────── */}
             <div>
-              <h2 className="font-bold text-foreground mb-3">Schnell hinzufügen</h2>
+              <h2 className="font-black text-foreground uppercase tracking-wide text-sm mb-3">
+                Schnell hinzufügen
+              </h2>
               <div className="flex gap-2 mb-3">
                 <Input
                   placeholder="Was steht als nächstes an?"

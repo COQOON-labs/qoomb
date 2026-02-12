@@ -38,8 +38,8 @@
    ───────────────────────────────────────────────────────────────── */
 :root {
   /* Brand */
-  --primary:                #D97706; /* amber-600 — Qoomb Honey */
-  --primary-hover:          #B45309; /* amber-700 */
+  --primary:                #BFA53E; /* muted gold — Qoomb Beeswax */
+  --primary-hover:          #A08C2F; /* deeper gold */
   --primary-foreground:     #1C1917; /* stone-900 */
 
   /* Neutral surfaces */
@@ -48,7 +48,7 @@
   --muted:                  #F0E8D4; /* warm parchment */
   --muted-foreground:       #78716C; /* stone-500 */
   --border:                 #E5D9BC; /* warm straw */
-  --ring:                   #D97706;
+  --ring:                   #BFA53E;
 
   /* Card */
   --card:                   #FFFDF5; /* warm white */

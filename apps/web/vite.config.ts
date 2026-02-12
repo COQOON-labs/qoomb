@@ -16,7 +16,7 @@ export default defineConfig({
         name: 'Qoomb - Family Organization',
         short_name: 'Qoomb',
         description: 'Privacy-first family organization platform',
-        theme_color: '#F59E0B',
+        theme_color: '#BFA53E',
         background_color: '#0F0F0E',
         display: 'standalone',
         orientation: 'portrait-primary',

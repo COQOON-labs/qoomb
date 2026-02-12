@@ -15,7 +15,7 @@
  */
 export function sanitizeHtml(input: string): string {
   return input
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/<[^<>]*>/g, '') // Remove HTML tags (bounded pattern prevents ReDoS)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

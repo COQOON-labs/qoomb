@@ -3,8 +3,8 @@ import { useState } from 'react';
 
 // ── Static placeholder data (Phase 2 will replace with tRPC queries) ─────────
 
-const HIVE = { name: 'Miller Familie', memberCount: 5, initials: 'MF' };
-const USER = { name: 'Ben', fullName: 'Ben Miller', role: 'parent', initials: 'BM' };
+const HIVE = { name: 'Doe Familie', memberCount: 5, initials: 'DF' };
+const USER = { name: 'John', fullName: 'John Doe', role: 'parent', initials: 'JD' };
 
 const EVENTS = [
   {
@@ -58,7 +58,7 @@ const TASKS = [
     id: '1',
     title: 'Lebensmittel einkaufen',
     done: false,
-    assignee: 'Ben',
+    assignee: 'John',
     priority: 'high' as const,
   },
   {
@@ -68,7 +68,13 @@ const TASKS = [
     assignee: 'Lisa',
     priority: 'high' as const,
   },
-  { id: '3', title: 'Zahnarzt anrufen', done: false, assignee: 'Ben', priority: 'medium' as const },
+  {
+    id: '3',
+    title: 'Zahnarzt anrufen',
+    done: false,
+    assignee: 'John',
+    priority: 'medium' as const,
+  },
   {
     id: '4',
     title: 'Flug für Osterurlaub buchen',
@@ -87,7 +93,7 @@ const TASKS = [
     id: '6',
     title: 'Auto zur Werkstatt',
     done: true,
-    assignee: 'Ben',
+    assignee: 'John',
     priority: 'medium' as const,
   },
 ];
@@ -95,9 +101,9 @@ const TASKS = [
 // Each member gets a warm, distinct color
 const MEMBERS = [
   {
-    name: 'Ben',
+    name: 'John',
     role: 'Elternteil',
-    initials: 'BM',
+    initials: 'JD',
     online: true,
     avatarBg: 'bg-amber-400',
     avatarText: 'text-amber-950',
@@ -105,7 +111,7 @@ const MEMBERS = [
   {
     name: 'Lisa',
     role: 'Elternteil',
-    initials: 'LM',
+    initials: 'LD',
     online: true,
     avatarBg: 'bg-rose-400',
     avatarText: 'text-rose-950',

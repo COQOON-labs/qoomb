@@ -65,16 +65,39 @@ Only surface tokens change — primary yellow is unchanged in both modes.
 ### Sidebar / DevTools (dark panel — always dark)
 
 The sidebar and Dev Tools panel are always dark regardless of the app's light/dark mode.
-They use literal hex values, not CSS variables:
+Two CSS tokens are defined in `:root` (never inside a media query) and mapped to Tailwind
+via `@theme inline` as `bg-dev-bg` and `bg-dev-surface`:
 
-| Usage                  | Value                              |
-| ---------------------- | ---------------------------------- |
-| Panel background       | `#111110` (= `--foreground` value) |
-| Section fills / header | `#1A1A18`                          |
-| Dividers               | `rgba(255, 255, 255, 0.08)`        |
-| Primary text           | `rgba(255, 255, 255, 0.75)`        |
-| Muted text             | `rgba(255, 255, 255, 0.40)`        |
-| Hover background       | `rgba(255, 255, 255, 0.10)`        |
+| Token          | CSS var         | Value     | Tailwind class      | Usage                        |
+| -------------- | --------------- | --------- | ------------------- | ---------------------------- |
+| Dev background | `--dev-bg`      | `#111110` | `bg-dev-bg`         | Panel background             |
+| Dev surface    | `--dev-surface` | `#1A1A18` | `bg-dev-surface`    | Section fills, sticky header |
+| Dividers       | —               | —         | `border-white/8`    | Section separators           |
+| Primary text   | —               | —         | `text-white/75`     | Labels, values               |
+| Muted text     | —               | —         | `text-white/40`     | Secondary labels             |
+| Hover fill     | —               | —         | `hover:bg-white/10` | Interactive hover state      |
+
+### Glow Utilities (status indicators)
+
+Custom `@utility` classes in `index.css` for status dot glow effects.
+Use these on status indicator dots — never inline `box-shadow` or arbitrary shadow values.
+
+| Class              | `box-shadow`                       | Semantic meaning        |
+| ------------------ | ---------------------------------- | ----------------------- |
+| `glow-success`     | `0 0 8px var(--color-emerald-500)` | Online, healthy         |
+| `glow-destructive` | `0 0 8px var(--color-red-500)`     | Offline, error          |
+| `glow-primary`     | `0 0 8px var(--color-primary)`     | Unknown / warning       |
+| `glow-muted`       | `0 0 8px rgb(255 255 255 / 0.4)`   | Loading / indeterminate |
+
+```tsx
+// ✅ Correct usage
+<div
+  className={cn(
+    'w-2.5 h-2.5 rounded-full',
+    isOnline ? 'bg-emerald-500 glow-success' : 'bg-red-500 glow-destructive'
+  )}
+/>
+```
 
 ---
 
@@ -210,7 +233,13 @@ on hover, 2px yellow border always visible.
 - **No `tailwind.config.ts`** — configured entirely in CSS via `@theme inline`
 - **`@source`** directive in `index.css` scans `packages/ui/src` to include shared component classes
 - **Canonical v4 classes**: use `bg-linear-to-br` (not `bg-gradient-to-br`), `w-18` (not `w-[72px]`)
-- **Arbitrary values** like `text-[88px]` and `text-[10px]` are intentional where no canonical step exists
+- **Type scale**: use `text-sm`, `text-xs` etc. — avoid `text-[13px]` / `text-[11px]` (px bypasses user font size preferences)
+- **Tracking scale**: use `tracking-widest`, `tracking-wider` etc. — avoid `tracking-[0.08em]`
+- **Custom utilities** (`@utility` in `index.css`): for semantic effects not in Tailwind's scale (e.g. `glow-success`, `glow-destructive`). Prefer this over arbitrary shadow values.
+- **Intentional arbitrary values** (Dashboard only):
+  - `text-[88px]` — ghost date decoration, no canonical step
+  - `text-[10px]` — tiny date labels in the yellow date column, no canonical step
+  - Directional panel shadows (`shadow-[-4px_0_16px_...]`) — offset colored shadows have no canonical class
 
 ---
 

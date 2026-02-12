@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
@@ -6,6 +7,7 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -14,8 +16,8 @@ export default defineConfig({
         name: 'Qoomb - Family Organization',
         short_name: 'Qoomb',
         description: 'Privacy-first family organization platform',
-        theme_color: '#6366f1',
-        background_color: '#0f172a',
+        theme_color: '#F59E0B',
+        background_color: '#0F0F0E',
         display: 'standalone',
         orientation: 'portrait-primary',
         scope: '/',

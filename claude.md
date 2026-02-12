@@ -1050,6 +1050,7 @@ apps/api/src/modules/encryption/
 - **All code MUST pass ESLint** with zero errors (warnings acceptable only with justification)
 - **All code MUST be formatted** with Prettier before commit
 - **All commits MUST follow** Conventional Commits format (feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert)
+- **NEVER add `Co-Authored-By:` trailers** to commit messages — not for Claude, not for any AI tool
 - **Type safety is mandatory** - no implicit `any`, proper type annotations for all Prisma queries
 - **Pre-commit hooks will auto-fix** Prettier issues, but ESLint errors must be fixed manually
 - **Pre-push hooks will block** if type-check, tests, or build fails

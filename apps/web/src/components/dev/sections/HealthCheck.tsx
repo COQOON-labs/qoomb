@@ -24,14 +24,14 @@ export function HealthCheck() {
   return (
     <div className="p-4 border-b border-white/8">
       <div className="flex justify-between items-center mb-3">
-        <h3 className="text-primary text-[13px] font-black m-0 uppercase tracking-[0.08em]">
+        <h3 className="text-primary text-sm font-black m-0 uppercase tracking-widest">
           💓 Backend Health
         </h3>
         <button
           onClick={() => {
             void refetch();
           }}
-          className="bg-transparent border border-white/15 text-white/60 px-2 py-1 rounded text-[11px] font-bold uppercase tracking-[0.06em] cursor-pointer hover:border-primary hover:text-white/80 transition-colors"
+          className="bg-transparent border border-white/15 text-white/60 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider cursor-pointer hover:border-primary hover:text-white/80 transition-colors"
         >
           Refresh
         </button>
@@ -39,7 +39,7 @@ export function HealthCheck() {
 
       <div className="flex items-center gap-2 mb-3">
         <div className={cn('w-2.5 h-2.5 rounded-full', getStatusClasses())} />
-        <span className="text-white/75 text-[13px] font-medium">{getStatusText()}</span>
+        <span className="text-white/75 text-sm font-medium">{getStatusText()}</span>
       </div>
 
       {data && (

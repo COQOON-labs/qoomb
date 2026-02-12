@@ -37,7 +37,7 @@ export function DevPanel() {
           <h2 className="m-0 text-primary text-lg font-black flex items-center gap-2 tracking-wider uppercase">
             🐝 Dev Tools
           </h2>
-          <p className="mt-1 text-white/40 text-[11px] uppercase tracking-[0.08em]">
+          <p className="mt-1 text-white/40 text-xs uppercase tracking-widest">
             Development mode only
           </p>
         </div>
@@ -52,7 +52,7 @@ export function DevPanel() {
         </div>
 
         {/* Footer */}
-        <div className="py-3 px-4 border-t border-white/8 bg-dev-surface text-[11px] text-white/30 text-center uppercase tracking-[0.08em]">
+        <div className="py-3 px-4 border-t border-white/8 bg-dev-surface text-xs text-white/30 text-center uppercase tracking-widest">
           Qoomb v{APP_VERSION} · Dev Mode
         </div>
       </div>

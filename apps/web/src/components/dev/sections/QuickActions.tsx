@@ -49,7 +49,7 @@ export function QuickActions() {
 
   return (
     <div className="p-4 border-b border-white/8">
-      <h3 className="text-primary text-[13px] font-black mb-3 uppercase tracking-[0.08em]">
+      <h3 className="text-primary text-sm font-black mb-3 uppercase tracking-widest">
         ⚡ Quick Actions
       </h3>
 
@@ -89,7 +89,7 @@ export function QuickActions() {
       {showLogs && logs.length > 0 && (
         <div className="mt-3 bg-dev-bg border border-white/8 rounded-md p-2 max-h-37.5 overflow-y-auto">
           {logs.map((log, idx) => (
-            <div key={idx} className="text-[11px] font-mono text-white/40 mb-1">
+            <div key={idx} className="text-xs font-mono text-white/40 mb-1">
               {log}
             </div>
           ))}

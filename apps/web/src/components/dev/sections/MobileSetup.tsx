@@ -16,13 +16,13 @@ export function MobileSetup() {
 
   return (
     <div className="p-4 border-b border-white/8">
-      <h3 className="text-primary text-[13px] font-black mb-3 uppercase tracking-[0.08em]">
+      <h3 className="text-primary text-sm font-black mb-3 uppercase tracking-widest">
         📱 Mobile Setup
       </h3>
 
       {/* Certificate */}
       <div className="mb-4">
-        <h4 className="text-white/75 text-[13px] font-semibold mb-2">1. Install Certificate</h4>
+        <h4 className="text-white/75 text-sm font-semibold mb-2">1. Install Certificate</h4>
         <div className="bg-white p-3 rounded-lg inline-block">
           <QRCodeSVG value={certUrl} size={120} />
         </div>
@@ -35,7 +35,7 @@ export function MobileSetup() {
 
       {/* App URL */}
       <div>
-        <h4 className="text-white/75 text-[13px] font-semibold mb-2">2. Open App</h4>
+        <h4 className="text-white/75 text-sm font-semibold mb-2">2. Open App</h4>
         <div className="bg-white p-3 rounded-lg inline-block">
           <QRCodeSVG value={appUrl} size={120} />
         </div>

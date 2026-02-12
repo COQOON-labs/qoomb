@@ -15,7 +15,7 @@ export function EnvironmentInfo() {
 
   return (
     <div className="p-4 border-b border-white/8">
-      <h3 className="text-primary text-[13px] font-black mb-3 uppercase tracking-[0.08em]">
+      <h3 className="text-primary text-sm font-black mb-3 uppercase tracking-widest">
         🌐 Environment Info
       </h3>
 

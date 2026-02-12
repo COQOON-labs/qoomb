@@ -9,11 +9,11 @@ export function NetworkStatus() {
 
   return (
     <div className="p-4 border-b border-white/8">
-      <h3 className="text-primary text-[13px] font-black mb-3 uppercase tracking-[0.08em]">
+      <h3 className="text-primary text-sm font-black mb-3 uppercase tracking-widest">
         📡 Network Status
       </h3>
 
-      <div className="text-[13px]">
+      <div className="text-sm">
         {/* Online Status */}
         <div className="flex items-center gap-2 mb-3">
           <div className={cn('w-2.5 h-2.5 rounded-full', dotClass)} />

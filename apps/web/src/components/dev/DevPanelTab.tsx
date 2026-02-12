@@ -13,7 +13,7 @@ export function DevPanelTab({ onClick, isOpen }: DevPanelTabProps) {
         'fixed top-1/2 -translate-y-1/2 z-9999',
         'bg-dev-bg text-primary border-2 border-primary',
         'rounded-tl-lg rounded-bl-lg py-4 px-2 cursor-pointer',
-        '[writing-mode:vertical-rl] text-[11px] font-black tracking-widest uppercase',
+        '[writing-mode:vertical-rl] text-xs font-black tracking-widest uppercase',
         'transition-all duration-300',
         'hover:bg-primary hover:text-black',
         'shadow-[-2px_2px_8px_rgba(0,0,0,0.2)] hover:shadow-[-2px_2px_8px_rgba(245,196,0,0.3)]',

@@ -716,7 +716,7 @@ export function Dashboard() {
                   {/* Invite */}
                   <div className="flex flex-col items-center gap-2 cursor-pointer group">
                     <div className="w-12 h-12 rounded-2xl border-2 border-dashed border-border flex items-center justify-center text-muted-foreground group-hover:border-primary group-hover:text-primary transition-colors">
-                      <PlusIcon className="w-4.5 h-4.5" style={{ width: '18px', height: '18px' }} />
+                      <PlusIcon className="w-5 h-5" />
                     </div>
                     <div className="text-xs text-muted-foreground group-hover:text-foreground transition-colors leading-tight text-center">
                       Einladen

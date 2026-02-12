@@ -6,7 +6,9 @@ export function MobileSetup() {
   const { data } = trpc.health.useQuery(undefined, { refetchInterval: 10000 });
 
   const ip = data?.localIp ?? null;
-  const certUrl = ip ? `http://${ip}:8888/mkcert-root-ca.mobileconfig` : '';
+  // Cert served by Vite static files (public/dev-cert/) over plain HTTP — no cert trust needed yet
+  const certUrl = ip ? `http://${ip}:5173/dev-cert/mkcert-root-ca.mobileconfig` : '';
+  // App served by Caddy over HTTPS (extended mode only)
   const appUrl = ip ? `https://${ip}:8443` : '';
 
   return (
@@ -17,7 +19,7 @@ export function MobileSetup() {
 
       {!ip && (
         <p className="text-white/40 text-xs mb-3">
-          Waiting for backend IP… (only available in extended dev mode)
+          Waiting for backend connection… run <code>make dev-extended</code> for full mobile support
         </p>
       )}
 

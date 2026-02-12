@@ -9,7 +9,6 @@ import {
   HIVE_ID_PARAM_KEY,
 } from '../decorators/encrypt-fields.decorator';
 import { EncryptionService } from '../encryption.service';
-import { EncryptedData } from '../interfaces/key-provider.interface';
 
 /**
  * Encryption Interceptor
@@ -199,19 +198,13 @@ export class EncryptionInterceptor implements NestInterceptor {
                   hiveId
                 );
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                processed[field] = encrypted.data.toString('base64');
+                processed[field] = this.encryptionService.serializeToStorage(encrypted);
               } else {
-                // Decrypt
-                // FIXME: CRITICAL - Version is hardcoded! This breaks key rotation.
-                // Current data format: base64(encrypted_data)
-                // Needed format: version:base64(encrypted_data) OR JSON
-                // Before implementing key rotation, MUST change data format to include version.
-                const encryptedData: EncryptedData = {
-                  version: 1, // FIXME: Hardcoded - read from stored data instead
-                  provider: this.encryptionService.getProviderName(),
+                // Decrypt: parse the versioned storage string (format: v{version}:{base64})
+                const encryptedData = this.encryptionService.parseFromStorage(
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-                  data: Buffer.from(processed[field], 'base64'),
-                };
+                  String(processed[field])
+                );
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 processed[field] = this.encryptionService.decrypt(encryptedData, hiveId);
               }

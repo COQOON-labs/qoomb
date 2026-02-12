@@ -8,10 +8,10 @@ export function HealthCheck() {
   });
 
   const getStatusClasses = () => {
-    if (isLoading) return 'bg-white/40 shadow-[0_0_8px_rgba(255,255,255,0.4)]';
-    if (error) return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]';
-    if (data?.status === 'ok') return 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,1)]';
-    return 'bg-primary shadow-[0_0_8px_rgba(245,196,0,1)]';
+    if (isLoading) return 'bg-white/40 glow-muted';
+    if (error) return 'bg-red-500 glow-destructive';
+    if (data?.status === 'ok') return 'bg-emerald-500 glow-success';
+    return 'bg-primary glow-primary';
   };
 
   const getStatusText = () => {

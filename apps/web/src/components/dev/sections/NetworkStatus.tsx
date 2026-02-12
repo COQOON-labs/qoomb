@@ -3,9 +3,7 @@ import { cn, useOnlineStatus } from '@qoomb/ui';
 export function NetworkStatus() {
   const isOnline = useOnlineStatus();
 
-  const dotClass = isOnline
-    ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,1)]'
-    : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]';
+  const dotClass = isOnline ? 'bg-emerald-500 glow-success' : 'bg-red-500 glow-destructive';
 
   return (
     <div className="p-4 border-b border-white/8">

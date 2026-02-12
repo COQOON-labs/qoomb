@@ -86,6 +86,26 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   Custom utilities — semantic glow effects for status indicators
+   Usage: glow-success, glow-destructive, glow-primary, glow-muted
+   ───────────────────────────────────────────────────────────────── */
+@utility glow-success {
+  box-shadow: 0 0 8px var(--color-emerald-500);
+}
+
+@utility glow-destructive {
+  box-shadow: 0 0 8px var(--color-red-500);
+}
+
+@utility glow-primary {
+  box-shadow: 0 0 8px var(--color-primary);
+}
+
+@utility glow-muted {
+  box-shadow: 0 0 8px rgb(255 255 255 / 0.4);
+}
+
+/* ─────────────────────────────────────────────────────────────────
    Base reset
    ───────────────────────────────────────────────────────────────── */
 @layer base {

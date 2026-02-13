@@ -35,7 +35,7 @@ export function PassKeyButton({ email, redirectTo = '/dashboard' }: PassKeyButto
         data.accessToken,
         data.refreshToken
       );
-      navigate(redirectTo, { replace: true });
+      void navigate(redirectTo, { replace: true });
     },
     onError: (err) => setError(err.message),
   });

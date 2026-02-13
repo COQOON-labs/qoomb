@@ -16,6 +16,7 @@ export class ResendEmailTransport implements IEmailTransport {
   }
 
   async send(options: SendEmailOptions): Promise<void> {
+    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- requires Node 18+
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {

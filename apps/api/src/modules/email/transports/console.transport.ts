@@ -6,7 +6,7 @@ import type { IEmailTransport, SendEmailOptions } from '../interfaces/email-tran
 export class ConsoleEmailTransport implements IEmailTransport {
   private readonly logger = new Logger(ConsoleEmailTransport.name);
 
-  async send(options: SendEmailOptions): Promise<void> {
+  send(options: SendEmailOptions): Promise<void> {
     this.logger.log('─────────────────────────────────────────────────');
     this.logger.log('📧  EMAIL (console provider — not actually sent)');
     this.logger.log(`    To:      ${options.to}`);
@@ -14,5 +14,6 @@ export class ConsoleEmailTransport implements IEmailTransport {
     this.logger.log(`    Subject: ${options.subject}`);
     this.logger.log(`    Body:    ${options.text}`);
     this.logger.log('─────────────────────────────────────────────────');
+    return Promise.resolve();
   }
 }

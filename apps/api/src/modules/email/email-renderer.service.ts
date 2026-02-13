@@ -1,7 +1,8 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import Handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
+
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import Handlebars from 'handlebars';
 
 /**
  * Responsible only for Handlebars template loading and rendering.

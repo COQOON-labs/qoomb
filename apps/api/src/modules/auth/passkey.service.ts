@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 
 import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import type { User } from '@prisma/client';
 import {
   generateAuthenticationOptions,
   generateRegistrationOptions,
@@ -10,7 +11,6 @@ import {
   type RegistrationResponseJSON,
   type AuthenticationResponseJSON,
 } from '@simplewebauthn/server';
-import type { User } from '@prisma/client';
 
 import { RedisService } from '../../common/services/redis.service';
 import { PrismaService } from '../../prisma/prisma.service';

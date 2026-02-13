@@ -1,8 +1,8 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 
-import { loadAllLocales } from '../../i18n/i18n-util.sync';
-import { i18nObject } from '../../i18n/i18n-util';
 import type { Locales } from '../../i18n/i18n-types';
+import { i18nObject } from '../../i18n/i18n-util';
+import { loadAllLocales } from '../../i18n/i18n-util.sync';
 
 import { EmailRendererService } from './email-renderer.service';
 import { EMAIL_TRANSPORT, type IEmailTransport } from './interfaces/email-transport.interface';

@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
 import { JWT_CONFIG } from '../../config/security.config';
-import { EmailModule } from '../email/email.module';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { EmailModule } from '../email/email.module';
 
 import { AuthService } from './auth.service';
 import { PassKeyService } from './passkey.service';

@@ -63,6 +63,7 @@ export function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          showPasswordToggle
           error={error || undefined}
         />
 

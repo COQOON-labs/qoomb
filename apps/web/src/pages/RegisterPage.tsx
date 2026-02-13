@@ -129,6 +129,7 @@ export function RegisterPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          showPasswordToggle
           helperText="Min. 8 characters with uppercase, number and special character"
         />
 

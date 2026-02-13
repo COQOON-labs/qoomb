@@ -44,6 +44,7 @@ export function ResetPasswordPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          showPasswordToggle
           helperText="Min. 8 characters with uppercase, number and special character"
         />
         <Input
@@ -53,6 +54,7 @@ export function ResetPasswordPage() {
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           required
+          showPasswordToggle
           error={formError || undefined}
         />
 

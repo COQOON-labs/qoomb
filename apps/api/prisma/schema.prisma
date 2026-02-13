@@ -26,15 +26,17 @@ model Hive {
   resourceShares       ResourceShare[]
   events               Event[]
   tasks                Task[]
+  invitations          Invitation[]
 
   @@map("hives")
 }
 
 model User {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email          String    @unique @db.VarChar(255)
   passwordHash   String    @map("password_hash") @db.Text
   emailVerified  Boolean   @default(false) @map("email_verified")
+  isSystemAdmin  Boolean   @default(false) @map("is_system_admin")
   fullName       String?   @map("full_name") @db.VarChar(255)
   nickname       String?   @db.VarChar(255)
   birthday       DateTime? @db.Date
@@ -42,9 +44,13 @@ model User {
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
-  refreshTokens RefreshToken[]
-  memberships   UserHiveMembership[]
-  persons       Person[]
+  refreshTokens          RefreshToken[]
+  memberships            UserHiveMembership[]
+  persons                Person[]
+  passKeyCredentials     PassKeyCredential[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens    PasswordResetToken[]
+  sentInvitations        Invitation[]             @relation("Inviter")
 
   @@map("users")
 }
@@ -225,4 +231,74 @@ model Task {
   @@index([hiveId, assigneeId])
   @@index([hiveId, creatorId])
   @@map("tasks")
+}
+
+// ============================================
+// AUTH EXTENSION TABLES
+// ============================================
+
+model PassKeyCredential {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId              String    @map("user_id") @db.Uuid
+  credentialId        String    @unique @map("credential_id") @db.Text
+  credentialPublicKey Bytes     @map("credential_public_key")
+  counter             BigInt    @default(0)
+  transports          String[]
+  deviceName          String?   @map("device_name") @db.VarChar(255)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  lastUsedAt          DateTime? @map("last_used_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("passkey_credentials")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token     String    @unique @db.Text
+  userId    String    @map("user_id") @db.Uuid
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  usedAt    DateTime? @map("used_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token     String    @unique @db.Text
+  userId    String    @map("user_id") @db.Uuid
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  usedAt    DateTime? @map("used_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model Invitation {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String    @db.VarChar(255)
+  token           String    @unique @db.Text
+  invitedByUserId String    @map("invited_by_user_id") @db.Uuid
+  hiveId          String?   @map("hive_id") @db.Uuid
+  expiresAt       DateTime  @map("expires_at") @db.Timestamptz
+  usedAt          DateTime? @map("used_at") @db.Timestamptz
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  invitedByUser User  @relation("Inviter", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  hive          Hive? @relation(fields: [hiveId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([invitedByUserId])
+  @@index([expiresAt])
+  @@map("invitations")
 }

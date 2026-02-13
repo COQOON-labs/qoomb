@@ -1,5 +1,13 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+import { AuthGuard } from './components/auth/AuthGuard';
 import { DevPanel } from './components/dev/DevPanel';
 import { Dashboard } from './pages/Dashboard';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
 
 /**
  * Application Version
@@ -22,11 +30,28 @@ if (import.meta.env.DEV && 'serviceWorker' in navigator) {
 
 function App() {
   return (
-    <>
+    <BrowserRouter>
       {/* Dev Panel - only visible in dev mode */}
       <DevPanel />
-      <Dashboard />
-    </>
+
+      <Routes>
+        {/* Public auth routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+        {/* Protected routes */}
+        <Route element={<AuthGuard />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Route>
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

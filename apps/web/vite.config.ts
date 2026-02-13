@@ -82,6 +82,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // Resolve @qoomb/ui directly from source so HMR works without rebuilding the package
+      '@qoomb/ui': path.resolve(__dirname, '../../packages/ui/src'),
     },
   },
   server: {

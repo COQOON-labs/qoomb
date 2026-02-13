@@ -8,6 +8,7 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 import { RATE_LIMITS } from './config/security.config';
 import { AuthModule } from './modules/auth/auth.module';
+import { EmailModule } from './modules/email/email.module';
 import { EventsModule } from './modules/events/events.module';
 import { PersonsModule } from './modules/persons/persons.module';
 import { TasksModule } from './modules/tasks/tasks.module';
@@ -36,6 +37,7 @@ import { TrpcModule } from './trpc/trpc.module';
     }),
     CommonModule,
     PrismaModule,
+    EmailModule,
     TrpcModule,
     AuthModule,
     EventsModule,

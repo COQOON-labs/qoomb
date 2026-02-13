@@ -59,6 +59,22 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.person;
   }
 
+  get emailVerificationToken() {
+    return this.client.emailVerificationToken;
+  }
+
+  get passwordResetToken() {
+    return this.client.passwordResetToken;
+  }
+
+  get invitation() {
+    return this.client.invitation;
+  }
+
+  get passKeyCredential() {
+    return this.client.passKeyCredential;
+  }
+
   // Expose Prisma methods
   async $connect() {
     return await this.client.$connect();

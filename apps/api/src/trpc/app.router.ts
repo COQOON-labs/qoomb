@@ -2,6 +2,8 @@ import * as os from 'os';
 
 import { authRouter } from '../modules/auth/auth.router';
 import { type AuthService } from '../modules/auth/auth.service';
+import { type PassKeyService } from '../modules/auth/passkey.service';
+import { type SystemConfigService } from '../modules/auth/system-config.service';
 
 import { router, publicProcedure } from './trpc.router';
 
@@ -16,7 +18,11 @@ import { router, publicProcedure } from './trpc.router';
  * This function takes all required services and returns
  * the composed tRPC router with all sub-routers attached.
  */
-export const createAppRouter = (authService: AuthService) =>
+export const createAppRouter = (
+  authService: AuthService,
+  systemConfigService: SystemConfigService,
+  passKeyService: PassKeyService
+) =>
   router({
     // Health check endpoint
     health: publicProcedure.query(() => {
@@ -47,7 +53,7 @@ export const createAppRouter = (authService: AuthService) =>
     }),
 
     // Authentication router
-    auth: authRouter(authService),
+    auth: authRouter(authService, systemConfigService, passKeyService),
 
     // Future sub-routers will be added here:
     // events: eventsRouter(eventsService),

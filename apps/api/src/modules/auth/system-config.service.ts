@@ -10,7 +10,7 @@ export interface SystemConfig {
  * Exposes public system configuration flags to the frontend.
  *
  * Configured via environment variables — no DB required:
- *   ALLOW_OPEN_REGISTRATION=true   (false = invite-only)
+ *   ALLOW_OPEN_REGISTRATION=false  (true = allow anyone to register)
  *   ALLOW_FORGOT_PASSWORD=true     (false = disable password reset flow)
  *   ALLOW_PASSKEYS=true            (false = PassKeys disabled)
  *
@@ -21,7 +21,7 @@ export interface SystemConfig {
 export class SystemConfigService {
   getConfig(): SystemConfig {
     return {
-      allowOpenRegistration: this.parseFlag('ALLOW_OPEN_REGISTRATION', true),
+      allowOpenRegistration: this.parseFlag('ALLOW_OPEN_REGISTRATION', false),
       allowForgotPassword: this.parseFlag('ALLOW_FORGOT_PASSWORD', true),
       allowPasskeys: this.parseFlag('ALLOW_PASSKEYS', true),
     };

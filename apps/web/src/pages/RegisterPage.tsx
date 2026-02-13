@@ -1,6 +1,6 @@
 import { Button, Input } from '@qoomb/ui';
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AuthLayout } from '../layouts/AuthLayout';
 import { useAuth } from '../lib/auth/useAuth';
@@ -93,18 +93,7 @@ export function RegisterPage() {
   }
 
   if (isOpenRegistrationBlocked) {
-    return (
-      <AuthLayout
-        title="Registration closed"
-        subtitle="New accounts require an invitation. Please ask your administrator for an invite link."
-      >
-        <div className="mt-6">
-          <Button asChild fullWidth variant="outline">
-            <Link to="/login">Back to sign in</Link>
-          </Button>
-        </div>
-      </AuthLayout>
-    );
+    return <Navigate to="/login" replace />;
   }
 
   return (

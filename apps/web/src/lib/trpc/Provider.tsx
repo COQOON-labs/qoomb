@@ -4,6 +4,7 @@ import { useState } from 'react';
 import superjson from 'superjson';
 
 import { getAccessToken } from '../auth/tokenStore';
+
 import { trpc } from './client';
 
 interface TrpcProviderProps {
@@ -29,7 +30,8 @@ export function TrpcProvider({ children }: TrpcProviderProps) {
       : `${window.location.origin}/trpc`;
 
     if (import.meta.env.DEV) {
-      console.debug('tRPC URL:', tRPCUrl);
+      // eslint-disable-next-line no-console
+      console.warn('tRPC URL:', tRPCUrl);
     }
 
     return trpc.createClient({

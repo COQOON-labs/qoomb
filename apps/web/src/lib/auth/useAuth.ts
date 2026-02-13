@@ -1,4 +1,4 @@
-import { useAuthContext, type AuthState, type AuthUser } from './AuthContext';
+import { useAuthContext, type AuthUser } from './AuthContext';
 
 export interface UseAuthReturn {
   user: AuthUser | null;

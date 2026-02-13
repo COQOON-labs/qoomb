@@ -30,7 +30,7 @@ export function LoginPage() {
         data.accessToken,
         data.refreshToken
       );
-      navigate(from, { replace: true });
+      void navigate(from, { replace: true });
     },
     onError: (err) => {
       setError(err.message);

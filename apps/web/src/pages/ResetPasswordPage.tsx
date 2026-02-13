@@ -14,15 +14,15 @@ export function ResetPasswordPage() {
   const [confirm, setConfirm] = useState('');
   const [formError, setFormError] = useState('');
 
-  // No token → back to login
-  if (!token) return <Navigate to="/login" replace />;
-
   const mutation = trpc.auth.resetPassword.useMutation({
     onSuccess: () => {
-      navigate('/login', { replace: true });
+      void navigate('/login', { replace: true });
     },
     onError: (err) => setFormError(err.message),
   });
+
+  // No token → back to login
+  if (!token) return <Navigate to="/login" replace />;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

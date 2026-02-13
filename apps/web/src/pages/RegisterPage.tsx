@@ -35,7 +35,7 @@ export function RegisterPage() {
         data.accessToken,
         data.refreshToken
       );
-      navigate('/dashboard', { replace: true });
+      void navigate('/dashboard', { replace: true });
     },
     onError: (err) => setError(err.message),
   });
@@ -53,7 +53,7 @@ export function RegisterPage() {
         data.accessToken,
         data.refreshToken
       );
-      navigate('/dashboard', { replace: true });
+      void navigate('/dashboard', { replace: true });
     },
     onError: (err) => setError(err.message),
   });

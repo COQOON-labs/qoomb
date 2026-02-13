@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react';
 import { createTRPCProxyClient, httpLink } from '@trpc/client';
 import superjson from 'superjson';
+import { createContext, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react';
+
 import type { AppRouter } from '@qoomb/api/src/trpc/app.router';
 
 import { getRefreshToken, setRefreshToken, clearRefreshToken } from './authStorage';
@@ -181,9 +182,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     scheduleRefresh(accessToken, refreshToken);
   }
 
-  async function logout() {
+  function logout() {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     dispatch({ type: 'LOGOUT' });
+    return Promise.resolve();
   }
 
   function updateToken(accessToken: string, refreshToken: string) {

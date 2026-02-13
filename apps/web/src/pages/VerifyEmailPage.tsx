@@ -13,9 +13,6 @@ export function VerifyEmailPage() {
   const [status, setStatus] = useState<Status>('verifying');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // No token → back to login
-  if (!token) return <Navigate to="/login" replace />;
-
   const mutation = trpc.auth.verifyEmail.useMutation({
     onSuccess: () => setStatus('success'),
     onError: (err) => {
@@ -25,10 +22,14 @@ export function VerifyEmailPage() {
   });
 
   useEffect(() => {
+    if (!token) return;
     mutation.mutate({ token });
     // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // No token → back to login
+  if (!token) return <Navigate to="/login" replace />;
 
   if (status === 'verifying') {
     return (

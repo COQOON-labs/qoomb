@@ -11,7 +11,7 @@ export interface SystemConfig {
  *
  * Configured via environment variables — no DB required:
  *   ALLOW_OPEN_REGISTRATION=false  (true = allow anyone to register)
- *   ALLOW_FORGOT_PASSWORD=true     (false = disable password reset flow)
+ *   ALLOW_FORGOT_PASSWORD=false    (true = enable password reset flow)
  *   ALLOW_PASSKEYS=true            (false = PassKeys disabled)
  *
  * This endpoint is public (publicProcedure) so the frontend can adapt its UI
@@ -22,7 +22,7 @@ export class SystemConfigService {
   getConfig(): SystemConfig {
     return {
       allowOpenRegistration: this.parseFlag('ALLOW_OPEN_REGISTRATION', false),
-      allowForgotPassword: this.parseFlag('ALLOW_FORGOT_PASSWORD', true),
+      allowForgotPassword: this.parseFlag('ALLOW_FORGOT_PASSWORD', false),
       allowPasskeys: this.parseFlag('ALLOW_PASSKEYS', true),
     };
   }

@@ -148,7 +148,7 @@ export function RegisterPage() {
             <Input
               label="Hive name"
               type="text"
-              placeholder="e.g. Miller Family"
+              placeholder="e.g. Doe Family"
               value={hiveName}
               onChange={(e) => setHiveName(e.target.value)}
               required

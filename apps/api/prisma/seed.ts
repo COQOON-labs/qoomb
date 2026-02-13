@@ -1,12 +1,12 @@
 /**
- * Dev-only seed script — creates a "Miller Family" hive with 3 test users.
+ * Dev-only seed script — creates a "Doe Family" hive with 3 test users.
  *
  * Run:  pnpm --filter @qoomb/api db:seed
  *
  * Test accounts (password: Dev1234!):
- *   ben@miller.dev   — parent + sysadmin
- *   anna@miller.dev  — parent
- *   tim@miller.dev   — child
+ *   john@doe.dev   — parent + sysadmin
+ *   anna@doe.dev   — parent
+ *   tim@doe.dev    — child
  */
 
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -23,7 +23,7 @@ const SALT_ROUNDS = 10;
 
 // Fixed UUIDs → idempotent re-runs
 const HIVE_ID = '10000000-0000-0000-0000-000000000001';
-const PERSON_BEN_ID = '20000000-0000-0000-0000-000000000001';
+const PERSON_JOHN_ID = '20000000-0000-0000-0000-000000000001';
 const PERSON_ANNA_ID = '20000000-0000-0000-0000-000000000002';
 const PERSON_TIM_ID = '20000000-0000-0000-0000-000000000003';
 
@@ -37,42 +37,42 @@ async function main() {
   const hive = await prisma.hive.upsert({
     where: { id: HIVE_ID },
     update: {},
-    create: { id: HIVE_ID, name: 'Miller Family', type: 'family' },
+    create: { id: HIVE_ID, name: 'Doe Family', type: 'family' },
   });
 
   // ── Users ───────────────────────────────────────────────────────────────────
 
-  const ben = await prisma.user.upsert({
-    where: { email: 'ben@miller.dev' },
+  const john = await prisma.user.upsert({
+    where: { email: 'john@doe.dev' },
     update: {},
     create: {
-      email: 'ben@miller.dev',
+      email: 'john@doe.dev',
       passwordHash,
-      fullName: 'Ben Miller',
+      fullName: 'John Doe',
       emailVerified: true,
       isSystemAdmin: true,
     },
   });
 
   const anna = await prisma.user.upsert({
-    where: { email: 'anna@miller.dev' },
+    where: { email: 'anna@doe.dev' },
     update: {},
     create: {
-      email: 'anna@miller.dev',
+      email: 'anna@doe.dev',
       passwordHash,
-      fullName: 'Anna Miller',
+      fullName: 'Anna Doe',
       emailVerified: true,
       isSystemAdmin: false,
     },
   });
 
   const tim = await prisma.user.upsert({
-    where: { email: 'tim@miller.dev' },
+    where: { email: 'tim@doe.dev' },
     update: {},
     create: {
-      email: 'tim@miller.dev',
+      email: 'tim@doe.dev',
       passwordHash,
-      fullName: 'Tim Miller',
+      fullName: 'Tim Doe',
       emailVerified: true,
       isSystemAdmin: false,
     },
@@ -80,15 +80,15 @@ async function main() {
 
   // ── Persons (DB superuser bypasses RLS in dev) ───────────────────────────────
 
-  const benPerson = await prisma.person.upsert({
-    where: { id: PERSON_BEN_ID },
+  const johnPerson = await prisma.person.upsert({
+    where: { id: PERSON_JOHN_ID },
     update: {},
     create: {
-      id: PERSON_BEN_ID,
+      id: PERSON_JOHN_ID,
       hiveId: hive.id,
-      userId: ben.id,
+      userId: john.id,
       role: 'parent',
-      displayName: 'Ben',
+      displayName: 'John',
     },
   });
 
@@ -119,9 +119,9 @@ async function main() {
   // ── Memberships ─────────────────────────────────────────────────────────────
 
   await prisma.userHiveMembership.upsert({
-    where: { userId_hiveId: { userId: ben.id, hiveId: hive.id } },
+    where: { userId_hiveId: { userId: john.id, hiveId: hive.id } },
     update: {},
-    create: { userId: ben.id, hiveId: hive.id, personId: benPerson.id, isPrimary: true },
+    create: { userId: john.id, hiveId: hive.id, personId: johnPerson.id, isPrimary: true },
   });
 
   await prisma.userHiveMembership.upsert({
@@ -139,11 +139,11 @@ async function main() {
   // ── Done ────────────────────────────────────────────────────────────────────
 
   console.log('✅ Done!\n');
-  console.log('  Hive:     Miller Family (family)');
+  console.log('  Hive:     Doe Family (family)');
   console.log('  Password: Dev1234!\n');
-  console.log('  ben@miller.dev   → parent + sysadmin');
-  console.log('  anna@miller.dev  → parent');
-  console.log('  tim@miller.dev   → child');
+  console.log('  john@doe.dev   → parent + sysadmin');
+  console.log('  anna@doe.dev   → parent');
+  console.log('  tim@doe.dev    → child');
 }
 
 main()

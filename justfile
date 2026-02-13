@@ -222,7 +222,7 @@ docker-logs:
     docker-compose logs -f
 
 # ⚠️ DESTRUCTIVE: Stop containers and remove all volumes (deletes all data)
-[confirm("⚠️  This permanently deletes all PostgreSQL data and Redis volumes. Continue?")]
+[confirm("⚠️  This permanently deletes all PostgreSQL data and Redis volumes. Continue? [y/N]")]
 docker-clean:
     docker-compose down -v
     @echo -e "{{green}}✓ Docker services and volumes removed{{nc}}"
@@ -266,7 +266,7 @@ redis-cli:
     docker exec -it qoomb-redis redis-cli
 
 # ⚠️ DESTRUCTIVE: Wipe database, re-run migrations, optionally seed
-[confirm("⚠️  This permanently deletes all data and rebuilds the schema. Continue?")]
+[confirm("⚠️  This permanently deletes all data and rebuilds the schema. Continue? [y/N]")]
 db-reset:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -391,7 +391,7 @@ clean: _dev-stop
     @echo -e "{{green}}✓ Cleanup complete{{nc}}"
 
 # ⚠️ DESTRUCTIVE: Clean everything (node_modules + all data)
-[confirm("⚠️  This deletes node_modules AND all Docker data. Continue?")]
+[confirm("⚠️  This deletes node_modules AND all Docker data. Continue? [y/N]")]
 clean-all:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -423,7 +423,7 @@ ps: status
 first-run: setup
 
 # ⚠️ DESTRUCTIVE: Complete fresh start (wipe everything + setup from scratch)
-[confirm("⚠️  This wipes EVERYTHING and starts fresh. Continue?")]
+[confirm("⚠️  This wipes EVERYTHING and starts fresh. Continue? [y/N]")]
 fresh:
     #!/usr/bin/env bash
     set -euo pipefail

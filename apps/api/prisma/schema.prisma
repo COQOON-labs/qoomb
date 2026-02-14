@@ -110,9 +110,9 @@ model Person {
   hiveId      String    @map("hive_id") @db.Uuid
   userId      String?   @map("user_id") @db.Uuid
   role        String    @db.VarChar(50)
-  displayName String?   @map("display_name") @db.VarChar(255)
+  displayName String?   @map("display_name") @db.Text
   avatarUrl   String?   @map("avatar_url") @db.Text
-  birthdate   DateTime? @db.Date
+  birthdate   String?   @map("birthdate") @db.Text
   publicKey   String?   @map("public_key") @db.Text
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
@@ -139,7 +139,7 @@ model Person {
 model HiveGroup {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   hiveId      String   @map("hive_id") @db.Uuid
-  name        String   @db.VarChar(255)
+  name        String   @db.Text
   description String?  @db.Text
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz

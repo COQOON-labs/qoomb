@@ -679,6 +679,54 @@ export class AuthService {
       throw new ForbiddenException('Only system administrators can send invitations.');
     }
 
+    await this.createAndSendInvitation(
+      inviterUserId,
+      inviter.fullName ?? inviter.email,
+      email,
+      hiveId ?? null
+    );
+  }
+
+  /**
+   * Send a hive-level invitation. Authorization (MEMBERS_INVITE) is enforced by the caller.
+   * Unlike sendInvitation(), no SystemAdmin check — the caller (persons router) has already
+   * verified MEMBERS_INVITE permission via requirePermission().
+   *
+   * @param inviterUserId - userId of the person sending the invite
+   * @param inviterName   - display name for the email template
+   * @param email         - recipient email address
+   * @param hiveId        - hive to join (required for hive-level invites)
+   */
+  async inviteMemberToHive(
+    inviterUserId: string,
+    inviterName: string,
+    email: string,
+    hiveId: string
+  ): Promise<void> {
+    // Check if the email is already a member of this hive
+    const existingMembership = await this.prisma.userHiveMembership.findFirst({
+      where: {
+        hiveId,
+        user: { email: email.toLowerCase() },
+      },
+    });
+    if (existingMembership) {
+      throw new BadRequestException('This person is already a member of this hive.');
+    }
+
+    await this.createAndSendInvitation(inviterUserId, inviterName, email, hiveId);
+  }
+
+  /**
+   * Internal helper: create an Invitation record and send the email.
+   * Shared by sendInvitation() (SystemAdmin) and inviteMemberToHive() (hive-level).
+   */
+  private async createAndSendInvitation(
+    inviterUserId: string,
+    inviterName: string,
+    email: string,
+    hiveId: string | null
+  ): Promise<void> {
     // Invalidate any existing unused invite for this email
     await this.prisma.invitation.updateMany({
       where: { email, usedAt: null },
@@ -693,12 +741,11 @@ export class AuthService {
         email,
         token: tokenHash,
         invitedByUserId: inviterUserId,
-        hiveId: hiveId ?? null,
+        hiveId,
         expiresAt,
       },
     });
 
-    const inviterName = inviter.fullName ?? inviter.email;
     await this.emailService.sendInvitation(email, inviterName, plainToken);
   }
 

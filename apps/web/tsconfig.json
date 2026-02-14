@@ -4,7 +4,10 @@
     "baseUrl": ".",
     "paths": {
       "@qoomb/api/*": ["../../apps/api/*"]
-    }
+    },
+    // Required to parse NestJS decorator syntax in API source files
+    // that are transitively included when importing AppRouter type
+    "experimentalDecorators": true
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

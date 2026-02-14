@@ -7,90 +7,114 @@ This document explains the comprehensive security measures implemented in Qoomb 
 1. [Security Architecture Overview](#security-architecture-overview)
 2. [Multi-Tenant Data Isolation](#multi-tenant-data-isolation)
 3. [Authentication & Authorization](#authentication--authorization)
-4. [Input Validation & Sanitization](#input-validation--sanitization)
-5. [Rate Limiting & DoS Protection](#rate-limiting--dos-protection)
-6. [Defense-in-Depth Measures](#defense-in-depth-measures)
-7. [Audit Logging](#audit-logging)
-8. [Security Best Practices](#security-best-practices)
-9. [Threat Model](#threat-model)
-10. [Security Checklist](#security-checklist)
+4. [Role-Based Access Control (RBAC)](#role-based-access-control-rbac)
+5. [Resource-Level Access Control](#resource-level-access-control)
+6. [Input Validation & Sanitization](#input-validation--sanitization)
+7. [Rate Limiting & DoS Protection](#rate-limiting--dos-protection)
+8. [Defense-in-Depth Measures](#defense-in-depth-measures)
+9. [Audit Logging](#audit-logging)
+10. [Security Best Practices](#security-best-practices)
+11. [Threat Model](#threat-model)
+12. [Security Checklist](#security-checklist)
 
 ---
 
 ## Security Architecture Overview
 
-Qoomb implements a **defense-in-depth** security strategy with multiple layers of protection:
+Qoomb implements a **defense-in-depth** security strategy with multiple independent layers of protection:
 
 ```
 ┌─────────────────────────────────────────────────┐
 │ Layer 1: Input Validation (Zod + Sanitization) │
 ├─────────────────────────────────────────────────┤
-│ Layer 2: Rate Limiting (Throttler)             │
+│ Layer 2: Rate Limiting (Throttler + Redis)     │
 ├─────────────────────────────────────────────────┤
-│ Layer 3: Authentication (JWT)                  │
+│ Layer 3: Authentication (JWT Access + Refresh) │
 ├─────────────────────────────────────────────────┤
-│ Layer 4: Authorization (Middleware)            │
+│ Layer 4: Authorization (hiveProcedure + RBAC)  │
 ├─────────────────────────────────────────────────┤
-│ Layer 5: Schema Isolation (search_path)        │
+│ Layer 5: Resource Access (5-stage guard)       │
 ├─────────────────────────────────────────────────┤
-│ Layer 6: Row-Level Security (RLS)              │
+│ Layer 6: Row-Level Security (PostgreSQL RLS)   │
 ├─────────────────────────────────────────────────┤
 │ Layer 7: Audit Logging                         │
 └─────────────────────────────────────────────────┘
 ```
 
+Each layer is independent. If one fails, others still protect.
+
 ---
 
 ## Multi-Tenant Data Isolation
 
-### 1. PostgreSQL Schema-Per-Hive
+### Architecture: Shared Schema + Row-Level Security
 
-**What it is:** Each hive gets its own dedicated PostgreSQL schema (`hive_<uuid>`).
+**What it is:** All hives share a single PostgreSQL schema. Isolation is enforced at the database level via Row-Level Security (RLS) policies on every hive-scoped table.
 
-**Why it matters:**
+**Why not Schema-Per-Hive?**
 
-- Complete data isolation between hives
-- No risk of cross-hive data leakage
-- Easy per-hive backups and data export
-- Scalable architecture (can move schemas to different databases)
+- SaaS-first: schema-per-hive does not scale to many small tenants
+- Simple migrations: one migration updates all tenants instantly
+- Connection pooling compatible (PgBouncer/pgpool)
+- Cross-tenant analytics for billing/usage without schema federation
 
-**Implementation:**
+### How isolation works
+
+Every hive-scoped table has an RLS policy keyed on a PostgreSQL session variable:
 
 ```sql
--- Each hive gets its own schema
-CREATE SCHEMA hive_550e8400;
+-- Session variable set by hiveProcedure before every handler
+SET app.hive_id = '<hive-uuid>';
 
--- Tables are created within the hive schema
-CREATE TABLE hive_550e8400.persons (...);
-CREATE TABLE hive_550e8400.events (...);
-CREATE TABLE hive_550e8400.tasks (...);
+-- Example RLS policy (events table)
+CREATE POLICY "events_isolation" ON "events"
+  USING (hive_id = current_setting('app.hive_id', true)::uuid)
+  WITH CHECK (hive_id = current_setting('app.hive_id', true)::uuid);
+
+ALTER TABLE "events" FORCE ROW LEVEL SECURITY;
 ```
 
-**Access Control:**
+`FORCE ROW LEVEL SECURITY` ensures even the table owner (application role) cannot bypass the policies.
+
+### Tables with RLS
+
+All hive-scoped tables have isolation policies:
+
+| Table                   | RLS policy key |
+| ----------------------- | -------------- |
+| `persons`               | `app.hive_id`  |
+| `events`                | `app.hive_id`  |
+| `tasks`                 | `app.hive_id`  |
+| `hive_role_permissions` | `app.hive_id`  |
+| `hive_groups`           | `app.hive_id`  |
+| `hive_group_members`    | `app.hive_id`  |
+| `person_shares`         | `app.hive_id`  |
+| `group_shares`          | `app.hive_id`  |
+
+Global tables (`users`, `hives`, `user_hive_memberships`, `refresh_tokens`) are not hive-scoped and have no RLS. Access is controlled at the application layer.
+
+### Session variable setup
+
+`PrismaService.setHiveSchema()` sets the session variables before any handler runs:
 
 ```typescript
-// PrismaService.setHiveSchema() with security validation
 async setHiveSchema(hiveId: string, userId?: string): Promise<void> {
-  // 1. Validate UUID format (prevents SQL injection)
+  // 1. UUID validation — only [0-9a-f-] allowed, prevents SQL injection
   this.validateUUID(hiveId);
+  if (userId) this.validateUUID(userId);
 
-  // 2. Verify hive exists in database
+  // 2. Verify hive exists in DB
   await this.verifyHiveExists(hiveId);
 
-  // 3. Set session variables for RLS
-  await this.$executeRawUnsafe(`SET app.hive_id = '${hiveId}'`);
-
-  // 4. Set search_path to hive schema
-  await this.$executeRawUnsafe(`SET search_path TO hive_${hiveId}, public`);
+  // 3. Set RLS session variables
+  await this.executeRawSql(`SET app.hive_id = '${hiveId}'`);
+  if (userId) {
+    await this.executeRawSql(`SET app.user_id = '${userId}'`);
+  }
 }
 ```
 
-**Security Measures:**
-
-1. **UUID Validation:** Prevents SQL injection via malformed UUIDs
-2. **Existence Verification:** Prevents access to non-existent schemas
-3. **Session Variables:** Enables Row-Level Security policies
-4. **Logging:** Audit trail for schema context changes
+**Note:** PostgreSQL SET requires a literal value, not a parameter. UUID validation (strict regex for `[0-9a-f-]` format) is the injection prevention mechanism here.
 
 ---
 
@@ -101,31 +125,24 @@ async setHiveSchema(hiveId: string, userId?: string): Promise<void> {
 **Hashing:**
 
 - Algorithm: bcrypt
-- Salt rounds: 10 (configurable, 12 for production)
-- Max password length: 100 (prevents bcrypt DoS)
+- Salt rounds: 10 (dev), 12 (production)
+- Max password length: 100 (prevents bcrypt DoS via long input)
 
 **Password Requirements:**
 
 - Minimum 8 characters
-- Must contain:
-  - At least one uppercase letter
-  - At least one lowercase letter
-  - At least one number
-  - At least one special character (@$!%\*?&)
+- Must contain uppercase, lowercase, number, and special character (`@$!%*?&`)
 
-**Implementation:**
+### 2. JWT Tokens (Access + Refresh)
 
-```typescript
-// Registration
-const passwordHash = await bcrypt.hash(input.adminPassword, 10);
+Qoomb uses a **dual-token model**:
 
-// Login
-const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-```
+| Token         | Lifetime   | Storage                     | Purpose                  |
+| ------------- | ---------- | --------------------------- | ------------------------ |
+| Access token  | 15 minutes | Memory / short-lived cookie | API authentication       |
+| Refresh token | 7 days     | HttpOnly cookie             | Obtain new access tokens |
 
-### 2. JWT (JSON Web Tokens)
-
-**Token Structure:**
+**Access token payload:**
 
 ```json
 {
@@ -137,73 +154,158 @@ const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 }
 ```
 
-**Security Features:**
+**Security features:**
 
-- Signed with HS256 algorithm
-- 7-day expiration (configurable)
-- Contains minimal information (no sensitive data)
-- Validated on every request
+- Signed with HS256 (JWT_SECRET, 32+ chars required)
+- Minimal payload — no sensitive data, no email
+- Refresh tokens stored in DB (`refresh_tokens` table) with device/IP metadata
+- Refresh token rotation: each use issues a new token and invalidates the old one
+- Token blacklisting: revoked tokens stored in Redis (covers logout, password change, suspicious activity)
+- Server-side session revocation on logout
 
-**Token Validation:**
+**Token validation flow:**
 
-```typescript
-async validateToken(token: string) {
-  const payload = this.jwtService.verify(token);
-
-  // Verify user still exists
-  const user = await this.prisma.user.findUnique({
-    where: { id: payload.sub }
-  });
-
-  if (!user) {
-    throw new UnauthorizedException('User not found');
-  }
-
-  return user;
-}
+```
+Request with Access Token
+    ↓
+JWT signature verification
+    ↓
+Redis blacklist check (token revoked?)
+    ↓
+User exists in DB?
+    ↓
+Proceed with ctx.user
 ```
 
-### 3. Authorization Middleware
-
-**Protected Procedure:**
+### 3. tRPC Procedures (Authorization Tiers)
 
 ```typescript
-export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
-  if (!ctx.user) {
-    throw new TRPCError({ code: 'UNAUTHORIZED' });
-  }
-  return next({ ctx: { ...ctx, user: ctx.user } });
-});
+// Tier 1: No auth required
+publicProcedure; // login, register, health check
+
+// Tier 2: JWT required
+protectedProcedure; // user profile, cross-hive operations
+
+// Tier 3: JWT + hive context + RBAC data loaded
+hiveProcedure; // all hive-scoped operations (events, tasks, persons, ...)
 ```
 
-**Hive Procedure:**
+**`hiveProcedure` loads 4 things in parallel before every handler:**
 
 ```typescript
-export const hiveProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-  // Set hive schema context with user context for RLS
-  await ctx.prisma.setHiveSchema(ctx.user.hiveId, ctx.user.id);
-  return next({ ctx });
-});
+const [hive, person, allHiveOverrides, groupMemberships] = await Promise.all([
+  ctx.prisma.hive.findUnique({ select: { type: true } }),
+  ctx.prisma.person.findUnique({ select: { role: true } }),
+  ctx.prisma.hiveRolePermission.findMany({ where: { hiveId } }),
+  ctx.prisma.hiveGroupMember.findMany({ where: { personId, hiveId } }),
+]);
+// ctx.user gains: hiveType, role, roleOverrides, groupIds
 ```
 
-### 4. User-Hive Access Verification
+### 4. Email Verification
 
-**Purpose:** Verify that a user has permission to access a specific hive.
+Implemented via `email_verification_tokens` table. New registrations receive a verification email. Unverified accounts have limited access until verified.
+
+### 5. Account Lockout
+
+Exponential backoff after failed login attempts. Tracked in Redis. Prevents brute-force attacks without requiring CAPTCHA.
+
+---
+
+## Role-Based Access Control (RBAC)
+
+### Roles
+
+**Family Hive** — minimum 1 `parent` enforced by DB trigger `enforce_minimum_admin`
+
+| Role     | Description                      |
+| -------- | -------------------------------- |
+| `parent` | Full admin — all permissions     |
+| `child`  | Reduced — can manage own content |
+
+**Organization Hive** — minimum 1 `org_admin` enforced by DB trigger
+
+| Role        | Description                                   |
+| ----------- | --------------------------------------------- |
+| `org_admin` | Full admin — all permissions                  |
+| `manager`   | Can manage all content, invite/remove members |
+| `member`    | Can create and manage own content             |
+| `guest`     | Read-only                                     |
+
+### Permission system
+
+Global defaults defined in `packages/types/src/permissions.ts` (`HIVE_ROLE_PERMISSIONS`). In-memory lookup, zero DB cost.
+
+Per-hive overrides stored in `hive_role_permissions` table (grant/revoke individual permissions for a role). Applied at runtime by `hasPermissionWithOverrides()`.
+
+**Checking a permission in a handler:**
 
 ```typescript
-async verifyUserHiveAccess(userId: string, hiveId: string): Promise<void> {
-  this.validateUUID(userId);
-  this.validateUUID(hiveId);
-
-  const user = await this.user.findFirst({
-    where: { id: userId, hiveId: hiveId }
-  });
-
-  if (!user) {
-    throw new UnauthorizedException('Access to this hive is not authorized');
-  }
-}
+import { requirePermission } from '../common/guards';
+requirePermission(ctx, HivePermission.EVENTS_CREATE);
+// Throws FORBIDDEN if role lacks this permission (including DB overrides)
 ```
+
+### DB trigger: minimum admin enforcement
+
+`enforce_minimum_admin` (SECURITY DEFINER, bypasses RLS) prevents removing the last `parent`/`org_admin` from a hive. This ensures there is always at least one admin who can manage the hive.
+
+---
+
+## Resource-Level Access Control
+
+For operations on specific resources (get, update, delete), role alone is insufficient. Resource visibility and explicit shares are also evaluated.
+
+### Visibility values
+
+Every resource (Event, Task, etc.) carries a `visibility` field:
+
+| Value       | Access                                              |
+| ----------- | --------------------------------------------------- |
+| `'hive'`    | All hive members with the view permission (default) |
+| `'admins'`  | Admin roles only (`parent` / `org_admin`)           |
+| `'group'`   | Members of the resource's group only                |
+| `'private'` | Creator only — **no admin bypass**                  |
+
+### Groups
+
+`HiveGroup` + `HiveGroupMember` tables. Admins gain access to group resources by joining the group — this is recorded in `addedByPersonId` + `joinedAt` for auditability. There is no silent admin bypass.
+
+### Shares (PersonShare & GroupShare)
+
+Explicit access grants using an ordinal `accessLevel`:
+
+- `VIEW (1)` — can read
+- `EDIT (2)` — can read + edit
+- `MANAGE (3)` — can read + edit + delete + re-share
+
+Higher levels imply lower levels.
+
+**Share behavior by visibility:**
+
+- `'hive'` / `'admins'`: Shares are **additive** — they elevate access beyond role baseline
+- `'group'` / `'private'`: Shares are the **exclusive** non-member access path
+
+**Share creation restriction:** Only the resource creator may create shares for `'private'` resources. This prevents admins from granting themselves access to private content without ever seeing it.
+
+### 5-stage access resolution
+
+Implemented in `apps/api/src/common/guards/resource-access.guard.ts`:
+
+```
+Stage 1: Load PersonShare + GroupShares in parallel
+   → effectiveShareLevel = max(0, all applicable levels)
+Stage 2: visibility = 'private' → creator OR share ≥ required → else FORBIDDEN
+Stage 3: visibility = 'group'   → creator OR member (VIEW) OR share ≥ required
+Stage 4: visibility = 'admins'  → share exception OR admin role required
+Stage 5: visibility = 'hive'    → share (additive) OR role-based (ANY/OWN)
+```
+
+Fail-closed: missing `hiveType`, `role`, or `personId` in context → always `FORBIDDEN`.
+
+**Key security property:** No admin bypass exists for `'private'` or `'group'` resources. Every access path is explicit and (for groups) auditable.
+
+**See also:** `docs/PERMISSIONS.md` for the complete permission architecture.
 
 ---
 
@@ -211,22 +313,10 @@ async verifyUserHiveAccess(userId: string, hiveId: string): Promise<void> {
 
 ### 1. Zod Schema Validation
 
-**Purpose:** Validate and sanitize all user input at the API boundary.
-
-**Email Validation:**
+All input validated at the API boundary with Zod schemas before any processing:
 
 ```typescript
-const emailSchema = z
-  .string()
-  .trim() // Remove whitespace
-  .toLowerCase() // Normalize to lowercase
-  .email('Invalid email') // Validate format
-  .max(320); // RFC 5321 max length
-```
-
-**Password Validation:**
-
-```typescript
+const emailSchema = z.string().trim().toLowerCase().email().max(320);
 const passwordSchema = z
   .string()
   .min(8)
@@ -234,326 +324,145 @@ const passwordSchema = z
   .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/);
 ```
 
-**Name Validation:**
+### 2. HTML Sanitization (XSS Prevention)
+
+`sanitizeHtml()` in `@qoomb/validators` runs two tag-removal passes + encodes remaining `<`/`>`:
 
 ```typescript
-const nameSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(255)
-  .regex(/^[a-zA-Z0-9\s\-'äöüÄÖÜßéèêàâôîûùç]+$/);
+// Two-pass removal prevents reconstruction attacks like <sc<script>ript>
+input
+  .replace(/<[^<>]*>/g, '') // Pass 1
+  .replace(/<[^<>]*>/g, '') // Pass 2
+  .replace(/</g, '&lt;') // Encode remaining (final safety net)
+  .replace(/>/g, '&gt;');
 ```
 
-### 2. Sanitization Utilities
+**Note:** The negated class is `[^<>]` (excludes both delimiters), not `[^>]`, to prevent ReDoS via polynomial backtracking.
 
-**HTML Sanitization (XSS Prevention):**
+### 3. Log Injection Prevention
+
+User-controlled values (URLs, headers) have `\r\n` stripped before logging to prevent log-line forgery:
 
 ```typescript
-function sanitizeHtml(input: string): string {
-  return input
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-}
+const url = request.url.replace(/[\r\n]/g, '');
+this.logger.warn(`[RATE_LIMIT] Throttled request to ${url}`);
 ```
 
-**SQL Sanitization (Defense-in-Depth):**
+### 4. UUID Validation
 
-```typescript
-function sanitizeSql(input: string): string {
-  // Remove SQL control characters
-  // Note: Should never be needed with parameterized queries
-  return input.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, ...);
-}
-```
-
-**File Name Sanitization:**
-
-```typescript
-function sanitizeFileName(fileName: string): string {
-  return fileName
-    .replace(/\0/g, '') // Remove null bytes
-    .replace(/[\/\\]/g, '_') // Replace slashes
-    .replace(/\.\./g, '_') // Prevent path traversal
-    .trim();
-}
-```
-
-### 3. Validation Layers
-
-```
-User Input
-    ↓
-[1. Zod Schema Validation]
-    ↓
-[2. Sanitization Utilities]
-    ↓
-[3. Business Logic Validation]
-    ↓
-[4. Database Constraints]
-    ↓
-Stored Data
-```
+All UUID inputs are strictly validated before use in raw SQL. This is the injection prevention mechanism for session variable SET commands.
 
 ---
 
 ## Rate Limiting & DoS Protection
 
-### 1. Rate Limit Configuration
+### Rate Limit Configuration
 
-**Global Rate Limit:**
+- **Global:** 100 requests / 15 minutes per IP or authenticated user ID
+- **Login:** 5 attempts / 15 minutes per IP
+- **Registration:** 3 attempts / hour per IP
+- **Password Reset:** 3 attempts / hour per IP
 
-- 100 requests per 15 minutes per IP/user
-- Applies to all endpoints by default
+### Implementation
 
-**Authentication Endpoints (Strict):**
+Redis-backed distributed rate limiting via `CustomThrottlerGuard`. Tracks by user ID for authenticated requests, by IP for unauthenticated.
 
-- **Login:** 5 attempts per 15 minutes per IP
-- **Registration:** 3 attempts per hour per IP
-- **Password Reset:** 3 attempts per hour per IP
-
-**Search Endpoints (Moderate):**
-
-- 50 searches per 5 minutes per user
-
-**Write Operations:**
-
-- 30 writes per minute per user
-
-### 2. Implementation
-
-**Throttler Guard:**
-
-```typescript
-@Injectable()
-export class CustomThrottlerGuard extends ThrottlerGuard {
-  protected async getTracker(req: Request): Promise<string> {
-    // Track by user ID for authenticated requests
-    if (req.user?.id) {
-      return `user:${req.user.id}`;
-    }
-
-    // Track by IP for unauthenticated requests
-    return this.getIpFromRequest(req);
-  }
-}
-```
-
-**Configuration:**
-
-```typescript
-export const RATE_LIMITS = {
-  GLOBAL: { ttl: 15 * 60, limit: 100 },
-  AUTH: { ttl: 15 * 60, limit: 5 },
-  REGISTRATION: { ttl: 60 * 60, limit: 3 },
-};
-```
-
-### 3. DoS Protection
-
-**Input Size Limits:**
+### DoS Protection
 
 - Max string length: 10,000 characters
-- Max text length: 100,000 characters
-- Max array length: 1,000 items
+- Max text/body: 100,000 characters / 5 MB JSON
 - Max file size: 10 MB
-- Max JSON payload: 5 MB
+- Max password length: 100 chars (bcrypt DoS prevention)
 
-**Password Length Limit:**
+### CSRF Protection
 
-- Max 100 characters (prevents bcrypt DoS)
+Custom request header required for all mutating requests (defense against CSRF via form-based cross-origin submissions). The header requirement is validated by middleware before reaching tRPC handlers.
 
 ---
 
 ## Defense-in-Depth Measures
 
-### 1. Row-Level Security (RLS)
+### Security Headers (Helmet.js)
 
-**Purpose:** Additional database-level security even if application logic fails.
-
-**Session Variables:**
-
-```sql
-CREATE FUNCTION current_user_id() RETURNS UUID AS $$
-  SELECT NULLIF(current_setting('app.user_id', TRUE), '')::UUID;
-$$ LANGUAGE SQL STABLE;
-
-CREATE FUNCTION current_hive_id() RETURNS UUID AS $$
-  SELECT NULLIF(current_setting('app.hive_id', TRUE), '')::UUID;
-$$ LANGUAGE SQL STABLE;
+```
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'self'
+Referrer-Policy: strict-origin-when-cross-origin
 ```
 
-**RLS Policies:**
+### Encryption at Rest
 
-```sql
--- Hives: Users can only read their own hive
-CREATE POLICY hives_select_policy ON hives
-  FOR SELECT
-  USING (id = current_hive_id());
+Per-hive AES-256-GCM encryption for sensitive fields (titles, descriptions, notes, calendar tokens). Hive keys are derived via HKDF from a master key — compromise of one hive does not expose others.
 
--- Users: Users can only read users in their own hive
-CREATE POLICY users_select_policy ON users
-  FOR SELECT
-  USING (id = current_user_id() OR hive_id = current_hive_id());
+Pluggable key providers: Environment (default), File, AWS KMS, HashiCorp Vault.
 
--- Prevent unauthorized updates and deletes
-CREATE POLICY users_update_policy ON users
-  FOR UPDATE
-  USING (id = current_user_id());
+### Database Hardening
 
-CREATE POLICY users_delete_policy ON users
-  FOR DELETE
-  USING (FALSE);
-```
-
-**Benefits:**
-
-- Prevents data leakage even if application has bugs
-- Additional layer of security at the database level
-- Enforces access control in all code paths
-
-### 2. Database Triggers
-
-**Email Normalization:**
-
-```sql
-CREATE TRIGGER normalize_user_email
-  BEFORE INSERT OR UPDATE OF email ON users
-  FOR EACH ROW
-  EXECUTE FUNCTION normalize_email();
-```
-
-**Automatic Timestamps:**
-
-```sql
-CREATE TRIGGER update_users_updated_at
-  BEFORE UPDATE ON users
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-```
+- Parameterized queries (Prisma) for all ORM operations
+- Raw SQL only where necessary (complex queries), with UUID pre-validation
+- RLS `FORCE ROW LEVEL SECURITY` on all hive-scoped tables
+- DB trigger `enforce_minimum_admin` (SECURITY DEFINER) prevents admin removal
 
 ---
 
 ## Audit Logging
 
-### 1. Audit Log Table
+Lightweight audit trail. No plaintext content stored — only IDs and action types.
+
+**Logged events:**
+
+- Authentication: login, logout, register, password change/reset
+- Hive operations: create, update, delete
+- Member operations: create, delete
+- Permission changes
+- Data export/import
+
+**Schema (planned):**
 
 ```sql
-CREATE TABLE audit_logs (
-  id UUID PRIMARY KEY,
-  event_type VARCHAR(50) NOT NULL,
-  user_id UUID,
-  hive_id UUID,
-  resource_type VARCHAR(50),
-  resource_id UUID,
-  action VARCHAR(20) NOT NULL,
-  ip_address INET,
-  user_agent TEXT,
-  metadata JSONB,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+audit_logs:
+  id            UUID PK
+  hive_id       UUID FK → hives (nullable for global events)
+  actor_id      UUID FK → persons (nullable for system)
+  action        VARCHAR(20)   -- created|updated|deleted|shared|restored
+  resource_type VARCHAR(50)
+  resource_id   UUID          -- no FK (polymorphic)
+  ip_address    INET
+  user_agent    TEXT
+  metadata      JSONB?        -- e.g. {fields_changed:['title']} — no values
+  created_at    TIMESTAMPTZ
+
+INDEX: (hive_id, created_at DESC)
 ```
 
-### 2. Logged Events
-
-**Authentication:**
-
-- user.login
-- user.logout
-- user.register
-- user.password_change
-- user.password_reset
-
-**Hive Operations:**
-
-- hive.create
-- hive.update
-- hive.delete
-
-**Data Operations:**
-
-- person.create
-- person.delete
-- data.export
-- data.import
-
-**Permissions:**
-
-- permission.change
-
-### 3. Audit Log Security
-
-**RLS Policies:**
-
-- Users can only read their own audit logs
-- Only application can insert audit logs
-- No updates or deletes allowed (immutable)
-
-**Retention:**
-
-- Default retention: 90 days
-- Configurable per deployment
+Audit logs are immutable — no updates or deletes allowed.
 
 ---
 
 ## Security Best Practices
 
-### 1. Production Deployment
-
-**Environment Variables:**
+### Production Deployment
 
 ```bash
-# Generate strong secrets
-JWT_SECRET=$(openssl rand -base64 32)
+# Required — no defaults accepted
+KEY_PROVIDER=environment   # or: file | aws-kms | vault
 ENCRYPTION_KEY=$(openssl rand -base64 32)
-SESSION_SECRET=$(openssl rand -base64 32)
-
-# Update .env
+JWT_SECRET=$(openssl rand -base64 32)
+DATABASE_URL=postgresql://...
+REDIS_URL=redis://...
 NODE_ENV=production
 BCRYPT_SALT_ROUNDS=12
-RATE_LIMIT_ENABLED=true
 ALLOWED_ORIGINS=https://yourdomain.com
 ```
 
-**Database:**
-
-- Use connection pooling
-- Enable SSL/TLS for connections
-- Restrict database access to application servers only
-- Regular backups with encryption
-
-**Secrets Management:**
+### Secrets Management
 
 - Never commit secrets to version control
-- Use environment variables or secret management service
-- Rotate secrets regularly
-- Use different secrets for each environment
-
-### 2. Regular Security Updates
-
-- Keep dependencies up to date
-- Monitor security advisories
-- Run `pnpm audit` regularly
-- Update Node.js, PostgreSQL, Redis
-
-### 3. Security Headers
-
-**Recommended Headers:**
-
-```typescript
-{
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-  'X-Frame-Options': 'DENY',
-  'X-Content-Type-Options': 'nosniff',
-  'X-XSS-Protection': '1; mode=block',
-  'Content-Security-Policy': "default-src 'self'",
-  'Referrer-Policy': 'strict-origin-when-cross-origin'
-}
-```
+- Use environment variables or a secrets manager
+- Rotate JWT_SECRET and ENCRYPTION_KEY quarterly
+- Use different secrets per environment
 
 ---
 
@@ -561,26 +470,26 @@ ALLOWED_ORIGINS=https://yourdomain.com
 
 ### Threats We Protect Against
 
-| Threat                                | Protection Measures                                                 |
-| ------------------------------------- | ------------------------------------------------------------------- |
-| **SQL Injection**                     | Parameterized queries (Prisma), UUID validation, input sanitization |
-| **XSS (Cross-Site Scripting)**        | Input sanitization, HTML encoding, CSP headers                      |
-| **CSRF (Cross-Site Request Forgery)** | SameSite cookies, CORS configuration, JWT tokens                    |
-| **Brute Force Attacks**               | Rate limiting, account lockout, strong password requirements        |
-| **Password Attacks**                  | bcrypt hashing, salt rounds, password complexity requirements       |
-| **Session Hijacking**                 | HTTPS only, secure cookies, JWT expiration                          |
-| **Data Leakage**                      | Schema isolation, RLS policies, hive-ownership validation           |
-| **DoS (Denial of Service)**           | Rate limiting, input size limits, bcrypt max length                 |
-| **Path Traversal**                    | File name sanitization, no direct file access                       |
-| **Command Injection**                 | No shell execution with user input, parameterized queries only      |
-| **Information Disclosure**            | Generic error messages, no stack traces in production               |
-| **Privilege Escalation**              | Authorization middleware, RLS policies, hive verification           |
+| Threat                        | Protection Measures                                                          |
+| ----------------------------- | ---------------------------------------------------------------------------- |
+| **SQL Injection**             | Prisma parameterized queries; UUID pre-validation for raw SET commands       |
+| **XSS**                       | Two-pass HTML sanitization; CSP headers; Zod input validation                |
+| **CSRF**                      | Custom request header requirement; SameSite cookies                          |
+| **Brute Force**               | Rate limiting; account lockout with exponential backoff                      |
+| **Password Attacks**          | bcrypt (12 rounds prod); max length 100; complexity requirements             |
+| **Session Hijacking**         | HTTPS; HttpOnly cookies; short-lived access tokens (15 min)                  |
+| **Cross-Tenant Data Leakage** | Shared Schema + RLS (FORCE); `app.hive_id` session variable; UUID validation |
+| **Privilege Escalation**      | RBAC with per-hive overrides; 5-stage resource access guard; fail-closed     |
+| **Private Data Exposure**     | No admin bypass for `'private'` resources; creator-only share creation       |
+| **DoS**                       | Rate limiting; input size limits; bcrypt length cap                          |
+| **Path Traversal**            | File name sanitization                                                       |
+| **Log Injection**             | `\r\n` stripping on user-controlled log values                               |
+| **ReDoS**                     | Bounded negated character classes in all sanitization regex                  |
+| **Info Leakage**              | Generic error messages (`'Insufficient permissions'`) everywhere             |
 
 ### Out of Scope (Future Work)
 
-- Email verification
 - Two-factor authentication (2FA)
-- Account recovery mechanisms
 - IP geolocation blocking
 - Advanced bot detection
 - Web Application Firewall (WAF)
@@ -595,18 +504,18 @@ ALLOWED_ORIGINS=https://yourdomain.com
 - [ ] Sensitive operations use `hiveProcedure` middleware
 - [ ] No secrets in code or version control
 - [ ] Error messages don't leak sensitive information
-- [ ] All database queries use Prisma (parameterized)
+- [ ] All DB queries use Prisma (parameterized); raw SQL only with UUID pre-validation
 - [ ] File uploads sanitized and validated
-- [ ] Dependencies regularly updated
+- [ ] Dependencies regularly updated (`pnpm audit`)
 
 ### Deployment
 
 - [ ] Generate strong JWT_SECRET (32+ characters)
 - [ ] Generate strong ENCRYPTION_KEY (32+ characters)
-- [ ] Set NODE_ENV to "production"
+- [ ] Set NODE_ENV=production
 - [ ] Configure ALLOWED_ORIGINS correctly
 - [ ] Enable rate limiting
-- [ ] Set BCRYPT_SALT_ROUNDS to 12
+- [ ] Set BCRYPT_SALT_ROUNDS=12
 - [ ] Database uses SSL/TLS connections
 - [ ] Redis secured with password
 - [ ] Regular backups configured
@@ -628,7 +537,7 @@ ALLOWED_ORIGINS=https://yourdomain.com
 
 ## Reporting Security Issues
 
-If you discover a security vulnerability, please email security@qoomb.app (or report via GitHub Security Advisories for the private repo).
+If you discover a security vulnerability, please email security@qoomb.app or report via GitHub Security Advisories for the private repo.
 
 **Please do not:**
 
@@ -649,10 +558,9 @@ If you discover a security vulnerability, please email security@qoomb.app (or re
 - [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/)
 - [PostgreSQL Row-Level Security](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
 - [NestJS Security Best Practices](https://docs.nestjs.com/security/authentication)
-- [bcrypt Security Considerations](https://github.com/kelektiv/node.bcrypt.js#security-issues-and-concerns)
-- [JWT Best Practices](https://tools.ietf.org/html/rfc8725)
+- [JWT Best Practices (RFC 8725)](https://tools.ietf.org/html/rfc8725)
 
 ---
 
-**Last Updated:** 2026-02-03
-**Version:** 1.0.0
+**Last Updated:** 2026-02-14
+**Version:** 1.1.0

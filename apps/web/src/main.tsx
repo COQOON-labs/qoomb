@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 
 import App from './App';
+import { AuthProvider } from './lib/auth/AuthContext';
 import { TrpcProvider } from './lib/trpc/Provider';
 import './styles/index.css';
 
@@ -10,8 +11,10 @@ if (!rootElement) throw new Error('Root element #root not found in document');
 
 createRoot(rootElement).render(
   <React.StrictMode>
-    <TrpcProvider>
-      <App />
-    </TrpcProvider>
+    <AuthProvider>
+      <TrpcProvider>
+        <App />
+      </TrpcProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

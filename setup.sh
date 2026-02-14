@@ -151,6 +151,15 @@ print_success "Datenbank-Migration erfolgreich"
 
 cd ../..
 
+# Optional: Seed data
+echo ""
+read -r -p "$(echo -e "${YELLOW}Dev-Seed-Daten installieren?${NC} (john@doe.dev, anna@doe.dev, tim@doe.dev, Passwort: Dev1234!) [j/N] ")" SEED
+if [[ "${SEED:-n}" =~ ^[JjYy]$ ]]; then
+    print_info "Installiere Seed-Daten..."
+    pnpm --filter @qoomb/api db:seed
+    print_success "Seed-Daten installiert"
+fi
+
 # Step 4: Verify Setup
 print_header "STEP 4: Setup überprüfen"
 
@@ -203,16 +212,21 @@ echo ""
 echo "🚀 Nächste Schritte:"
 echo ""
 echo "   1. Server starten:"
-echo "      ${GREEN}pnpm dev${NC}"
+echo "      ${GREEN}just dev${NC}"
 echo ""
 echo "   2. In neuem Terminal - Server testen:"
 echo "      ${GREEN}curl http://localhost:3001/trpc/health${NC}"
 echo ""
 echo "   3. Datenbank GUI öffnen:"
-echo "      ${GREEN}cd apps/api && pnpm prisma studio${NC}"
+echo "      ${GREEN}just db-studio${NC}"
 echo ""
-echo "   4. Logs anzeigen:"
+echo "   4. Dev-Seed-Daten (neu) laden:"
+echo "      ${GREEN}just db-seed${NC}"
+echo ""
+echo "   5. Logs anzeigen:"
 echo "      ${GREEN}docker-compose logs -f${NC}"
+echo ""
+echo "   Alle Befehle:  ${GREEN}just${NC}"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""

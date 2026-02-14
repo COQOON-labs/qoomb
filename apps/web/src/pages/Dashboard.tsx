@@ -1,6 +1,9 @@
 import { Button, Card, cn, Input } from '@qoomb/ui';
 import { useState } from 'react';
 
+import { EmailVerificationBanner } from '../components/layout/EmailVerificationBanner';
+import { HiveSwitcher } from '../components/layout/HiveSwitcher';
+
 // ── Static placeholder data (Phase 2 will replace with tRPC queries) ─────────
 
 const HIVE = { name: 'Doe Familie', memberCount: 5, initials: 'DF' };
@@ -469,6 +472,7 @@ export function Dashboard() {
           >
             <MenuIcon />
           </button>
+          <HiveSwitcher />
           <div className="flex-1" />
           <button className="relative p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
             <BellIcon />
@@ -479,6 +483,9 @@ export function Dashboard() {
             Erstellen
           </Button>
         </header>
+
+        {/* Email verification banner */}
+        <EmailVerificationBanner />
 
         {/* Content */}
         <main className="flex-1 overflow-auto">

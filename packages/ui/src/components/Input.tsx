@@ -28,6 +28,48 @@ export interface InputProps
   error?: string;
   /** Helper text below the input */
   helperText?: string;
+  /** Show a toggle button to reveal/hide the password (only applies when type="password") */
+  showPasswordToggle?: boolean;
+}
+
+function EyeIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="h-4 w-4"
+    >
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="h-4 w-4"
+    >
+      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+      <line x1="2" x2="22" y1="2" y2="22" />
+    </svg>
+  );
 }
 
 /**
@@ -35,9 +77,13 @@ export interface InputProps
  * Designed to work across web and mobile (Capacitor).
  */
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, helperText, id, ...props }, ref) => {
+  ({ className, label, error, helperText, id, type, showPasswordToggle, ...props }, ref) => {
     const generatedId = React.useId();
     const inputId = id ?? generatedId;
+    const [showPassword, setShowPassword] = React.useState(false);
+
+    const isPassword = type === 'password';
+    const resolvedType = isPassword && showPasswordToggle && showPassword ? 'text' : type;
 
     return (
       <div className="w-full">
@@ -49,16 +95,34 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {label}
           </LabelPrimitive.Root>
         )}
-        <input
-          ref={ref}
-          id={inputId}
-          className={cn(inputVariants({ state: error ? 'error' : 'default' }), className)}
-          aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={
-            error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
-          }
-          {...props}
-        />
+        <div className="relative">
+          <input
+            ref={ref}
+            id={inputId}
+            type={resolvedType}
+            className={cn(
+              inputVariants({ state: error ? 'error' : 'default' }),
+              isPassword && showPasswordToggle && 'pr-10',
+              className
+            )}
+            aria-invalid={error ? 'true' : 'false'}
+            aria-describedby={
+              error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
+            }
+            {...props}
+          />
+          {isPassword && showPasswordToggle && (
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus:outline-none"
+            >
+              {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          )}
+        </div>
         {error && (
           <p id={`${inputId}-error`} className="mt-1.5 text-sm text-destructive">
             {error}

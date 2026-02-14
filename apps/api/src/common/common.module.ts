@@ -1,5 +1,6 @@
 import { Module, Global } from '@nestjs/common';
 
+import { CsrfGuard } from './guards/csrf.guard';
 import { CustomThrottlerGuard } from './guards/custom-throttler.guard';
 import { AccountLockoutService } from './services/account-lockout.service';
 import { RedisService } from './services/redis.service';
@@ -13,6 +14,7 @@ import { RedisThrottlerStorage } from './storage/redis-throttler.storage';
     AccountLockoutService,
     TokenBlacklistService,
     RedisThrottlerStorage,
+    CsrfGuard,
     CustomThrottlerGuard,
   ],
   exports: [
@@ -20,6 +22,7 @@ import { RedisThrottlerStorage } from './storage/redis-throttler.storage';
     AccountLockoutService,
     TokenBlacklistService,
     RedisThrottlerStorage,
+    CsrfGuard,
     CustomThrottlerGuard,
   ],
 })

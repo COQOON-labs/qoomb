@@ -278,14 +278,37 @@ qoomb/
 - Startup self-test
 - **Location:** `apps/api/src/modules/encryption/`
 
-### 🚧 TODO (Next)
-
 **Phase 2 (Core Content):**
 
-- [ ] Persons module (hive member management)
-- [ ] Events module (CRUD + simple recurrence + resource-access guard)
-- [ ] Tasks module (CRUD + assignees + event→task spawning)
-- [ ] `resource-access.ts` guard (visibility resolution, shared across all content types)
+- Persons module: `me`, `list`, `get`, `updateProfile`, `updateRole`, `remove`, `invite`
+  - AES-256-GCM field encryption: `displayName`, `avatarUrl`, `birthdate` (stored as encrypted ISO string)
+  - Self-role-change prevention; last-admin removal blocked by DB trigger `enforce_minimum_admin`
+  - `invite` sends hive-level invitation email (requires `MEMBERS_INVITE` permission)
+  - Reuses `AuthService.inviteMemberToHive()` — checks existing membership, sends token email
+- Events module: `list`, `get`, `create`, `update`, `delete`
+  - AES-256-GCM field encryption: `title`, `description`, `location`, `url`, `category`
+  - `recurrenceRule` stored as opaque JSON — no server-side expansion; client handles display
+  - Full 5-stage RBAC guard on `get` / `update` / `delete`
+  - `list` uses `buildVisibilityFilter()` for share-aware visibility (role + personal/group shares)
+- Tasks module: `list`, `get`, `create`, `update`, `complete`, `delete`
+  - AES-256-GCM field encryption: `title`, `description`
+  - Tasks can be linked to events via `eventId` — `tasks.create` + `tasks.list` with `eventId`
+    enables a to-do list per event (e.g. "what needs to be done before this event starts")
+  - Full 5-stage RBAC guard on `get` / `update` / `complete` / `delete`
+  - `list` uses `buildVisibilityFilter()` for share-aware visibility (role + personal/group shares)
+- Groups module: `list`, `get`, `create`, `update`, `delete`, `addMember`, `removeMember`
+  - AES-256-GCM field encryption: `name`, `description`
+  - MEMBERS_VIEW for read, MEMBERS_MANAGE for write
+  - Duplicate membership prevention (P2002 catch)
+  - **Location:** `apps/api/src/modules/groups/`
+- RBAC guard infrastructure (`apps/api/src/common/guards/`):
+  - `requirePermission` — role check with per-hive DB overrides
+  - `requirePermissionOrOwnership` — ANY vs OWN logic
+  - `requireResourceAccess` — 5-stage check: shares → private → group → admins → hive/role
+  - `buildVisibilityFilter` — Prisma WHERE clause for list queries (avoids N+1)
+- **Location:** `apps/api/src/modules/persons/`, `events/`, `tasks/`, `groups/`
+
+### 🚧 TODO (Next)
 
 **Phase 3 (Pages + Files):**
 
@@ -738,39 +761,59 @@ async create(input: CreateEventInput) {
 
 Global defaults defined in `packages/types/src/permissions.ts`. Per-hive overrides stored in `hive_role_permissions` table.
 
-### Resource Permission Resolution (canDo check)
+### Resource Permission Resolution (5-stage check)
 
 ```
-1. Explicit ResourceShare for this person+resource?
-   → use share.canView / canEdit / canDelete
+Stage 1: Load PersonShare + GroupShares in parallel
+   → effectiveShareLevel = max(0, personal share, all group shares)
 
-2. resource.visibility = 'private'?
-   → creator + parents / org_admin only
+Stage 2: visibility = 'private'
+   → creator OR effectiveShareLevel >= required → allow
+   → else FORBIDDEN (no admin bypass)
 
-3. resource.visibility = 'parents'?
-   → parents / org_admin only
+Stage 3: visibility = 'group'
+   → creator OR (group member + VIEW action) OR effectiveShareLevel >= required
+   → else FORBIDDEN (admins must join the group — auditable)
 
-4. visibility = 'hive' or 'shared' (no direct share):
-   a. Load global HIVE_ROLE_PERMISSIONS defaults
-   b. Apply hive_role_permissions DB overrides (grant/revoke)
-   c. Check resulting set includes required permission
+Stage 4: visibility = 'admins'
+   → effectiveShareLevel >= required → allow (share exception)
+   → not admin role → FORBIDDEN
+   → admin confirmed → fall through to Stage 5
 
-Note: parents / org_admin always see everything, no exceptions.
+Stage 5: visibility = 'hive' or 'admins' (admin confirmed)
+   → effectiveShareLevel >= required → allow (additive elevation)
+   → role-based check with DB overrides (ANY permission, or OWN + creator)
+   → else FORBIDDEN
 ```
 
 ### Resource Visibility Values
 
 Each resource (event, task, note, …) carries a `visibility` field:
 
-- `'hive'` — all hive members (default)
-- `'parents'` — parents / org_admin only
-- `'private'` — creator + parents only
-- `'shared'` — specific persons via `resource_shares` table
+- `'hive'` — all hive members with the relevant role permission (default)
+- `'admins'` — admin roles only (`parent` / `org_admin`); shares can grant exceptions
+- `'group'` — members of the resource's group only; requires `groupId` on the resource
+- `'private'` — creator only; no admin bypass; only creator can create shares for it
+
+### AccessLevel (ordinal share grants)
+
+`PersonShare` and `GroupShare` use `accessLevel: Int` instead of boolean flags:
+
+- `VIEW (1)` — can read
+- `EDIT (2)` — can read + edit
+- `MANAGE (3)` — can read + edit + delete + manage shares for this resource
+
+Higher levels imply lower: `MANAGE >= EDIT >= VIEW`.
 
 ### DB Tables
 
-- `hive_role_permissions` — per-hive role permission overrides (currently empty, UI to manage TBD)
-- `resource_shares` — per-resource explicit person grants (`canView`, `canEdit`, `canDelete`)
+- `hive_role_permissions` — per-hive role permission overrides (currently empty, UI TBD)
+- `hive_groups` — group definitions (id, hiveId, name)
+- `hive_group_members` — group membership + audit (personId, groupId, addedByPersonId)
+- `person_shares` — per-person explicit grants (`accessLevel: 1|2|3`)
+- `group_shares` — per-group explicit grants (`accessLevel: 1|2|3`)
+
+**See:** `docs/PERMISSIONS.md` for the full architecture, algorithm, and guard API.
 
 ---
 

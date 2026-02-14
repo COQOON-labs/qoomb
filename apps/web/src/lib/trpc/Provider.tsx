@@ -3,6 +3,8 @@ import { httpBatchLink, splitLink, httpLink } from '@trpc/client';
 import { useState } from 'react';
 import superjson from 'superjson';
 
+import { getAccessToken } from '../auth/tokenStore';
+
 import { trpc } from './client';
 
 interface TrpcProviderProps {
@@ -27,9 +29,10 @@ export function TrpcProvider({ children }: TrpcProviderProps) {
       ? `${import.meta.env.VITE_API_URL}/trpc`
       : `${window.location.origin}/trpc`;
 
-    // Debug: Log the tRPC URL to verify it's using the correct origin
-    console.warn('🔧 tRPC URL:', tRPCUrl);
-    console.warn('🌐 window.location.origin:', window.location.origin);
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.warn('tRPC URL:', tRPCUrl);
+    }
 
     return trpc.createClient({
       links: [
@@ -39,10 +42,23 @@ export function TrpcProvider({ children }: TrpcProviderProps) {
           true: httpLink({
             url: tRPCUrl,
             transformer: superjson,
+            headers: () => {
+              const token = getAccessToken();
+              return {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              };
+            },
           }),
           false: httpBatchLink({
             url: tRPCUrl,
             transformer: superjson,
+            headers: () => {
+              const token = getAccessToken();
+              return {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                'X-CSRF-Protection': '1',
+              };
+            },
           }),
         }),
       ],

@@ -4,10 +4,12 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 import { CommonModule } from './common/common.module';
+import { CsrfGuard } from './common/guards/csrf.guard';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 import { RATE_LIMITS } from './config/security.config';
 import { AuthModule } from './modules/auth/auth.module';
+import { EmailModule } from './modules/email/email.module';
 import { EventsModule } from './modules/events/events.module';
 import { PersonsModule } from './modules/persons/persons.module';
 import { TasksModule } from './modules/tasks/tasks.module';
@@ -36,6 +38,7 @@ import { TrpcModule } from './trpc/trpc.module';
     }),
     CommonModule,
     PrismaModule,
+    EmailModule,
     TrpcModule,
     AuthModule,
     EventsModule,
@@ -43,6 +46,11 @@ import { TrpcModule } from './trpc/trpc.module';
     PersonsModule,
   ],
   providers: [
+    // Apply CSRF protection globally (must run before throttler)
+    {
+      provide: APP_GUARD,
+      useClass: CsrfGuard,
+    },
     // Apply throttler guard globally
     {
       provide: APP_GUARD,

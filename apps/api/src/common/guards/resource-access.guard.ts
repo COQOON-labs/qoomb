@@ -88,12 +88,13 @@ export async function requireResourceAccess(
   // Stufe 1: Explicit ResourceShare for this person+resource
   // The share is the FINAL answer — no fallback to role if a share exists.
   // Defense-in-depth: filter by hiveId even though RLS should already enforce it.
+  const hiveId = ctx.user?.hiveId;
   const share = await prisma.resourceShare.findFirst({
     where: {
       resourceType: resource.type,
       resourceId: resource.id,
       personId,
-      hiveId: ctx.user!.hiveId,
+      hiveId,
     },
     select: { canView: true, canEdit: true, canDelete: true },
   });

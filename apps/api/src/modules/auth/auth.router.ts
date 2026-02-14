@@ -152,9 +152,15 @@ export const authRouter = (
     /**
      * Logout - revoke current session
      *
-     * Revokes the refresh token and blacklists the access token
+     * Revokes the refresh token and blacklists the access token.
+     *
+     * DESIGN NOTE: publicProcedure (not protectedProcedure) is intentional.
+     * - Logout must work even when the access token has already expired.
+     * - The caller proves identity by presenting the tokens themselves.
+     * - Passing random tokens is harmless: revocation is a no-op for unknown tokens.
+     * - Follows RFC 7009 (OAuth token revocation) which also requires no pre-auth.
      */
-    logout: protectedProcedure
+    logout: publicProcedure
       .input(
         z.object({
           accessToken: z.string().min(1, 'Access token is required'),

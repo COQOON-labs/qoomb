@@ -181,10 +181,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     scheduleRefresh(accessToken, refreshToken);
   }
 
-  function logout() {
+  async function logout() {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+
+    // Best-effort: revoke refresh token on the server.
+    // We must read tokens BEFORE dispatching LOGOUT (which clears them).
+    const accessToken = state.accessToken;
+    const refreshToken = getRefreshToken();
+
+    // Clear local state immediately so the user sees the logout UI at once
     dispatch({ type: 'LOGOUT' });
-    return Promise.resolve();
+
+    if (accessToken && refreshToken) {
+      try {
+        await getRefreshClient().auth.logout.mutate({ accessToken, refreshToken });
+      } catch {
+        // Ignore — local state is already cleared; server tokens expire naturally
+      }
+    }
   }
 
   function updateToken(accessToken: string, refreshToken: string) {

@@ -117,7 +117,12 @@ export const sendInvitationSchema = z.object({
 
 /**
  * Register via invitation link
+ *
+ * hiveName is optional: when the invitation carries a hiveId (joining an
+ * existing hive) the backend ignores it. When there is no hiveId (creating a
+ * new hive via invite) it is passed through as-is — the UI should collect it.
  */
 export const registerWithInviteSchema = registerSchema.extend({
   inviteToken: secureTokenSchema,
+  hiveName: z.string().trim().max(255).default(''),
 });

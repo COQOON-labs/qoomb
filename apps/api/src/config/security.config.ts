@@ -196,7 +196,13 @@ export const CORS_CONFIG = {
   /**
    * Allowed headers
    */
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'X-Request-ID',
+    'X-CSRF-Protection',
+  ],
 
   /**
    * Exposed headers

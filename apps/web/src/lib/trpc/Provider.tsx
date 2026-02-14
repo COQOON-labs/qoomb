@@ -44,7 +44,9 @@ export function TrpcProvider({ children }: TrpcProviderProps) {
             transformer: superjson,
             headers: () => {
               const token = getAccessToken();
-              return token ? { Authorization: `Bearer ${token}` } : {};
+              return {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              };
             },
           }),
           false: httpBatchLink({
@@ -52,7 +54,10 @@ export function TrpcProvider({ children }: TrpcProviderProps) {
             transformer: superjson,
             headers: () => {
               const token = getAccessToken();
-              return token ? { Authorization: `Bearer ${token}` } : {};
+              return {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                'X-CSRF-Protection': '1',
+              };
             },
           }),
         }),

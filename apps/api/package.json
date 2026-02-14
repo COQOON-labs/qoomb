@@ -29,7 +29,6 @@
   },
   "dependencies": {
     "@fastify/helmet": "^13.0.2",
-    "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^11.1.13",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.1.13",

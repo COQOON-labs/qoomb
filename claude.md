@@ -278,14 +278,37 @@ qoomb/
 - Startup self-test
 - **Location:** `apps/api/src/modules/encryption/`
 
-### 🚧 TODO (Next)
-
 **Phase 2 (Core Content):**
 
-- [ ] Persons module (hive member management)
-- [ ] Events module (CRUD + simple recurrence + resource-access guard)
-- [ ] Tasks module (CRUD + assignees + event→task spawning)
-- [ ] `resource-access.ts` guard (visibility resolution, shared across all content types)
+- Persons module: `me`, `list`, `get`, `updateProfile`, `updateRole`, `remove`, `invite`
+  - AES-256-GCM field encryption: `displayName`, `avatarUrl`, `birthdate` (stored as encrypted ISO string)
+  - Self-role-change prevention; last-admin removal blocked by DB trigger `enforce_minimum_admin`
+  - `invite` sends hive-level invitation email (requires `MEMBERS_INVITE` permission)
+  - Reuses `AuthService.inviteMemberToHive()` — checks existing membership, sends token email
+- Events module: `list`, `get`, `create`, `update`, `delete`
+  - AES-256-GCM field encryption: `title`, `description`, `location`, `url`, `category`
+  - `recurrenceRule` stored as opaque JSON — no server-side expansion; client handles display
+  - Full 5-stage RBAC guard on `get` / `update` / `delete`
+  - `list` uses `buildVisibilityFilter()` for share-aware visibility (role + personal/group shares)
+- Tasks module: `list`, `get`, `create`, `update`, `complete`, `delete`
+  - AES-256-GCM field encryption: `title`, `description`
+  - Tasks can be linked to events via `eventId` — `tasks.create` + `tasks.list` with `eventId`
+    enables a to-do list per event (e.g. "what needs to be done before this event starts")
+  - Full 5-stage RBAC guard on `get` / `update` / `complete` / `delete`
+  - `list` uses `buildVisibilityFilter()` for share-aware visibility (role + personal/group shares)
+- Groups module: `list`, `get`, `create`, `update`, `delete`, `addMember`, `removeMember`
+  - AES-256-GCM field encryption: `name`, `description`
+  - MEMBERS_VIEW for read, MEMBERS_MANAGE for write
+  - Duplicate membership prevention (P2002 catch)
+  - **Location:** `apps/api/src/modules/groups/`
+- RBAC guard infrastructure (`apps/api/src/common/guards/`):
+  - `requirePermission` — role check with per-hive DB overrides
+  - `requirePermissionOrOwnership` — ANY vs OWN logic
+  - `requireResourceAccess` — 5-stage check: shares → private → group → admins → hive/role
+  - `buildVisibilityFilter` — Prisma WHERE clause for list queries (avoids N+1)
+- **Location:** `apps/api/src/modules/persons/`, `events/`, `tasks/`, `groups/`
+
+### 🚧 TODO (Next)
 
 **Phase 3 (Pages + Files):**
 

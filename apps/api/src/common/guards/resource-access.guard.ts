@@ -208,22 +208,34 @@ export interface VisibilityFilterContext {
  * Use this instead of calling requireResourceAccess per result (which would N+1).
  * The filter is also compatible with pgvector search queries (Phase 4).
  *
- * @param ctx            - Populated from hiveProcedure context (user.*)
- * @param viewPermission - The view permission for this resource type (e.g. EVENTS_VIEW)
+ * Share-based visibility uses pre-queried resource IDs (`sharedResourceIds`)
+ * because PersonShare/GroupShare are polymorphic (no FK to Event/Task), so
+ * Prisma relation-based filtering (`personShares: { some: ... }`) is not possible.
+ * The caller queries the share tables first and passes the IDs here.
+ *
+ * @param ctx                - Populated from hiveProcedure context (user.*)
+ * @param viewPermission     - The view permission for this resource type (e.g. EVENTS_VIEW)
+ * @param sharedResourceIds  - Resource IDs the user has access to via personal or group shares
+ *                             (pre-queried by the caller from PersonShare/GroupShare tables)
  *
  * @example
  * ```typescript
+ * // 1. Pre-query share IDs (in the router)
+ * const sharedIds = await getSharedResourceIds(ctx.prisma, 'event', personId, groupIds);
+ *
+ * // 2. Build filter
+ * const filter = buildVisibilityFilter(ctx.user, HivePermission.EVENTS_VIEW, sharedIds);
+ *
+ * // 3. Use in query
  * const events = await ctx.prisma.event.findMany({
- *   where: {
- *     hiveId: ctx.user.hiveId,
- *     ...buildVisibilityFilter(ctx.user as VisibilityFilterContext, HivePermission.EVENTS_VIEW),
- *   },
+ *   where: { hiveId: ctx.user.hiveId, ...filter },
  * });
  * ```
  */
 export function buildVisibilityFilter(
   ctx: VisibilityFilterContext,
-  viewPermission: HivePermission
+  viewPermission: HivePermission,
+  sharedResourceIds: string[] = []
 ): { OR: unknown[] } {
   const { personId, hiveType, role, roleOverrides, groupIds } = ctx;
   const groupIdsArr = [...groupIds];
@@ -245,19 +257,53 @@ export function buildVisibilityFilter(
       // 'private': own resources only
       { visibility: 'private', creatorId: personId },
 
-      // Any visibility: personal share with at least VIEW access
-      { personShares: { some: { personId, accessLevel: { gte: AccessLevel.VIEW } } } },
-
-      // Any visibility: group share for one of person's groups with at least VIEW access
-      ...(groupIdsArr.length > 0
-        ? [
-            {
-              groupShares: {
-                some: { groupId: { in: groupIdsArr }, accessLevel: { gte: AccessLevel.VIEW } },
-              },
-            },
-          ]
-        : []),
+      // Any visibility: resource IDs the user has access to via personal or group shares
+      // (pre-queried by the caller from the polymorphic PersonShare/GroupShare tables)
+      ...(sharedResourceIds.length > 0 ? [{ id: { in: sharedResourceIds } }] : []),
     ],
   };
+}
+
+/**
+ * Pre-queries PersonShare + GroupShare tables to find all resource IDs
+ * the user has at least VIEW access to, for a given resource type.
+ *
+ * Use this before calling buildVisibilityFilter() to supply the sharedResourceIds param.
+ *
+ * @param prisma       - PrismaService instance
+ * @param resourceType - Polymorphic resource type string (e.g. 'event', 'task')
+ * @param personId     - Current user's personId
+ * @param groupIds     - Current user's group memberships
+ * @returns Deduplicated array of resource UUIDs accessible via shares
+ */
+export async function getSharedResourceIds(
+  prisma: PrismaService,
+  resourceType: string,
+  personId: string,
+  groupIds: ReadonlyArray<string>
+): Promise<string[]> {
+  const groupIdsArr = [...groupIds];
+
+  const [personShares, groupShares] = await Promise.all([
+    prisma.personShare.findMany({
+      where: { personId, resourceType, accessLevel: { gte: AccessLevel.VIEW } },
+      select: { resourceId: true },
+    }),
+    groupIdsArr.length > 0
+      ? prisma.groupShare.findMany({
+          where: {
+            groupId: { in: groupIdsArr },
+            resourceType,
+            accessLevel: { gte: AccessLevel.VIEW },
+          },
+          select: { resourceId: true },
+        })
+      : [],
+  ]);
+
+  // Deduplicate IDs from both share sources
+  const idSet = new Set<string>();
+  for (const s of personShares) idSet.add(s.resourceId);
+  for (const s of groupShares) idSet.add(s.resourceId);
+  return [...idSet];
 }

@@ -1,5 +1,9 @@
 export { requirePermission, requirePermissionOrOwnership } from './hive-permission.guard';
-export { requireResourceAccess, buildVisibilityFilter } from './resource-access.guard';
+export {
+  requireResourceAccess,
+  buildVisibilityFilter,
+  getSharedResourceIds,
+} from './resource-access.guard';
 export type {
   ResourceAccessAction,
   ResourceAccessInput,

@@ -14,28 +14,31 @@ import { FastifyRequest } from 'fastify';
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
   /**
-   * Get the tracker identifier for rate limiting
+   * Get the tracker identifier for rate limiting.
    *
    * For authenticated requests: use user ID
    * For unauthenticated requests: use IP address
    *
-   * Note: In @nestjs/throttler v6, getTracker receives (req, context)
-   * and is called as a standalone function (not as a method on `this`).
-   * We must NOT reference `this` — use static helpers instead.
+   * The base class types this parameter as `Record<string, unknown>` because
+   * it is transport-agnostic. The actual runtime value is always a FastifyRequest,
+   * so the single cast via `unknown` is intentional and safe — it is the minimum
+   * escape hatch required by the library's interface.
    */
-  protected async getTracker(
-    req: Record<string, any>,
-    _context?: ExecutionContext
-  ): Promise<string> {
-    const request = req as FastifyRequest & { user?: { id: string } };
+  protected getTracker(req: Record<string, unknown>): Promise<string> {
+    // The base class types this parameter as Record<string, unknown> (transport-agnostic).
+    // The actual runtime value is always a FastifyRequest — the cast via unknown is the
+    // minimum escape hatch required by the library's interface and exists only here.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const request = req as unknown as FastifyRequest & { user?: { id: string } };
+    return Promise.resolve(CustomThrottlerGuard.resolveTracker(request));
+  }
 
-    // If user is authenticated, track by user ID
-    if (request.user?.id) {
-      return `user:${request.user.id}`;
-    }
-
-    // Otherwise, track by IP address
-    return CustomThrottlerGuard.extractIp(request);
+  /**
+   * Shared tracker resolution — used by both getTracker and throwThrottlingException.
+   * Takes a typed FastifyRequest so neither call site needs an extra cast.
+   */
+  private static resolveTracker(req: FastifyRequest & { user?: { id: string } }): string {
+    return req.user?.id ? `user:${req.user.id}` : CustomThrottlerGuard.extractIp(req);
   }
 
   /**
@@ -68,12 +71,12 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   /**
    * Custom error handler with better logging
    */
-  protected async throwThrottlingException(
+  protected override throwThrottlingException(
     context: ExecutionContext,
     throttlerLimitDetail: ThrottlerLimitDetail
   ): Promise<void> {
     const request = context.switchToHttp().getRequest<FastifyRequest & { user?: { id: string } }>();
-    const tracker = await this.getTracker(request, context);
+    const tracker = CustomThrottlerGuard.resolveTracker(request);
     const safeTracker = tracker.replace(/[\r\n]/g, '');
     // Strip newlines/carriage-returns to prevent log injection (CWE-117 / js/log-injection)
     const url = request.url.replace(/[\r\n]/g, '');

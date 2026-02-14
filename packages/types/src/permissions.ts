@@ -98,20 +98,39 @@ export const VALID_ROLES_BY_HIVE_TYPE: Record<string, string[]> = {
 // ============================================
 // RESOURCE VISIBILITY
 // Applied per resource instance (event, task, note, …).
-// Resources will carry a `visibility` field defaulting to 'hive'.
+// Resources carry a `visibility` field (default: 'hive').
 //
-// Resolution order (canDo check):
-//   1. Explicit ResourceShare for person+resource → use share permissions
-//   2. 'private'  → creator + parents / org_admin only
-//   3. 'parents'  → parents / org_admin only
-//   4. 'hive' / 'shared' (no direct share) → evaluate role permissions
-//      a. Load global HIVE_ROLE_PERMISSIONS defaults
-//      b. Apply hive_role_permissions DB overrides (grant/revoke)
-//      c. Check resulting set includes the required permission
-// Note: parents / org_admin always see everything.
+// Resolution order (access check):
+//   1. Load personal + group shares in parallel
+//      → effective_share_level = max(personal, group_shares)
+//   2. 'private'  → creator OR effective_share_level >= required
+//   3. 'group'    → creator OR group-member (VIEW) OR effective_share_level >= required
+//   4. 'admins'   → effective_share_level >= required OR (admin role + permission check)
+//   5. 'hive'     → effective_share_level >= required OR role-based permission check
+//
+// Key rules:
+//   - Shares are ADDITIVE for 'hive'/'admins': they only elevate, never restrict
+//   - Shares are the ONLY mechanism for 'group'/'private' (beyond membership/creator)
+//   - Admin roles have no universal bypass; 'private' always requires a share or creator
+//   - For 'group' resources, admins gain access by joining the group (auditable)
 // ============================================
 
-export type ResourceVisibility = 'hive' | 'parents' | 'private' | 'shared';
+/** Visibility values for resource instances (events, tasks, notes, …). */
+export type ResourceVisibility = 'hive' | 'admins' | 'group' | 'private';
+
+/**
+ * Hierarchical access levels for PersonShare and GroupShare grants.
+ * Higher levels imply lower levels: MANAGE (3) implies EDIT (2) implies VIEW (1).
+ *
+ * - VIEW (1):   Can read the resource
+ * - EDIT (2):   Can read + edit the resource
+ * - MANAGE (3): Can read + edit + delete + create/modify shares for this resource
+ */
+export enum AccessLevel {
+  VIEW = 1,
+  EDIT = 2,
+  MANAGE = 3,
+}
 
 // ============================================
 // HELPERS
@@ -127,4 +146,43 @@ export function hasPermission(
   permission: HivePermission
 ): boolean {
   return getPermissionsForRole(hiveType, role).includes(permission);
+}
+
+/**
+ * Returns true if the role is an admin role for the given hive type.
+ * Admin roles: 'parent' (family) and 'org_admin' (organization).
+ *
+ * Note: Being an admin does NOT grant universal access to all resources.
+ * Private resources require a share or being the creator even for admins.
+ * The 'admins' visibility type is restricted to admin roles specifically.
+ */
+export function isAdminRole(hiveType: string, role: string): boolean {
+  return (
+    (hiveType === 'family' && role === 'parent') ||
+    (hiveType === 'organization' && role === 'org_admin')
+  );
+}
+
+/**
+ * Checks whether a role has a permission after applying per-hive DB overrides
+ * on top of the global HIVE_ROLE_PERMISSIONS defaults.
+ *
+ * Overrides with granted=true add permissions beyond the defaults.
+ * Overrides with granted=false revoke permissions from the defaults.
+ */
+export function hasPermissionWithOverrides(
+  hiveType: string,
+  role: string,
+  permission: HivePermission,
+  overrides: ReadonlyArray<{ permission: string; granted: boolean }>
+): boolean {
+  const effective = new Set<string>(getPermissionsForRole(hiveType, role).map((p) => p as string));
+  for (const override of overrides) {
+    if (override.granted) {
+      effective.add(override.permission);
+    } else {
+      effective.delete(override.permission);
+    }
+  }
+  return effective.has(permission as string);
 }

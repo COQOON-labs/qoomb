@@ -1,6 +1,11 @@
 import * as crypto from 'crypto';
 
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Hive, Person, User, UserHiveMembership } from '@prisma/client';
 import { type CreateHiveInput } from '@qoomb/types';
@@ -10,8 +15,10 @@ import { AccountLockoutService } from '../../common/services/account-lockout.ser
 import { TokenBlacklistService } from '../../common/services/token-blacklist.service';
 import { PASSWORD_CONFIG, JWT_CONFIG } from '../../config/security.config';
 import { PrismaService, TransactionClient } from '../../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 import { RefreshTokenService } from './refresh-token.service';
+import { SystemConfigService } from './system-config.service';
 
 interface JwtPayload {
   jti?: string;
@@ -38,7 +45,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly accountLockout: AccountLockoutService,
     private readonly tokenBlacklistService: TokenBlacklistService,
-    private readonly refreshTokenService: RefreshTokenService
+    private readonly refreshTokenService: RefreshTokenService,
+    private readonly emailService: EmailService,
+    private readonly systemConfig: SystemConfigService
   ) {}
 
   /**
@@ -50,6 +59,11 @@ export class AuthService {
    * - Returns access + refresh tokens
    */
   async register(input: CreateHiveInput, ipAddress?: string, userAgent?: string) {
+    // Check if open registration is allowed
+    if (!this.systemConfig.getConfig().allowOpenRegistration) {
+      throw new ForbiddenException('Open registration is disabled. Please use an invitation link.');
+    }
+
     // Check if email already exists
     const existingUser: User | null = await this.prisma.user.findUnique({
       where: { email: input.adminEmail },
@@ -67,6 +81,10 @@ export class AuthService {
 
     // Create hive, person, and user in a transaction
     const result = await this.prisma.$transaction(async (tx: TransactionClient) => {
+      // Check if this is the first user ever → auto-promote to SystemAdmin
+      const userCount = await tx.user.count();
+      const isSystemAdmin = userCount === 0;
+
       // 1. Create the hive
       const hive: Hive = await tx.hive.create({
         data: { name: input.name, type: input.type },
@@ -87,6 +105,7 @@ export class AuthService {
           email: input.adminEmail,
           passwordHash,
           fullName: input.adminName,
+          isSystemAdmin,
         },
       });
 
@@ -126,6 +145,9 @@ export class AuthService {
     const hiveIdReturn: string = result.hive.id;
     const hiveName: string = result.hive.name;
 
+    // Send email verification (non-blocking — don't fail registration if email fails)
+    void this.sendEmailVerification(userId).catch(() => undefined);
+
     return {
       accessToken,
       refreshToken: refreshTokenData.token,
@@ -135,6 +157,7 @@ export class AuthService {
         email: userEmail,
         hiveId: hiveIdReturn,
         personId: personId,
+        isSystemAdmin: result.user.isSystemAdmin,
       },
       hive: {
         id: hiveIdReturn,
@@ -184,11 +207,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Check if user has at least one membership
-    if (user.memberships.length === 0) {
-      throw new UnauthorizedException('No hive access');
-    }
-
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
@@ -208,6 +226,11 @@ export class AuthService {
 
     // Successful login - reset failed attempts
     await this.accountLockout.resetAttempts(email);
+
+    // Check membership after password verification to avoid user enumeration
+    if (user.memberships.length === 0) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
     // Get primary membership (or first membership if no primary set)
     const primaryMembership = user.memberships.find((m) => m.isPrimary) || user.memberships[0];
@@ -483,6 +506,362 @@ export class AuthService {
         role: membership.person.role,
       },
     };
+  }
+
+  // ── PassKey Login ─────────────────────────────────────────────────────────
+
+  /**
+   * Generate tokens for a user verified by PassKey authentication.
+   * Password verification is skipped — the PassKeyService handles it.
+   */
+  async loginWithPassKey(user: User, ipAddress?: string, userAgent?: string) {
+    const userWithMemberships: UserWithMemberships | null = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        memberships: {
+          include: { hive: true, person: true },
+        },
+      },
+    });
+
+    if (!userWithMemberships || userWithMemberships.memberships.length === 0) {
+      throw new UnauthorizedException('No hive access');
+    }
+
+    const primaryMembership =
+      userWithMemberships.memberships.find((m) => m.isPrimary) ||
+      userWithMemberships.memberships[0];
+
+    const { token: accessToken } = this.generateAccessToken(
+      user.id,
+      primaryMembership.hiveId,
+      primaryMembership.personId
+    );
+
+    const refreshTokenData = await this.refreshTokenService.createRefreshToken(
+      user.id,
+      ipAddress,
+      userAgent
+    );
+
+    return {
+      accessToken,
+      refreshToken: refreshTokenData.token,
+      expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
+      user: {
+        id: user.id,
+        email: user.email,
+        hiveId: primaryMembership.hiveId,
+        personId: primaryMembership.personId,
+      },
+      hive: {
+        id: primaryMembership.hiveId,
+        name: primaryMembership.hive.name,
+      },
+    };
+  }
+
+  // ── Email Verification ────────────────────────────────────────────────────
+
+  /**
+   * Create a verification token and send an email.
+   * Safe to call fire-and-forget — email failures are logged, not thrown.
+   */
+  async sendEmailVerification(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.emailVerified) return;
+
+    // Invalidate any existing unused tokens for this user
+    await this.prisma.emailVerificationToken.updateMany({
+      where: { userId, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    const { plainToken, tokenHash } = this.generateSecureToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await this.prisma.emailVerificationToken.create({
+      data: { token: tokenHash, userId, expiresAt },
+    });
+
+    await this.emailService.sendEmailVerification(user.email, plainToken);
+  }
+
+  async verifyEmail(plainToken: string): Promise<void> {
+    const tokenHash = this.hashToken(plainToken);
+
+    const record = await this.prisma.emailVerificationToken.findUnique({
+      where: { token: tokenHash },
+    });
+
+    if (!record || record.usedAt || record.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired verification link.');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.emailVerificationToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      });
+      await tx.user.update({
+        where: { id: record.userId },
+        data: { emailVerified: true },
+      });
+    });
+  }
+
+  // ── Password Reset ────────────────────────────────────────────────────────
+
+  async requestPasswordReset(email: string): Promise<void> {
+    if (!this.systemConfig.getConfig().allowForgotPassword) {
+      throw new ForbiddenException('Password reset is disabled.');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    // SECURITY: Always return success regardless of whether email exists
+    if (!user) return;
+
+    // Invalidate any existing unused tokens
+    await this.prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    const { plainToken, tokenHash } = this.generateSecureToken();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await this.prisma.passwordResetToken.create({
+      data: { token: tokenHash, userId: user.id, expiresAt },
+    });
+
+    await this.emailService.sendPasswordReset(user.email, plainToken);
+  }
+
+  async resetPassword(plainToken: string, newPassword: string): Promise<void> {
+    const tokenHash = this.hashToken(plainToken);
+
+    const record = await this.prisma.passwordResetToken.findUnique({
+      where: { token: tokenHash },
+    });
+
+    if (!record || record.usedAt || record.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired reset link.');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, PASSWORD_CONFIG.SALT_ROUNDS);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.passwordResetToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      });
+      await tx.user.update({
+        where: { id: record.userId },
+        data: { passwordHash },
+      });
+    });
+
+    // Revoke all sessions on password change (security best practice)
+    await this.logoutAll(record.userId);
+  }
+
+  // ── Invitations ───────────────────────────────────────────────────────────
+
+  /**
+   * Send an invitation email. Requires caller to be a SystemAdmin.
+   * SystemAdmin status is verified from DB — not just from JWT.
+   */
+  async sendInvitation(inviterUserId: string, email: string, hiveId?: string): Promise<void> {
+    // DB-based SystemAdmin check — cannot be spoofed via JWT
+    const inviter = await this.prisma.user.findUnique({ where: { id: inviterUserId } });
+    if (!inviter?.isSystemAdmin) {
+      throw new ForbiddenException('Only system administrators can send invitations.');
+    }
+
+    await this.createAndSendInvitation(
+      inviterUserId,
+      inviter.fullName ?? inviter.email,
+      email,
+      hiveId ?? null
+    );
+  }
+
+  /**
+   * Send a hive-level invitation. Authorization (MEMBERS_INVITE) is enforced by the caller.
+   * Unlike sendInvitation(), no SystemAdmin check — the caller (persons router) has already
+   * verified MEMBERS_INVITE permission via requirePermission().
+   *
+   * @param inviterUserId - userId of the person sending the invite
+   * @param inviterName   - display name for the email template
+   * @param email         - recipient email address
+   * @param hiveId        - hive to join (required for hive-level invites)
+   */
+  async inviteMemberToHive(
+    inviterUserId: string,
+    inviterName: string,
+    email: string,
+    hiveId: string
+  ): Promise<void> {
+    // Check if the email is already a member of this hive
+    const existingMembership = await this.prisma.userHiveMembership.findFirst({
+      where: {
+        hiveId,
+        user: { email: email.toLowerCase() },
+      },
+    });
+    if (existingMembership) {
+      throw new BadRequestException('This person is already a member of this hive.');
+    }
+
+    await this.createAndSendInvitation(inviterUserId, inviterName, email, hiveId);
+  }
+
+  /**
+   * Internal helper: create an Invitation record and send the email.
+   * Shared by sendInvitation() (SystemAdmin) and inviteMemberToHive() (hive-level).
+   */
+  private async createAndSendInvitation(
+    inviterUserId: string,
+    inviterName: string,
+    email: string,
+    hiveId: string | null
+  ): Promise<void> {
+    // Invalidate any existing unused invite for this email
+    await this.prisma.invitation.updateMany({
+      where: { email, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    const { plainToken, tokenHash } = this.generateSecureToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await this.prisma.invitation.create({
+      data: {
+        email,
+        token: tokenHash,
+        invitedByUserId: inviterUserId,
+        hiveId,
+        expiresAt,
+      },
+    });
+
+    await this.emailService.sendInvitation(email, inviterName, plainToken);
+  }
+
+  /**
+   * Register a new user via an invitation token.
+   * If the invitation has a hiveId: joins that hive.
+   * If no hiveId: creates a new hive (like open registration).
+   */
+  async registerWithInvitation(
+    inviteToken: string,
+    input: CreateHiveInput,
+    ipAddress?: string,
+    userAgent?: string
+  ) {
+    const tokenHash = this.hashToken(inviteToken);
+
+    const invitation = await this.prisma.invitation.findUnique({ where: { token: tokenHash } });
+
+    if (!invitation || invitation.usedAt || invitation.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired invitation link.');
+    }
+
+    // Email must match the invitation
+    if (invitation.email.toLowerCase() !== input.adminEmail.toLowerCase()) {
+      throw new BadRequestException('This invitation was sent to a different email address.');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({ where: { email: input.adminEmail } });
+    if (existingUser) {
+      throw new BadRequestException('An account with this email already exists.');
+    }
+
+    const passwordHash = await bcrypt.hash(input.adminPassword, PASSWORD_CONFIG.SALT_ROUNDS);
+
+    const result = await this.prisma.$transaction(async (tx: TransactionClient) => {
+      // Mark invitation as used
+      await tx.invitation.update({ where: { id: invitation.id }, data: { usedAt: new Date() } });
+
+      let hive: Hive;
+      let personId: string;
+
+      if (invitation.hiveId) {
+        // Join existing hive
+        hive = await tx.hive.findUniqueOrThrow({ where: { id: invitation.hiveId } });
+        const defaultRole = hive.type === 'family' ? 'parent' : 'member';
+        const person = await tx.person.create({
+          data: { hiveId: hive.id, role: defaultRole },
+        });
+        personId = person.id;
+
+        const user: User = await tx.user.create({
+          data: { email: input.adminEmail, passwordHash, fullName: input.adminName },
+        });
+
+        await tx.person.update({ where: { id: person.id }, data: { userId: user.id } });
+        await tx.userHiveMembership.create({
+          data: { userId: user.id, hiveId: hive.id, personId: person.id, isPrimary: true },
+        });
+
+        return { hive, user, personId };
+      } else {
+        // Create new hive (same as open registration)
+        hive = await tx.hive.create({ data: { name: input.name, type: input.type } });
+        const adminRole = input.type === 'family' ? 'parent' : 'org_admin';
+        const person = await tx.person.create({ data: { hiveId: hive.id, role: adminRole } });
+        personId = person.id;
+
+        const user: User = await tx.user.create({
+          data: { email: input.adminEmail, passwordHash, fullName: input.adminName },
+        });
+
+        await tx.person.update({ where: { id: person.id }, data: { userId: user.id } });
+        await tx.userHiveMembership.create({
+          data: { userId: user.id, hiveId: hive.id, personId: person.id, isPrimary: true },
+        });
+
+        return { hive, user, personId };
+      }
+    });
+
+    const { token: accessToken } = this.generateAccessToken(
+      result.user.id,
+      result.hive.id,
+      result.personId
+    );
+    const refreshTokenData = await this.refreshTokenService.createRefreshToken(
+      result.user.id,
+      ipAddress,
+      userAgent
+    );
+
+    void this.sendEmailVerification(result.user.id).catch(() => undefined);
+
+    return {
+      accessToken,
+      refreshToken: refreshTokenData.token,
+      expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        hiveId: result.hive.id,
+        personId: result.personId,
+      },
+      hive: { id: result.hive.id, name: result.hive.name },
+    };
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  private generateSecureToken(): { plainToken: string; tokenHash: string } {
+    const plainToken = crypto.randomBytes(32).toString('base64url');
+    return { plainToken, tokenHash: this.hashToken(plainToken) };
+  }
+
+  private hashToken(plainToken: string): string {
+    return crypto.createHash('sha256').update(plainToken).digest('hex');
   }
 
   /**

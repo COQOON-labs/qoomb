@@ -38,6 +38,32 @@ jobs:
       - name: Security audit
         run: pnpm audit --audit-level moderate
 
+      - name: License compliance check
+        run: |
+          pnpm licenses list --json 2>/dev/null | node -e "
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync('/dev/stdin', 'utf8'));
+
+            // Licenses incompatible with Qoomb's Fair Source / commercial dual-license
+            const banned = ['GPL-2.0', 'GPL-3.0', 'AGPL-3.0', 'AGPL-1.0', 'SSPL-1.0', 'EUPL-1.1', 'EUPL-1.2'];
+            const violations = [];
+
+            for (const [license, pkgs] of Object.entries(data)) {
+              if (banned.some(b => license.toUpperCase().includes(b.toUpperCase()))) {
+                violations.push({ license, packages: pkgs.map(p => p.name) });
+              }
+            }
+
+            if (violations.length) {
+              console.error('❌ Banned licenses found:');
+              for (const v of violations) {
+                console.error('  ' + v.license + ': ' + v.packages.join(', '));
+              }
+              process.exit(1);
+            }
+            console.log('✅ All ' + Object.keys(data).length + ' licenses compliant');
+          "
+
       - name: Lint
         run: pnpm run lint
 

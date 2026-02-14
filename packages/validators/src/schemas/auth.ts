@@ -8,7 +8,7 @@ import { emailSchema } from './common';
  * - Max 100 to prevent DoS
  * - Must contain at least one uppercase, lowercase, number, and special char
  */
-const passwordSchema = z
+export const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
   .max(100, 'Password is too long')
@@ -79,3 +79,50 @@ export const createHiveSchema = z.object({
 export const tokenSchema = z
   .string()
   .regex(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/, 'Invalid token format');
+
+/**
+ * Opaque secure token (base64url, 32 bytes → 43 chars)
+ */
+const secureTokenSchema = z.string().min(32).max(128);
+
+/**
+ * Request password reset
+ */
+export const requestPasswordResetSchema = z.object({
+  email: emailSchema,
+});
+
+/**
+ * Reset password using a token
+ */
+export const resetPasswordSchema = z.object({
+  token: secureTokenSchema,
+  newPassword: passwordSchema,
+});
+
+/**
+ * Verify email using a token
+ */
+export const verifyEmailSchema = z.object({
+  token: secureTokenSchema,
+});
+
+/**
+ * Send an invitation (SystemAdmin only)
+ */
+export const sendInvitationSchema = z.object({
+  email: emailSchema,
+  hiveId: z.string().uuid('Invalid hive ID').optional(),
+});
+
+/**
+ * Register via invitation link
+ *
+ * hiveName is optional: when the invitation carries a hiveId (joining an
+ * existing hive) the backend ignores it. When there is no hiveId (creating a
+ * new hive via invite) it is passed through as-is — the UI should collect it.
+ */
+export const registerWithInviteSchema = registerSchema.extend({
+  inviteToken: secureTokenSchema,
+  hiveName: z.string().trim().max(255).default(''),
+});

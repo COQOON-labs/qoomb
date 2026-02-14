@@ -41,8 +41,11 @@ export const hiveProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   // Set RLS session variables
   await ctx.prisma.setHiveSchema(ctx.user.hiveId, ctx.user.id);
 
-  // Parallel-fetch hive type + person role for in-memory permission checks
-  const [hive, person] = await Promise.all([
+  // Parallel-fetch hive type, person role, per-hive permission overrides, and group memberships.
+  // All hive overrides are loaded without a role filter so the query can run in parallel
+  // (role is unknown until the person query completes). In-memory role filtering follows.
+  // hive_role_permissions is a sparse RBAC config table — typically 0-20 rows per hive.
+  const [hive, person, allHiveOverrides, groupMemberships] = await Promise.all([
     ctx.prisma.hive.findUnique({
       where: { id: ctx.user.hiveId },
       select: { type: true },
@@ -53,7 +56,26 @@ export const hiveProcedure = protectedProcedure.use(async ({ ctx, next }) => {
           select: { role: true },
         })
       : null,
+    ctx.prisma.hiveRolePermission.findMany({
+      where: { hiveId: ctx.user.hiveId },
+      select: { role: true, permission: true, granted: true },
+    }),
+    ctx.user.personId
+      ? ctx.prisma.hiveGroupMember.findMany({
+          where: { personId: ctx.user.personId, hiveId: ctx.user.hiveId },
+          select: { groupId: true },
+        })
+      : [],
   ]);
+
+  const personRole = person?.role ?? undefined;
+
+  // Filter overrides to only those relevant for this person's role
+  const roleOverrides = allHiveOverrides
+    .filter((o) => o.role === personRole)
+    .map(({ permission, granted }) => ({ permission, granted }));
+
+  const groupIds = groupMemberships.map(({ groupId }) => groupId);
 
   return next({
     ctx: {
@@ -61,7 +83,9 @@ export const hiveProcedure = protectedProcedure.use(async ({ ctx, next }) => {
       user: {
         ...ctx.user,
         hiveType: hive?.type,
-        role: person?.role ?? undefined,
+        role: personRole,
+        roleOverrides,
+        groupIds,
       },
     },
   });

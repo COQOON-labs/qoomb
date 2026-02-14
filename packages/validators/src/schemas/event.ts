@@ -1,52 +1,80 @@
 import { z } from 'zod';
 
-export const locationCoordinatesSchema = z.object({
-  lat: z.number().min(-90).max(90),
-  lng: z.number().min(-180).max(180),
-});
+// Use z.enum (not a @qoomb/types import) to prevent TS2742 inferred-type portability errors
+// when the schema flows through AppRouter into the web client type chain.
+const resourceVisibilitySchema = z.enum(['hive', 'admins', 'group', 'private']);
 
+// Recurrence rule: freeform JSONB object (iCal RRULE fields as key/value pairs).
+// Stored unencrypted — needed for server-side occurrence expansion (Phase 4).
+const recurrenceRuleSchema = z.record(z.string(), z.unknown());
+
+export const eventIdSchema = z.string().uuid();
+
+/**
+ * Input schema for creating an event.
+ *
+ * Datetime fields use ISO 8601 string format (z.string().datetime()) for safe tRPC transport.
+ * Fields mapped to DB model (apps/api/prisma/schema.prisma → Event):
+ * - Encrypted at rest by EventsService: title, description, location, url, category
+ * - Unencrypted (used for queries/sorting): startAt, endAt, allDay, color, visibility, recurrenceRule
+ */
 export const createEventSchema = z
   .object({
     title: z.string().min(1).max(500),
     description: z.string().optional(),
-    startTime: z.date(),
-    endTime: z.date(),
+    startAt: z.string().datetime(),
+    endAt: z.string().datetime(),
     allDay: z.boolean().default(false),
-    timezone: z.string().default('Europe/Berlin'),
-    recurrenceRule: z.string().optional(),
-    participants: z.array(z.string().uuid()),
-    organizerId: z.string().uuid().optional(),
-    location: z.string().max(500).optional(),
-    locationCoordinates: locationCoordinatesSchema.optional(),
-    travelTimeBefore: z.number().min(0).default(0),
-    travelTimeAfter: z.number().min(0).default(0),
+    location: z.string().max(1000).optional(),
+    // HTTPS-only: blocks javascript: / data: URI injection when rendered as a hyperlink
+    url: z
+      .string()
+      .url()
+      .refine((u) => u.startsWith('https://'), { message: 'URL must use HTTPS' })
+      .optional(),
+    // Hex color for calendar display (#RRGGBB)
+    color: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/, { message: 'Color must be a valid hex color (#RRGGBB)' })
+      .optional(),
+    category: z.string().max(100).optional(),
+    visibility: resourceVisibilitySchema.default('hive'),
+    groupId: z.string().uuid().optional(),
+    recurrenceRule: recurrenceRuleSchema.optional(),
   })
-  .refine((data) => data.endTime > data.startTime, {
+  .refine((data) => new Date(data.endAt) > new Date(data.startAt), {
     message: 'End time must be after start time',
-    path: ['endTime'],
+    path: ['endAt'],
+  })
+  .refine((data) => data.visibility !== 'group' || data.groupId !== undefined, {
+    message: "groupId is required when visibility is 'group'",
+    path: ['groupId'],
   });
 
 export const updateEventSchema = z.object({
   title: z.string().min(1).max(500).optional(),
-  description: z.string().optional(),
-  startTime: z.date().optional(),
-  endTime: z.date().optional(),
+  description: z.string().nullish(),
+  startAt: z.string().datetime().optional(),
+  endAt: z.string().datetime().optional(),
   allDay: z.boolean().optional(),
-  timezone: z.string().optional(),
-  recurrenceRule: z.string().optional(),
-  participants: z.array(z.string().uuid()).optional(),
-  organizerId: z.string().uuid().optional(),
-  location: z.string().max(500).optional(),
-  locationCoordinates: locationCoordinatesSchema.optional(),
-  travelTimeBefore: z.number().min(0).optional(),
-  travelTimeAfter: z.number().min(0).optional(),
+  location: z.string().max(1000).nullish(),
+  url: z
+    .string()
+    .url()
+    .refine((u) => u.startsWith('https://'), { message: 'URL must use HTTPS' })
+    .nullish(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, { message: 'Color must be a valid hex color (#RRGGBB)' })
+    .nullish(),
+  category: z.string().max(100).nullish(),
+  visibility: resourceVisibilitySchema.optional(),
+  groupId: z.string().uuid().nullish(),
+  recurrenceRule: recurrenceRuleSchema.nullish(),
 });
 
-export const eventFilterSchema = z.object({
-  startDate: z.date().optional(),
-  endDate: z.date().optional(),
-  participants: z.array(z.string().uuid()).optional(),
-  organizerId: z.string().uuid().optional(),
+export const listEventsSchema = z.object({
+  startAt: z.string().datetime().optional(),
+  endAt: z.string().datetime().optional(),
+  groupId: z.string().uuid().optional(),
 });
-
-export const eventIdSchema = z.string().uuid();

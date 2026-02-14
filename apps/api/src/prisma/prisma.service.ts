@@ -59,6 +59,50 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.person;
   }
 
+  get emailVerificationToken() {
+    return this.client.emailVerificationToken;
+  }
+
+  get passwordResetToken() {
+    return this.client.passwordResetToken;
+  }
+
+  get invitation() {
+    return this.client.invitation;
+  }
+
+  get passKeyCredential() {
+    return this.client.passKeyCredential;
+  }
+
+  get hiveRolePermission() {
+    return this.client.hiveRolePermission;
+  }
+
+  get hiveGroup() {
+    return this.client.hiveGroup;
+  }
+
+  get hiveGroupMember() {
+    return this.client.hiveGroupMember;
+  }
+
+  get personShare() {
+    return this.client.personShare;
+  }
+
+  get groupShare() {
+    return this.client.groupShare;
+  }
+
+  get event() {
+    return this.client.event;
+  }
+
+  get task() {
+    return this.client.task;
+  }
+
   // Expose Prisma methods
   async $connect() {
     return await this.client.$connect();

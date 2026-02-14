@@ -75,6 +75,22 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.passKeyCredential;
   }
 
+  get hiveRolePermission() {
+    return this.client.hiveRolePermission;
+  }
+
+  get resourceShare() {
+    return this.client.resourceShare;
+  }
+
+  get event() {
+    return this.client.event;
+  }
+
+  get task() {
+    return this.client.task;
+  }
+
   // Expose Prisma methods
   async $connect() {
     return await this.client.$connect();

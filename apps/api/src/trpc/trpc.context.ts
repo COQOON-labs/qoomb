@@ -17,6 +17,8 @@ export interface TrpcContext {
     hiveType?: string;
     /** Person role string populated by hiveProcedure */
     role?: string;
+    /** Per-hive role permission overrides loaded by hiveProcedure from hive_role_permissions table */
+    roleOverrides?: ReadonlyArray<{ permission: string; granted: boolean }>;
   };
 }
 

@@ -742,30 +742,28 @@ Global defaults defined in `packages/types/src/permissions.ts`. Per-hive overrid
 
 ```
 1. Explicit ResourceShare for this person+resource?
-   → use share.canView / canEdit / canDelete
+   → share.canView / canEdit / canDelete is the FINAL answer (no role fallback)
 
 2. resource.visibility = 'private'?
-   → creator + parents / org_admin only
+   → creator has full control (no action permission check, no admin override)
 
 3. resource.visibility = 'parents'?
-   → parents / org_admin only
+   → must be parent / org_admin role, then action permission is still checked (step 4)
 
 4. visibility = 'hive' or 'shared' (no direct share):
    a. Load global HIVE_ROLE_PERMISSIONS defaults
    b. Apply hive_role_permissions DB overrides (grant/revoke)
-   c. Check resulting set includes required permission
-
-Note: parents / org_admin always see everything, no exceptions.
+   c. Check resulting set includes required permission (ANY or OWN+creator)
 ```
 
 ### Resource Visibility Values
 
 Each resource (event, task, note, …) carries a `visibility` field:
 
-- `'hive'` — all hive members (default)
-- `'parents'` — parents / org_admin only
-- `'private'` — creator + parents only
-- `'shared'` — specific persons via `resource_shares` table
+- `'hive'` — all hive members with the relevant role permission (default)
+- `'parents'` — parent / org_admin roles only (visibility gate, action permissions still enforced)
+- `'private'` — creator has full control; everyone else (including admins) needs an explicit share
+- `'shared'` — role-based fallback + explicit shares via `resource_shares` table
 
 ### DB Tables
 

@@ -101,14 +101,14 @@ export const VALID_ROLES_BY_HIVE_TYPE: Record<string, string[]> = {
 // Resources will carry a `visibility` field defaulting to 'hive'.
 //
 // Resolution order (canDo check):
-//   1. Explicit ResourceShare for person+resource → use share permissions
-//   2. 'private'  → creator + parents / org_admin only
-//   3. 'parents'  → parents / org_admin only
-//   4. 'hive' / 'shared' (no direct share) → evaluate role permissions
+//   1. Explicit ResourceShare for person+resource → share.can* is the FINAL answer
+//   2. 'private'  → creator has full control (no action permission check, no admin override)
+//   3. 'parents'  → admin roles only, then action permission is still checked
+//   4. 'hive' / 'shared' / 'parents' (admin confirmed) → evaluate role permissions
 //      a. Load global HIVE_ROLE_PERMISSIONS defaults
 //      b. Apply hive_role_permissions DB overrides (grant/revoke)
-//      c. Check resulting set includes the required permission
-// Note: parents / org_admin always see everything.
+//      c. Check resulting set includes the required permission (ANY or OWN+creator)
+// Note: admin roles do NOT have universal access. All actions require permissions.
 // ============================================
 
 export type ResourceVisibility = 'hive' | 'parents' | 'private' | 'shared';
@@ -127,4 +127,43 @@ export function hasPermission(
   permission: HivePermission
 ): boolean {
   return getPermissionsForRole(hiveType, role).includes(permission);
+}
+
+/**
+ * Returns true if the role is an admin role for the given hive type.
+ * Admin roles: 'parent' (family) and 'org_admin' (organization).
+ *
+ * Note: Being an admin does NOT grant universal access to all resources.
+ * Private resources require an explicit share even for admins.
+ * The 'parents' visibility type is restricted to admin roles specifically.
+ */
+export function isAdminRole(hiveType: string, role: string): boolean {
+  return (
+    (hiveType === 'family' && role === 'parent') ||
+    (hiveType === 'organization' && role === 'org_admin')
+  );
+}
+
+/**
+ * Checks whether a role has a permission after applying per-hive DB overrides
+ * on top of the global HIVE_ROLE_PERMISSIONS defaults.
+ *
+ * Overrides with granted=true add permissions beyond the defaults.
+ * Overrides with granted=false revoke permissions from the defaults.
+ */
+export function hasPermissionWithOverrides(
+  hiveType: string,
+  role: string,
+  permission: HivePermission,
+  overrides: ReadonlyArray<{ permission: string; granted: boolean }>
+): boolean {
+  const effective = new Set<string>(getPermissionsForRole(hiveType, role).map((p) => p as string));
+  for (const override of overrides) {
+    if (override.granted) {
+      effective.add(override.permission);
+    } else {
+      effective.delete(override.permission);
+    }
+  }
+  return effective.has(permission as string);
 }

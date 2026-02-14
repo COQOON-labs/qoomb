@@ -18,24 +18,35 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
    *
    * For authenticated requests: use user ID
    * For unauthenticated requests: use IP address
+   *
+   * Note: In @nestjs/throttler v6, getTracker receives (req, context)
+   * and is called as a standalone function (not as a method on `this`).
+   * We must NOT reference `this` — use static helpers instead.
    */
-  protected getTracker(req: FastifyRequest & { user?: { id: string } }): Promise<string> {
+  protected async getTracker(
+    req: Record<string, any>,
+    _context?: ExecutionContext
+  ): Promise<string> {
+    const request = req as FastifyRequest & { user?: { id: string } };
+
     // If user is authenticated, track by user ID
-    if (req.user?.id) {
-      return Promise.resolve(`user:${req.user.id}`);
+    if (request.user?.id) {
+      return `user:${request.user.id}`;
     }
 
     // Otherwise, track by IP address
-    return Promise.resolve(this.getIpFromRequest(req));
+    return CustomThrottlerGuard.extractIp(request);
   }
 
   /**
    * Extract IP address from request
    *
    * Handles both direct connections and proxied requests
-   * (X-Forwarded-For, X-Real-IP)
+   * (X-Forwarded-For, X-Real-IP).
+   *
+   * Static so it can be called without `this` context.
    */
-  private getIpFromRequest(req: FastifyRequest): string {
+  private static extractIp(req: FastifyRequest): string {
     // Check for X-Forwarded-For header (proxied requests)
     const forwardedFor = req.headers['x-forwarded-for'];
     if (forwardedFor) {
@@ -62,7 +73,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     throttlerLimitDetail: ThrottlerLimitDetail
   ): Promise<void> {
     const request = context.switchToHttp().getRequest<FastifyRequest & { user?: { id: string } }>();
-    const tracker = await this.getTracker(request);
+    const tracker = await this.getTracker(request, context);
     const safeTracker = tracker.replace(/[\r\n]/g, '');
     // Strip newlines/carriage-returns to prevent log injection (CWE-117 / js/log-injection)
     const url = request.url.replace(/[\r\n]/g, '');

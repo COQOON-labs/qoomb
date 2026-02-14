@@ -2,9 +2,9 @@ name: 'Trivy Security Scan'
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
   schedule:
     # Run every Monday at 7:00 UTC (after CodeQL)
     - cron: '0 7 * * 1'

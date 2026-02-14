@@ -738,22 +738,29 @@ async create(input: CreateEventInput) {
 
 Global defaults defined in `packages/types/src/permissions.ts`. Per-hive overrides stored in `hive_role_permissions` table.
 
-### Resource Permission Resolution (canDo check)
+### Resource Permission Resolution (5-stage check)
 
 ```
-1. Explicit ResourceShare for this person+resource?
-   → share.canView / canEdit / canDelete is the FINAL answer (no role fallback)
+Stage 1: Load PersonShare + GroupShares in parallel
+   → effectiveShareLevel = max(0, personal share, all group shares)
 
-2. resource.visibility = 'private'?
-   → creator has full control (no action permission check, no admin override)
+Stage 2: visibility = 'private'
+   → creator OR effectiveShareLevel >= required → allow
+   → else FORBIDDEN (no admin bypass)
 
-3. resource.visibility = 'parents'?
-   → must be parent / org_admin role, then action permission is still checked (step 4)
+Stage 3: visibility = 'group'
+   → creator OR (group member + VIEW action) OR effectiveShareLevel >= required
+   → else FORBIDDEN (admins must join the group — auditable)
 
-4. visibility = 'hive' or 'shared' (no direct share):
-   a. Load global HIVE_ROLE_PERMISSIONS defaults
-   b. Apply hive_role_permissions DB overrides (grant/revoke)
-   c. Check resulting set includes required permission (ANY or OWN+creator)
+Stage 4: visibility = 'admins'
+   → effectiveShareLevel >= required → allow (share exception)
+   → not admin role → FORBIDDEN
+   → admin confirmed → fall through to Stage 5
+
+Stage 5: visibility = 'hive' or 'admins' (admin confirmed)
+   → effectiveShareLevel >= required → allow (additive elevation)
+   → role-based check with DB overrides (ANY permission, or OWN + creator)
+   → else FORBIDDEN
 ```
 
 ### Resource Visibility Values
@@ -761,14 +768,29 @@ Global defaults defined in `packages/types/src/permissions.ts`. Per-hive overrid
 Each resource (event, task, note, …) carries a `visibility` field:
 
 - `'hive'` — all hive members with the relevant role permission (default)
-- `'parents'` — parent / org_admin roles only (visibility gate, action permissions still enforced)
-- `'private'` — creator has full control; everyone else (including admins) needs an explicit share
-- `'shared'` — role-based fallback + explicit shares via `resource_shares` table
+- `'admins'` — admin roles only (`parent` / `org_admin`); shares can grant exceptions
+- `'group'` — members of the resource's group only; requires `groupId` on the resource
+- `'private'` — creator only; no admin bypass; only creator can create shares for it
+
+### AccessLevel (ordinal share grants)
+
+`PersonShare` and `GroupShare` use `accessLevel: Int` instead of boolean flags:
+
+- `VIEW (1)` — can read
+- `EDIT (2)` — can read + edit
+- `MANAGE (3)` — can read + edit + delete + manage shares for this resource
+
+Higher levels imply lower: `MANAGE >= EDIT >= VIEW`.
 
 ### DB Tables
 
-- `hive_role_permissions` — per-hive role permission overrides (currently empty, UI to manage TBD)
-- `resource_shares` — per-resource explicit person grants (`canView`, `canEdit`, `canDelete`)
+- `hive_role_permissions` — per-hive role permission overrides (currently empty, UI TBD)
+- `hive_groups` — group definitions (id, hiveId, name)
+- `hive_group_members` — group membership + audit (personId, groupId, addedByPersonId)
+- `person_shares` — per-person explicit grants (`accessLevel: 1|2|3`)
+- `group_shares` — per-group explicit grants (`accessLevel: 1|2|3`)
+
+**See:** `docs/PERMISSIONS.md` for the full architecture, algorithm, and guard API.
 
 ---
 

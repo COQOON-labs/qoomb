@@ -91,6 +91,7 @@ events:
   hive_id             UUID FK → hives
   creator_id          UUID FK → persons
   page_id             UUID? FK → pages
+  group_id            UUID? FK → hive_groups   -- required when visibility = 'group'
   title               TEXT  ENCRYPTED
   description         TEXT? ENCRYPTED
   start_at            TIMESTAMPTZ
@@ -101,12 +102,14 @@ events:
   color               VARCHAR(20)?             -- unencrypted, cosmetic
   category            TEXT? ENCRYPTED
   visibility          VARCHAR(20) DEFAULT 'hive'
+    -- CHECK (visibility IN ('hive', 'admins', 'group', 'private'))
   recurrence_rule     JSONB?                   -- unencrypted (see §5)
   created_at          TIMESTAMPTZ
   updated_at          TIMESTAMPTZ
 
 INDEX: (hive_id, start_at)
 INDEX: (hive_id, creator_id)
+INDEX: (hive_id, group_id)
 ```
 
 ### 2.3 Task
@@ -134,6 +137,7 @@ tasks:
   page_id         UUID? FK → pages
   event_id        UUID? FK → events
   assignee_id     UUID? FK → persons
+  group_id        UUID? FK → hive_groups   -- required when visibility = 'group'
   title           TEXT  ENCRYPTED
   description     TEXT? ENCRYPTED
   due_at          TIMESTAMPTZ?
@@ -141,11 +145,13 @@ tasks:
   status          VARCHAR(20) DEFAULT 'todo'   -- unencrypted (needed for filtering)
   priority        SMALLINT DEFAULT 0           -- unencrypted
   visibility      VARCHAR(20) DEFAULT 'hive'
+    -- CHECK (visibility IN ('hive', 'admins', 'group', 'private'))
   created_at      TIMESTAMPTZ
   updated_at      TIMESTAMPTZ
 
 INDEX: (hive_id, status)
 INDEX: (hive_id, assignee_id)
+INDEX: (hive_id, group_id)
 ```
 
 **Relationship rules:**
@@ -419,20 +425,45 @@ calendar_event_mappings:
 
 ## 10. Resource Permissions (cross-content)
 
-All content types use the same permission model described in `SECURITY.md`:
+All content types use the layered permission model described in detail in `docs/PERMISSIONS.md`.
+
+### Visibility values
+
+Each content resource carries a `visibility` field:
+
+- `'hive'` — all hive members with the relevant role permission (default)
+- `'admins'` — admin roles only (`parent` / `org_admin`)
+- `'group'` — members of `group_id` only (requires `group_id` on the resource)
+- `'private'` — creator only; no admin bypass
+
+### 5-stage access check (summary)
 
 ```
-canAccess(person, action, resource):
-  1. parent / org_admin → always granted
-  2. resource.creator_id = personId → granted (own content)
-  3. resource_shares row for (resource_type, resource_id, personId) → use canView/canEdit/canDelete
-  4. resource.visibility = 'private' → denied
-  5. resource.visibility = 'parents' → denied
-  6. visibility = 'hive' | 'shared' → evaluate role permissions (HIVE_ROLE_PERMISSIONS + hive_role_permissions overrides)
+Stage 1: Load PersonShare + GroupShares in parallel
+   → effectiveShareLevel = max(0, personal share, group shares)
+Stage 2: visibility = 'private' → creator OR share ≥ required
+Stage 3: visibility = 'group'   → creator OR group member (VIEW) OR share ≥ required
+Stage 4: visibility = 'admins'  → share exception OR admin role required
+Stage 5: visibility = 'hive'/'admins' → share (additive) OR role-based (ANY/OWN)
 ```
 
-**Implementation location:** `apps/api/src/common/guards/resource-access.ts`
-(to be created when Events module is built — reused by Tasks, Pages, Documents).
+### Share system
+
+`PersonShare` and `GroupShare` use ordinal `accessLevel`:
+
+- `VIEW (1)` / `EDIT (2)` / `MANAGE (3)` — higher implies lower
+
+### Groups
+
+`HiveGroup` + `HiveGroupMember` tables with audit trail (`addedByPersonId`).
+Admins gain group resource access by joining the group — no silent bypass.
+
+### Implementation
+
+**Implemented:** `apps/api/src/common/guards/resource-access.guard.ts`
+
+- `requireResourceAccess(ctx, prisma, resource, action, permissions)` — per-resource check
+- `buildVisibilityFilter(ctx, viewPermission)` — Prisma WHERE clause for list queries (avoids N+1)
 
 ---
 
@@ -440,10 +471,12 @@ canAccess(person, action, resource):
 
 ### Phase 2 — Core Content (current focus)
 
+- [x] RBAC guard system (`requirePermission`, `requireResourceAccess`, `buildVisibilityFilter`)
+- [x] Groups infrastructure (`HiveGroup`, `HiveGroupMember`, RLS)
+- [x] Share system (`PersonShare`, `GroupShare` with ordinal `accessLevel`, RLS)
 - [ ] Persons module (hive member management)
-- [ ] Events module (CRUD + recurrence expansion + `canAccessResource`)
+- [ ] Events module (CRUD + recurrence expansion)
 - [ ] Tasks module (CRUD + assignees + event→task spawning)
-- [ ] `resource-access.ts` guard (visibility resolution, reused everywhere)
 
 ### Phase 3 — Pages + Files
 
@@ -466,4 +499,4 @@ canAccess(person, action, resource):
 
 ---
 
-**Last Updated:** 2026-02-10
+**Last Updated:** 2026-02-14

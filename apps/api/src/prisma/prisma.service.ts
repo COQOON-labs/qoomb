@@ -79,8 +79,20 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.hiveRolePermission;
   }
 
-  get resourceShare() {
-    return this.client.resourceShare;
+  get hiveGroup() {
+    return this.client.hiveGroup;
+  }
+
+  get hiveGroupMember() {
+    return this.client.hiveGroupMember;
+  }
+
+  get personShare() {
+    return this.client.personShare;
+  }
+
+  get groupShare() {
+    return this.client.groupShare;
   }
 
   get event() {

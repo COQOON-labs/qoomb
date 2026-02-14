@@ -1,4 +1,9 @@
-import { type HivePermission, hasPermissionWithOverrides, isAdminRole } from '@qoomb/types';
+import {
+  AccessLevel,
+  type HivePermission,
+  hasPermissionWithOverrides,
+  isAdminRole,
+} from '@qoomb/types';
 import { TRPCError } from '@trpc/server';
 
 import { type PrismaService } from '../../prisma/prisma.service';
@@ -10,6 +15,13 @@ import { type TrpcContext } from '../../trpc/trpc.context';
 
 export type ResourceAccessAction = 'view' | 'edit' | 'delete';
 
+/** Required AccessLevel for each action. Higher level implies lower. */
+const REQUIRED_LEVEL: Record<ResourceAccessAction, AccessLevel> = {
+  view: AccessLevel.VIEW,
+  edit: AccessLevel.EDIT,
+  delete: AccessLevel.MANAGE,
+};
+
 export interface ResourceAccessInput {
   /** Resource type string, e.g. 'event' | 'task' | 'note' */
   type: string;
@@ -17,13 +29,15 @@ export interface ResourceAccessInput {
   id: string;
   /** personId of the resource creator */
   creatorId: string;
-  /** Visibility setting: 'hive' | 'parents' | 'private' | 'shared' */
+  /** Visibility setting: 'hive' | 'admins' | 'group' | 'private' */
   visibility: string;
+  /** Required when visibility = 'group': the group this resource belongs to */
+  groupId?: string;
 }
 
 /**
- * Resource-type-specific permissions passed by the caller.
- * The caller provides permissions for all actions so the guard stays type-agnostic.
+ * Resource-type-specific permissions passed by the caller (for role-based checks).
+ * Used only for 'hive' and 'admins' visibility types where role-based access applies.
  *
  * Example for events:
  * ```typescript
@@ -53,21 +67,25 @@ export interface ResourcePermissions {
 /**
  * Asserts that the current user can perform the given action on a specific resource.
  *
- * Resolution order (first matching rule wins):
- *   1. Explicit ResourceShare for this person+resource → share.can* is the final answer
- *   2. visibility = 'private'  → creator has full control (no action permission check,
- *      no admin override — even parent/org_admin need a share)
- *   3. visibility = 'parents'  → must be admin role, then action permission is still checked
- *   4. visibility = 'hive', 'shared', or 'parents' (admin confirmed) → role-based with DB overrides
- *      a. Check anyPermission (e.g. UPDATE_ANY)
- *      b. Check ownPermission (e.g. UPDATE_OWN) + must be creator
+ * Resolution order:
+ *   1. Load personal + group shares in parallel
+ *      → effectiveShareLevel = max of all applicable shares (0 if none)
+ *   2. visibility = 'private'
+ *      → allow if creator OR effectiveShareLevel >= required
+ *   3. visibility = 'group'
+ *      → allow if creator OR (group member + action = view) OR effectiveShareLevel >= required
+ *   4. visibility = 'admins'
+ *      → allow if effectiveShareLevel >= required (explicit exception)
+ *      → else require admin role, then fall through to role-based permission check
+ *   5. visibility = 'hive' / 'admins' (admin confirmed)
+ *      → allow if effectiveShareLevel >= required (additive)
+ *      → else check role-based permission (ANY or OWN + creator)
  *
  * Key design decisions:
- * - Shares are EXCLUSIVE: if a share exists it is the final answer, role is not consulted.
- * - Private resources grant the creator full control (view/edit/delete) without
- *   action permission checks. "Your private stuff, your rules."
- * - The 'parents' visibility restricts WHO can act (admin roles only), not WHAT they can do.
- *   Action permissions (including per-hive overrides) are always enforced.
+ * - Shares are ADDITIVE for 'hive'/'admins': they can only elevate, never restrict
+ * - Shares are EXCLUSIVE for 'group'/'private': the only access path besides membership/creator
+ * - No admin bypass for 'private': even parent/org_admin require a share or being the creator
+ * - For 'group' resources, admins gain access by joining the group (visible in audit log)
  *
  * @throws TRPCError FORBIDDEN if access is denied
  */
@@ -78,61 +96,78 @@ export async function requireResourceAccess(
   action: ResourceAccessAction,
   permissions: ResourcePermissions
 ): Promise<void> {
-  const { hiveType, role, roleOverrides = [], personId } = ctx.user ?? {};
+  const { hiveType, role, roleOverrides = [], personId, groupIds = [], hiveId } = ctx.user ?? {};
 
   // Fail-closed: missing context always denies
   if (!hiveType || !role || !personId) {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Insufficient permissions' });
   }
 
-  // Stufe 1: Explicit ResourceShare for this person+resource
-  // The share is the FINAL answer — no fallback to role if a share exists.
-  // Defense-in-depth: filter by hiveId even though RLS should already enforce it.
-  const hiveId = ctx.user?.hiveId;
-  const share = await prisma.resourceShare.findFirst({
-    where: {
-      resourceType: resource.type,
-      resourceId: resource.id,
-      personId,
-      hiveId,
-    },
-    select: { canView: true, canEdit: true, canDelete: true },
-  });
+  const requiredLevel = REQUIRED_LEVEL[action];
+  const groupIdsArr = [...groupIds];
 
-  if (share !== null) {
-    const allowed =
-      (action === 'view' && share.canView) ||
-      (action === 'edit' && share.canEdit) ||
-      (action === 'delete' && share.canDelete);
+  // Stage 1: Load personal share + all applicable group shares in parallel.
+  // Defense-in-depth: filter by hiveId even though RLS already enforces this.
+  const [personalShare, groupShareRows] = await Promise.all([
+    prisma.personShare.findFirst({
+      where: { resourceType: resource.type, resourceId: resource.id, personId, hiveId },
+      select: { accessLevel: true },
+    }),
+    groupIdsArr.length > 0
+      ? prisma.groupShare.findMany({
+          where: {
+            resourceType: resource.type,
+            resourceId: resource.id,
+            groupId: { in: groupIdsArr },
+            hiveId,
+          },
+          select: { accessLevel: true },
+        })
+      : Promise.resolve([]),
+  ]);
 
-    if (!allowed) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Insufficient permissions' });
-    }
+  // Effective share = max level across all applicable shares (0 if none)
+  const effectiveShareLevel = Math.max(
+    0,
+    ...(personalShare ? [personalShare.accessLevel] : []),
+    ...groupShareRows.map((s) => s.accessLevel)
+  );
 
-    return;
-  }
+  const required = requiredLevel as number;
 
-  // Stufe 2: visibility = 'private' → only the creator
-  // No admin override: even parent/org_admin need an explicit share.
+  // Stage 2: visibility = 'private' → creator OR share
   if (resource.visibility === 'private') {
-    if (personId !== resource.creatorId) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Insufficient permissions' });
-    }
-
-    return;
+    if (personId === resource.creatorId || effectiveShareLevel >= required) return;
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Insufficient permissions' });
   }
 
-  // Stufe 3: visibility = 'parents' → must be admin role to proceed
-  // Non-admins are denied immediately. Admins still need the action permission (Stufe 4).
-  if (resource.visibility === 'parents') {
+  // Stage 3: visibility = 'group' → creator OR group member (VIEW only) OR share
+  // Admin bypass does NOT apply: admins join the group to gain access (auditable).
+  if (resource.visibility === 'group') {
+    if (personId === resource.creatorId) return;
+    const isMember =
+      resource.groupId !== null &&
+      resource.groupId !== undefined &&
+      groupIdsArr.includes(resource.groupId);
+    if (isMember && (requiredLevel as number) <= (AccessLevel.VIEW as number)) return;
+    if (effectiveShareLevel >= required) return;
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Insufficient permissions' });
+  }
+
+  // Stage 4: visibility = 'admins' → share grants exception, else require admin role
+  if (resource.visibility === 'admins') {
+    if (effectiveShareLevel >= required) return;
     if (!isAdminRole(hiveType, role)) {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'Insufficient permissions' });
     }
-    // Admin role confirmed — fall through to Stufe 4 for action permission check
+    // Admin confirmed — fall through to Stage 5 for role-based permission check
   }
 
-  // Stufe 4: visibility = 'hive', 'shared', or 'parents' (admin confirmed above)
-  // → Role-based check with per-hive DB overrides applied.
+  // Stage 5: visibility = 'hive' or 'admins' (admin confirmed above)
+  // Shares are additive: a share can elevate access beyond the role baseline.
+  if (effectiveShareLevel >= required) return;
+
+  // Role-based permission check with per-hive DB overrides applied
   const anyPermission = permissions[action];
   const ownPermission =
     action === 'edit'
@@ -141,9 +176,7 @@ export async function requireResourceAccess(
         ? permissions.deleteOwn
         : undefined;
 
-  if (hasPermissionWithOverrides(hiveType, role, anyPermission, roleOverrides)) {
-    return;
-  }
+  if (hasPermissionWithOverrides(hiveType, role, anyPermission, roleOverrides)) return;
 
   if (
     ownPermission !== undefined &&
@@ -165,11 +198,12 @@ export interface VisibilityFilterContext {
   hiveType: string;
   role: string;
   roleOverrides: ReadonlyArray<{ permission: string; granted: boolean }>;
+  groupIds: ReadonlyArray<string>;
 }
 
 /**
  * Builds a Prisma WHERE filter that encodes the same visibility logic as
- * requireResourceAccess, suitable for findMany / search queries.
+ * requireResourceAccess for VIEW access, suitable for findMany / search queries.
  *
  * Use this instead of calling requireResourceAccess per result (which would N+1).
  * The filter is also compatible with pgvector search queries (Phase 4).
@@ -191,25 +225,39 @@ export function buildVisibilityFilter(
   ctx: VisibilityFilterContext,
   viewPermission: HivePermission
 ): { OR: unknown[] } {
-  const { personId, hiveType, role, roleOverrides } = ctx;
+  const { personId, hiveType, role, roleOverrides, groupIds } = ctx;
+  const groupIdsArr = [...groupIds];
 
   const canViewAll = hasPermissionWithOverrides(hiveType, role, viewPermission, roleOverrides);
   const isAdmin = isAdminRole(hiveType, role);
 
   return {
     OR: [
-      // 'hive' and 'shared' (no personal share): role-based access
-      ...(canViewAll ? [{ visibility: 'hive' }, { visibility: 'shared' }] : []),
+      // 'hive': role has the view permission
+      ...(canViewAll ? [{ visibility: 'hive' }] : []),
 
-      // 'parents': admin roles WITH the view permission (admin != automatic access)
-      ...(isAdmin && canViewAll ? [{ visibility: 'parents' }] : []),
+      // 'admins': admin role AND has view permission (admin role ≠ automatic access)
+      ...(isAdmin && canViewAll ? [{ visibility: 'admins' }] : []),
 
-      // 'private': only own resources
+      // 'group': person is a member of the resource's group
+      ...(groupIdsArr.length > 0 ? [{ visibility: 'group', groupId: { in: groupIdsArr } }] : []),
+
+      // 'private': own resources only
       { visibility: 'private', creatorId: personId },
 
-      // Any visibility with an explicit view share for this person
-      // (covers sharing into 'private', 'parents', 'hive', 'shared' resources)
-      { resourceShares: { some: { personId, canView: true } } },
+      // Any visibility: personal share with at least VIEW access
+      { personShares: { some: { personId, accessLevel: { gte: AccessLevel.VIEW } } } },
+
+      // Any visibility: group share for one of person's groups with at least VIEW access
+      ...(groupIdsArr.length > 0
+        ? [
+            {
+              groupShares: {
+                some: { groupId: { in: groupIdsArr }, accessLevel: { gte: AccessLevel.VIEW } },
+              },
+            },
+          ]
+        : []),
     ],
   };
 }

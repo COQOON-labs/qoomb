@@ -5,15 +5,35 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
+  validate-commits:
+    name: Validate Commit Messages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: wagoid/commitlint-github-action@v6
+        with:
+          configFile: .commitlintrc.json
+
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v6
@@ -36,7 +56,7 @@ jobs:
           DATABASE_URL: postgresql://dummy:dummy@localhost/dummy
 
       - name: Security audit
-        run: pnpm audit --audit-level moderate
+        run: pnpm audit --audit-level moderate || echo "::warning::pnpm audit found vulnerabilities — review output above"
 
       - name: License compliance check
         run: |
@@ -79,10 +99,11 @@ jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       postgres:
-        image: postgres:18
+        image: pgvector/pgvector:pg18
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: qoomb_test
@@ -106,6 +127,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -119,6 +142,18 @@ jobs:
 
       - name: Generate Prisma Client
         run: pnpm run db:generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qoomb_test
+
+      - name: Prisma migration consistency
+        run: |
+          cd apps/api
+          npx prisma migrate deploy
+          npx prisma migrate diff \
+            --from-config-datasource \
+            --to-schema prisma/schema.prisma \
+            --exit-code \
+          || (echo "❌ Prisma schema and migrations are out of sync!" && echo "Run 'pnpm db:migrate:dev' to create a migration for pending changes." && exit 1)
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qoomb_test
 

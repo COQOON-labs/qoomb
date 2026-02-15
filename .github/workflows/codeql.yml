@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
   schedule:
     # Run every Monday at 6:00 UTC
     - cron: '0 6 * * 1'
@@ -13,19 +14,17 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  security-events: write
+  contents: read
+  actions: read
+  statuses: write
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      # Required for all workflows
-      security-events: write
-      # Required for workflows in private repositories
-      contents: read
-      actions: read
-      # Required for status reports
-      statuses: write
 
     strategy:
       fail-fast: false

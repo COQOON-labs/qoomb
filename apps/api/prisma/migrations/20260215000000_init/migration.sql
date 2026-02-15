@@ -11,18 +11,19 @@ CREATE EXTENSION IF NOT EXISTS "vector";
 
 -- CreateTable: hives
 CREATE TABLE "hives" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL DEFAULT gen_random_uuid (),
     "name" VARCHAR(255) NOT NULL,
-    "type" VARCHAR(50) NOT NULL CHECK (type IN ('family', 'organization')),
+    "type" VARCHAR(50) NOT NULL CHECK (
+        type IN ('family', 'organization')
+    ),
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ NOT NULL,
-
     CONSTRAINT "hives_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable: users
 CREATE TABLE "users" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL DEFAULT gen_random_uuid (),
     "email" VARCHAR(255) NOT NULL,
     "password_hash" TEXT NOT NULL,
     "email_verified" BOOLEAN NOT NULL DEFAULT false,
@@ -33,13 +34,12 @@ CREATE TABLE "users" (
     "avatar_url" TEXT,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ NOT NULL,
-
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable: persons (hive-scoped, isolated via RLS)
 CREATE TABLE "persons" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL DEFAULT gen_random_uuid (),
     "hive_id" UUID NOT NULL,
     "user_id" UUID,
     "role" VARCHAR(50) NOT NULL,
@@ -49,26 +49,24 @@ CREATE TABLE "persons" (
     "public_key" TEXT,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ NOT NULL,
-
     CONSTRAINT "persons_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable: user_hive_memberships
 CREATE TABLE "user_hive_memberships" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL DEFAULT gen_random_uuid (),
     "user_id" UUID NOT NULL,
     "hive_id" UUID NOT NULL,
     "person_id" UUID NOT NULL,
     "is_primary" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ NOT NULL,
-
     CONSTRAINT "user_hive_memberships_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable: refresh_tokens
 CREATE TABLE "refresh_tokens" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL DEFAULT gen_random_uuid (),
     "token" TEXT NOT NULL,
     "user_id" UUID NOT NULL,
     "expires_at" TIMESTAMPTZ NOT NULL,
@@ -77,7 +75,6 @@ CREATE TABLE "refresh_tokens" (
     "replaced_by_token" TEXT,
     "ip_address" INET,
     "user_agent" TEXT,
-
     CONSTRAINT "refresh_tokens_pkey" PRIMARY KEY ("id")
 );
 
@@ -85,44 +82,53 @@ CREATE TABLE "refresh_tokens" (
 -- INDEXES
 -- ============================================
 
-CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+CREATE UNIQUE INDEX "users_email_key" ON "users" ("email");
 
-CREATE INDEX "persons_hive_id_idx" ON "persons"("hive_id");
-CREATE INDEX "persons_user_id_idx" ON "persons"("user_id");
+CREATE INDEX "persons_hive_id_idx" ON "persons" ("hive_id");
 
-CREATE INDEX "user_hive_memberships_user_id_idx" ON "user_hive_memberships"("user_id");
-CREATE INDEX "user_hive_memberships_hive_id_idx" ON "user_hive_memberships"("hive_id");
-CREATE INDEX "user_hive_memberships_person_id_idx" ON "user_hive_memberships"("person_id");
-CREATE UNIQUE INDEX "user_hive_memberships_user_id_hive_id_key" ON "user_hive_memberships"("user_id", "hive_id");
+CREATE INDEX "persons_user_id_idx" ON "persons" ("user_id");
 
-CREATE UNIQUE INDEX "refresh_tokens_token_key" ON "refresh_tokens"("token");
-CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens"("user_id");
-CREATE INDEX "refresh_tokens_token_idx" ON "refresh_tokens"("token");
-CREATE INDEX "refresh_tokens_expires_at_idx" ON "refresh_tokens"("expires_at");
-CREATE INDEX "refresh_tokens_revoked_at_idx" ON "refresh_tokens"("revoked_at");
-CREATE INDEX "idx_refresh_tokens_active" ON "refresh_tokens"("user_id", "token");
+CREATE INDEX "user_hive_memberships_user_id_idx" ON "user_hive_memberships" ("user_id");
+
+CREATE INDEX "user_hive_memberships_hive_id_idx" ON "user_hive_memberships" ("hive_id");
+
+CREATE INDEX "user_hive_memberships_person_id_idx" ON "user_hive_memberships" ("person_id");
+
+CREATE UNIQUE INDEX "user_hive_memberships_user_id_hive_id_key" ON "user_hive_memberships" ("user_id", "hive_id");
+
+CREATE UNIQUE INDEX "refresh_tokens_token_key" ON "refresh_tokens" ("token");
+
+CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens" ("user_id");
+
+CREATE INDEX "refresh_tokens_token_idx" ON "refresh_tokens" ("token");
+
+CREATE INDEX "refresh_tokens_expires_at_idx" ON "refresh_tokens" ("expires_at");
+
+CREATE INDEX "refresh_tokens_revoked_at_idx" ON "refresh_tokens" ("revoked_at");
+
+CREATE INDEX "idx_refresh_tokens_active" ON "refresh_tokens" ("user_id", "token");
 
 -- ============================================
 -- FOREIGN KEYS
 -- ============================================
 
-ALTER TABLE "persons" ADD CONSTRAINT "persons_hive_id_fkey"
-    FOREIGN KEY ("hive_id") REFERENCES "hives"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "persons"
+ADD CONSTRAINT "persons_hive_id_fkey" FOREIGN KEY ("hive_id") REFERENCES "hives" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE "persons" ADD CONSTRAINT "persons_user_id_fkey"
-    FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "persons"
+ADD CONSTRAINT "persons_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE "user_hive_memberships" ADD CONSTRAINT "user_hive_memberships_user_id_fkey"
-    FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_hive_memberships"
+ADD CONSTRAINT "user_hive_memberships_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE "user_hive_memberships" ADD CONSTRAINT "user_hive_memberships_hive_id_fkey"
-    FOREIGN KEY ("hive_id") REFERENCES "hives"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_hive_memberships"
+ADD CONSTRAINT "user_hive_memberships_hive_id_fkey" FOREIGN KEY ("hive_id") REFERENCES "hives" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE "user_hive_memberships" ADD CONSTRAINT "user_hive_memberships_person_id_fkey"
-    FOREIGN KEY ("person_id") REFERENCES "persons"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_hive_memberships"
+ADD CONSTRAINT "user_hive_memberships_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "persons" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_fkey"
-    FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "refresh_tokens"
+ADD CONSTRAINT "refresh_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- ============================================
 -- ROW-LEVEL SECURITY: persons

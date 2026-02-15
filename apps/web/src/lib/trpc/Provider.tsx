@@ -7,6 +7,15 @@ import { getAccessToken } from '../auth/tokenStore';
 
 import { trpc } from './client';
 
+const tRPCUrl = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/trpc`
+  : `${window.location.origin}/trpc`;
+
+if (import.meta.env.DEV) {
+  // eslint-disable-next-line no-console
+  console.warn('tRPC URL:', tRPCUrl);
+}
+
 interface TrpcProviderProps {
   children: React.ReactNode;
 }
@@ -25,15 +34,6 @@ export function TrpcProvider({ children }: TrpcProviderProps) {
   );
 
   const [trpcClient] = useState(() => {
-    const tRPCUrl = import.meta.env.VITE_API_URL
-      ? `${import.meta.env.VITE_API_URL}/trpc`
-      : `${window.location.origin}/trpc`;
-
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.warn('tRPC URL:', tRPCUrl);
-    }
-
     return trpc.createClient({
       links: [
         splitLink({

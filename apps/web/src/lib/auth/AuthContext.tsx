@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useReducer, useRef, type ReactNod
 import superjson from 'superjson';
 
 import { getRefreshToken, setRefreshToken, clearRefreshToken } from './authStorage';
-import { setAccessToken } from './tokenStore';
+import { getAccessToken, setAccessToken } from './tokenStore';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -105,14 +105,42 @@ function parseJwtExp(token: string): number | null {
   }
 }
 
+/**
+ * Performs the initial auth bootstrap BEFORE React mounts.
+ * Call this once in main.tsx (await it) before rendering the app.
+ *
+ * By running the token refresh outside the React lifecycle we sidestep the
+ * Strict Mode double-invocation problem entirely: there is no async work left
+ * for AuthProvider to do on mount, so its effects are safe to run twice.
+ */
+export async function initializeAuth(): Promise<void> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return;
+
+  try {
+    const client = createRefreshClient();
+    const result = await client.auth.refresh.mutate({ refreshToken });
+    setAccessToken(result.accessToken);
+    setRefreshToken(result.refreshToken);
+  } catch {
+    clearRefreshToken();
+  }
+}
+
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(authReducer, {
-    user: null,
-    accessToken: null,
-    isLoading: true,
-  });
+  // initializeAuth() already ran before React mounted, so we can read the
+  // access token synchronously and start with isLoading: false.
+  const [state, dispatch] = useReducer(
+    authReducer,
+    undefined,
+    (): AuthState => ({
+      user: null,
+      accessToken: getAccessToken(),
+      isLoading: false,
+    })
+  );
 
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refreshClientRef = useRef<ReturnType<typeof createRefreshClient> | null>(null);
@@ -154,22 +182,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Silent refresh on mount
+  // Schedule the proactive background refresh for the already-bootstrapped token.
+  // No async work here — safe to run twice under React Strict Mode.
+  // scheduleRefresh() always clears any existing timer first, so double-invoke
+  // simply replaces the timer with an identical one.
   useEffect(() => {
-    const storedRefreshToken = getRefreshToken();
-    if (!storedRefreshToken) {
-      dispatch({ type: 'SET_LOADING', loading: false });
-      return;
+    const accessToken = getAccessToken();
+    const refreshToken = getRefreshToken();
+    if (accessToken && refreshToken) {
+      scheduleRefresh(accessToken, refreshToken);
     }
-
-    void (async () => {
-      dispatch({ type: 'SET_LOADING', loading: true });
-      const refreshed = await doRefresh(storedRefreshToken);
-      if (!refreshed) {
-        dispatch({ type: 'SET_LOADING', loading: false });
-      }
-    })();
-
     return () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };

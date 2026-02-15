@@ -93,17 +93,6 @@ jobs:
       - name: Type check
         run: pnpm run type-check
 
-      - name: Prisma migration consistency
-        run: |
-          cd apps/api
-          npx prisma migrate diff \
-            --from-migrations prisma/migrations \
-            --to-schema prisma/schema.prisma \
-            --exit-code \
-          || (echo "❌ Prisma schema and migrations are out of sync!" && echo "Run 'pnpm db:migrate:dev' to create a migration for pending changes." && exit 1)
-        env:
-          DATABASE_URL: postgresql://dummy:dummy@localhost/dummy
-
       - name: Build
         run: pnpm run build
 
@@ -155,6 +144,19 @@ jobs:
         run: pnpm run db:generate
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qoomb_test
+
+      - name: Prisma migration consistency
+        run: |
+          cd apps/api
+          npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema prisma/schema.prisma \
+            --shadow-database-url "$SHADOW_DATABASE_URL" \
+            --exit-code \
+          || (echo "❌ Prisma schema and migrations are out of sync!" && echo "Run 'pnpm db:migrate:dev' to create a migration for pending changes." && exit 1)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qoomb_test
+          SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qoomb_test_shadow
 
       - name: Run tests
         run: pnpm run test

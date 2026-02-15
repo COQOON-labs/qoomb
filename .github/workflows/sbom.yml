@@ -26,8 +26,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10.29.3
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -71,16 +69,3 @@ jobs:
             sbom.json
             sbom.xml
             THIRD-PARTY-LICENSES.txt
-
-      # Submit SBOM to GitHub Dependency Graph
-      - name: Submit SBOM to Dependency Graph
-        uses: advanced-security/sbom-generator-action@v1
-        id: sbom-action
-        continue-on-error: true
-
-      - name: Upload SBOM to Dependency Submission API
-        if: steps.sbom-action.outcome == 'success'
-        uses: actions/dependency-submission-action@v3
-        continue-on-error: true
-        with:
-          sbom-file: sbom.json

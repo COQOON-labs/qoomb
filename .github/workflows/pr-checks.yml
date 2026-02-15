@@ -3,11 +3,14 @@ name: PR Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  merge_group:
 
 jobs:
   validate-commits:
     name: Validate Commit Messages
     runs-on: ubuntu-latest
+    # Commit validation only makes sense for PRs, not merge group
+    if: github.event_name == 'pull_request'
 
     steps:
       - uses: actions/checkout@v6

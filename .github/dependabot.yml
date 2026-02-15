@@ -53,7 +53,7 @@ updates:
       - 'dependencies'
       - 'automated'
     reviewers:
-      - 'ben' # Replace with your GitHub username
+      - 'Ben-Gee'
     commit-message:
       prefix: 'chore'
       include: 'scope'
@@ -71,17 +71,3 @@ updates:
       - 'automated'
     commit-message:
       prefix: 'ci'
-
-  # Docker updates (if you add Dockerfile later)
-  - package-ecosystem: 'docker'
-    directory: '/'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-      time: '06:00'
-    open-pull-requests-limit: 5
-    labels:
-      - 'docker'
-      - 'automated'
-    commit-message:
-      prefix: 'chore'

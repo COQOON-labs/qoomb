@@ -17,6 +17,9 @@ on:
       - '.release-please-manifest.json'
       - 'package.json'
 
+permissions:
+  contents: read
+
 jobs:
   version-consistency:
     name: Check Version Consistency

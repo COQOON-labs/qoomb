@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -82,7 +82,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: qoomb_test
@@ -95,7 +95,7 @@ jobs:
           - 5432:5432
 
       redis:
-        image: redis:7
+        image: redis:8
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -111,7 +111,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'pnpm'
 
       - name: Install dependencies

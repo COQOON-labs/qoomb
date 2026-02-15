@@ -98,8 +98,8 @@
 | **Frontend**       | React 19 + Vite                | Fast HMR, large ecosystem     |
 | **Mobile**         | Capacitor                      | Native iOS/Android wrapper    |
 | **PWA**            | vite-plugin-pwa + Workbox      | Offline-first, installable    |
-| **Database**       | PostgreSQL 17                  | pgvector, JSONB, RLS          |
-| **Cache/Queue**    | Redis 7.4                      | Session store, pub/sub        |
+| **Database**       | PostgreSQL 18                  | pgvector, JSONB, RLS          |
+| **Cache/Queue**    | Redis 8                        | Session store, pub/sub        |
 | **ORM**            | Prisma                         | Type-safe, migrations         |
 | **Encryption**     | AES-256-GCM + libsodium        | Server-side + E2E             |
 | **Key Management** | Pluggable (Env/File/KMS/Vault) | Flexible, cloud-agnostic      |
@@ -194,7 +194,7 @@ qoomb/
 - NestJS backend
 - React 19 PWA frontend with vite-plugin-pwa
 - Capacitor mobile wrapper (iOS/Android)
-- Docker Compose (PostgreSQL 17 + Redis 7.4)
+- Docker Compose (PostgreSQL 18 + Redis 8)
 - Prisma with multi-schema
 - Shared UI component library (@qoomb/ui)
 - Local development with qoomb.localhost (Caddy + mkcert)

@@ -4,8 +4,8 @@ Native iOS and Android wrapper for the Qoomb web application using Capacitor.
 
 ## Prerequisites
 
-- Node.js >= 22
-- pnpm >= 9
+- Node.js >= 24
+- pnpm >= 10
 - For iOS: Xcode 15+ and CocoaPods
 - For Android: Android Studio with SDK 34+
 

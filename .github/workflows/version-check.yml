@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract APP_VERSION from App.tsx
         id: app_version
@@ -61,7 +61,7 @@ jobs:
     if: "!contains(github.event.pull_request.title, 'chore: Release')"
     steps:
       - name: Checkout base branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.base_ref }}
 
@@ -73,7 +73,7 @@ jobs:
           echo "📦 Base APP_VERSION: $BASE_VERSION"
 
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Get PR APP_VERSION
         id: pr_version

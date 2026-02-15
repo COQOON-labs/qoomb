@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:pg18
     container_name: qoomb-postgres
     restart: unless-stopped
     ports:
@@ -9,6 +9,7 @@ services:
       POSTGRES_USER: qoomb
       POSTGRES_PASSWORD: qoomb_dev_password
       POSTGRES_DB: qoomb
+      PGDATA: /var/lib/postgresql/data
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -19,7 +20,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7.4-alpine
+    image: redis:8-alpine
     container_name: qoomb-redis
     restart: unless-stopped
     ports:

@@ -4,8 +4,8 @@ A family organization platform with offline-first capabilities, hybrid encryptio
 
 ## Prerequisites
 
-- **Node.js** 20+ (LTS recommended)
-- **pnpm** 8+ (`npm install -g pnpm`)
+- **Node.js** 24+ (LTS)
+- **pnpm** 10+ (`npm install -g pnpm`)
 - **Docker** & **Docker Compose** (for PostgreSQL and Redis)
 
 ## Quick Start
@@ -158,10 +158,10 @@ When running in development mode (`pnpm dev`), a **Dev Tools panel** is availabl
 ### Technology Stack
 
 - **Backend**: NestJS, tRPC, Prisma, PostgreSQL (with pgvector), Redis
-- **Frontend**: React 18, Vite, TypeScript
+- **Frontend**: React 19, Vite, TypeScript
 - **Monorepo**: Turborepo, pnpm workspaces
-- **Database**: PostgreSQL 16 with pgvector extension
-- **Cache**: Redis 7
+- **Database**: PostgreSQL 18 with pgvector extension
+- **Cache**: Redis 8
 - **Encryption**: Hybrid (AES-256-GCM + libsodium)
 
 ## Architecture

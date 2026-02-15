@@ -8,7 +8,7 @@
 ## ✅ Was bereits erledigt ist
 
 - ✓ `.env` Datei erstellt mit sicheren, generierten Secrets
-- ✓ `docker-compose.yml` konfiguriert (PostgreSQL 16 + Redis 7)
+- ✓ `docker-compose.yml` konfiguriert (PostgreSQL 18 + Redis 8)
 - ✓ JWT Refresh Token System vollständig implementiert
 - ✓ Alle TypeScript Errors behoben
 - ✓ Security Features aktiviert (Rate Limiting, Account Lockout, Token Blacklisting)
@@ -33,8 +33,8 @@ docker-compose ps
 
 **Was passiert:**
 
-- PostgreSQL 17 mit pgvector Extension startet auf Port 5432
-- Redis 7.4 startet auf Port 6379
+- PostgreSQL 18 mit pgvector Extension startet auf Port 5432
+- Redis 8 startet auf Port 6379
 - UUID Extension wird aktiviert
 - Daten werden in Docker Volumes persistiert
 

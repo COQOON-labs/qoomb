@@ -9,9 +9,8 @@ services:
       POSTGRES_USER: qoomb
       POSTGRES_PASSWORD: qoomb_dev_password
       POSTGRES_DB: qoomb
-      PGDATA: /var/lib/postgresql/data
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U qoomb']

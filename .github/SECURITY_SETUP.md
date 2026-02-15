@@ -42,7 +42,7 @@ This document explains the security scanning tools configured for the Qoomb proj
 
 **Runs:**
 
-- On every push to `main` and `develop`
+- On every push to `main`
 - On every pull request
 - Weekly on Mondays at 06:00 UTC
 
@@ -95,7 +95,7 @@ pnpm audit --fix  # Auto-fix vulnerabilities
 
 **Runs:**
 
-- On every push to `main` and `develop`
+- On every push to `main`
 - On every pull request
 - Weekly on Mondays at 07:00 UTC
 

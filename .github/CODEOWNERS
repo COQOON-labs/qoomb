@@ -1,0 +1,13 @@
+# Default code owners for all files
+* @Ben-Gee
+
+# CI/CD workflows
+.github/ @Ben-Gee
+
+# Database schema and migrations
+apps/api/prisma/ @Ben-Gee
+
+# Security-critical modules
+apps/api/src/modules/encryption/ @Ben-Gee
+apps/api/src/modules/auth/ @Ben-Gee
+apps/api/src/common/guards/ @Ben-Gee

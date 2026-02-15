@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
   # Also run weekly to keep license info current
   schedule:
-    - cron: '0 6 * * 1' # Every Monday at 6:00 AM UTC
+    - cron: '0 8 * * 2' # Every Tuesday at 8:00 AM UTC
 
 permissions:
   contents: write

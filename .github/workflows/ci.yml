@@ -98,7 +98,7 @@ jobs:
           cd apps/api
           npx prisma migrate diff \
             --from-migrations prisma/migrations \
-            --to-schema-datamodel prisma/schema.prisma \
+            --to-schema prisma/schema.prisma \
             --exit-code \
           || (echo "❌ Prisma schema and migrations are out of sync!" && echo "Run 'pnpm db:migrate:dev' to create a migration for pending changes." && exit 1)
         env:

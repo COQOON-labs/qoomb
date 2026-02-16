@@ -25,7 +25,7 @@
     "db:generate": "dotenv -e ../../.env -- prisma generate",
     "db:push": "dotenv -e ../../.env -- prisma db push",
     "db:seed": "dotenv -e ../../.env -- prisma db seed",
-    "db:studio": "dotenv -e ../../.env -- prisma studio"
+    "db:studio": "dotenv -e ../../.env -- prisma studio --port 5555 --browser none"
   },
   "dependencies": {
     "@fastify/helmet": "^13.0.2",

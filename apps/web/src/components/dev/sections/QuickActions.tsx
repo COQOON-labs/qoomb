@@ -1,5 +1,63 @@
 import { useState } from 'react';
 
+import { getDevEnvironment } from '../devEnvironment';
+
+async function isPrismaStudioRunning(url: string): Promise<boolean> {
+  try {
+    // mode: 'no-cors' → resolves with opaque response if server is up,
+    // rejects with TypeError (connection refused) if not running
+    await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(1500) });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+type PrismaStudioButtonProps = {
+  actionBtn: string;
+  addLog: (message: string) => void;
+};
+
+type StudioStatus = 'idle' | 'checking' | 'open' | 'offline';
+
+function PrismaStudioButton({ actionBtn, addLog }: PrismaStudioButtonProps) {
+  const [status, setStatus] = useState<StudioStatus>('idle');
+  const { prismaStudioUrl } = getDevEnvironment();
+
+  const handleClick = async () => {
+    setStatus('checking');
+    addLog('🔍 Checking if Prisma Studio is running...');
+    const running = await isPrismaStudioRunning(prismaStudioUrl);
+    if (running) {
+      setStatus('open');
+      addLog('✓ Prisma Studio is running — opening...');
+      window.open(prismaStudioUrl, '_blank', 'noopener,noreferrer');
+      setTimeout(() => setStatus('idle'), 3000);
+    } else {
+      setStatus('offline');
+      addLog('✗ Prisma Studio is not running. Start it with: pnpm prisma studio');
+      setTimeout(() => setStatus('idle'), 5000);
+    }
+  };
+
+  const label: Record<StudioStatus, string> = {
+    idle: '🗄️ Open Prisma Studio',
+    checking: '🔍 Checking...',
+    open: '✓ Opened!',
+    offline: '✗ Not running — start with: pnpm prisma studio',
+  };
+
+  return (
+    <button
+      onClick={() => void handleClick()}
+      className={actionBtn}
+      disabled={status === 'checking'}
+    >
+      {label[status]}
+    </button>
+  );
+}
+
 const actionBtn =
   'bg-dev-surface border border-white/[0.12] text-white/75 px-3 py-2 rounded-md cursor-pointer text-xs font-semibold w-full text-left hover:bg-white/8 hover:border-primary transition-all duration-200';
 
@@ -71,14 +129,7 @@ export function QuickActions() {
           🔄 Reload Page
         </button>
 
-        <a
-          href="http://localhost:5555"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${actionBtn} block text-center no-underline`}
-        >
-          🗄️ Open Prisma Studio
-        </a>
+        <PrismaStudioButton actionBtn={actionBtn} addLog={addLog} />
 
         <button onClick={() => setShowLogs(!showLogs)} className={actionBtn}>
           📋 {showLogs ? 'Hide' : 'Show'} Action Logs

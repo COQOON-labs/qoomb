@@ -179,28 +179,28 @@ importers:
     dependencies:
       '@capacitor/app':
         specifier: ^7.1.2
-        version: 7.1.2(@capacitor/core@7.4.5)
+        version: 7.1.2(@capacitor/core@7.5.0)
       '@capacitor/core':
-        specifier: ^7.0.1
-        version: 7.4.5
+        specifier: ^7.5.0
+        version: 7.5.0
       '@capacitor/haptics':
         specifier: ^7.0.1
-        version: 7.0.3(@capacitor/core@7.4.5)
+        version: 7.0.3(@capacitor/core@7.5.0)
       '@capacitor/keyboard':
         specifier: ^7.0.1
-        version: 7.0.4(@capacitor/core@7.4.5)
+        version: 7.0.4(@capacitor/core@7.5.0)
       '@capacitor/preferences':
         specifier: ^7.0.4
-        version: 7.0.4(@capacitor/core@7.4.5)
+        version: 7.0.4(@capacitor/core@7.5.0)
       '@capacitor/push-notifications':
         specifier: ^7.0.5
-        version: 7.0.5(@capacitor/core@7.4.5)
+        version: 7.0.5(@capacitor/core@7.5.0)
       '@capacitor/splash-screen':
         specifier: ^7.0.5
-        version: 7.0.5(@capacitor/core@7.4.5)
+        version: 7.0.5(@capacitor/core@7.5.0)
       '@capacitor/status-bar':
         specifier: ^7.0.5
-        version: 7.0.5(@capacitor/core@7.4.5)
+        version: 7.0.5(@capacitor/core@7.5.0)
     devDependencies:
       '@capacitor/cli':
         specifier: ^7.5.0
@@ -1063,8 +1063,8 @@ packages:
     engines: {node: '>=20.0.0'}
     hasBin: true
 
-  '@capacitor/core@7.4.5':
-    resolution: {integrity: sha512-JnUywi0WRbqm4QYoplNsMQ7KAVuyrQFha0dOH9YDVCyrVHUvPcvrnK+9j5elUMgy+pOh3ve+pk6BVoySr91c+A==}
+  '@capacitor/core@7.5.0':
+    resolution: {integrity: sha512-4Y4trISe2Bp3lwsoGFoQIvgX4hiZO8S1Slmbz6oFaMxAuEc4noipQGCQx974PF4glwVVe/8+H3P9iEmCXtrUgA==}
 
   '@capacitor/haptics@7.0.3':
     resolution: {integrity: sha512-6O5W4jtYKPGrulqt3pEeXKH1vWT5deSUoiiN2sVj7F6UgrEOxCmm06XS07Eeum0lDXEmksKARwtA+iQwHPswtA==}
@@ -7205,9 +7205,9 @@ snapshots:
 
   '@borewit/text-codec@0.2.1': {}
 
-  '@capacitor/app@7.1.2(@capacitor/core@7.4.5)':
+  '@capacitor/app@7.1.2(@capacitor/core@7.5.0)':
     dependencies:
-      '@capacitor/core': 7.4.5
+      '@capacitor/core': 7.5.0
 
   '@capacitor/cli@7.5.0':
     dependencies:
@@ -7231,33 +7231,33 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@capacitor/core@7.4.5':
+  '@capacitor/core@7.5.0':
     dependencies:
       tslib: 2.8.1
 
-  '@capacitor/haptics@7.0.3(@capacitor/core@7.4.5)':
+  '@capacitor/haptics@7.0.3(@capacitor/core@7.5.0)':
     dependencies:
-      '@capacitor/core': 7.4.5
+      '@capacitor/core': 7.5.0
 
-  '@capacitor/keyboard@7.0.4(@capacitor/core@7.4.5)':
+  '@capacitor/keyboard@7.0.4(@capacitor/core@7.5.0)':
     dependencies:
-      '@capacitor/core': 7.4.5
+      '@capacitor/core': 7.5.0
 
-  '@capacitor/preferences@7.0.4(@capacitor/core@7.4.5)':
+  '@capacitor/preferences@7.0.4(@capacitor/core@7.5.0)':
     dependencies:
-      '@capacitor/core': 7.4.5
+      '@capacitor/core': 7.5.0
 
-  '@capacitor/push-notifications@7.0.5(@capacitor/core@7.4.5)':
+  '@capacitor/push-notifications@7.0.5(@capacitor/core@7.5.0)':
     dependencies:
-      '@capacitor/core': 7.4.5
+      '@capacitor/core': 7.5.0
 
-  '@capacitor/splash-screen@7.0.5(@capacitor/core@7.4.5)':
+  '@capacitor/splash-screen@7.0.5(@capacitor/core@7.5.0)':
     dependencies:
-      '@capacitor/core': 7.4.5
+      '@capacitor/core': 7.5.0
 
-  '@capacitor/status-bar@7.0.5(@capacitor/core@7.4.5)':
+  '@capacitor/status-bar@7.0.5(@capacitor/core@7.5.0)':
     dependencies:
-      '@capacitor/core': 7.4.5
+      '@capacitor/core': 7.5.0
 
   '@chevrotain/cst-dts-gen@10.5.0':
     dependencies:

@@ -1,12 +1,11 @@
+import { getDevEnvironment } from '../devEnvironment';
+
 export function EnvironmentInfo() {
-  const origin = window.location.origin;
-  const tRPCUrl = import.meta.env.VITE_API_URL
-    ? `${import.meta.env.VITE_API_URL}/trpc`
-    : `${origin}/trpc`;
+  const { origin, trpcUrl } = getDevEnvironment();
 
   const envVars = {
     'window.location.origin': origin,
-    'tRPC URL': tRPCUrl,
+    'tRPC URL': trpcUrl,
     VITE_API_URL: import.meta.env.VITE_API_URL || '(not set - using origin)',
     NODE_ENV: import.meta.env.MODE,
     DEV: String(import.meta.env.DEV),

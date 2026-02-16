@@ -127,20 +127,27 @@ setup-extended:
 _dev-stop:
     @pkill -f "{{project_dir}}/apps/web" 2>/dev/null || true
     @pkill -f "{{project_dir}}/apps/api" 2>/dev/null || true
+    @pkill -f "prisma studio" 2>/dev/null || true
 
 # Start development servers on localhost
 dev: _dev-stop docker-up
-    @echo ""
-    @echo -e "{{green}}========================================{{nc}}"
-    @echo -e "{{green}}  🚀 Development servers starting...{{nc}}"
-    @echo -e "{{green}}========================================{{nc}}"
-    @echo ""
-    @echo -e "{{yellow}}Access:{{nc}}"
-    @echo -e "  💻 Desktop:  {{green}}http://localhost:5173{{nc}}"
-    @LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo ""); \
-    if [ -n "$LOCAL_IP" ]; then echo -e "  📱 Mobile:   {{green}}http://$LOCAL_IP:5173{{nc}} (no HTTPS — limited PWA)"; fi
-    @echo ""
-    @(sleep 5 && (open http://localhost:5173 2>/dev/null || xdg-open http://localhost:5173 2>/dev/null || true)) &
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo ""
+    echo -e "\033[0;32m========================================\033[0m"
+    echo -e "\033[0;32m  🚀 Development servers starting...\033[0m"
+    echo -e "\033[0;32m========================================\033[0m"
+    echo ""
+    echo -e "\033[1;33mAccess:\033[0m"
+    echo -e "  💻 Desktop:      \033[0;32mhttp://localhost:5173\033[0m"
+    LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "")
+    if [ -n "$LOCAL_IP" ]; then echo -e "  📱 Mobile:       \033[0;32mhttp://$LOCAL_IP:5173\033[0m (no HTTPS — limited PWA)"; fi
+    echo -e "  🗄️  DB Studio:    \033[0;32mhttp://localhost:5555\033[0m (starting in background)"
+    echo ""
+    (sleep 4 && pnpm --filter @qoomb/api db:studio) >/dev/null 2>&1 &
+    STUDIO_PID=$!
+    trap "kill $STUDIO_PID 2>/dev/null || true" EXIT INT TERM
+    (sleep 5 && (open http://localhost:5173 2>/dev/null || xdg-open http://localhost:5173 2>/dev/null || true)) &
     pnpm dev
 
 # Start with HTTPS + local domain (requires just setup-extended first)
@@ -160,12 +167,16 @@ dev-extended: _dev-stop
     echo -e "\033[0;32m  🚀 qoomb.localhost is ready!\033[0m"
     echo -e "\033[0;32m========================================\033[0m"
     echo ""
-    echo -e "  💻 Desktop:  \033[0;32mhttps://qoomb.localhost:8443\033[0m"
+    echo -e "  💻 Desktop:      \033[0;32mhttps://qoomb.localhost:8443\033[0m"
     LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "")
     if [ -n "$LOCAL_IP" ]; then
-        echo -e "  📱 Mobile:   \033[0;32mhttps://$LOCAL_IP:8443\033[0m (same WiFi)"
+        echo -e "  📱 Mobile:       \033[0;32mhttps://$LOCAL_IP:8443\033[0m (same WiFi)"
     fi
+    echo -e "  🗄️  DB Studio:    \033[0;32mhttp://localhost:5555\033[0m (starting in background)"
     echo ""
+    (sleep 4 && pnpm --filter @qoomb/api db:studio) >/dev/null 2>&1 &
+    STUDIO_PID=$!
+    trap "kill $STUDIO_PID 2>/dev/null || true" EXIT INT TERM
     (sleep 5 && (open https://qoomb.localhost:8443 2>/dev/null || xdg-open https://qoomb.localhost:8443 2>/dev/null || true)) &
     pnpm dev
 

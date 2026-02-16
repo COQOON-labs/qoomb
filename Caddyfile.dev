@@ -20,10 +20,10 @@ qoomb.localhost:8443 {
     # Frontend (Vite dev server)
     handle {
         reverse_proxy 127.0.0.1:5173 {
-            # WebSocket support for Vite HMR
+            # Retry during Vite startup and HMR restarts (avoids 502 on cold start)
+            lb_try_duration 60s
+            lb_try_interval 500ms
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
 
@@ -32,8 +32,6 @@ qoomb.localhost:8443 {
         uri strip_prefix /api
         reverse_proxy 127.0.0.1:3001 {
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
 
@@ -41,8 +39,6 @@ qoomb.localhost:8443 {
     handle /trpc/* {
         reverse_proxy 127.0.0.1:3001 {
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
 
@@ -66,8 +62,6 @@ api.qoomb.localhost:8443 {
 
     reverse_proxy 127.0.0.1:3001 {
         header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
     }
 }
 
@@ -84,10 +78,11 @@ api.qoomb.localhost:8443 {
 
     # Frontend (Vite dev server)
     reverse_proxy localhost:5173 {
+        # Retry during Vite startup and HMR restarts (avoids 502 on cold start)
+        lb_try_duration 60s
+        lb_try_interval 500ms
         header_up Host {host}
         header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
     }
 
     # Backend API (tRPC endpoints) - use handle instead of handle_path to preserve /trpc prefix
@@ -95,8 +90,6 @@ api.qoomb.localhost:8443 {
         reverse_proxy 127.0.0.1:3001 {
             header_up Host {host}
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
 
@@ -105,8 +98,6 @@ api.qoomb.localhost:8443 {
         reverse_proxy 127.0.0.1:3001 {
             header_up Host {host}
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
 

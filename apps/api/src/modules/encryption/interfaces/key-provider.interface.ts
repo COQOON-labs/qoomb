@@ -23,6 +23,17 @@ export interface KeyProvider {
   getMasterKey(): Promise<Buffer>;
 
   /**
+   * Optional: Load all key versions for rotation support.
+   *
+   * Providers that implement this allow running the app with multiple
+   * concurrent key versions — old versions for decryption of existing data,
+   * the current version for all new encryptions.
+   *
+   * @returns currentVersion and a Map of version → 32-byte key Buffer
+   */
+  getVersionedKeys?(): Promise<{ currentVersion: number; keys: Map<number, Buffer> }>;
+
+  /**
    * Optional: Rotate to a new key
    *
    * Not all providers support key rotation.
@@ -59,13 +70,14 @@ export interface EncryptedData {
   version: number;
 
   /**
-   * Provider that was used (for audit/debugging)
+   * Provider that was used (for audit/debugging).
+   * Not stored in the serialized format — undefined when deserialized from storage.
    */
-  provider: string;
+  provider?: string;
 
   /**
    * The encrypted data
-   * Format: [IV (16 bytes)][AuthTag (16 bytes)][Ciphertext]
+   * Format: [IV (12 bytes)][AuthTag (16 bytes)][Ciphertext]
    */
   data: Buffer;
 }

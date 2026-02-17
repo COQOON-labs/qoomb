@@ -33,10 +33,15 @@ export class EncryptionService implements OnModuleInit {
   private readonly logger = new Logger(EncryptionService.name);
   private readonly keyProvider: KeyProvider;
   private masterKey: Buffer | null = null;
-  private readonly currentKeyVersion = 1;
+  private currentKeyVersion = 1;
 
   // For key rotation: Map of key version -> master key
   private readonly keyVersions = new Map<number, Buffer>();
+
+  // Cache for derived keys: `${version}:${info}:${scopeId}` -> 32-byte Buffer.
+  // Safe: entries are deterministic and bounded by (active scopes × key versions × info strings).
+  // Cleared automatically on app restart (service is singleton, not request-scoped).
+  private readonly derivedKeyCache = new Map<string, Buffer>();
 
   constructor() {
     // Factory creates the right provider based on KEY_PROVIDER env var
@@ -55,19 +60,31 @@ export class EncryptionService implements OnModuleInit {
    */
   async onModuleInit() {
     try {
-      // Step 1: Load master key
+      // Step 1: Load master key(s)
       this.logger.log('Loading master encryption key...');
-      this.masterKey = await this.keyProvider.getMasterKey();
-      this.keyVersions.set(this.currentKeyVersion, this.masterKey);
+      if (this.keyProvider.getVersionedKeys) {
+        // Rotation-aware path: load all available key versions
+        const { currentVersion, keys } = await this.keyProvider.getVersionedKeys();
+        this.currentKeyVersion = currentVersion;
+        for (const [version, key] of keys) {
+          this.keyVersions.set(version, key);
+        }
+        this.masterKey = keys.get(currentVersion) ?? null;
+      } else {
+        // Fallback path: single key, version 1
+        this.masterKey = await this.keyProvider.getMasterKey();
+        this.keyVersions.set(this.currentKeyVersion, this.masterKey);
+      }
 
       // Step 2: Run self-test
       this.logger.log('Running encryption self-test...');
       this.runSelfTest();
 
+      const loadedVersions = [...this.keyVersions.keys()].sort().join(', ');
       this.logger.log(
         '✅ Encryption service initialized successfully ' +
           `(provider: ${this.keyProvider.getName()}, ` +
-          `key version: ${this.currentKeyVersion})`
+          `versions loaded: [${loadedVersions}], current: ${this.currentKeyVersion})`
       );
     } catch (error) {
       this.logger.error('❌ Failed to initialize encryption service');
@@ -86,6 +103,41 @@ export class EncryptionService implements OnModuleInit {
           '═══════════════════════════════════════════════════════\n'
       );
     }
+  }
+
+  /**
+   * Derive a scope-specific encryption key from the master key
+   *
+   * Generic HKDF helper used by both hive and user key derivation.
+   *
+   * @param scopeId  - UUID of the hive or user
+   * @param info     - Context string ("qoomb-hive-encryption" or "qoomb-user-encryption")
+   * @param keyVersion - Key version to use (default: current)
+   * @returns 32-byte derived key
+   */
+  private deriveKey(scopeId: string, info: string, keyVersion = this.currentKeyVersion): Buffer {
+    const cacheKey = `${keyVersion}:${info}:${scopeId}`;
+    const cached = this.derivedKeyCache.get(cacheKey);
+    if (cached) return cached;
+
+    const masterKey = this.keyVersions.get(keyVersion);
+
+    if (!masterKey) {
+      throw new Error(
+        `Key version ${keyVersion} not available. ` + `Current version: ${this.currentKeyVersion}`
+      );
+    }
+
+    const derived = crypto.hkdfSync(
+      'sha256',
+      masterKey,
+      Buffer.from(scopeId),
+      Buffer.from(info),
+      32
+    );
+    const key = Buffer.from(derived);
+    this.derivedKeyCache.set(cacheKey, key);
+    return key;
   }
 
   /**
@@ -109,23 +161,7 @@ export class EncryptionService implements OnModuleInit {
    * @returns 32-byte derived key
    */
   private deriveHiveKey(hiveId: string, keyVersion = this.currentKeyVersion): Buffer {
-    const masterKey = this.keyVersions.get(keyVersion);
-
-    if (!masterKey) {
-      throw new Error(
-        `Key version ${keyVersion} not available. ` + `Current version: ${this.currentKeyVersion}`
-      );
-    }
-
-    // HKDF: Derive hive-specific key
-    const derived = crypto.hkdfSync(
-      'sha256', // Hash algorithm
-      masterKey, // Input key material
-      Buffer.from(hiveId), // Salt (hive-specific)
-      Buffer.from('qoomb-hive-encryption'), // Info string
-      32 // Output length (32 bytes = 256 bits)
-    );
-    return Buffer.from(derived);
+    return this.deriveKey(hiveId, 'qoomb-hive-encryption', keyVersion);
   }
 
   /**
@@ -136,7 +172,7 @@ export class EncryptionService implements OnModuleInit {
    * - 96-bit random IV (initialization vector)
    * - 128-bit authentication tag
    *
-   * Output format: [IV (16)][AuthTag (16)][Ciphertext]
+   * Output format: [IV (12)][AuthTag (16)][Ciphertext]
    *
    * @param plaintext - Data to encrypt
    * @param hiveId - UUID of the hive
@@ -198,6 +234,84 @@ export class EncryptionService implements OnModuleInit {
     decrypted = Buffer.concat([decrypted, decipher.final()]);
 
     return decrypted.toString('utf8');
+  }
+
+  // ── User-Scoped Encryption ──────────────────────────────────────────────────
+
+  /**
+   * Encrypt a field for a specific user.
+   *
+   * Uses the same AES-256-GCM scheme as encrypt(), but derives the key from
+   * the userId instead of the hiveId.  This isolates user PII (email, fullName)
+   * from hive data — even a compromise of one user's key does not affect others.
+   *
+   * @param plaintext - Data to encrypt
+   * @param userId    - UUID of the user
+   * @returns Serialized storage string (same v{version}:{base64} format)
+   */
+  encryptForUser(plaintext: string, userId: string): string {
+    if (!plaintext) {
+      throw new Error('encryptForUser: plaintext must not be empty');
+    }
+    const userKey = this.deriveKey(userId, 'qoomb-user-encryption');
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', userKey, iv);
+    let encrypted = cipher.update(plaintext, 'utf8');
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    const data = Buffer.concat([iv, authTag, encrypted]);
+    return this.serializeToStorage({
+      version: this.currentKeyVersion,
+      provider: this.keyProvider.getName(),
+      data,
+    });
+  }
+
+  /**
+   * Decrypt a user-specific encrypted field.
+   *
+   * @param stored  - Storage string from the database
+   * @param userId  - UUID of the user
+   * @returns Decrypted plaintext
+   */
+  decryptForUser(stored: string, userId: string): string {
+    const encryptedData = this.parseFromStorage(stored);
+    const userKey = this.deriveKey(userId, 'qoomb-user-encryption', encryptedData.version);
+    const iv = encryptedData.data.subarray(0, 12);
+    const authTag = encryptedData.data.subarray(12, 28);
+    const ciphertext = encryptedData.data.subarray(28);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', userKey, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(ciphertext);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString('utf8');
+  }
+
+  /**
+   * Compute a deterministic HMAC-SHA256 blind index for an email address.
+   *
+   * The HMAC key is derived from the master key with a fixed info string, so
+   * the hash is only reproducible by someone who knows the master key.
+   * The input is normalised (lowercase + trimmed) before hashing.
+   *
+   * Result is a 64-character hex string suitable for a VARCHAR(64) column
+   * with a UNIQUE index (used for O(1) lookups without storing plaintext).
+   *
+   * @param email - Raw email address (any case, optional whitespace)
+   * @returns 64-character lowercase hex string
+   */
+  hashEmail(email: string): string {
+    const masterKey = this.keyVersions.get(this.currentKeyVersion);
+    if (!masterKey) {
+      throw new Error(
+        `Key version ${this.currentKeyVersion} not available. ` +
+          `Encryption service may not be initialized.`
+      );
+    }
+    const hmacKey = Buffer.from(
+      crypto.hkdfSync('sha256', masterKey, Buffer.alloc(0), Buffer.from('qoomb-email-hash'), 32)
+    );
+    return crypto.createHmac('sha256', hmacKey).update(email.toLowerCase().trim()).digest('hex');
   }
 
   /**
@@ -270,6 +384,57 @@ export class EncryptionService implements OnModuleInit {
         );
       }
 
+      // Test 5: User encryption round-trip
+      const testUserId = crypto.randomUUID();
+      const encryptedForUser = this.encryptForUser(testData, testUserId);
+      const decryptedForUser = this.decryptForUser(encryptedForUser, testUserId);
+      if (decryptedForUser !== testData) {
+        throw new Error(
+          'User encryption round-trip failed.\n' +
+            `Expected: ${testData}\n` +
+            `Got: ${decryptedForUser}`
+        );
+      }
+
+      // Test 6: Multi-version decryption (only when multiple key versions are loaded)
+      // Verifies that data encrypted with an older key version can still be decrypted
+      // after a key rotation — the core guarantee of the versioned key scheme.
+      if (this.keyVersions.size > 1) {
+        const oldVersions = [...this.keyVersions.keys()].filter(
+          (v) => v !== this.currentKeyVersion
+        );
+        const oldVersion = oldVersions[0]; // test against the first non-current version
+        // Encrypt directly with the old key so the stored version tag matches
+        const oldKey = this.deriveHiveKey(testHiveId, oldVersion);
+        const ivOld = crypto.randomBytes(12);
+        const cipherOld = crypto.createCipheriv('aes-256-gcm', oldKey, ivOld);
+        let encOld = cipherOld.update(testData, 'utf8');
+        encOld = Buffer.concat([encOld, cipherOld.final()]);
+        const tagOld = cipherOld.getAuthTag();
+        const dataOld = Buffer.concat([ivOld, tagOld, encOld]);
+        const storedOld = this.serializeToStorage({ version: oldVersion, data: dataOld });
+        const parsedOld = this.parseFromStorage(storedOld);
+        const decryptedOld = this.decrypt(parsedOld, testHiveId);
+        if (decryptedOld !== testData) {
+          throw new Error(
+            `Multi-version decryption failed: could not decrypt V${oldVersion} data with current setup.\n` +
+              `Expected: ${testData}\n` +
+              `Got: ${decryptedOld}`
+          );
+        }
+      }
+
+      // Test 7: Email hash is deterministic and case-insensitive
+      const testEmail = 'Test@Example.COM';
+      const hash1 = this.hashEmail(testEmail);
+      const hash2 = this.hashEmail(testEmail.toLowerCase());
+      if (hash1 !== hash2) {
+        throw new Error('Email hash is not case-insensitive (hashEmail normalization failed).');
+      }
+      if (hash1.length !== 64) {
+        throw new Error(`Email hash has unexpected length: ${hash1.length} (expected 64).`);
+      }
+
       this.logger.log('✅ Encryption self-test passed');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -326,7 +491,6 @@ export class EncryptionService implements OnModuleInit {
 
     return {
       version: parseInt(match[1], 10),
-      provider: this.keyProvider.getName(),
       data: Buffer.from(match[2], 'base64'),
     };
   }

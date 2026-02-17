@@ -21,6 +21,7 @@ You need a commercial license if you want to use Qoomb as:
 - Your organization has 10 or more employees (full-time, part-time, contractors)
 - You want to use Qoomb internally for your company
 - **Example:** A company with 50 employees wants to use Qoomb as an internal hive platform
+- **Note:** This threshold applies to **organizations only**. Families of any size are exempt — see the Family Use free tier below.
 
 ### 2. Hosted Service (SaaS)
 
@@ -45,6 +46,7 @@ The following uses are **free** and **do not require a commercial license**:
 ✅ **Small Organizations** - Organizations with **fewer than 10 employees**
 ✅ **Non-Profit** - Non-profit organizations with < 10 employees
 ✅ **Education** - Educational and research purposes
+✅ **Families** - Families of **any size** for strictly private, non-commercial use (no money charged, no advertising, no services to third parties)
 
 See [LICENSE.md](LICENSE.md) for complete details.
 
@@ -126,9 +128,13 @@ If you need a commercial license, please contact:
 
 **A:** You have a **90-day grace period** from the time you reach 10 employees to obtain a commercial license. We understand companies grow, and we want to make the transition smooth.
 
-### Q: I run Qoomb for my family and friends (< 10 people). Do I need a license?
+### Q: I run Qoomb for my family. Do I need a license?
 
-**A:** **No**, as long as it's non-commercial (no money charged, no advertising), this is free personal use.
+**A:** **No** — families are exempt regardless of size, as long as the use is strictly private and non-commercial: no money charged, no advertising revenue, and no services provided to third parties. A family of 20 people is treated the same as a family of 4.
+
+### Q: We are a large family with 15 members. Does the 10-employee threshold apply to us?
+
+**A:** **No.** The 10-employee threshold applies to **organizations** (companies, associations, businesses). Families are explicitly exempt from this limit. You can use Qoomb for free as long as it is for your family's own private, non-commercial use.
 
 ### Q: I'm a freelancer using Qoomb for my projects. Do I need a license?
 

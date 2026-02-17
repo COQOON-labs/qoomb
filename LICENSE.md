@@ -15,12 +15,13 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 3. **Small Organizations**: Use within organizations with **fewer than 10 employees**
 4. **Non-Profit**: Use by non-profit organizations with fewer than 10 employees
 5. **Education**: Use for educational and research purposes
+6. **Family Use**: Use by families of **any size** for strictly private, non-commercial purposes. The hive must be used solely for the family's own internal organization — no money charged, no advertising revenue, no commercial benefit of any kind, and no providing of services to third parties. See the "Family" definition below.
 
 ### Restricted Use (commercial license required):
 
 The following uses require a separate commercial license agreement with Benjamin Gröner:
 
-1. **Large Organizations**: Use within organizations with **10 or more employees** for internal purposes
+1. **Large Organizations**: Use within organizations with **10 or more employees** for internal purposes. The employee threshold applies to organizations, **not to families** — see Permitted Use item 6.
 2. **Hosted Service**: Providing the Software as a hosted or managed service to third parties (SaaS)
 3. **Redistribution**: Distribution or sale of the Software as part of a commercial product or service
 
@@ -79,7 +80,8 @@ See also: [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)
 ## Definitions
 
 - **Employees**: Full-time, part-time, and contract workers engaged by the organization
-- **Organization**: Any legal or natural person using the Software
+- **Organization**: Any legal or natural person using the Software for business, professional, or organizational purposes
+- **Family**: Persons related by blood, marriage, or adoption, or persons who consider themselves a family unit (e.g., a shared household). Family use is exclusively for private, non-commercial purposes as defined in Permitted Use item 6.
 - **Hosted Service**: Providing the Software over the Internet as a service to third parties
 - **Contribution**: Any original work of authorship, including any modifications or additions to existing work, that is intentionally submitted for inclusion in the Software
 

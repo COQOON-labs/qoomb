@@ -242,6 +242,7 @@ See [claude.md](claude.md) for detailed architecture documentation, including:
 - Small organizations with **< 10 employees**
 - Non-profit organizations with < 10 employees
 - Educational and research purposes
+- **Families of any size** — strictly private, non-commercial use (the 10-employee threshold does not apply to families)
 
 ❌ **Requires commercial license for:**
 

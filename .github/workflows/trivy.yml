@@ -16,13 +16,17 @@ concurrency:
 
 permissions:
   contents: read
-  security-events: write # For uploading SARIF results
 
 jobs:
   trivy-scan:
     name: Trivy Vulnerability Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    # Job-level: only what's needed
+    permissions:
+      contents: read
+      security-events: write # Upload SARIF results
 
     steps:
       - name: Checkout repository
@@ -43,7 +47,7 @@ jobs:
 
       # Upload filesystem scan results to GitHub Security tab
       - name: Upload Trivy (Filesystem) results to GitHub Security
-        uses: github/codeql-action/upload-sarif@9da17a5aa4abec2340d6e6c8d8efb0770b1c9cb8 # v4.32.3
+        uses: github/codeql-action/upload-sarif@9e907b5e64f6b83e7804b09294d44122997950d6 # v4.32.3
         if: always()
         with:
           sarif_file: 'trivy-results-fs.sarif'
@@ -62,7 +66,7 @@ jobs:
 
       # Upload config scan results
       - name: Upload Trivy (Config) results to GitHub Security
-        uses: github/codeql-action/upload-sarif@9da17a5aa4abec2340d6e6c8d8efb0770b1c9cb8 # v4.32.3
+        uses: github/codeql-action/upload-sarif@9e907b5e64f6b83e7804b09294d44122997950d6 # v4.32.3
         if: always()
         with:
           sarif_file: 'trivy-results-config.sarif'
@@ -103,7 +107,7 @@ jobs:
           exit-code: '1' # Fail if secrets are found - this is critical!
 
       - name: Upload Trivy secret scan results
-        uses: github/codeql-action/upload-sarif@9da17a5aa4abec2340d6e6c8d8efb0770b1c9cb8 # v4.32.3
+        uses: github/codeql-action/upload-sarif@9e907b5e64f6b83e7804b09294d44122997950d6 # v4.32.3
         if: always()
         with:
           sarif_file: 'trivy-secret-results.sarif'

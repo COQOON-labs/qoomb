@@ -1,7 +1,6 @@
 # Qoomb - Privacy-First Family Organization Platform
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/COQOON-labs/qoomb/badge)](https://securityscorecards.dev/viewer/?uri=github.com/COQOON-labs/qoomb)
-[![OpenSSF Baseline](https://www.bestpractices.dev/projects/11964/baseline)](https://www.bestpractices.dev/projects/11964)
 [![CI](https://github.com/COQOON-labs/qoomb/actions/workflows/ci.yml/badge.svg)](https://github.com/COQOON-labs/qoomb/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/COQOON-labs/qoomb/actions/workflows/codeql.yml/badge.svg)](https://github.com/COQOON-labs/qoomb/actions/workflows/codeql.yml)
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { type Event, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -67,6 +67,8 @@ export interface UpdateEventData {
  */
 @Injectable()
 export class EventsService {
+  private readonly logger = new Logger(EventsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly enc: EncryptionService
@@ -187,7 +189,9 @@ export class EventsService {
     try {
       return this.enc.decrypt(this.enc.parseFromStorage(value), hiveId);
     } catch {
-      // Graceful fallback: return as-is if data is not encrypted (e.g. migration window)
+      // Migration window: field not yet encrypted. Log so operators can track
+      // progress and know when it is safe to enable STRICT_ENCRYPTION mode.
+      this.logger.warn(`Plaintext fallback for hive ${hiveId} — field not yet encrypted`);
       return value;
     }
   }

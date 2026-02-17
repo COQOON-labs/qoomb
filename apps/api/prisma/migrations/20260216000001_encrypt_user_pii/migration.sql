@@ -16,8 +16,10 @@ ALTER TABLE "users" DROP COLUMN IF EXISTS "nickname";
 ALTER TABLE "users" DROP COLUMN IF EXISTS "birthday";
 ALTER TABLE "users" DROP COLUMN IF EXISTS "avatar_url";
 
--- email: remove unique constraint, widen to TEXT for ciphertext
-ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_email_key";
+-- email: remove unique index, widen to TEXT for ciphertext.
+-- The init migration created this as CREATE UNIQUE INDEX (not ADD CONSTRAINT),
+-- so DROP INDEX is required — DROP CONSTRAINT would silently no-op.
+DROP INDEX IF EXISTS "users_email_key";
 ALTER TABLE "users" ALTER COLUMN "email" TYPE TEXT;
 
 -- email_hash: blind index for deterministic lookups (nullable during migration window)

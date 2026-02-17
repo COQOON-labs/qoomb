@@ -26,11 +26,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
       # Scan filesystem for vulnerabilities
       - name: Run Trivy vulnerability scanner (Filesystem)
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284 # 0.34.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -43,7 +43,7 @@ jobs:
 
       # Upload filesystem scan results to GitHub Security tab
       - name: Upload Trivy (Filesystem) results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@9da17a5aa4abec2340d6e6c8d8efb0770b1c9cb8 # v4.32.3
         if: always()
         with:
           sarif_file: 'trivy-results-fs.sarif'
@@ -51,7 +51,7 @@ jobs:
 
       # Scan configuration files (IaC)
       - name: Run Trivy vulnerability scanner (Config)
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284 # 0.34.0
         with:
           scan-type: 'config'
           scan-ref: '.'
@@ -62,7 +62,7 @@ jobs:
 
       # Upload config scan results
       - name: Upload Trivy (Config) results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@9da17a5aa4abec2340d6e6c8d8efb0770b1c9cb8 # v4.32.3
         if: always()
         with:
           sarif_file: 'trivy-results-config.sarif'
@@ -70,7 +70,7 @@ jobs:
 
       # Generate human-readable report
       - name: Run Trivy vulnerability scanner (Table format)
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284 # 0.34.0
         if: always()
         with:
           scan-type: 'fs'
@@ -89,11 +89,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
       # Scan for secrets and misconfigurations
       - name: Run Trivy secret scanner
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284 # 0.34.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -103,7 +103,7 @@ jobs:
           exit-code: '1' # Fail if secrets are found - this is critical!
 
       - name: Upload Trivy secret scan results
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@9da17a5aa4abec2340d6e6c8d8efb0770b1c9cb8 # v4.32.3
         if: always()
         with:
           sarif_file: 'trivy-secret-results.sarif'

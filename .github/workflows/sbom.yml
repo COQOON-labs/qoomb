@@ -12,8 +12,9 @@ on:
   schedule:
     - cron: '0 8 * * 2' # Every Tuesday at 8:00 AM UTC
 
+# Top-level: minimal permissions (read-only by default)
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}
@@ -24,15 +25,18 @@ jobs:
     name: Generate SBOM
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Job-level: only what's needed
+    permissions:
+      contents: write # Attach SBOM to releases
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@0c17529a66aca453f9227af23103ed11469b1e47 # v4.0.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
         with:
           node-version: '24'
           cache: 'pnpm'
@@ -54,7 +58,7 @@ jobs:
 
       # Upload SBOM as artifact
       - name: Upload SBOM Artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: sbom-${{ github.sha }}
           path: |
@@ -67,7 +71,7 @@ jobs:
       # Attach SBOM to release (if triggered by release)
       - name: Attach SBOM to Release
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
         with:
           files: |
             sbom.json

@@ -83,7 +83,7 @@
 - **Prevents exploitation:** Large companies can't use it for free without contributing back
 - **Contributor Protection:** CLA ensures contributors grant necessary rights while protecting IP
 - **Dual Licensing Rights:** Enables offering commercial licenses while keeping code open
-- **20-Employee Threshold:** Generous for small businesses, ensures fairness for larger ones
+- **10-Employee Threshold:** Applies to organizations only; families of any size are explicitly exempt for private non-commercial use
 - **See:** `LICENSE.md` and `COMMERCIAL-LICENSE.md` for details
 
 ---
@@ -107,7 +107,7 @@
 | **Git Hooks**      | Husky + lint-staged            | Pre-commit/push quality gates |
 | **Commit Format**  | Commitlint + Conventional      | Structured commit messages    |
 | **CI/CD**          | GitHub Actions                 | Automated testing & security  |
-| **License**        | Fair Source v1.0 (20-user)     | Sustainable open source       |
+| **License**        | Fair Source v1.0 (10-user)     | Sustainable open source       |
 
 ---
 
@@ -262,7 +262,7 @@ qoomb/
 
 **Licensing (PRODUCTION-READY):**
 
-- **Fair Source License v1.0:** 20-employee threshold for commercial use
+- **Fair Source License v1.0:** 10-employee threshold for commercial use
 - **Contributor License Agreement (CLA):** Protects both contributors and project
 - **Dual Licensing:** Free for individuals/small teams, commercial for enterprises
 - **Copyright:** Benjamin Gröner (bgroener@coqoon.com)
@@ -1140,9 +1140,9 @@ apps/api/src/modules/encryption/
 ### Licensing & Contributions
 
 - **Copyright:** Benjamin Gröner (all new code contributions)
-- **License:** Fair Source v1.0 (20-employee threshold) - see LICENSE.md
+- **License:** Fair Source v1.0 (10-employee threshold) - see LICENSE.md
 - **Contributors must agree** to CLA when submitting code
-- **Commercial licensing** available for enterprises (≥20 employees, SaaS, OEM)
+- **Commercial licensing** available for enterprises (≥10 employees, SaaS, OEM)
 - **Never modify license files** without explicit user request
 
 **When adding new features:**

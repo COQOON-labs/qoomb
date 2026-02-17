@@ -115,8 +115,8 @@ export class EncryptionInterceptor implements NestInterceptor {
         const value: string =
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           typeof arg[field] === 'string'
-            ? // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-              (arg[field] as string)
+            ? // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+              arg[field]
             : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
               JSON.stringify(arg[field]);
         const encrypted = this.encryptionService.encrypt(value, hiveId);

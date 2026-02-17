@@ -14,8 +14,10 @@ datasource db {
 // ============================================
 
 model Hive {
+  // name is stored encrypted by the service layer (AES-256-GCM, per-hive key).
+  // TEXT instead of VarChar(255) because ciphertext is longer than plaintext.
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String   @db.VarChar(255)
+  name      String   @db.Text
   type      String   @db.VarChar(50)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
@@ -35,17 +37,18 @@ model Hive {
 }
 
 model User {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email          String    @unique @db.VarChar(255)
-  passwordHash   String    @map("password_hash") @db.Text
-  emailVerified  Boolean   @default(false) @map("email_verified")
-  isSystemAdmin  Boolean   @default(false) @map("is_system_admin")
-  fullName       String?   @map("full_name") @db.VarChar(255)
-  nickname       String?   @db.VarChar(255)
-  birthday       DateTime? @db.Date
-  avatarUrl      String?   @map("avatar_url") @db.Text
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // emailHash: HMAC-SHA256 blind index for O(1) lookups (no plaintext stored).
+  // email: AES-256-GCM ciphertext, per-user key — use enc.encryptForUser / decryptForUser.
+  // fullName: AES-256-GCM ciphertext, per-user key — use enc.encryptForUser / decryptForUser.
+  emailHash     String   @unique @map("email_hash") @db.VarChar(64)
+  email         String   @db.Text
+  passwordHash  String   @map("password_hash") @db.Text
+  emailVerified Boolean  @default(false) @map("email_verified")
+  isSystemAdmin Boolean  @default(false) @map("is_system_admin")
+  fullName      String?  @map("full_name") @db.Text
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   refreshTokens           RefreshToken[]
   memberships             UserHiveMembership[]
@@ -106,6 +109,8 @@ model RefreshToken {
 // ============================================
 
 model Person {
+  // displayName, avatarUrl, birthdate: AES-256-GCM ciphertext (hive-scoped key).
+  // Stored as v{version}:{base64(IV+AuthTag+Ciphertext)} — see EncryptionService.
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   hiveId      String    @map("hive_id") @db.Uuid
   userId      String?   @map("user_id") @db.Uuid
@@ -137,6 +142,8 @@ model Person {
 // ============================================
 
 model HiveGroup {
+  // name, description: AES-256-GCM ciphertext (hive-scoped key).
+  // Stored as v{version}:{base64(IV+AuthTag+Ciphertext)} — see EncryptionService.
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   hiveId      String   @map("hive_id") @db.Uuid
   name        String   @db.Text

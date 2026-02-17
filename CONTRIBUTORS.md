@@ -41,40 +41,7 @@ Contributions of any kind are welcome!
 
 ## How to Contribute
 
-We welcome contributions! Please see our contributing guidelines:
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feat/amazing-feature`)
-3. **Commit** your changes using [Conventional Commits](https://www.conventionalcommits.org/)
-4. **Push** to your branch (`git push origin feat/amazing-feature`)
-5. **Open** a Pull Request
-
-### Contribution Types
-
-| Emoji | Type           | Description                           |
-| ----- | -------------- | ------------------------------------- |
-| 💻    | Code           | Bug fixes, features, improvements     |
-| 📖    | Documentation  | README, guides, API docs              |
-| 🐛    | Bug Reports    | Issue reports with reproduction steps |
-| 💡    | Ideas          | Feature requests and suggestions      |
-| 🔒    | Security       | Security improvements or reports      |
-| 🚇    | Infrastructure | CI/CD, build system, DevOps           |
-| ✅    | Tests          | Test coverage improvements            |
-| 🎨    | Design         | UI/UX improvements                    |
-| 🌍    | Translation    | Internationalization                  |
-
-### Contributor License Agreement
-
-By contributing to this project, you agree to the Contributor License Agreement (CLA)
-outlined in our [LICENSE.md](LICENSE.md#contributor-license-agreement-cla).
-
-## Recognition
-
-Contributors are recognized in:
-
-- This CONTRIBUTORS.md file
-- Release notes and changelog
-- GitHub's contributor graph
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution guide.
 
 ---
 

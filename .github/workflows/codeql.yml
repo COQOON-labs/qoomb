@@ -14,17 +14,21 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Only the permissions needed for CodeQL
+# Top-level: minimal permissions (read-only by default)
 permissions:
-  security-events: write # Upload SARIF results
-  contents: read # Checkout code
-  actions: read # Read workflow metadata
+  contents: read
 
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
+    # Job-level: only what's needed for CodeQL
+    permissions:
+      security-events: write # Upload SARIF results
+      contents: read # Checkout code
+      actions: read # Read workflow metadata
 
     strategy:
       fail-fast: false
@@ -38,7 +42,7 @@ jobs:
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@0c17529a66aca453f9227af23103ed11469b1e47 # v4.0.0
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
 
       - name: Setup Node.js
         uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
@@ -52,7 +56,7 @@ jobs:
 
       # Initialize CodeQL tools
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9da17a5aa4abec2340d6e6c8d8efb0770b1c9cb8 # v4.32.3
+        uses: github/codeql-action/init@9e907b5e64f6b83e7804b09294d44122997950d6 # v4.32.3
         with:
           languages: ${{ matrix.language }}
           # Query suites: default, security-extended, security-and-quality
@@ -65,7 +69,7 @@ jobs:
 
       # Perform CodeQL Analysis
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@9da17a5aa4abec2340d6e6c8d8efb0770b1c9cb8 # v4.32.3
+        uses: github/codeql-action/analyze@9e907b5e64f6b83e7804b09294d44122997950d6 # v4.32.3
         with:
           category: '/language:${{matrix.language}}'
           upload: true

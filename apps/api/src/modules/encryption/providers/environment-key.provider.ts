@@ -104,6 +104,104 @@ export class EnvironmentKeyProvider implements KeyProvider {
     }
   }
 
+  /**
+   * Load multiple key versions for rotation support.
+   *
+   * Single-key mode (backward compatible — default):
+   * ```
+   * ENCRYPTION_KEY=<base64>
+   * ```
+   *
+   * Rotation mode (multiple versions):
+   * ```
+   * ENCRYPTION_KEY_CURRENT=2          # version used for new encryptions
+   * ENCRYPTION_KEY_V1=<old base64>    # keep until re-encryption completes
+   * ENCRYPTION_KEY_V2=<new base64>    # all new data encrypted with this
+   * ```
+   *
+   * Rotation deployment sequence:
+   * 1. Add ENCRYPTION_KEY_CURRENT + _V1 + _V2 to env
+   * 2. Restart app (reads V2 for writes, still decrypts V1)
+   * 3. Run: pnpm --filter @qoomb/api db:reencrypt --execute
+   * 4. Remove ENCRYPTION_KEY_V1 + ENCRYPTION_KEY_CURRENT once complete
+   */
+  async getVersionedKeys(): Promise<{ currentVersion: number; keys: Map<number, Buffer> }> {
+    const currentVersionStr = process.env.ENCRYPTION_KEY_CURRENT;
+
+    if (!currentVersionStr) {
+      // Single-key mode — backward compatible
+      const key = await this.getMasterKey();
+      return { currentVersion: 1, keys: new Map([[1, key]]) };
+    }
+
+    const currentVersion = parseInt(currentVersionStr, 10);
+    if (isNaN(currentVersion) || currentVersion < 1) {
+      throw new Error(
+        `ENCRYPTION_KEY_CURRENT must be a positive integer, got: "${currentVersionStr}"`
+      );
+    }
+
+    const MAX_KEY_VERSIONS = 100;
+    const keys = new Map<number, Buffer>();
+    let v = 1;
+    while (v <= MAX_KEY_VERSIONS && process.env[`ENCRYPTION_KEY_V${v}`]) {
+      keys.set(v, this.loadVersionedKey(v));
+      v++;
+    }
+
+    if (keys.size === 0) {
+      throw new Error(
+        'ENCRYPTION_KEY_CURRENT is set but no ENCRYPTION_KEY_V{n} variables were found.\n' +
+          'Set ENCRYPTION_KEY_V1, ENCRYPTION_KEY_V2, etc. for rotation mode.'
+      );
+    }
+
+    if (!keys.has(currentVersion)) {
+      throw new Error(
+        `ENCRYPTION_KEY_CURRENT=${currentVersion} but ENCRYPTION_KEY_V${currentVersion} is not set.`
+      );
+    }
+
+    this.logger.log(
+      `Key rotation mode: versions [${[...keys.keys()].join(', ')}], current = V${currentVersion}`
+    );
+
+    return { currentVersion, keys };
+  }
+
+  private loadVersionedKey(version: number): Buffer {
+    const envVar = `ENCRYPTION_KEY_V${version}`;
+    const keyString = process.env[envVar];
+
+    if (!keyString) {
+      throw new Error(`${envVar} is not set.`);
+    }
+
+    let key: Buffer;
+    try {
+      key = Buffer.from(keyString, 'base64');
+    } catch {
+      throw new Error(`Failed to decode ${envVar} from base64.`);
+    }
+
+    if (key.length !== 32) {
+      throw new Error(
+        `${envVar} must be exactly 32 bytes (256 bits). Current: ${key.length} bytes.\n` +
+          `Generate a valid key with: openssl rand -base64 32`
+      );
+    }
+
+    const uniqueBytes = new Set(key).size;
+    if (uniqueBytes < 16) {
+      throw new Error(
+        `${envVar} has insufficient entropy. Generate a new key: openssl rand -base64 32`
+      );
+    }
+
+    this.logger.log(`✅ Key V${version} loaded from ${envVar} (32 bytes)`);
+    return key;
+  }
+
   getName(): string {
     return 'environment';
   }

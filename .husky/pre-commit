@@ -1,2 +1,17 @@
 # Run lint-staged on staged files only
 pnpm exec lint-staged
+
+# Scan staged files for secrets before they enter git history.
+# Gitleaks must be installed locally — it is required, not optional.
+# Install: brew install gitleaks   or   https://github.com/gitleaks/gitleaks#installing
+if command -v gitleaks &>/dev/null; then
+  gitleaks protect --staged --redact
+else
+  echo ""
+  echo "❌  gitleaks not found — commit blocked."
+  echo "    Secret scanning is required before any commit."
+  echo "    Install: brew install gitleaks"
+  echo "    Docs:    https://github.com/gitleaks/gitleaks#installing"
+  echo ""
+  exit 1
+fi

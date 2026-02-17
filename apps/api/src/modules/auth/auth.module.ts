@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JWT_CONFIG } from '../../config/security.config';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
+import { EncryptionModule } from '../encryption';
 
 import { AuthService } from './auth.service';
 import { PassKeyService } from './passkey.service';
@@ -14,6 +15,7 @@ import { SystemConfigService } from './system-config.service';
   imports: [
     PrismaModule,
     EmailModule,
+    EncryptionModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_IN },

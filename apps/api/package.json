@@ -25,7 +25,8 @@
     "db:generate": "dotenv -e ../../.env -- prisma generate",
     "db:push": "dotenv -e ../../.env -- prisma db push",
     "db:seed": "dotenv -e ../../.env -- prisma db seed",
-    "db:studio": "dotenv -e ../../.env -- prisma studio --port 5555 --browser none"
+    "db:studio": "dotenv -e ../../.env -- prisma studio --port 5555 --browser none",
+    "db:reencrypt": "dotenv -e ../../.env -- ts-node --project tsconfig.seed.json prisma/scripts/reencrypt.ts"
   },
   "dependencies": {
     "@fastify/helmet": "^13.0.2",

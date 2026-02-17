@@ -14,6 +14,7 @@ import {
 
 import { RedisService } from '../../common/services/redis.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EncryptionService } from '../encryption';
 
 /** Stored in Redis for the duration of a registration or authentication ceremony (5 min). */
 interface PasskeyChallengeSession {
@@ -41,7 +42,8 @@ export class PassKeyService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redisService: RedisService
+    private readonly redisService: RedisService,
+    private readonly encryptionService: EncryptionService
   ) {}
 
   // ── Registration ────────────────────────────────────────────────────────────
@@ -142,7 +144,7 @@ export class PassKeyService {
 
     if (email) {
       const user = await this.prisma.user.findUnique({
-        where: { email },
+        where: { emailHash: this.encryptionService.hashEmail(email) },
         select: { id: true },
       });
 

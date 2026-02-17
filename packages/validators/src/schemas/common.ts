@@ -57,6 +57,7 @@ export const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
+  .min(1, 'Email cannot be empty')
   .email('Invalid email format')
   .max(320, 'Email is too long');
 

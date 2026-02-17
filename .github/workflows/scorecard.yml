@@ -1,0 +1,51 @@
+name: OpenSSF Scorecard
+
+on:
+  push:
+    branches: [main]
+  # Weekly re-evaluation (score drifts as the ecosystem changes)
+  schedule:
+    - cron: '0 9 * * 3' # Every Wednesday at 9:00 AM UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  scorecard:
+    name: OpenSSF Scorecard Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+      security-events: write # Upload SARIF results to GitHub Security tab
+      id-token: write # Publish results to public scorecard API (badge)
+      actions: read # Analyze workflow files
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard analysis
+        uses: ossf/scorecard-action@v2.4.1
+        with:
+          results_file: scorecard-results.sarif
+          results_format: sarif
+          # Publish results to the public OpenSSF API → powers the badge in README.
+          # Requires the repository to be public. For private repos, results still
+          # appear in the GitHub Security tab (SARIF upload below) but the badge
+          # URL will not resolve publicly.
+          publish_results: true
+
+      - name: Upload SARIF results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: scorecard-results.sarif
+          category: openssf-scorecard

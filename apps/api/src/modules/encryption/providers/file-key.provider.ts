@@ -66,8 +66,12 @@ export class FileKeyProvider implements KeyProvider {
       );
     }
 
-    if (this.password.length < 12) {
-      this.logger.warn('⚠️  KEY_FILE_PASSWORD is short. Recommend at least 20 characters.');
+    if (this.password.length < 20) {
+      throw new Error(
+        'KEY_FILE_PASSWORD is too short (minimum 20 characters).\n' +
+          'The password protects the encrypted key file and must be strong.\n' +
+          'Use a randomly generated passphrase of at least 20 characters.'
+      );
     }
   }
 

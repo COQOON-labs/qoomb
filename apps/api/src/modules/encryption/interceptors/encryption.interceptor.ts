@@ -15,16 +15,18 @@ import { EncryptionService } from '../encryption.service';
  *
  * Automatically encrypts/decrypts fields based on decorator metadata.
  *
- * This interceptor:
- * 1. Reads metadata from @EncryptFields / @DecryptFields decorators
- * 2. Extracts hiveId from method parameters
- * 3. Encrypts specified fields in method parameters (before execution)
- * 4. Decrypts specified fields in return value (after execution)
+ * Semantics:
+ * - @EncryptFields(['f1', 'f2']): encrypts those fields in the INPUT arguments
+ *   (in-place, before the method executes) so the method stores encrypted data.
+ * - @DecryptFields(['f1', 'f2']): decrypts those fields in the RETURN VALUE
+ *   (after the method executes) so the caller receives plaintext.
+ *
+ * Using both decorators on the same method is intentional for update operations
+ * that need to store encrypted and return decrypted data.
  *
  * Performance considerations:
  * - Only activated on methods with decorators
  * - Only encrypts/decrypts specified fields
- * - Supports nested fields with dot notation
  * - Handles arrays and objects recursively
  */
 @Injectable()
@@ -64,13 +66,13 @@ export class EncryptionInterceptor implements NestInterceptor {
       throw new Error(`Encryption failed: hiveId parameter '${hiveIdParamName}' not found`);
     }
 
-    // Encrypt fields in request (before method execution)
+    // @EncryptFields: encrypt specified fields in the input arguments IN-PLACE,
+    // before the method executes, so the method stores already-encrypted data.
     if (encryptFields && encryptFields.length > 0) {
-      // TODO: Implement encryption of input parameters if needed
-      // For now, we focus on encrypting return values
+      this.encryptInputArgs(args, encryptFields, hiveId);
     }
 
-    // Execute method and decrypt fields in response
+    // Execute method, then @DecryptFields: decrypt specified fields in the return value.
     return next.handle().pipe(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       map((data: any) => {
@@ -79,22 +81,49 @@ export class EncryptionInterceptor implements NestInterceptor {
           return data;
         }
 
-        // Decrypt fields if specified
         if (decryptFields && decryptFields.length > 0) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           return this.processFields(data, decryptFields, hiveId, 'decrypt');
-        }
-
-        // Encrypt fields if specified
-        if (encryptFields && encryptFields.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-          return this.processFields(data, encryptFields, hiveId, 'encrypt');
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return data;
       })
     );
+  }
+
+  /**
+   * Encrypt specified fields in-place across all object arguments.
+   *
+   * Iterates the method's argument list and encrypts any matching top-level
+   * fields found in object arguments.  String values are encrypted directly;
+   * non-string values are JSON-serialised first.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private encryptInputArgs(args: any[], fields: string[], hiveId: string): void {
+    for (const arg of args) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (!arg || typeof arg !== 'object' || Array.isArray(arg)) {
+        continue;
+      }
+      for (const field of fields) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (!(field in arg) || arg[field] === null || arg[field] === undefined) {
+          continue;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const value: string =
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          typeof arg[field] === 'string'
+            ? // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+              arg[field]
+            : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              JSON.stringify(arg[field]);
+        const encrypted = this.encryptionService.encrypt(value, hiveId);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        arg[field] = this.encryptionService.serializeToStorage(encrypted);
+      }
+    }
   }
 
   /**
@@ -211,13 +240,19 @@ export class EncryptionInterceptor implements NestInterceptor {
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : 'Unknown error';
               this.logger.error(`Failed to ${operation} field '${field}': ${errorMessage}`);
-              // Keep original value on error
+              // Re-throw: silently returning plaintext on encryption failure (or ciphertext
+              // on decryption failure) is a security defect — the caller must know.
+              throw error;
             }
           }
         } else {
-          // Nested field (e.g., "user.email")
-          // TODO: Implement nested field support if needed
-          this.logger.warn(`Nested field encryption not yet implemented: ${fieldPath}`);
+          // Nested field (e.g., "user.email") — not yet implemented.
+          // Throw instead of warn: a silent no-op would leave the field unencrypted
+          // without the caller noticing.
+          throw new Error(
+            `Nested field encryption is not yet supported: '${fieldPath}'. ` +
+              `Use top-level field names only.`
+          );
         }
       }
 

@@ -42,9 +42,8 @@ jobs:
       - uses: actions/dependency-review-action@v4
         with:
           # Block PRs that introduce new HIGH or CRITICAL vulnerabilities.
+          # License compliance is handled separately in the quality job via pnpm licenses list.
           fail-on-severity: high
-          # Block new dependencies with licenses incompatible with Fair Source.
-          deny-licenses: GPL-2.0, GPL-3.0, AGPL-1.0, AGPL-3.0, SSPL-1.0, EUPL-1.1, EUPL-1.2
 
   quality:
     name: Code Quality

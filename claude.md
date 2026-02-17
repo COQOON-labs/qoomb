@@ -676,18 +676,20 @@ export const eventsRouter = router({
 ```typescript
 @Injectable()
 export class EventsService {
-  // Encrypt on return (before storing/sending)
+  // @EncryptFields: encrypts the named fields in the INPUT argument before
+  // the method executes — the method receives (and stores) encrypted data.
   @EncryptFields(['title', 'description'])
   async createEvent(data: CreateEventInput, hiveId: string) {
     return this.prisma.event.create({ data });
-    // title & description automatically encrypted
+    // data.title and data.description are encrypted in-place before prisma call
   }
 
-  // Decrypt on return (after loading)
+  // @DecryptFields: decrypts the named fields in the RETURN VALUE after the
+  // method executes — the caller receives plaintext.
   @DecryptFields(['title', 'description'])
   async getEvent(id: string, hiveId: string) {
     return this.prisma.event.findUnique({ where: { id } });
-    // title & description automatically decrypted
+    // returned title & description are automatically decrypted
   }
 
   // Works with arrays automatically
@@ -936,18 +938,21 @@ export const eventsRouter = router({
 ### ❌ DON'T: Manual encryption (easy to forget)
 
 ```typescript
-// BAD: Manual encryption
-const encrypted = await encryptionService.encrypt(data.title, hiveId);
+// BAD: Manual encryption — easy to forget, no compile-time safety
+const encrypted = encryptionService.serializeToStorage(
+  encryptionService.encrypt(data.title, hiveId)
+);
 await prisma.event.create({ data: { title: encrypted } });
 ```
 
 ### ✅ DO: Use decorators
 
 ```typescript
-// GOOD: Decorator (can't forget!)
+// GOOD: @EncryptFields encrypts INPUT fields before the method stores them.
+// @DecryptFields decrypts RETURN VALUE fields after the method loads them.
 @EncryptFields(['title'])
-async createEvent(data, hiveId) {
-  return prisma.event.create({ data });
+async createEvent(data: CreateEventInput, hiveId: string) {
+  return prisma.event.create({ data }); // data.title is already encrypted
 }
 ```
 
@@ -1077,7 +1082,7 @@ apps/api/src/modules/encryption/
 ### Critical Rules (MUST Follow)
 
 1. **Always use `hiveProcedure`** for hive-specific operations
-2. **Always use `@EncryptFields`** for sensitive data (don't manually encrypt)
+2. **Always use `@EncryptFields` / `@DecryptFields`** for sensitive data (`@EncryptFields` encrypts INPUT args; `@DecryptFields` decrypts RETURN values)
 3. **Always validate with Zod** at API boundaries
 4. **Always use parameterized queries** (never string interpolation)
 5. **Always consider multi-tenant** context (which hive?)

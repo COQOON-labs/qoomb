@@ -12,8 +12,9 @@ on:
   schedule:
     - cron: '0 8 * * 2' # Every Tuesday at 8:00 AM UTC
 
+# Top-level: minimal permissions (read-only by default)
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}
@@ -24,6 +25,9 @@ jobs:
     name: Generate SBOM
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Job-level: only what's needed
+    permissions:
+      contents: write # Attach SBOM to releases
     steps:
       - name: Checkout
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0

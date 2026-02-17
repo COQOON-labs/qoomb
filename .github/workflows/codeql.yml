@@ -14,11 +14,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Only the permissions needed for CodeQL
 permissions:
-  security-events: write
-  contents: read
-  actions: read
-  statuses: write
+  security-events: write # Upload SARIF results
+  contents: read # Checkout code
+  actions: read # Read workflow metadata
 
 jobs:
   analyze:

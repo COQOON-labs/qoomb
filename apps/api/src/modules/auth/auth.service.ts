@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
   BadRequestException,
   ForbiddenException,
@@ -16,6 +17,7 @@ import { TokenBlacklistService } from '../../common/services/token-blacklist.ser
 import { PASSWORD_CONFIG, JWT_CONFIG } from '../../config/security.config';
 import { PrismaService, TransactionClient } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { EncryptionService } from '../encryption';
 
 import { RefreshTokenService } from './refresh-token.service';
 import { SystemConfigService } from './system-config.service';
@@ -40,6 +42,8 @@ interface UserWithMemberships extends User {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -47,7 +51,8 @@ export class AuthService {
     private readonly tokenBlacklistService: TokenBlacklistService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly emailService: EmailService,
-    private readonly systemConfig: SystemConfigService
+    private readonly systemConfig: SystemConfigService,
+    private readonly enc: EncryptionService
   ) {}
 
   /**
@@ -64,9 +69,9 @@ export class AuthService {
       throw new ForbiddenException('Open registration is disabled. Please use an invitation link.');
     }
 
-    // Check if email already exists
+    // Check if email already exists (lookup via blind index)
     const existingUser: User | null = await this.prisma.user.findUnique({
-      where: { email: input.adminEmail },
+      where: { emailHash: this.enc.hashEmail(input.adminEmail) },
     });
 
     if (existingUser) {
@@ -86,8 +91,14 @@ export class AuthService {
       const isSystemAdmin = userCount === 0;
 
       // 1. Create the hive
+      // Pre-generate hiveId so we can derive the per-hive encryption key before the INSERT.
+      const newHiveId = crypto.randomUUID();
       const hive: Hive = await tx.hive.create({
-        data: { name: input.name, type: input.type },
+        data: {
+          id: newHiveId,
+          name: this.encryptHiveName(input.name, newHiveId),
+          type: input.type,
+        },
       });
 
       // 2. Create admin person — role depends on hive type
@@ -100,11 +111,15 @@ export class AuthService {
       });
 
       // 3. Create user account
+      // Pre-generate userId so we can derive the per-user encryption key before the INSERT.
+      const newUserId = crypto.randomUUID();
       const user: User = await tx.user.create({
         data: {
-          email: input.adminEmail,
+          id: newUserId,
+          email: this.enc.encryptForUser(input.adminEmail.toLowerCase().trim(), newUserId),
+          emailHash: this.enc.hashEmail(input.adminEmail),
           passwordHash,
-          fullName: input.adminName,
+          fullName: input.adminName ? this.enc.encryptForUser(input.adminName, newUserId) : null,
           isSystemAdmin,
         },
       });
@@ -141,9 +156,9 @@ export class AuthService {
       userAgent
     );
 
-    const userEmail: string = result.user.email;
+    const userEmail: string = this.enc.decryptForUser(result.user.email, result.user.id);
     const hiveIdReturn: string = result.hive.id;
-    const hiveName: string = result.hive.name;
+    const hiveName: string = this.decryptHiveName(result.hive.name, result.hive.id);
 
     // Send email verification (non-blocking — don't fail registration if email fails)
     void this.sendEmailVerification(userId).catch(() => undefined);
@@ -188,9 +203,9 @@ export class AuthService {
       );
     }
 
-    // Find user with memberships
+    // Find user with memberships (lookup via blind index)
     const user: UserWithMemberships | null = await this.prisma.user.findUnique({
-      where: { email },
+      where: { emailHash: this.enc.hashEmail(email) },
       include: {
         memberships: {
           include: {
@@ -249,8 +264,11 @@ export class AuthService {
       userAgent
     );
 
-    const userEmail: string = user.email;
-    const hiveName: string = primaryMembership.hive.name;
+    const userEmail: string = this.enc.decryptForUser(user.email, user.id);
+    const hiveName: string = this.decryptHiveName(
+      primaryMembership.hive.name,
+      primaryMembership.hive.id
+    );
 
     return {
       accessToken,
@@ -267,8 +285,8 @@ export class AuthService {
         name: hiveName,
       },
       availableHives: user.memberships.map((m) => ({
-        id: m.hiveId,
-        name: m.hive.name,
+        id: m.hive.id,
+        name: this.decryptHiveName(m.hive.name, m.hive.id),
         role: m.person.role,
         isPrimary: m.isPrimary,
       })),
@@ -329,9 +347,9 @@ export class AuthService {
       }
 
       const userId: string = user.id;
-      const userEmail: string = user.email;
+      const userEmail: string = this.enc.decryptForUser(user.email, user.id);
       const personId: string = membership.personId;
-      const hiveName: string = membership.hive.name;
+      const hiveName: string = this.decryptHiveName(membership.hive.name, hiveId);
 
       return {
         id: userId,
@@ -502,7 +520,7 @@ export class AuthService {
       expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
       hive: {
         id: membership.hiveId,
-        name: membership.hive.name,
+        name: this.decryptHiveName(membership.hive.name, membership.hive.id),
         role: membership.person.role,
       },
     };
@@ -550,13 +568,13 @@ export class AuthService {
       expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
       user: {
         id: user.id,
-        email: user.email,
+        email: this.enc.decryptForUser(user.email, user.id),
         hiveId: primaryMembership.hiveId,
         personId: primaryMembership.personId,
       },
       hive: {
-        id: primaryMembership.hiveId,
-        name: primaryMembership.hive.name,
+        id: primaryMembership.hive.id,
+        name: this.decryptHiveName(primaryMembership.hive.name, primaryMembership.hive.id),
       },
     };
   }
@@ -584,7 +602,10 @@ export class AuthService {
       data: { token: tokenHash, userId, expiresAt },
     });
 
-    await this.emailService.sendEmailVerification(user.email, plainToken);
+    await this.emailService.sendEmailVerification(
+      this.enc.decryptForUser(user.email, user.id),
+      plainToken
+    );
   }
 
   async verifyEmail(plainToken: string): Promise<void> {
@@ -617,7 +638,9 @@ export class AuthService {
       throw new ForbiddenException('Password reset is disabled.');
     }
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({
+      where: { emailHash: this.enc.hashEmail(email) },
+    });
 
     // SECURITY: Always return success regardless of whether email exists
     if (!user) return;
@@ -635,7 +658,10 @@ export class AuthService {
       data: { token: tokenHash, userId: user.id, expiresAt },
     });
 
-    await this.emailService.sendPasswordReset(user.email, plainToken);
+    await this.emailService.sendPasswordReset(
+      this.enc.decryptForUser(user.email, user.id),
+      plainToken
+    );
   }
 
   async resetPassword(plainToken: string, newPassword: string): Promise<void> {
@@ -679,12 +705,10 @@ export class AuthService {
       throw new ForbiddenException('Only system administrators can send invitations.');
     }
 
-    await this.createAndSendInvitation(
-      inviterUserId,
-      inviter.fullName ?? inviter.email,
-      email,
-      hiveId ?? null
-    );
+    const inviterName = inviter.fullName
+      ? this.enc.decryptForUser(inviter.fullName, inviter.id)
+      : this.enc.decryptForUser(inviter.email, inviter.id);
+    await this.createAndSendInvitation(inviterUserId, inviterName, email, hiveId ?? null);
   }
 
   /**
@@ -703,15 +727,18 @@ export class AuthService {
     email: string,
     hiveId: string
   ): Promise<void> {
-    // Check if the email is already a member of this hive
-    const existingMembership = await this.prisma.userHiveMembership.findFirst({
-      where: {
-        hiveId,
-        user: { email: email.toLowerCase() },
-      },
+    // Check if the email is already a member of this hive (lookup via blind index)
+    const existingUser = await this.prisma.user.findUnique({
+      where: { emailHash: this.enc.hashEmail(email) },
+      select: { id: true },
     });
-    if (existingMembership) {
-      throw new BadRequestException('This person is already a member of this hive.');
+    if (existingUser) {
+      const existingMembership = await this.prisma.userHiveMembership.findUnique({
+        where: { userId_hiveId: { userId: existingUser.id, hiveId } },
+      });
+      if (existingMembership) {
+        throw new BadRequestException('This person is already a member of this hive.');
+      }
     }
 
     await this.createAndSendInvitation(inviterUserId, inviterName, email, hiveId);
@@ -773,7 +800,9 @@ export class AuthService {
       throw new BadRequestException('This invitation was sent to a different email address.');
     }
 
-    const existingUser = await this.prisma.user.findUnique({ where: { email: input.adminEmail } });
+    const existingUser = await this.prisma.user.findUnique({
+      where: { emailHash: this.enc.hashEmail(input.adminEmail) },
+    });
     if (existingUser) {
       throw new BadRequestException('An account with this email already exists.');
     }
@@ -796,8 +825,15 @@ export class AuthService {
         });
         personId = person.id;
 
+        const newUserId1 = crypto.randomUUID();
         const user: User = await tx.user.create({
-          data: { email: input.adminEmail, passwordHash, fullName: input.adminName },
+          data: {
+            id: newUserId1,
+            email: this.enc.encryptForUser(input.adminEmail.toLowerCase().trim(), newUserId1),
+            emailHash: this.enc.hashEmail(input.adminEmail),
+            passwordHash,
+            fullName: input.adminName ? this.enc.encryptForUser(input.adminName, newUserId1) : null,
+          },
         });
 
         await tx.person.update({ where: { id: person.id }, data: { userId: user.id } });
@@ -808,13 +844,27 @@ export class AuthService {
         return { hive, user, personId };
       } else {
         // Create new hive (same as open registration)
-        hive = await tx.hive.create({ data: { name: input.name, type: input.type } });
+        const newHiveId = crypto.randomUUID();
+        hive = await tx.hive.create({
+          data: {
+            id: newHiveId,
+            name: this.encryptHiveName(input.name, newHiveId),
+            type: input.type,
+          },
+        });
         const adminRole = input.type === 'family' ? 'parent' : 'org_admin';
         const person = await tx.person.create({ data: { hiveId: hive.id, role: adminRole } });
         personId = person.id;
 
+        const newUserId2 = crypto.randomUUID();
         const user: User = await tx.user.create({
-          data: { email: input.adminEmail, passwordHash, fullName: input.adminName },
+          data: {
+            id: newUserId2,
+            email: this.enc.encryptForUser(input.adminEmail.toLowerCase().trim(), newUserId2),
+            emailHash: this.enc.hashEmail(input.adminEmail),
+            passwordHash,
+            fullName: input.adminName ? this.enc.encryptForUser(input.adminName, newUserId2) : null,
+          },
         });
 
         await tx.person.update({ where: { id: person.id }, data: { userId: user.id } });
@@ -845,15 +895,32 @@ export class AuthService {
       expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
       user: {
         id: result.user.id,
-        email: result.user.email,
+        email: this.enc.decryptForUser(result.user.email, result.user.id),
         hiveId: result.hive.id,
         personId: result.personId,
       },
-      hive: { id: result.hive.id, name: result.hive.name },
+      hive: { id: result.hive.id, name: this.decryptHiveName(result.hive.name, result.hive.id) },
     };
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+
+  private encryptHiveName(name: string, hiveId: string): string {
+    return this.enc.serializeToStorage(this.enc.encrypt(name, hiveId));
+  }
+
+  private decryptHiveName(encrypted: string, hiveId: string): string {
+    // If the value doesn't match the v{n}:{base64} storage format it is still
+    // plaintext — migration window between old and new schema.  Return as-is.
+    if (!/^v\d+:/.test(encrypted)) {
+      this.logger.warn(`Hive ${hiveId}: name field is still plaintext (migration window)`);
+      return encrypted;
+    }
+    // Value IS in encrypted format — parse + decrypt.  Any failure here
+    // (wrong key, auth-tag mismatch, data corruption) is a real error and
+    // must propagate instead of silently returning ciphertext to the client.
+    return this.enc.decrypt(this.enc.parseFromStorage(encrypted), hiveId);
+  }
 
   private generateSecureToken(): { plainToken: string; tokenHash: string } {
     const plainToken = crypto.randomBytes(32).toString('base64url');
@@ -884,8 +951,8 @@ export class AuthService {
       });
 
     return memberships.map((m) => ({
-      id: m.hiveId,
-      name: m.hive.name,
+      id: m.hive.id,
+      name: this.decryptHiveName(m.hive.name, m.hive.id),
       role: m.person.role,
       isPrimary: m.isPrimary,
       personId: m.personId,

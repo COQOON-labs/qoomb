@@ -365,7 +365,10 @@ model PasswordResetToken {
 
 model Invitation {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email           String    @db.VarChar(255)
+  // emailHash: HMAC-SHA256 blind index (same key as User.emailHash).
+  // Never store the plaintext email — the inviter already knows it and it is
+  // sent only via the invitation email; no need to retrieve it from the DB.
+  emailHash       String    @map("email_hash") @db.VarChar(64)
   token           String    @unique @db.Text
   invitedByUserId String    @map("invited_by_user_id") @db.Uuid
   hiveId          String?   @map("hive_id") @db.Uuid
@@ -376,7 +379,7 @@ model Invitation {
   invitedByUser User  @relation("Inviter", fields: [invitedByUserId], references: [id], onDelete: Cascade)
   hive          Hive? @relation(fields: [hiveId], references: [id], onDelete: SetNull)
 
-  @@index([email])
+  @@index([emailHash])
   @@index([invitedByUserId])
   @@index([expiresAt])
   @@map("invitations")

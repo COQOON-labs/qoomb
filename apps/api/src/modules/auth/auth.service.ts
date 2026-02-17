@@ -747,6 +747,13 @@ export class AuthService {
   /**
    * Internal helper: create an Invitation record and send the email.
    * Shared by sendInvitation() (SystemAdmin) and inviteMemberToHive() (hive-level).
+   *
+   * The plaintext email is never persisted — only its HMAC-SHA256 blind index
+   * (same key derivation as User.emailHash) is stored for O(1) lookup.
+   *
+   * The invalidation + creation are wrapped in a single transaction to prevent
+   * a race condition where two concurrent requests could both create a valid
+   * invitation for the same email address.
    */
   private async createAndSendInvitation(
     inviterUserId: string,
@@ -754,25 +761,31 @@ export class AuthService {
     email: string,
     hiveId: string | null
   ): Promise<void> {
-    // Invalidate any existing unused invite for this email
-    await this.prisma.invitation.updateMany({
-      where: { email, usedAt: null },
-      data: { usedAt: new Date() },
-    });
-
+    const invitationEmailHash = this.enc.hashEmail(email);
     const { plainToken, tokenHash } = this.generateSecureToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    await this.prisma.invitation.create({
-      data: {
-        email,
-        token: tokenHash,
-        invitedByUserId: inviterUserId,
-        hiveId,
-        expiresAt,
-      },
+    // Atomic: invalidate any pending invite for this email + create the new one.
+    // Running both in a transaction prevents a TOCTOU race where two callers
+    // could each see no active invite and both insert one.
+    await this.prisma.$transaction(async (tx: TransactionClient) => {
+      await tx.invitation.updateMany({
+        where: { emailHash: invitationEmailHash, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      await tx.invitation.create({
+        data: {
+          emailHash: invitationEmailHash,
+          token: tokenHash,
+          invitedByUserId: inviterUserId,
+          hiveId,
+          expiresAt,
+        },
+      });
     });
 
+    // Send email OUTSIDE the transaction: don't hold a DB connection open
+    // while waiting for SMTP. The token is already persisted at this point.
     await this.emailService.sendInvitation(email, inviterName, plainToken);
   }
 
@@ -795,8 +808,14 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired invitation link.');
     }
 
-    // Email must match the invitation
-    if (invitation.email.toLowerCase() !== input.adminEmail.toLowerCase()) {
+    // Email must match the invitation — compare HMAC hashes in constant time
+    // to avoid leaking information about the stored hash via timing differences.
+    const expectedHash = this.enc.hashEmail(input.adminEmail);
+    const isEmailMatch = crypto.timingSafeEqual(
+      Buffer.from(invitation.emailHash, 'hex'),
+      Buffer.from(expectedHash, 'hex')
+    );
+    if (!isEmailMatch) {
       throw new BadRequestException('This invitation was sent to a different email address.');
     }
 

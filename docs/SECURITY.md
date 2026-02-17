@@ -202,11 +202,15 @@ const [hive, person, allHiveOverrides, groupMemberships] = await Promise.all([
 // ctx.user gains: hiveType, role, roleOverrides, groupIds
 ```
 
-### 4. Email Verification
+### 4. Passkey / WebAuthn
+
+FIDO2/WebAuthn passkey authentication is supported as a password-free alternative. Credential public keys are stored in `passkey_credentials` with signature counter tracking to detect credential cloning. No biometric data leaves the user's device.
+
+### 5. Email Verification
 
 Implemented via `email_verification_tokens` table. New registrations receive a verification email. Unverified accounts have limited access until verified.
 
-### 5. Account Lockout
+### 6. Account Lockout
 
 Exponential backoff after failed login attempts. Tracked in Redis. Prevents brute-force attacks without requiring CAPTCHA.
 
@@ -394,9 +398,27 @@ Referrer-Policy: strict-origin-when-cross-origin
 
 ### Encryption at Rest
 
-Per-hive AES-256-GCM encryption for sensitive fields (titles, descriptions, notes, calendar tokens). Hive keys are derived via HKDF from a master key — compromise of one hive does not expose others.
+AES-256-GCM encryption is applied to all PII and sensitive content fields. Keys are derived via HKDF from a master key — compromise of one hive does not expose others.
 
-Pluggable key providers: Environment (default), File, AWS KMS, HashiCorp Vault.
+**PII fields (encrypted from day one, stored as ciphertext — no plaintext ever written to DB):**
+
+| Field                  | Key scope | Purpose                         |
+| ---------------------- | --------- | ------------------------------- |
+| `users.email`          | Per-user  | Email address ciphertext        |
+| `users.full_name`      | Per-user  | Full name ciphertext            |
+| `hives.name`           | Per-hive  | Hive name ciphertext            |
+| `persons.display_name` | Per-hive  | Display name ciphertext         |
+| `persons.birthdate`    | Per-hive  | Birthdate ciphertext (ISO 8601) |
+
+**Email blind index:**
+
+`users.email_hash` and `invitations.email_hash` store an HMAC-SHA256 of the email address (using a separate `HMAC_SECRET`). This allows O(1) lookups by email (login, duplicate check, invitation matching) without storing plaintext. No plaintext email is ever written to the database.
+
+**Content fields (per-hive key):**
+
+Event and task fields (`title`, `description`, `location`, `url`, `category`) are encrypted via the `@EncryptFields` / `@DecryptFields` decorator pattern. Group fields (`name`, `description`) are likewise encrypted.
+
+Pluggable key providers: Environment, File, AWS KMS, HashiCorp Vault.
 
 ### Database Hardening
 
@@ -486,6 +508,7 @@ ALLOWED_ORIGINS=https://yourdomain.com
 | **Log Injection**             | `\r\n` stripping on user-controlled log values                               |
 | **ReDoS**                     | Bounded negated character classes in all sanitization regex                  |
 | **Info Leakage**              | Generic error messages (`'Insufficient permissions'`) everywhere             |
+| **PII Exposure (DB breach)**  | All PII encrypted at rest; email stored only as HMAC-SHA256 blind index      |
 
 ### Out of Scope (Future Work)
 
@@ -562,5 +585,5 @@ If you discover a security vulnerability, please email security@qoomb.app or rep
 
 ---
 
-**Last Updated:** 2026-02-14
-**Version:** 1.1.0
+**Last Updated:** 2026-02-17
+**Version:** 1.2.0

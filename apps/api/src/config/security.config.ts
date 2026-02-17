@@ -217,16 +217,21 @@ export const CORS_CONFIG = {
 
 /**
  * Security Headers Configuration
+ *
+ * Note: CSP is primarily for browser-rendered content.
+ * This API serves JSON responses, so CSP has limited effect.
+ * However, we configure it properly for defense-in-depth.
  */
 export const SECURITY_HEADERS = {
   /**
    * Content Security Policy
+   * Removed 'unsafe-inline' to prevent XSS attacks (CWE-79)
    */
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
       imgSrc: ["'self'", 'data:', 'https:'],
       connectSrc: ["'self'"],
       fontSrc: ["'self'"],

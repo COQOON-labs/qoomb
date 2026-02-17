@@ -11,6 +11,7 @@ A family organization platform with offline-first capabilities, hybrid encryptio
 - **Node.js** 24+ (LTS)
 - **pnpm** 10+ (`npm install -g pnpm`)
 - **Docker** & **Docker Compose** (for PostgreSQL and Redis)
+- **gitleaks** — required for pre-commit secret scanning (`brew install gitleaks`)
 
 ## Quick Start
 
@@ -179,46 +180,58 @@ See [claude.md](claude.md) for detailed architecture documentation, including:
 - Multi-tenant isolation
 - Deployment options
 
-## Features (Planned)
+## Features
 
 ### Phase 1: Foundation ✅
 
-- [x] Monorepo setup
-- [x] Backend foundation (NestJS + tRPC)
-- [x] Frontend foundation (React + Vite)
-- [x] Database setup (PostgreSQL + Redis)
-- [x] Type-safe API layer (tRPC)
+- [x] Monorepo (Turborepo + pnpm workspaces)
+- [x] NestJS backend + tRPC (end-to-end type safety)
+- [x] React 19 PWA frontend (Vite + vite-plugin-pwa)
+- [x] Capacitor mobile wrapper (iOS / Android)
+- [x] Docker Compose (PostgreSQL 18 + Redis 8)
+- [x] Shared UI library (`@qoomb/ui`)
+- [x] Dev panel (debug tools, mobile QR, health checks — dev only)
 
-### Phase 2: Core Features 🚧
+### Phase 2: Auth, Encryption & Core Content ✅
 
-- [ ] Authentication system
-- [ ] Multi-tenant routing
-- [ ] Events management
-- [ ] Tasks management
-- [ ] Family members (persons)
-- [ ] Basic UI components
+- [x] JWT authentication (15 min access + 7 d refresh, rotation, blacklisting)
+- [x] Passkey / WebAuthn support
+- [x] Multi-tenant isolation (shared schema + Row-Level Security)
+- [x] RBAC with per-hive permission overrides
+- [x] PII encryption at rest (AES-256-GCM, per-user HKDF keys)
+- [x] Hive name encryption (hive-scoped HKDF key)
+- [x] Email blind index (HMAC-SHA256 — no plaintext email in DB)
+- [x] Pluggable key providers (Env, File, AWS KMS, Vault)
+- [x] Events module (create, list, get, update, delete + field encryption)
+- [x] Tasks module (create, list, get, update, complete, delete + field encryption)
+- [x] Persons module (list, get, update profile/role, invite, remove)
+- [x] Groups module (create, list, get, update, delete, add/remove members)
+- [x] 5-stage resource access guard (shares → private → group → admins → hive)
+- [x] CI/CD (CodeQL, Trivy, OpenSSF Scorecard, gitleaks pre-commit, dependency review)
 
-### Phase 3: Advanced Features 📋
+### Phase 3: Pages & Files 🚧
 
-- [ ] Offline sync engine
-- [ ] Conflict resolution
-- [ ] Hybrid encryption
-- [ ] Semantic search
-- [ ] External calendar sync
-- [ ] Template system
-- [ ] Background workers
+- [ ] Pages module (Tiptap editor, tree hierarchy, version history)
+- [ ] Documents module (file upload + envelope encryption)
+- [ ] Activity log (change feed — "what changed since last login")
 
-### Phase 4: Polish & Deployment 📋
+### Phase 4: Offline & Search 📋
 
-- [ ] Self-hosting Docker image
-- [ ] Production deployment
-- [ ] Testing suite
-- [ ] Documentation
-- [ ] Performance optimization
+- [ ] Client-side SQLite sync (vector clock conflict resolution)
+- [ ] Full local search (all non-file content synced to client)
+- [ ] E2E encryption option (libsodium)
+- [ ] Semantic search (pgvector, server-side)
+
+### Phase 5: Calendar Integration 📋
+
+- [ ] Google Calendar (OAuth + webhook)
+- [ ] Apple Calendar (CalDAV)
+- [ ] Microsoft Outlook (Graph API)
+- [ ] Bidirectional sync + conflict resolution UI
 
 ## License
 
-**Qoomb** is licensed under the **[Fair Source License v1.0](LICENSE.md)** with a **20-employee threshold**.
+**Qoomb** is licensed under the **[Fair Source License v1.0](LICENSE.md)** with a **10-employee threshold**.
 
 ### What does this mean?
 
@@ -226,13 +239,13 @@ See [claude.md](claude.md) for detailed architecture documentation, including:
 
 - Personal, non-commercial use
 - Development, testing, and evaluation
-- Small organizations with **< 20 employees**
-- Non-profit organizations with < 20 employees
+- Small organizations with **< 10 employees**
+- Non-profit organizations with < 10 employees
 - Educational and research purposes
 
 ❌ **Requires commercial license for:**
 
-- Organizations with **≥ 20 employees** using it internally
+- Organizations with **≥ 10 employees** using it internally
 - Offering Qoomb as a hosted service (SaaS)
 - Redistributing Qoomb as part of a commercial product
 

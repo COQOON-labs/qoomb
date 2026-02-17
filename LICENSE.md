@@ -12,15 +12,15 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 
 1. **Personal Use**: Use for personal, non-commercial purposes
 2. **Development**: Use for development, testing, and evaluation
-3. **Small Organizations**: Use within organizations with **fewer than 20 employees**
-4. **Non-Profit**: Use by non-profit organizations with fewer than 20 employees
+3. **Small Organizations**: Use within organizations with **fewer than 10 employees**
+4. **Non-Profit**: Use by non-profit organizations with fewer than 10 employees
 5. **Education**: Use for educational and research purposes
 
 ### Restricted Use (commercial license required):
 
 The following uses require a separate commercial license agreement with Benjamin Gröner:
 
-1. **Large Organizations**: Use within organizations with **20 or more employees** for internal purposes
+1. **Large Organizations**: Use within organizations with **10 or more employees** for internal purposes
 2. **Hosted Service**: Providing the Software as a hosted or managed service to third parties (SaaS)
 3. **Redistribution**: Distribution or sale of the Software as part of a commercial product or service
 
@@ -96,5 +96,5 @@ Repository: https://github.com/COQOON-labs/qoomb
 
 **Version**: 1.0
 **Date**: February 4, 2026
-**License Type**: Fair Source License (20-User Limit)
+**License Type**: Fair Source License (10-User Limit)
 **Copyright Holder**: Benjamin Gröner

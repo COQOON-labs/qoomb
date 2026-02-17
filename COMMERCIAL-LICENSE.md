@@ -6,7 +6,7 @@
 
 ## Overview
 
-Qoomb is licensed under the **Fair Source License v1.0** with a **20-employee threshold**.
+Qoomb is licensed under the **Fair Source License v1.0** with a **10-employee threshold**.
 
 If your use falls outside the [permitted free use](LICENSE.md), you need a commercial license from Benjamin Gröner.
 
@@ -16,9 +16,9 @@ If your use falls outside the [permitted free use](LICENSE.md), you need a comme
 
 You need a commercial license if you want to use Qoomb as:
 
-### 1. Large Organization (≥ 20 Employees)
+### 1. Large Organization (≥ 10 Employees)
 
-- Your organization has 20 or more employees (full-time, part-time, contractors)
+- Your organization has 10 or more employees (full-time, part-time, contractors)
 - You want to use Qoomb internally for your company
 - **Example:** A company with 50 employees wants to use Qoomb as an internal hive platform
 
@@ -42,8 +42,8 @@ The following uses are **free** and **do not require a commercial license**:
 
 ✅ **Personal Use** - Use for personal, non-commercial purposes
 ✅ **Development** - Development, testing, evaluation
-✅ **Small Organizations** - Organizations with **fewer than 20 employees**
-✅ **Non-Profit** - Non-profit organizations with < 20 employees
+✅ **Small Organizations** - Organizations with **fewer than 10 employees**
+✅ **Non-Profit** - Non-profit organizations with < 10 employees
 ✅ **Education** - Educational and research purposes
 
 See [LICENSE.md](LICENSE.md) for complete details.
@@ -122,17 +122,17 @@ If you need a commercial license, please contact:
 
 ## Frequently Asked Questions (FAQ)
 
-### Q: I currently have 19 employees. What happens when I reach 20?
+### Q: I currently have 9 employees. What happens when I reach 10?
 
-**A:** You have a **90-day grace period** from the time you reach 20 employees to obtain a commercial license. We understand companies grow, and we want to make the transition smooth.
+**A:** You have a **90-day grace period** from the time you reach 10 employees to obtain a commercial license. We understand companies grow, and we want to make the transition smooth.
 
-### Q: I run Qoomb for my family and friends (< 20 people). Do I need a license?
+### Q: I run Qoomb for my family and friends (< 10 people). Do I need a license?
 
 **A:** **No**, as long as it's non-commercial (no money charged, no advertising), this is free personal use.
 
 ### Q: I'm a freelancer using Qoomb for my projects. Do I need a license?
 
-**A:** **No**, as long as you have fewer than 20 employees (including contractors), use is free.
+**A:** **No**, as long as you have fewer than 10 employees (including contractors), use is free.
 
 ### Q: I want to modify Qoomb and offer it to my customers. Is that allowed?
 
@@ -142,7 +142,7 @@ If you need a commercial license, please contact:
 
 **A:** **Yes**, you may fork, modify, and develop Qoomb, as long as you comply with the Fair Source License conditions (i.e., no commercial use outside the limits without a license).
 
-### Q: Do you offer discounts for non-profits with ≥ 20 employees?
+### Q: Do you offer discounts for non-profits with ≥ 10 employees?
 
 **A:** **Yes**, we offer significant discounts (often 50-80%) for non-profit organizations. Please contact us with details about your organization.
 
@@ -212,6 +212,6 @@ These commercial license terms may change. Changes apply:
 
 **Qoomb** - Privacy-first, self-hosted hive organization platform
 **Copyright © 2026 Benjamin Gröner**
-**License:** Fair Source License v1.0 (20-User Limit)
+**License:** Fair Source License v1.0 (10-User Limit)
 
 For technical documentation and installation see [README.md](README.md)

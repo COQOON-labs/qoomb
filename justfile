@@ -82,8 +82,8 @@ install:
     pnpm install
     @echo -e "{{green}}✓ Dependencies installed{{nc}}"
 
-# Standard setup: deps + Docker + DB + optional seed
-setup: check-deps check-ports install docker-up db-generate db-migrate
+# Simple setup: deps + Docker + DB + optional seed (localhost only)
+setup-simple: check-deps check-ports install docker-up db-generate db-migrate
     #!/usr/bin/env bash
     set -euo pipefail
     echo ""
@@ -100,26 +100,26 @@ setup: check-deps check-ports install docker-up db-generate db-migrate
     echo ""
     echo -e "\033[0;36mNext steps:\033[0m"
     echo ""
-    echo -e "  Option A — Basic (localhost only)"
-    echo -e "    \033[0;32mjust dev\033[0m           Start on localhost:5173 & :3001"
+    echo -e "  Option A — Simple (localhost only)"
+    echo -e "    \033[0;32mjust dev-simple\033[0m     Start on localhost:5173 & :3001"
     echo ""
-    echo -e "  Option B — Extended (HTTPS + mobile)"
-    echo -e "    \033[0;32mjust setup-extended\033[0m One-time HTTPS & cert setup"
-    echo -e "    \033[0;32mjust dev-extended\033[0m   Start with HTTPS on :8443"
+    echo -e "  Option B — Full (HTTPS + mobile)"
+    echo -e "    \033[0;32mjust setup\033[0m         One-time HTTPS & cert setup"
+    echo -e "    \033[0;32mjust dev\033[0m           Start with HTTPS on :8443"
     echo ""
     echo -e "  Database:"
     echo -e "    \033[0;32mjust db-studio\033[0m      Open Prisma Studio (DB GUI)"
     echo -e "    \033[0;32mjust db-seed\033[0m        (Re-)load dev users"
     echo ""
 
-# Extended setup: HTTPS + local domain via Caddy + mkcert (macOS/Linux)
-setup-extended:
+# Full setup: HTTPS + local domain via Caddy + mkcert (macOS/Linux)
+setup: setup-simple
     @echo -e "{{blue}}Setting up extended development environment...{{nc}}"
     @test -f scripts/setup-local-domain.sh || { echo -e "{{red}}✗ scripts/setup-local-domain.sh not found{{nc}}"; exit 1; }
     @bash scripts/setup-local-domain.sh
     @echo ""
-    @echo -e "{{green}}✓ Extended setup complete!{{nc}}"
-    @echo -e "{{yellow}}Next: just dev-extended{{nc}}"
+    @echo -e "{{green}}✓ Full setup complete!{{nc}}"
+    @echo -e "{{yellow}}Next: just dev{{nc}}"
 
 # ─── Development ─────────────────────────────────────────────────────────────
 
@@ -140,8 +140,8 @@ _check-docker:
         exit 1
     fi
 
-# Start development servers on localhost
-dev: _dev-stop docker-up
+# Start development servers on localhost (no HTTPS)
+dev-simple: _dev-stop docker-up
     #!/usr/bin/env bash
     set -euo pipefail
     echo ""
@@ -161,12 +161,12 @@ dev: _dev-stop docker-up
     (sleep 5 && (open http://localhost:5173 2>/dev/null || xdg-open http://localhost:5173 2>/dev/null || true)) &
     pnpm dev
 
-# Start with HTTPS + local domain (requires just setup-extended first)
-dev-extended: _dev-stop
+# Start with HTTPS + local domain (requires just setup first)
+dev: _dev-stop
     #!/usr/bin/env bash
     set -euo pipefail
-    command -v caddy >/dev/null || { echo -e "\033[0;31m✗ Caddy not installed — run: just setup-extended\033[0m"; exit 1; }
-    ls certs/qoomb.localhost+*.pem >/dev/null 2>&1 || { echo -e "\033[0;31m✗ SSL certs missing — run: just setup-extended\033[0m"; exit 1; }
+    command -v caddy >/dev/null || { echo -e "\033[0;31m✗ Caddy not installed — run: just setup\033[0m"; exit 1; }
+    ls certs/qoomb.localhost+*.pem >/dev/null 2>&1 || { echo -e "\033[0;31m✗ SSL certs missing — run: just setup\033[0m"; exit 1; }
     just docker-up
     echo -e "\033[0;34mStarting Caddy...\033[0m"
     caddy stop 2>/dev/null || true
@@ -191,8 +191,8 @@ dev-extended: _dev-stop
     (sleep 5 && (open https://qoomb.localhost:8443 2>/dev/null || xdg-open https://qoomb.localhost:8443 2>/dev/null || true)) &
     pnpm dev
 
-# Stop extended dev (Caddy proxy)
-stop-extended:
+# Stop dev (Caddy proxy)
+stop:
     @caddy stop 2>/dev/null || echo -e "{{yellow}}Caddy was not running{{nc}}"
     @echo -e "{{green}}✓ Extended dev stopped{{nc}}"
 

@@ -18,32 +18,22 @@ A family organization platform with offline-first capabilities, hybrid encryptio
 ### Option 1: Using justfile (Recommended) ⭐
 
 ```bash
-# Standard setup (works on all platforms)
+# Full setup (HTTPS + local domain, macOS/Linux)
 just setup
 
 # Start development servers
 just dev
 ```
 
-That's it! Visit:
+Visit: **<https://qoomb.localhost:8443>** (also works on mobile devices)
 
-- **Frontend**: <http://localhost:5173>
-- **Backend**: <http://localhost:3001>
-
-**Optional: Extended setup with HTTPS** (for mobile/PWA testing on macOS/Linux):
+**Simple mode** (localhost only, works on all platforms including Windows):
 
 ```bash
-just setup-extended
-just dev-extended
-# Visit: https://qoomb.localhost:8443
+just setup-simple
+just dev-simple
+# Visit: http://localhost:5173
 ```
-
-Extended setup includes:
-
-- ✅ HTTPS with trusted certificates (via mkcert)
-- ✅ Local domain (qoomb.localhost)
-- ✅ Mobile/PWA testing ready
-- ✅ Production-like environment
 
 #### Available Commands
 
@@ -51,12 +41,12 @@ Extended setup includes:
 just help          # Show all available commands
 
 # Setup
-just setup         # Standard setup (Docker + DB, works everywhere)
-just setup-extended # Extended setup with HTTPS (macOS/Linux)
+just setup-simple  # Simple setup (Docker + DB, localhost only)
+just setup         # Full setup with HTTPS (macOS/Linux, recommended)
 
 # Development
-just dev           # Start on localhost (standard, works everywhere)
-just dev-extended  # Start with HTTPS & qoomb.localhost (extended)
+just dev           # Start with HTTPS & qoomb.localhost (recommended)
+just dev-simple    # Start on localhost only (no HTTPS)
 just dev-api       # Start only backend API
 just dev-web       # Start only frontend
 
@@ -70,7 +60,7 @@ just db-studio     # Open Prisma Studio (DB GUI)
 
 # Utilities
 just status        # Check service status
-just stop-extended # Stop extended development
+just stop          # Stop development (Caddy)
 just clean         # Clean build artifacts
 ```
 

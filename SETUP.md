@@ -232,7 +232,17 @@ curl -X POST http://localhost:3001/trpc/auth.refresh \
 {
   "accessToken": "eyJhbGci...",  # Neuer Access Token
   "refreshToken": "abc123...",   # Neuer Refresh Token (Rotation!)
-  "expiresIn": 900
+  "expiresIn": 900,
+  "user": {
+    "id": "uuid",
+    "email": "john@example.com",
+    "hiveId": "uuid",
+    "personId": "uuid"
+  },
+  "hive": {
+    "id": "uuid",
+    "name": "My Hive"
+  }
 }
 ```
 
@@ -512,25 +522,29 @@ Wenn alle Tests funktionieren:
 
 ## 📚 Nächste Schritte
 
-### 1. Frontend Client entwickeln
+### 1. Dashboard mit Live-Daten verbinden
 
-- tRPC Client in React/Web einrichten
-- Login/Register UI bauen
-- Token Management im Frontend
+- Dashboard-Prototyp (775 Zeilen) mit tRPC-Calls verbinden
+- Statische Platzhalter durch echte API-Daten ersetzen
 
-### 2. Core Features implementieren
+### 2. Frontend i18n
 
-- Events Module (Kalender)
-- Tasks Module (Aufgaben)
-- Persons Module (Hive-Mitglieder)
+- typesafe-i18n im Frontend einrichten (DE/EN)
+- Hardcoded deutsche Texte im Dashboard durch i18n-Keys ersetzen
 
-### 3. Testing
+### 3. Phase 3 starten
 
-- Unit Tests schreiben
+- Pages Module (Tiptap Editor, Baumstruktur)
+- Documents Module (File Upload, Envelope Encryption)
+- Activity Log (Change Feed)
+
+### 4. Testing erweitern
+
+- Unit Tests für neue Module
 - Integration Tests
 - E2E Tests
 
-### 4. Production Deployment
+### 5. Production Deployment
 
 - `.env` für Production anpassen
 - Docker Image bauen
@@ -540,13 +554,16 @@ Wenn alle Tests funktionieren:
 
 ## 📖 Weitere Dokumentation
 
-- [JWT_REFRESH_TOKEN_IMPLEMENTATION.md](docs/JWT_REFRESH_TOKEN_IMPLEMENTATION.md) - JWT Implementation Details
-- [IMPLEMENTATION_COMPLETE.md](docs/IMPLEMENTATION_COMPLETE.md) - Feature Übersicht
-- [STATUS_REPORT.md](STATUS_REPORT.md) - Aktueller Implementierungs-Status
+- [CONTENT_ARCHITECTURE.md](docs/CONTENT_ARCHITECTURE.md) - Content Model, Schema, Encryption
+- [PERMISSIONS.md](docs/PERMISSIONS.md) - RBAC Architektur + Guard API
 - [SECURITY.md](docs/SECURITY.md) - Security Architektur
+- [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) - Tailwind v4 Design Tokens
+- [LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md) - Lokale Entwicklung + Caddy
+- [PERFORMANCE.md](docs/PERFORMANCE.md) - Prisma Performance Guide
+- [PRISMA_PATTERNS.md](docs/PRISMA_PATTERNS.md) - Prisma vs Raw SQL
 - [claude.md](claude.md) - Projekt-Kontext für Entwicklung
 
 ---
 
-**Setup Guide Version:** 1.0
-**Last Updated:** 2026-02-03
+**Setup Guide Version:** 1.1
+**Last Updated:** 2026-02-19

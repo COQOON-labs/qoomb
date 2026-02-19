@@ -1,0 +1,6 @@
+# ajv 6.12.6 — dev-only (eslint internals)
+# @eslint/eslintrc requires ajv 6.x API (missingRefs option).
+# ajv 8.x removed this API, causing runtime crash.
+# Cannot override without breaking eslint. Will resolve when
+# migrating to ESLint flat config (eslint.config.js).
+CVE-2025-69873

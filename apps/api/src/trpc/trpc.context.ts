@@ -24,14 +24,40 @@ export interface TrpcContext {
   };
 }
 
-export function createTrpcContext(
+/**
+ * Extract Bearer token from Authorization header.
+ * Returns null if header is missing or malformed.
+ */
+function extractBearerToken(req?: FastifyRequest): string | null {
+  const authHeader = req?.headers?.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+  return authHeader.slice(7); // 'Bearer '.length === 7
+}
+
+/**
+ * Create tRPC context for each request.
+ *
+ * Automatically extracts and validates the JWT from the Authorization header.
+ * If the token is valid, `ctx.user` is populated; otherwise it stays undefined
+ * (public procedures don't need auth, so this is not an error).
+ */
+export async function createTrpcContext(
   prisma: PrismaService,
   authService: AuthService,
   req?: FastifyRequest
-): TrpcContext {
-  return {
-    prisma,
-    authService,
-    req,
-  };
+): Promise<TrpcContext> {
+  const token = extractBearerToken(req);
+
+  if (!token) {
+    return { prisma, authService, req };
+  }
+
+  try {
+    const user = await authService.validateToken(token);
+    return { prisma, authService, req, user };
+  } catch {
+    // Token invalid/expired/blacklisted — treat as unauthenticated.
+    // protectedProcedure will throw UNAUTHORIZED if user is required.
+    return { prisma, authService, req };
+  }
 }

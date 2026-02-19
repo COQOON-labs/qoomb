@@ -35,7 +35,7 @@ check-deps:
     @echo -e "{{green}}✓ .env file exists{{nc}}"
 
 # Check if required ports are available
-check-ports:
+check-ports: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "\033[0;34mChecking ports...\033[0m"
@@ -129,6 +129,17 @@ _dev-stop:
     @pkill -f "{{project_dir}}/apps/api" 2>/dev/null || true
     @pkill -f "prisma studio" 2>/dev/null || true
 
+[private]
+_check-docker:
+    #!/usr/bin/env bash
+    if ! docker info >/dev/null 2>&1; then
+        echo -e "\033[0;31m✗ Docker daemon is not running\033[0m"
+        echo -e "\033[1;33m  → Start Docker Desktop and wait ~15 seconds, then retry.\033[0m"
+        echo -e "\033[0;36m      macOS:  open -a Docker\033[0m"
+        echo -e "\033[0;36m      Linux:  sudo systemctl start docker\033[0m"
+        exit 1
+    fi
+
 # Start development servers on localhost
 dev: _dev-stop docker-up
     #!/usr/bin/env bash
@@ -202,7 +213,7 @@ build:
 # ─── Docker ──────────────────────────────────────────────────────────────────
 
 # Start PostgreSQL and Redis containers
-docker-up:
+docker-up: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
     if [ ! -f .env ]; then
@@ -220,7 +231,7 @@ docker-up:
     fi
 
 # Stop PostgreSQL and Redis containers
-docker-down:
+docker-down: _check-docker
     @echo -e "{{blue}}Stopping Docker services...{{nc}}"
     docker-compose down
     @echo -e "{{green}}✓ Docker services stopped{{nc}}"
@@ -229,12 +240,12 @@ docker-down:
 docker-restart: docker-down docker-up
 
 # Stream Docker logs
-docker-logs:
+docker-logs: _check-docker
     docker-compose logs -f
 
 # ⚠️ DESTRUCTIVE: Stop containers and remove all volumes (deletes all data)
 [confirm("⚠️  This permanently deletes all PostgreSQL data and Redis volumes. Continue? [y/N]")]
-docker-clean:
+docker-clean: _check-docker
     docker-compose down -v
     @echo -e "{{green}}✓ Docker services and volumes removed{{nc}}"
 
@@ -269,16 +280,16 @@ db-studio:
     pnpm --filter @qoomb/api db:studio
 
 # Open a PostgreSQL shell
-db-shell:
+db-shell: _check-docker
     docker exec -it qoomb-postgres psql -U qoomb -d qoomb
 
 # Open a Redis CLI
-redis-cli:
+redis-cli: _check-docker
     docker exec -it qoomb-redis redis-cli
 
 # ⚠️ DESTRUCTIVE: Wipe database, re-run migrations, optionally seed
 [confirm("⚠️  This permanently deletes all data and rebuilds the schema. Continue? [y/N]")]
-db-reset:
+db-reset: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
     docker-compose down -v
@@ -403,7 +414,7 @@ clean: _dev-stop
 
 # ⚠️ DESTRUCTIVE: Clean everything (node_modules + all data)
 [confirm("⚠️  This deletes node_modules AND all Docker data. Continue? [y/N]")]
-clean-all:
+clean-all: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
     just clean
@@ -435,7 +446,7 @@ first-run: setup
 
 # ⚠️ DESTRUCTIVE: Complete fresh start (wipe everything + setup from scratch)
 [confirm("⚠️  This wipes EVERYTHING and starts fresh. Continue? [y/N]")]
-fresh:
+fresh: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
     just clean

@@ -1,5 +1,5 @@
 import { Button, Input } from '@qoomb/ui';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 
 import { AuthLayout } from '../layouts/AuthLayout';
@@ -16,6 +16,15 @@ export function ForgotPasswordPage() {
     onSuccess: () => setSent(true),
     onError: (err) => setError(err.message),
   });
+
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      setError('');
+      mutation.mutate({ email });
+    },
+    [email, mutation, setError]
+  );
 
   // Redirect if forgot password is disabled
   if (systemConfig.data?.allowForgotPassword === false) {
@@ -35,12 +44,6 @@ export function ForgotPasswordPage() {
         </div>
       </AuthLayout>
     );
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    mutation.mutate({ email });
   }
 
   return (

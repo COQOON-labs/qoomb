@@ -1,5 +1,5 @@
 import { Button, Input } from '@qoomb/ui';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AuthLayout } from '../layouts/AuthLayout';
@@ -64,23 +64,36 @@ export function RegisterPage() {
   const isOpenRegistrationBlocked =
     systemConfig.data?.allowOpenRegistration === false && !inviteToken;
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      setError('');
 
-    if (inviteToken) {
-      registerWithInviteMutation.mutate({
-        email,
-        password,
-        adminName,
-        hiveName,
-        hiveType,
-        inviteToken,
-      });
-    } else {
-      registerMutation.mutate({ email, password, adminName, hiveName, hiveType });
-    }
-  }
+      if (inviteToken) {
+        registerWithInviteMutation.mutate({
+          email,
+          password,
+          adminName,
+          hiveName,
+          hiveType,
+          inviteToken,
+        });
+      } else {
+        registerMutation.mutate({ email, password, adminName, hiveName, hiveType });
+      }
+    },
+    [
+      email,
+      password,
+      adminName,
+      hiveName,
+      hiveType,
+      inviteToken,
+      registerMutation,
+      registerWithInviteMutation,
+      setError,
+    ]
+  );
 
   if (systemConfig.isLoading) {
     return (

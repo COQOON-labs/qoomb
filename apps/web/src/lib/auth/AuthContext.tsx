@@ -217,7 +217,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function updateToken(accessToken: string, refreshToken: string) {
-    dispatch({ type: 'REFRESH', user: state.user!, accessToken, refreshToken });
+    if (!state.user) return;
+    dispatch({ type: 'REFRESH', user: state.user, accessToken, refreshToken });
     scheduleRefresh(accessToken, refreshToken);
   }
 

@@ -1,5 +1,5 @@
 import { Button, Input } from '@qoomb/ui';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AuthLayout } from '../layouts/AuthLayout';
@@ -21,18 +21,21 @@ export function ResetPasswordPage() {
     onError: (err) => setFormError(err.message),
   });
 
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      setFormError('');
+      if (password !== confirm) {
+        setFormError('Passwords do not match.');
+        return;
+      }
+      mutation.mutate({ token, newPassword: password });
+    },
+    [password, confirm, token, mutation, setFormError]
+  );
+
   // No token → back to login
   if (!token) return <Navigate to="/login" replace />;
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setFormError('');
-    if (password !== confirm) {
-      setFormError('Passwords do not match.');
-      return;
-    }
-    mutation.mutate({ token, newPassword: password });
-  }
 
   return (
     <AuthLayout title="Reset password" subtitle="Choose a new password for your account">

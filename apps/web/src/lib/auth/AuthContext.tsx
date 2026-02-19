@@ -26,7 +26,7 @@ export interface AuthState {
 type AuthAction =
   | { type: 'SET_LOADING'; loading: boolean }
   | { type: 'LOGIN'; user: AuthUser; accessToken: string; refreshToken: string }
-  | { type: 'REFRESH'; accessToken: string; refreshToken: string }
+  | { type: 'REFRESH'; user: AuthUser; accessToken: string; refreshToken: string }
   | { type: 'SWITCH_HIVE'; hiveId: string; hiveName: string; personId: string; accessToken: string }
   | { type: 'LOGOUT' };
 
@@ -49,7 +49,7 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
       setAccessToken(action.accessToken);
       setRefreshToken(action.refreshToken);
       return {
-        user: action.type === 'LOGIN' ? action.user : state.user,
+        user: action.user,
         accessToken: action.accessToken,
         isLoading: false,
       };
@@ -88,7 +88,15 @@ function createRefreshClient() {
     : `${window.location.origin}/trpc`;
 
   return createTRPCProxyClient<AppRouter>({
-    links: [httpLink({ url, transformer: superjson })],
+    links: [
+      httpLink({
+        url,
+        transformer: superjson,
+        headers: () => ({
+          'X-CSRF-Protection': '1',
+        }),
+      }),
+    ],
   });
 }
 
@@ -143,6 +151,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await getRefreshClient().auth.refresh.mutate({ refreshToken });
       dispatch({
         type: 'REFRESH',
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          hiveId: result.user.hiveId,
+          personId: result.user.personId,
+          hiveName: result.hive.name,
+        },
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       });
@@ -202,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function updateToken(accessToken: string, refreshToken: string) {
-    dispatch({ type: 'REFRESH', accessToken, refreshToken });
+    dispatch({ type: 'REFRESH', user: state.user!, accessToken, refreshToken });
     scheduleRefresh(accessToken, refreshToken);
   }
 

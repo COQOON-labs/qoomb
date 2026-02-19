@@ -44,7 +44,7 @@ This extended setup requires **macOS or Linux** with:
 - Homebrew (macOS) or package manager (Linux)
 - Ability to install system certificates (mkcert)
 
-**For Windows users:** Use the standard `make dev` instead.
+**For Windows users:** Use the standard `just dev` instead.
 
 ## Setup (One-Time)
 
@@ -53,7 +53,7 @@ This extended setup requires **macOS or Linux** with:
 First, run the standard setup:
 
 ```bash
-make setup
+just setup
 ```
 
 ### Step 2: Add Extended Features
@@ -61,7 +61,7 @@ make setup
 Then add HTTPS and local domain:
 
 ```bash
-make setup-extended
+just setup-extended
 ```
 
 This will:
@@ -92,7 +92,7 @@ ping qoomb.localhost
 ### Standard Development (recommended for most work)
 
 ```bash
-make dev
+just dev
 ```
 
 Access your app at:
@@ -103,7 +103,7 @@ Access your app at:
 ### Extended Development (for mobile/PWA testing)
 
 ```bash
-make dev-extended
+just dev-extended
 ```
 
 Access your app at:
@@ -123,8 +123,8 @@ This will:
 Press `Ctrl+C` to stop the development servers, then:
 
 ```bash
-make stop-extended # Stop Caddy (if using extended mode)
-make docker-down   # Stop Docker services
+just stop-extended # Stop Caddy (if using extended mode)
+just docker-down   # Stop Docker services
 ```
 
 ## Mobile Device Testing
@@ -340,7 +340,7 @@ To use a different domain (e.g., `myapp.local`):
 
 ## Comparison: Development Modes
 
-| Feature              | Standard (`make dev`)        | Extended (`make dev-extended`)     |
+| Feature              | Standard (`just dev`)        | Extended (`just dev-extended`)     |
 | -------------------- | ---------------------------- | ---------------------------------- |
 | **Frontend URL**     | <http://localhost:5173>      | <https://qoomb.localhost:8443>     |
 | **Backend URL**      | <http://localhost:3001>      | <https://qoomb.localhost:8443/api> |
@@ -354,7 +354,7 @@ To use a different domain (e.g., `myapp.local`):
 
 ## When to Use What
 
-**Use `make dev` (standard - recommended) when:**
+**Use `just dev` (standard - recommended) when:**
 
 - Doing regular development work
 - Developing backend features
@@ -363,7 +363,7 @@ To use a different domain (e.g., `myapp.local`):
 - Working on Windows
 - You don't need HTTPS/PWA features
 
-**Use `make dev-extended` (optional) when:**
+**Use `just dev-extended` (optional) when:**
 
 - Testing PWA features
 - Testing on mobile devices
@@ -381,16 +381,16 @@ To use a different domain (e.g., `myapp.local`):
 
 ## Summary
 
-The extended development setup with qoomb.localhost provides an **optional** production-like environment with HTTPS for mobile/PWA testing. Most development can be done with the standard `make dev` setup.
+The extended development setup with qoomb.localhost provides an **optional** production-like environment with HTTPS for mobile/PWA testing. Most development can be done with the standard `just dev` setup.
 
 **Standard Development (recommended):**
 
 ```bash
 # One-time setup
-make setup
+just setup
 
 # Daily development
-make dev
+just dev
 
 # Access at http://localhost:5173
 ```
@@ -399,10 +399,10 @@ make dev
 
 ```bash
 # After standard setup, add extended features
-make setup-extended
+just setup-extended
 
 # Use extended mode when needed
-make dev-extended
+just dev-extended
 
 # Access at https://qoomb.localhost:8443 (also works on mobile devices)
 ```

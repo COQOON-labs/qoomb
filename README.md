@@ -15,14 +15,14 @@ A family organization platform with offline-first capabilities, hybrid encryptio
 
 ## Quick Start
 
-### Option 1: Using Makefile (Recommended) ⭐
+### Option 1: Using justfile (Recommended) ⭐
 
 ```bash
 # Standard setup (works on all platforms)
-make setup
+just setup
 
 # Start development servers
-make dev
+just dev
 ```
 
 That's it! Visit:
@@ -33,8 +33,8 @@ That's it! Visit:
 **Optional: Extended setup with HTTPS** (for mobile/PWA testing on macOS/Linux):
 
 ```bash
-make setup-extended
-make dev-extended
+just setup-extended
+just dev-extended
 # Visit: https://qoomb.localhost:8443
 ```
 
@@ -45,33 +45,33 @@ Extended setup includes:
 - ✅ Mobile/PWA testing ready
 - ✅ Production-like environment
 
-#### Available Make Commands
+#### Available Commands
 
 ```bash
-make help          # Show all available commands
+just help          # Show all available commands
 
 # Setup
-make setup         # Standard setup (Docker + DB, works everywhere)
-make setup-extended # Extended setup with HTTPS (macOS/Linux)
+just setup         # Standard setup (Docker + DB, works everywhere)
+just setup-extended # Extended setup with HTTPS (macOS/Linux)
 
 # Development
-make dev           # Start on localhost (standard, works everywhere)
-make dev-extended  # Start with HTTPS & qoomb.localhost (extended)
-make dev-api       # Start only backend API
-make dev-web       # Start only frontend
+just dev           # Start on localhost (standard, works everywhere)
+just dev-extended  # Start with HTTPS & qoomb.localhost (extended)
+just dev-api       # Start only backend API
+just dev-web       # Start only frontend
 
 # Docker
-make docker-up     # Start PostgreSQL and Redis
-make docker-down   # Stop Docker services
+just docker-up     # Start PostgreSQL and Redis
+just docker-down   # Stop Docker services
 
 # Database
-make db-migrate    # Run database migrations
-make db-studio     # Open Prisma Studio (DB GUI)
+just db-migrate    # Run database migrations
+just db-studio     # Open Prisma Studio (DB GUI)
 
 # Utilities
-make status        # Check service status
-make stop-extended # Stop extended development
-make clean         # Clean build artifacts
+just status        # Check service status
+just stop-extended # Stop extended development
+just clean         # Clean build artifacts
 ```
 
 ### Option 2: Manual Setup

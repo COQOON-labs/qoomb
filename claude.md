@@ -94,8 +94,10 @@
 | ------------------ | ------------------------------ | ----------------------------- |
 | **Monorepo**       | Turborepo + pnpm               | Shared types, atomic changes  |
 | **Backend**        | NestJS + TypeScript            | DI, professional structure    |
-| **API**            | tRPC                           | End-to-end type safety        |
-| **Frontend**       | React 19 + Vite                | Fast HMR, large ecosystem     |
+| **API**            | tRPC + superjson               | End-to-end type safety        |
+| **Frontend**       | React 19 + Vite 7              | Fast HMR, large ecosystem     |
+| **Routing**        | React Router 7                 | File-based + type-safe routes |
+| **Styling**        | Tailwind CSS v4                | CSS-first, custom properties  |
 | **Mobile**         | Capacitor                      | Native iOS/Android wrapper    |
 | **PWA**            | vite-plugin-pwa + Workbox      | Offline-first, installable    |
 | **Database**       | PostgreSQL 18                  | pgvector, JSONB, RLS          |
@@ -116,65 +118,90 @@
 ```
 qoomb/
 ├── apps/
-│   ├── api/                    # NestJS backend
+│   ├── api/                    # NestJS backend (Fastify adapter)
 │   │   ├── src/
 │   │   │   ├── modules/
-│   │   │   │   ├── auth/           # JWT auth, hive registration
+│   │   │   │   ├── auth/           # JWT auth, PassKey/WebAuthn, registration
 │   │   │   │   ├── encryption/     # Key management, @EncryptFields
-│   │   │   │   ├── events/         # [TODO] Calendar events
-│   │   │   │   ├── tasks/          # [TODO] Task management
-│   │   │   │   └── persons/        # [TODO] Hive members
+│   │   │   │   ├── email/          # i18n emails (DE/EN), 3 transports
+│   │   │   │   ├── events/         # Calendar events (CRUD, RBAC, encrypted)
+│   │   │   │   ├── tasks/          # Task management (CRUD, RBAC, encrypted)
+│   │   │   │   ├── persons/        # Hive members (CRUD, RBAC, encrypted)
+│   │   │   │   ├── groups/         # Groups + membership management
+│   │   │   │   └── sync/           # [Phase 4] Offline sync (empty)
 │   │   │   ├── trpc/               # tRPC setup, context, routers
+│   │   │   ├── i18n/               # typesafe-i18n (DE/EN locales)
 │   │   │   ├── config/             # Env validation, security config
-│   │   │   ├── common/             # Guards, interceptors
+│   │   │   ├── common/             # Guards, interceptors, services
 │   │   │   └── prisma/             # Prisma service (multi-tenant)
 │   │   └── prisma/
 │   │       ├── schema.prisma       # DB schema (public + template)
 │   │       └── migrations/         # Version-controlled migrations
 │   │
-│   ├── web/                    # React PWA frontend
+│   ├── web/                    # React 19 PWA frontend
 │   │   ├── public/                 # PWA assets (icons, manifest)
 │   │   ├── scripts/                # Build scripts (icon generation)
 │   │   └── src/
-│   │       ├── components/dev/     # Dev-only debugging panel
-│   │       │   ├── DevPanel.tsx    # Main sliding panel
-│   │       │   ├── DevPanelTab.tsx # Floating button
-│   │       │   └── sections/       # Panel sections
-│   │       └── lib/trpc/           # tRPC client
+│   │       ├── pages/              # Route pages (Login, Register, Dashboard, …)
+│   │       ├── layouts/            # AuthLayout (shared auth page layout)
+│   │       ├── components/
+│   │       │   ├── auth/           # AuthGuard, PassKeyButton, PassKeyManager
+│   │       │   ├── layout/         # HiveSwitcher, EmailVerificationBanner
+│   │       │   └── dev/            # Dev-only debugging panel (5 sections)
+│   │       ├── lib/
+│   │       │   ├── auth/           # AuthContext, tokenStore, authStorage
+│   │       │   └── trpc/           # tRPC client (splitLink, CSRF, Bearer)
+│   │       ├── hooks/              # App-specific hooks
+│   │       └── styles/             # Tailwind v4 theme + CSS custom properties
 │   │
 │   └── mobile/                 # Capacitor mobile wrapper
-│       ├── capacitor.config.ts     # iOS/Android configuration
-│       ├── ios/                    # [Generated] Xcode project
-│       └── android/                # [Generated] Android Studio project
+│       └── capacitor.config.ts     # iOS/Android configuration (dirs generated on demand)
 │
 ├── packages/
 │   ├── types/                  # Shared TypeScript types
+│   │   └── src/
+│   │       ├── entities/           # Hive, Person, Event, Task, common types
+│   │       ├── permissions.ts      # HivePermission enum + role mappings
+│   │       ├── api/                # [TODO] API response types (empty)
+│   │       └── sync/               # [Phase 4] Sync types (empty)
 │   ├── validators/             # Shared Zod schemas + sanitizers
+│   │   └── src/schemas/            # auth, person, event, task, group, common
 │   ├── ui/                     # Shared React components + hooks
-│   │   ├── src/components/         # Button, Input, Card, etc.
-│   │   ├── src/hooks/              # useMediaQuery, useOnlineStatus
-│   │   └── src/utils/              # cn() class merger
+│   │   └── src/
+│   │       ├── components/         # Button, Input, Card (CVA + Radix)
+│   │       ├── hooks/              # 7 hooks (media query, online status, …)
+│   │       └── utils/              # cn() class merger (clsx + tw-merge)
+│   ├── eslint-config/          # Shared ESLint config (@qoomb/eslint-config)
 │   └── config/                 # Shared tsconfig
 │
 ├── docs/                       # Documentation for humans
-│   ├── SECURITY.md                        # Security architecture
-│   ├── JWT_REFRESH_TOKEN_IMPLEMENTATION.md # JWT refresh token guide
-│   ├── PERFORMANCE.md                     # Prisma performance guide
-│   └── PRISMA_PATTERNS.md                 # When to use Prisma vs raw SQL
+│   ├── CONTENT_ARCHITECTURE.md     # Content model, schema, encryption
+│   ├── DESIGN_SYSTEM.md            # Tailwind v4 design tokens
+│   ├── LOCAL_DEVELOPMENT.md        # qoomb.localhost + Caddy setup
+│   ├── PERMISSIONS.md              # RBAC architecture + guard API
+│   ├── SECURITY.md                 # Security architecture details
+│   ├── PERFORMANCE.md              # Prisma performance guide
+│   ├── PRISMA_PATTERNS.md          # When to use Prisma vs raw SQL
+│   ├── RELEASING.md                # Release process (release-please)
+│   └── TERMINOLOGY.md              # Domain terminology glossary
 │
 ├── .github/                    # GitHub configuration
 │   ├── workflows/                  # CI/CD pipelines
-│   │   ├── ci.yml                 # Main CI pipeline
+│   │   ├── ci.yml                 # Main CI (lint, type-check, test, build)
 │   │   ├── codeql.yml             # Security scanning (SAST)
 │   │   ├── trivy.yml              # Vulnerability & secrets scanning
-│   │   └── pr-checks.yml          # PR validation
+│   │   ├── release.yml            # Release-please automation
+│   │   ├── sbom.yml               # Software Bill of Materials
+│   │   ├── scorecard.yml          # OpenSSF Scorecard
+│   │   └── version-check.yml     # Version consistency check
 │   └── dependabot.yml              # Automated dependency updates
 │
 ├── .husky/                     # Git hooks
-│   ├── pre-commit                  # Fast checks (Prettier)
-│   ├── pre-push                    # Thorough checks (types, tests)
-│   └── commit-msg                  # Conventional commits validation
+│   ├── pre-commit                  # Prettier + Gitleaks
+│   ├── pre-push                    # Lint + types + tests
+│   └── commit-msg                  # Commitlint + anti-AI-trailer
 │
+├── justfile                    # Task runner (44 recipes)
 ├── docker-compose.yml          # PostgreSQL + Redis
 ├── LICENSE.md                  # Fair Source License v1.0 + CLA
 ├── COMMERCIAL-LICENSE.md       # Commercial licensing details
@@ -202,10 +229,14 @@ qoomb/
 **Security & Auth (PRODUCTION-READY):**
 
 - JWT authentication with refresh tokens (15min access, 7d refresh)
+- Refresh endpoint returns user + hive data for session restoration
 - Token rotation and revocation
 - Token blacklisting (Redis-based)
+- PassKey/WebAuthn (registration, authentication, list, remove)
+- CSRF guard (custom request header pattern: `X-CSRF-Protection: 1`)
 - Shared schema + Row-Level Security (RLS) on all hive-scoped tables
 - `app.hive_id` session variable enforced by `hiveProcedure`
+- tRPC context extracts JWT from `Authorization: Bearer` header
 - Input validation (Zod) + sanitization
 - Rate limiting (Redis-based, distributed)
 - Account lockout (exponential backoff)
@@ -216,12 +247,33 @@ qoomb/
 - Audit logging foundation
 - **Location:** `apps/api/src/modules/auth/`, `apps/api/src/common/`
 
-**Mobile & PWA (NEW):**
+**Frontend Application (PRODUCTION-READY):**
 
-- PWA manifest with app icons
-- Service worker with Workbox (offline caching)
+- **Auth Flow:** Login, Register, Forgot/Reset Password, Email Verification — all with real tRPC calls
+- **PassKey UI:** PassKeyButton (login), PassKeyManager (register/list/remove credentials)
+- **Auth Context:** Silent refresh with JWT-expiry scheduling, in-memory access token (never localStorage), hive switching
+- **Dashboard:** UI prototype (775 lines, static data — no tRPC calls yet, German placeholder content)
+- **Auth Guard:** Route-level protection component
+- **tRPC Client:** splitLink (GET queries, POST batch mutations), CSRF header, Bearer auth, superjson transformer
+- **HiveSwitcher:** Component for switching between user's hives
+- **EmailVerificationBanner:** Persistent banner until email confirmed
+- **Location:** `apps/web/src/pages/`, `apps/web/src/components/`, `apps/web/src/lib/`
+
+**Design System (PRODUCTION-READY):**
+
+- Tailwind CSS v4 with `@theme inline` and custom `@utility` directives
+- CSS Custom Properties for all design tokens (primary, background, foreground, muted, border, etc.)
+- Light mode (warm palette: `#F5C400` primary, `#F8F7F5` background) + Dark mode (auto via `prefers-color-scheme` + `.dark` class)
+- Brand tokens: Yellow/black Qoomb identity
+- Custom glow utilities: `glow-success`, `glow-destructive`, `glow-primary`, `glow-muted`
+- **Location:** `apps/web/src/styles/index.css`, `docs/DESIGN_SYSTEM.md`
+
+**Mobile & PWA:**
+
+- PWA manifest with app icons (192, 512, apple-touch, mask-icon)
+- Service worker with Workbox (offline caching for static assets + runtime cache for tRPC/API)
 - Apple mobile web app support
-- Capacitor configuration for iOS/Android
+- Capacitor configuration for iOS/Android (dirs generated on demand, not committed)
 - Native plugins: Push Notifications, Haptics, Splash Screen
 - **Location:** `apps/web/`, `apps/mobile/`
 
@@ -273,10 +325,24 @@ qoomb/
 
 - Pluggable key providers (Environment, File, AWS KMS, Vault)
 - Decorator-based field encryption (`@EncryptFields`, `@DecryptFields`)
-- HKDF per-hive key derivation
-- AES-256-GCM authenticated encryption
-- Startup self-test
+- HKDF per-hive key derivation + per-user key derivation (`encryptForUser`/`decryptForUser`)
+- AES-256-GCM authenticated encryption with key versioning
+- HMAC-SHA256 email blind index (`hashEmail`) for lookups without storing plaintext
+- 7-point self-test at startup (basic crypto, hive isolation, serialization, user encryption, multi-version, email hash)
 - **Location:** `apps/api/src/modules/encryption/`
+
+**Email:**
+
+- i18n email rendering (DE/EN) via typesafe-i18n
+- Handlebars templates: email-verification, password-reset, invitation (+ shared layout partial)
+- 3 pluggable transports: Console (dev), SMTP (self-hosted), Resend (SaaS)
+- **Location:** `apps/api/src/modules/email/`
+
+**Backend i18n:**
+
+- typesafe-i18n with DE and EN locales
+- Used for email templates and user-facing error messages
+- **Location:** `apps/api/src/i18n/`
 
 **Phase 2 (Core Content):**
 
@@ -431,22 +497,22 @@ class UserService {
 }
 ```
 
-**In Makefile:**
+**In justfile:**
 
-```makefile
-# ✅ GOOD: Atomic, reusable commands
+```just
+# ✅ GOOD: Atomic, reusable recipes
+[private]
 _docker-volumes-remove:  # Does ONE thing
-    docker-compose down -v
+    docker compose down -v
 
-docker-clean:  # Adds UI layer
-    [confirmation] + $(MAKE) _docker-volumes-remove
+docker-clean: _docker-volumes-remove  # Adds UI layer
 
 # ❌ BAD: Duplicate logic
 docker-clean:
-    docker-compose down -v
+    docker compose down -v
 
 db-reset:
-    docker-compose down -v  # Duplication!
+    docker compose down -v  # Duplication!
 ```
 
 #### Open/Closed Principle (OCP)
@@ -551,22 +617,23 @@ if (!emailRegex.test(user.email)) { ... }  // Duplicated
 if (!emailRegex.test(input.email)) { ... }  // Duplicated
 ```
 
-**In Makefile:**
+**In justfile:**
 
-```makefile
+```just
 # ✅ GOOD: DRY
+[private]
 _docker-volumes-remove:
-    docker-compose down -v
+    docker compose down -v
 
-docker-clean: $(MAKE) _docker-volumes-remove
-db-reset: $(MAKE) _docker-volumes-remove
+docker-clean: _docker-volumes-remove
+db-reset: _docker-volumes-remove
 
 # ❌ BAD: Duplication
 docker-clean:
-    docker-compose down -v  # Repeated
+    docker compose down -v  # Repeated
 
 db-reset:
-    docker-compose down -v  # Repeated
+    docker compose down -v  # Repeated
 ```
 
 #### Keep It Simple, Stupid (KISS)
@@ -1065,10 +1132,15 @@ JWT_SECRET=<32+ chars>    # Generate: openssl rand -base64 32
 README.md              → Human onboarding
 claude.md              → This file (AI context)
 docs/
-  ├── SECURITY.md          → Security architecture details
-  ├── PERFORMANCE.md       → Prisma performance guide
-  ├── PRISMA_PATTERNS.md   → When to use Prisma vs SQL
-  └── LOCAL_DEVELOPMENT.md → qoomb.localhost setup for mobile/PWA testing
+  ├── CONTENT_ARCHITECTURE.md → Content model, schema, encryption
+  ├── DESIGN_SYSTEM.md       → Tailwind v4 design tokens
+  ├── LOCAL_DEVELOPMENT.md   → qoomb.localhost + Caddy setup
+  ├── PERMISSIONS.md         → RBAC architecture + guard API
+  ├── SECURITY.md            → Security architecture details
+  ├── PERFORMANCE.md         → Prisma performance guide
+  ├── PRISMA_PATTERNS.md     → When to use Prisma vs SQL
+  ├── RELEASING.md           → Release process (release-please)
+  └── TERMINOLOGY.md         → Domain terminology glossary
 
 apps/api/src/modules/encryption/
   ├── README.md        → Encryption quick start
@@ -1155,5 +1227,5 @@ apps/api/src/modules/encryption/
 
 ---
 
-**Last Updated:** 2026-02-10
+**Last Updated:** 2026-02-19
 **Version:** 0.1.0 (Phase 1 - Foundation with PWA, Mobile, Dev Tools)

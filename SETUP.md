@@ -1,113 +1,113 @@
 # Qoomb Setup Guide - Quick Start
 
-**Status:** ✅ Environment konfiguriert und bereit
-**Datum:** 2026-02-03
+**Status:** ✅ Environment configured and ready
+**Date:** 2026-02-03
 
 ---
 
-## ✅ Was bereits erledigt ist
+## ✅ What is already done
 
-- ✓ `.env` Datei erstellt mit sicheren, generierten Secrets
-- ✓ `docker-compose.yml` konfiguriert (PostgreSQL 18 + Redis 8)
-- ✓ JWT Refresh Token System vollständig implementiert
-- ✓ Alle TypeScript Errors behoben
-- ✓ Security Features aktiviert (Rate Limiting, Account Lockout, Token Blacklisting)
+- ✓ `.env` file created with secure, generated secrets
+- ✓ `docker-compose.yml` configured (PostgreSQL 18 + Redis 8)
+- ✓ JWT Refresh Token System fully implemented
+- ✓ All TypeScript errors resolved
+- ✓ Security features enabled (Rate Limiting, Account Lockout, Token Blacklisting)
 
 ---
 
-## 🚀 Setup in 3 Schritten
+## 🚀 Setup in 3 Steps
 
-### Schritt 1: Docker Services starten (PostgreSQL + Redis)
+### Step 1: Start Docker Services (PostgreSQL + Redis)
 
 ```bash
-# Im Root-Verzeichnis des Projekts
+# In the project root directory
 docker-compose up -d
 
-# Prüfen ob Services laufen
+# Check if services are running
 docker-compose ps
 
-# Sollte zeigen:
+# Should show:
 # qoomb-postgres   running   (healthy)
 # qoomb-redis      running   (healthy)
 ```
 
-**Was passiert:**
+**What happens:**
 
-- PostgreSQL 18 mit pgvector Extension startet auf Port 5432
-- Redis 8 startet auf Port 6379
-- UUID Extension wird aktiviert
-- Daten werden in Docker Volumes persistiert
+- PostgreSQL 18 with pgvector extension starts on port 5432
+- Redis 8 starts on port 6379
+- UUID extension is enabled
+- Data is persisted in Docker volumes
 
-**Falls Probleme:**
+**If there are problems:**
 
 ```bash
-# Logs anzeigen
+# Show logs
 docker-compose logs -f postgres
 docker-compose logs -f redis
 
-# Neu starten
+# Restart
 docker-compose down
 docker-compose up -d
 ```
 
 ---
 
-### Schritt 2: Datenbank-Migration ausführen
+### Step 2: Run Database Migration
 
 ```bash
-# In das API-Verzeichnis wechseln
+# Change to the API directory
 cd apps/api
 
-# Prisma Client generieren
+# Generate Prisma Client
 pnpm prisma generate
 
-# Migration ausführen (erstellt Tabellen)
+# Run migration (creates tables)
 pnpm prisma migrate deploy
 
-# Alternative: Development Migration (erstellt Migration wenn nötig)
+# Alternative: Development migration (creates migration if needed)
 # pnpm prisma migrate dev
 ```
 
-**Was passiert:**
+**What happens:**
 
-- Prisma Client wird generiert
-- `public` Schema wird mit User, Hive, RefreshToken Tabellen erstellt
-- PostgreSQL Extensions werden aktiviert
-- Indizes werden erstellt
+- Prisma Client is generated
+- `public` schema is created with User, Hive, RefreshToken tables
+- PostgreSQL extensions are enabled
+- Indexes are created
 
-**Erwartete Ausgabe:**
+**Expected output:**
 
-```
+```text
 ✓ Prisma Client generated
 ✓ Applied migrations:
   - 20240204000000_add_refresh_tokens
 ✓ Database schema up to date
 ```
 
-**Optional - Datenbank anschauen:**
+**Optional — view the database:**
 
 ```bash
-# Prisma Studio öffnen (GUI für Datenbank)
+# Open Prisma Studio (GUI for the database)
 pnpm prisma studio
-# Öffnet http://localhost:5555
+# Opens http://localhost:5555
 ```
 
 ---
 
-### Schritt 3: API Server starten
+### Step 3: Start the API Server
 
 ```bash
-# Im Root-Verzeichnis ODER in apps/api
+# In the root directory OR in apps/api
 pnpm dev
 
-# Oder spezifisch nur die API:
+# Or specifically just the API:
 cd apps/api
 pnpm dev
 ```
 
-**Erwartete Ausgabe:**
+**Expected output:**
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                                                         │
 │   🚀 Qoomb API Server Running                          │
@@ -121,11 +121,11 @@ pnpm dev
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Server läuft jetzt auf:** `http://localhost:3001`
+**Server is now running at:** `http://localhost:3001`
 
 ---
 
-## 🧪 System testen
+## 🧪 Testing the System
 
 ### Test 1: Health Check
 
@@ -133,7 +133,7 @@ pnpm dev
 curl http://localhost:3001/trpc/health
 ```
 
-**Erwartete Antwort:**
+**Expected response:**
 
 ```json
 {
@@ -144,20 +144,20 @@ curl http://localhost:3001/trpc/health
 
 ---
 
-### Test 2: Hive Registrierung
+### Test 2: Hive Registration
 
 ```bash
 curl -X POST http://localhost:3001/trpc/auth.register \
   -H "Content-Type: application/json" \
   -d '{
-    "hiveName": "Meine Familie",
-    "adminName": "Max Mustermann",
-    "email": "max@example.com",
+    "hiveName": "My Family",
+    "adminName": "John Doe",
+    "email": "john@example.com",
     "password": "SecurePass123!"
   }'
 ```
 
-**Erwartete Antwort:**
+**Expected response:**
 
 ```json
 {
@@ -166,25 +166,25 @@ curl -X POST http://localhost:3001/trpc/auth.register \
   "expiresIn": 900,
   "user": {
     "id": "uuid",
-    "email": "max@example.com",
+    "email": "john@example.com",
     "hiveId": "uuid",
     "personId": "uuid"
   },
   "hive": {
     "id": "uuid",
-    "name": "Meine Familie"
+    "name": "My Family"
   }
 }
 ```
 
-**Was passiert:**
+**What happens:**
 
-- Neues Hive wird erstellt
-- Dedicated PostgreSQL Schema `hive_<uuid>` wird angelegt
-- Admin User wird erstellt
-- Admin Person wird im Hive-Schema erstellt
-- Access Token (15min) + Refresh Token (7d) werden zurückgegeben
-- IP + User-Agent werden für Device-Tracking gespeichert
+- New hive is created
+- Dedicated PostgreSQL schema `hive_<uuid>` is provisioned
+- Admin user is created
+- Admin person is created in the hive schema
+- Access token (15 min) + Refresh token (7 days) are returned
+- IP + User-Agent are stored for device tracking
 
 ---
 
@@ -194,12 +194,12 @@ curl -X POST http://localhost:3001/trpc/auth.register \
 curl -X POST http://localhost:3001/trpc/auth.login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "max@example.com",
+    "email": "john@example.com",
     "password": "SecurePass123!"
   }'
 ```
 
-**Erwartete Antwort:**
+**Expected response:**
 
 ```json
 {
@@ -216,8 +216,8 @@ curl -X POST http://localhost:3001/trpc/auth.login \
 ### Test 4: Token Refresh
 
 ```bash
-# Speichere refreshToken aus vorherigem Login
-REFRESH_TOKEN="<refreshToken aus Login>"
+# Save the refreshToken from the previous login
+REFRESH_TOKEN="<refreshToken from login>"
 
 curl -X POST http://localhost:3001/trpc/auth.refresh \
   -H "Content-Type: application/json" \
@@ -226,12 +226,12 @@ curl -X POST http://localhost:3001/trpc/auth.refresh \
   }"
 ```
 
-**Erwartete Antwort:**
+**Expected response:**
 
 ```json
 {
-  "accessToken": "eyJhbGci...",  # Neuer Access Token
-  "refreshToken": "abc123...",   # Neuer Refresh Token (Rotation!)
+  "accessToken": "eyJhbGci...",
+  "refreshToken": "abc123...",
   "expiresIn": 900,
   "user": {
     "id": "uuid",
@@ -246,21 +246,21 @@ curl -X POST http://localhost:3001/trpc/auth.refresh \
 }
 ```
 
-**Wichtig:** Der alte Refresh Token ist jetzt revoked!
+**Important:** The old refresh token is now revoked!
 
 ---
 
-### Test 5: Aktive Sessions anzeigen
+### Test 5: List Active Sessions
 
 ```bash
-# Speichere accessToken aus Login
-ACCESS_TOKEN="<accessToken aus Login>"
+# Save the accessToken from login
+ACCESS_TOKEN="<accessToken from login>"
 
 curl http://localhost:3001/trpc/auth.getActiveSessions \
   -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
-**Erwartete Antwort:**
+**Expected response:**
 
 ```json
 {
@@ -290,7 +290,7 @@ curl -X POST http://localhost:3001/trpc/auth.logout \
   }"
 ```
 
-**Erwartete Antwort:**
+**Expected response:**
 
 ```json
 {
@@ -299,38 +299,38 @@ curl -X POST http://localhost:3001/trpc/auth.logout \
 }
 ```
 
-**Was passiert:**
+**What happens:**
 
-- Access Token wird in Redis blacklisted
-- Refresh Token wird in DB revoked
-- Nachfolgende Requests mit diesen Tokens werden abgelehnt
+- Access token is blacklisted in Redis
+- Refresh token is revoked in the DB
+- Subsequent requests with these tokens are rejected
 
 ---
 
 ### Test 7: Account Lockout (Security)
 
 ```bash
-# 5 Fehlversuche nacheinander
+# 5 failed attempts in a row
 for i in {1..5}; do
   curl -X POST http://localhost:3001/trpc/auth.login \
     -H "Content-Type: application/json" \
     -d '{
-      "email": "max@example.com",
+      "email": "john@example.com",
       "password": "wrongpassword"
     }'
   echo "\n--- Attempt $i ---\n"
 done
 
-# 6. Versuch sollte mit Account Lockout fehlschlagen
+# 6th attempt should fail with Account Lockout
 curl -X POST http://localhost:3001/trpc/auth.login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "max@example.com",
-    "password": "SecurePass123!"  # Selbst mit richtigem Passwort!
+    "email": "john@example.com",
+    "password": "SecurePass123!"
   }'
 ```
 
-**Erwartete Antwort (6. Versuch):**
+**Expected response (6th attempt):**
 
 ```json
 {
@@ -345,21 +345,21 @@ curl -X POST http://localhost:3001/trpc/auth.login \
 ### Test 8: Rate Limiting
 
 ```bash
-# 101 Requests in schneller Folge (Limit: 100/min)
+# 101 requests in quick succession (limit: 100/min)
 for i in {1..101}; do
   curl -s http://localhost:3001/trpc/health > /dev/null
   echo "Request $i"
 done
 ```
 
-**Erwartetes Verhalten:**
+**Expected behavior:**
 
 - Requests 1-100: ✓ 200 OK
 - Request 101: ❌ 429 Too Many Requests
 
 ---
 
-## 📊 Datenbank überprüfen
+## 📊 Inspecting the Database
 
 ### Prisma Studio (GUI)
 
@@ -368,200 +368,200 @@ cd apps/api
 pnpm prisma studio
 ```
 
-Öffnet Browser auf `http://localhost:5555`
+Opens browser at `http://localhost:5555`
 
-**Du kannst sehen:**
+**You can view:**
 
-- `User` Tabelle mit deinem Admin-User
-- `Hive` Tabelle mit deinem Hive
-- `RefreshToken` Tabelle mit aktiven Sessions
-- Hive-spezifische Schemas (z.B. `hive_<uuid>`)
+- `User` table with your admin user
+- `Hive` table with your hive
+- `RefreshToken` table with active sessions
+- Hive-specific schemas (e.g. `hive_<uuid>`)
 
 ### PostgreSQL CLI
 
 ```bash
-# Direkt in Container verbinden
+# Connect directly into the container
 docker exec -it qoomb-postgres psql -U qoomb -d qoomb
 
-# Dann in psql:
-\dt                          -- Alle Tabellen im public Schema
-\dn                          -- Alle Schemas (inkl. hive_*)
-SELECT * FROM users;         -- Alle Users
-SELECT * FROM refresh_tokens; -- Alle Sessions
-\q                           -- Beenden
+# Then in psql:
+\dt                          -- All tables in public schema
+\dn                          -- All schemas (incl. hive_*)
+SELECT * FROM users;         -- All users
+SELECT * FROM refresh_tokens; -- All sessions
+\q                           -- Exit
 ```
 
 ### Redis CLI
 
 ```bash
-# In Redis Container verbinden
+# Connect into the Redis container
 docker exec -it qoomb-redis redis-cli
 
-# Dann in redis-cli:
-KEYS *                       -- Alle Keys anzeigen
-GET <key>                    -- Wert eines Keys anzeigen
-TTL <key>                    -- Verbleibende Zeit bis Expiration
-QUIT                         -- Beenden
+# Then in redis-cli:
+KEYS *                       -- List all keys
+GET <key>                    -- Get value of a key
+TTL <key>                    -- Remaining time until expiration
+QUIT                         -- Exit
 ```
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Problem: Docker Services starten nicht
+### Problem: Docker services won't start
 
-**Lösung 1: Ports belegt**
+Solution 1: Ports in use
 
 ```bash
-# Prüfe ob Ports bereits belegt sind
+# Check if ports are already in use
 lsof -i :5432  # PostgreSQL
 lsof -i :6379  # Redis
 
-# Stoppe andere PostgreSQL/Redis Instanzen oder ändere Ports in docker-compose.yml
+# Stop other PostgreSQL/Redis instances or change ports in docker-compose.yml
 ```
 
-**Lösung 2: Alte Container aufräumen**
+Solution 2: Clean up old containers
 
 ```bash
-docker-compose down -v  # -v löscht auch Volumes (Achtung: Datenverlust!)
+docker-compose down -v  # -v also removes volumes (caution: data loss!)
 docker-compose up -d
 ```
 
 ---
 
-### Problem: Prisma Migration schlägt fehl
+### Problem: Prisma migration fails
 
-**Fehler: "Can't reach database server"**
+Error: "Can't reach database server"
 
 ```bash
-# Prüfe ob PostgreSQL läuft
+# Check if PostgreSQL is running
 docker-compose ps
 
-# Prüfe PostgreSQL Logs
+# Check PostgreSQL logs
 docker-compose logs postgres
 
-# Warte bis Health Check OK ist
+# Wait until health check is OK
 docker-compose ps | grep healthy
 ```
 
-**Fehler: "Migration already applied"**
+Error: "Migration already applied"
 
 ```bash
-# Das ist OK - Migration wurde bereits ausgeführt
-# Weiter mit nächstem Schritt
+# This is OK — migration was already applied
+# Continue with the next step
 ```
 
 ---
 
-### Problem: Server startet nicht
+### Problem: Server won't start
 
-**Fehler: "Cannot find module"**
+Error: "Cannot find module"
 
 ```bash
-# Dependencies installieren
+# Install dependencies
 pnpm install
 
-# Prisma Client regenerieren
+# Regenerate Prisma Client
 cd apps/api
 pnpm prisma generate
 ```
 
-**Fehler: "PORT already in use"**
+Error: "PORT already in use"
 
 ```bash
-# Ändere Port in .env
+# Change port in .env
 API_PORT=3002
 ```
 
-**Fehler: "Redis connection failed"**
+Error: "Redis connection failed"
 
 ```bash
-# Prüfe ob Redis läuft
+# Check if Redis is running
 docker-compose ps redis
 
-# Prüfe Redis URL in .env
+# Check Redis URL in .env
 REDIS_URL=redis://localhost:6379
 ```
 
 ---
 
-### Problem: Tests schlagen fehl
+### Problem: Tests fail
 
-**401 Unauthorized**
+401 Unauthorized
 
-- Access Token ist abgelaufen (15min)
-- Token ist blacklisted (nach Logout)
-- Token ist ungültig
+- Access token has expired (15 min)
+- Token is blacklisted (after logout)
+- Token is invalid
 
-**Lösung:** Neuen Token holen via `auth.login` oder `auth.refresh`
+**Solution:** Get a new token via `auth.login` or `auth.refresh`
 
-**429 Too Many Requests**
+429 Too Many Requests
 
-- Rate Limit erreicht (100 req/min)
+- Rate limit reached (100 req/min)
 
-**Lösung:** 1 Minute warten oder Rate Limit in Code temporär erhöhen
-
----
-
-## 🎉 Erfolg!
-
-Wenn alle Tests funktionieren:
-
-✅ PostgreSQL läuft
-✅ Redis läuft
-✅ API Server läuft
-✅ JWT Auth funktioniert
-✅ Token Rotation funktioniert
-✅ Account Lockout funktioniert
-✅ Rate Limiting funktioniert
-✅ Session Management funktioniert
-
-**Dein Qoomb Backend ist production-ready!** 🚀
+**Solution:** Wait 1 minute or temporarily increase the rate limit in code
 
 ---
 
-## 📚 Nächste Schritte
+## 🎉 Success
 
-### 1. Dashboard mit Live-Daten verbinden
+If all tests pass:
 
-- Dashboard-Prototyp (775 Zeilen) mit tRPC-Calls verbinden
-- Statische Platzhalter durch echte API-Daten ersetzen
+✅ PostgreSQL is running
+✅ Redis is running
+✅ API Server is running
+✅ JWT Auth works
+✅ Token Rotation works
+✅ Account Lockout works
+✅ Rate Limiting works
+✅ Session Management works
+
+**Your Qoomb backend is production-ready!** 🚀
+
+---
+
+## 📚 Next Steps
+
+### 1. Connect Dashboard to Live Data
+
+- Connect the Dashboard prototype (775 lines) with tRPC calls
+- Replace static placeholders with real API data
 
 ### 2. Frontend i18n
 
-- typesafe-i18n im Frontend einrichten (DE/EN)
-- Hardcoded deutsche Texte im Dashboard durch i18n-Keys ersetzen
+- Set up typesafe-i18n in the frontend (DE/EN)
+- Replace hardcoded text in Dashboard with i18n keys
 
-### 3. Phase 3 starten
+### 3. Start Phase 3
 
-- Pages Module (Tiptap Editor, Baumstruktur)
+- Pages Module (Tiptap Editor, tree structure)
 - Documents Module (File Upload, Envelope Encryption)
 - Activity Log (Change Feed)
 
-### 4. Testing erweitern
+### 4. Expand Testing
 
-- Unit Tests für neue Module
-- Integration Tests
-- E2E Tests
+- Unit tests for new modules
+- Integration tests
+- E2E tests
 
 ### 5. Production Deployment
 
-- `.env` für Production anpassen
-- Docker Image bauen
-- Deployment auf Server/Cloud
+- Update `.env` for production
+- Build Docker image
+- Deploy to server/cloud
 
 ---
 
-## 📖 Weitere Dokumentation
+## 📖 Further Documentation
 
 - [CONTENT_ARCHITECTURE.md](docs/CONTENT_ARCHITECTURE.md) - Content Model, Schema, Encryption
-- [PERMISSIONS.md](docs/PERMISSIONS.md) - RBAC Architektur + Guard API
-- [SECURITY.md](docs/SECURITY.md) - Security Architektur
+- [PERMISSIONS.md](docs/PERMISSIONS.md) - RBAC Architecture + Guard API
+- [SECURITY.md](docs/SECURITY.md) - Security Architecture
 - [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) - Tailwind v4 Design Tokens
-- [LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md) - Lokale Entwicklung + Caddy
+- [LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md) - Local Development + Caddy
 - [PERFORMANCE.md](docs/PERFORMANCE.md) - Prisma Performance Guide
 - [PRISMA_PATTERNS.md](docs/PRISMA_PATTERNS.md) - Prisma vs Raw SQL
-- [claude.md](claude.md) - Projekt-Kontext für Entwicklung
+- [CLAUDE.md](CLAUDE.md) - Project context for development
 
 ---
 

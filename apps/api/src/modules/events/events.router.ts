@@ -59,13 +59,13 @@ export const eventsRouter = (eventsService: EventsService) =>
       const sharedIds = await getSharedResourceIds(
         ctx.prisma,
         'event',
-        ctx.user.personId!,
+        ctx.user.personId ?? '',
         ctx.user.groupIds ?? []
       );
 
       const visibilityFilter = buildVisibilityFilter(
         {
-          personId: ctx.user.personId!,
+          personId: ctx.user.personId ?? '',
           hiveType: ctx.user.hiveType ?? '',
           role: ctx.user.role ?? '',
           roleOverrides: ctx.user.roleOverrides ?? [],
@@ -111,6 +111,9 @@ export const eventsRouter = (eventsService: EventsService) =>
       requirePermission(ctx, HivePermission.EVENTS_CREATE);
 
       const { personId, hiveId } = ctx.user;
+      if (!personId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No person record found' });
+      }
 
       // Re-validate time ordering (Zod refine runs at parse time, this is a belt-and-suspenders check)
       const startAt = new Date(input.startAt);
@@ -136,7 +139,7 @@ export const eventsRouter = (eventsService: EventsService) =>
             recurrenceRule: input.recurrenceRule,
           },
           hiveId,
-          personId!
+          personId
         );
       } catch (e) {
         throw mapPrismaError(e, 'Failed to create event');

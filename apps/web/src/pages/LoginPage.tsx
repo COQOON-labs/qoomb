@@ -1,5 +1,5 @@
 import { Button, Input } from '@qoomb/ui';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { PassKeyButton } from '../components/auth/PassKeyButton';
@@ -39,11 +39,14 @@ export function LoginPage() {
 
   const systemConfig = trpc.auth.getSystemConfig.useQuery();
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    loginMutation.mutate({ email, password });
-  }
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      setError('');
+      loginMutation.mutate({ email, password });
+    },
+    [email, password, loginMutation, setError]
+  );
 
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to your hive">

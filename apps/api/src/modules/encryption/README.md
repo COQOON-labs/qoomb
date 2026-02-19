@@ -141,7 +141,7 @@ VAULT_TOKEN=<token>
 
 ## 🏗️ Architecture
 
-```
+```text
 Master Key (from KEY_PROVIDER)
     ↓ HKDF
 Hive-Specific Key (one per hive)

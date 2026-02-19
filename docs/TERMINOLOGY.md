@@ -108,7 +108,7 @@ While families are the primary use case, using "Hive" allows the codebase to gro
 | --------------- | ---------------------- | ------------------------------------ |
 | **Hive**        | Top-level organization | "Mustermann Hive"                    |
 | **Person**      | Member of a hive       | "Max Mustermann"                     |
-| **User**        | Login account          | max@example.com                      |
+| **User**        | Login account          | <max@example.com>                    |
 | **Hive ID**     | Unique identifier      | 550e8400-e29b-41d4-a716-446655440000 |
 | **Hive Schema** | Database schema        | `hive_550e8400`                      |
 

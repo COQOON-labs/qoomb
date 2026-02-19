@@ -1,6 +1,6 @@
 # Qoomb Fair Source License, Version 1.0
 
-**Copyright © 2026 Benjamin Gröner**
+Copyright © 2026 Benjamin Gröner
 
 ## License Grant
 
@@ -8,7 +8,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 
 ## Usage Restrictions
 
-### Permitted Use (no license fee required):
+### Permitted Use (no license fee required)
 
 1. **Personal Use**: Use for personal, non-commercial purposes
 2. **Development**: Use for development, testing, and evaluation
@@ -17,7 +17,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 5. **Education**: Use for educational and research purposes
 6. **Family Use**: Use by families of **any size** for strictly private, non-commercial purposes. The hive must be used solely for the family's own internal organization — no money charged, no advertising revenue, no commercial benefit of any kind, and no providing of services to third parties. See the "Family" definition below.
 
-### Restricted Use (commercial license required):
+### Restricted Use (commercial license required)
 
 The following uses require a separate commercial license agreement with Benjamin Gröner:
 
@@ -72,8 +72,8 @@ You acknowledge and agree that Benjamin Gröner has the right to license the Sof
 For commercial use outside the permitted use defined above, please contact:
 
 **Benjamin Gröner**
-Email: bgroener@coqoon.com
-Web: https://github.com/COQOON-labs/qoomb
+Email: <bgroener@coqoon.com>
+Web: <https://github.com/COQOON-labs/qoomb>
 
 See also: [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)
 
@@ -92,7 +92,7 @@ This license applies to the version of the Software with which it was distribute
 ## Additional Information
 
 Qoomb is a privacy-first, self-hosted hive organization platform.
-Repository: https://github.com/COQOON-labs/qoomb
+Repository: <https://github.com/COQOON-labs/qoomb>
 
 ---
 

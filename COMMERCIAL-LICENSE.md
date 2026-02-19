@@ -1,6 +1,6 @@
 # Qoomb - Commercial Licensing
 
-**Copyright © 2026 Benjamin Gröner**
+Copyright © 2026 Benjamin Gröner
 
 ---
 

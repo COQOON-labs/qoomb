@@ -86,7 +86,7 @@ pnpm dev
 
 ## Project Structure
 
-```
+```text
 qoomb/
 ├── apps/
 │   ├── api/                    # NestJS backend
@@ -102,7 +102,7 @@ qoomb/
 
 ## Development
 
-### Available Commands
+### pnpm Commands
 
 ```bash
 # Development

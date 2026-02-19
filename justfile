@@ -426,9 +426,6 @@ clean-all: _check-docker
 # Alias: docker-up
 start: docker-up
 
-# Alias: docker-down
-stop: docker-down
-
 # Alias: docker-restart
 restart: docker-restart
 

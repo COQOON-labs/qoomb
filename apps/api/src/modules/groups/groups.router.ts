@@ -115,12 +115,17 @@ export const groupsRouter = (groupsService: GroupsService) =>
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Group not found' });
       }
 
+      const { personId: addedByPersonId } = ctx.user;
+      if (!addedByPersonId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No person record found' });
+      }
+
       try {
         return await groupsService.addMember(
           input.groupId,
           input.personId,
           ctx.user.hiveId,
-          ctx.user.personId!
+          addedByPersonId
         );
       } catch (e) {
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {

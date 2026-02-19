@@ -173,7 +173,7 @@ Use these on status indicator dots — never inline `box-shadow` or arbitrary sh
 
 ### App Shell
 
-```
+```text
 ┌─────────────┬────────────────────────────────┐
 │             │  Topbar (h-14, yellow stripe)  │
 │  Sidebar    ├────────────────────────────────┤

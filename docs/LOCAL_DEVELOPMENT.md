@@ -15,7 +15,7 @@ The `qoomb.localhost` setup provides several benefits for **all development** (n
 
 ## Architecture
 
-```
+```text
 Your Device (Phone/Laptop)
          ↓
    https://qoomb.localhost:8443
@@ -129,7 +129,7 @@ just docker-down   # Stop Docker services
 
 ## Mobile Device Testing
 
-### Prerequisites
+### Mobile Prerequisites
 
 - Your mobile device must be on the **same WiFi network** as your development machine
 - Your firewall must allow incoming connections on port 8443
@@ -205,19 +205,19 @@ With `qoomb.localhost`, you can test PWA features that require HTTPS:
 
 **Desktop (Chrome/Edge):**
 
-1. Open https://qoomb.localhost:8443
+1. Open <https://qoomb.localhost:8443>
 2. Look for the install icon in the address bar
 3. Click to install the PWA
 
 **Mobile (iOS Safari):**
 
-1. Open https://qoomb.localhost:8443 in Safari
+1. Open <https://qoomb.localhost:8443> in Safari
 2. Tap the Share button
 3. Select "Add to Home Screen"
 
 **Mobile (Android Chrome):**
 
-1. Open https://qoomb.localhost:8443 in Chrome
+1. Open <https://qoomb.localhost:8443> in Chrome
 2. Tap the menu (three dots)
 3. Select "Add to Home Screen" or "Install App"
 
@@ -326,6 +326,7 @@ To use a different domain (e.g., `myapp.local`):
    ```
 
 4. Update `.env.local`:
+
    ```bash
    VITE_API_URL="https://myapp.local"
    ALLOWED_ORIGINS="https://myapp.local"

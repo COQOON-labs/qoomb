@@ -59,13 +59,13 @@ export const tasksRouter = (tasksService: TasksService) =>
       const sharedIds = await getSharedResourceIds(
         ctx.prisma,
         'task',
-        ctx.user.personId!,
+        ctx.user.personId ?? '',
         ctx.user.groupIds ?? []
       );
 
       const visibilityFilter = buildVisibilityFilter(
         {
-          personId: ctx.user.personId!,
+          personId: ctx.user.personId ?? '',
           hiveType: ctx.user.hiveType ?? '',
           role: ctx.user.role ?? '',
           roleOverrides: ctx.user.roleOverrides ?? [],
@@ -113,6 +113,9 @@ export const tasksRouter = (tasksService: TasksService) =>
       requirePermission(ctx, HivePermission.TASKS_CREATE);
 
       const { personId, hiveId } = ctx.user;
+      if (!personId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No person record found' });
+      }
 
       try {
         return await tasksService.create(
@@ -128,7 +131,7 @@ export const tasksRouter = (tasksService: TasksService) =>
             groupId: input.groupId,
           },
           hiveId,
-          personId!
+          personId
         );
       } catch (e) {
         throw mapPrismaError(e, 'Failed to create task');

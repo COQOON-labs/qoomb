@@ -194,7 +194,9 @@ export const personsRouter = (personsService: PersonsService, authService: AuthS
       requirePermission(ctx, HivePermission.MEMBERS_INVITE);
 
       // Get inviter's display name for the email template
-      const inviterPerson = await personsService.getById(ctx.user.personId!, ctx.user.hiveId);
+      const inviterPerson = ctx.user.personId
+        ? await personsService.getById(ctx.user.personId, ctx.user.hiveId)
+        : null;
       const inviterName = inviterPerson?.displayName ?? ctx.user.email ?? 'A hive member';
 
       try {

@@ -17,17 +17,7 @@ qoomb.localhost:8443 {
         format console
     }
 
-    # Frontend (Vite dev server)
-    handle {
-        reverse_proxy 127.0.0.1:5173 {
-            # Retry during Vite startup and HMR restarts (avoids 502 on cold start)
-            lb_try_duration 60s
-            lb_try_interval 500ms
-            header_up X-Real-IP {remote_host}
-        }
-    }
-
-    # Backend API (NestJS)
+    # Backend API (NestJS) — specific paths MUST come before the catch-all
     handle /api/* {
         uri strip_prefix /api
         reverse_proxy 127.0.0.1:3001 {
@@ -42,11 +32,14 @@ qoomb.localhost:8443 {
         }
     }
 
-    # CORS headers for development
-    header {
-        Access-Control-Allow-Origin "*"
-        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        Access-Control-Allow-Headers "Content-Type, Authorization"
+    # Frontend (Vite dev server) — catch-all fallback
+    handle {
+        reverse_proxy 127.0.0.1:5173 {
+            # Retry during Vite startup and HMR restarts (avoids 502 on cold start)
+            lb_try_duration 60s
+            lb_try_interval 500ms
+            header_up X-Real-IP {remote_host}
+        }
     }
 }
 

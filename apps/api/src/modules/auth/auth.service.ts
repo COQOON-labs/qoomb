@@ -436,10 +436,26 @@ export class AuthService {
 
     const { token: accessToken } = this.generateAccessToken(userId, hiveId, personId);
 
+    const userEmail: string = this.enc.decryptForUser(user.email, user.id);
+    const hiveName: string = this.decryptHiveName(
+      primaryMembership.hive.name,
+      primaryMembership.hive.id
+    );
+
     return {
       accessToken,
       refreshToken: rotated.newToken,
       expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
+      user: {
+        id: userId,
+        email: userEmail,
+        hiveId,
+        personId,
+      },
+      hive: {
+        id: hiveId,
+        name: hiveName,
+      },
     };
   }
 

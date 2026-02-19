@@ -13,7 +13,7 @@
 Everything below lives inside one Hive and is isolated from other Hives via
 Row-Level Security + schema isolation.
 
-```
+```text
 Hive
 ├── Pages          (navigable, editable pages — tree structure)
 │   └── Sub-Pages  (parentId → Page, unlimited depth)
@@ -196,7 +196,7 @@ documents:
 Content types link to Pages via an **optional FK on the content entity**, not
 via blocks stored in the Page's content blob. This is intentional:
 
-```
+```text
 events.page_id  ──→  pages.id   (nullable)
 tasks.page_id   ──→  pages.id   (nullable)
 documents.page_id → pages.id   (nullable)
@@ -283,7 +283,7 @@ support — deferred to a later phase.
 **Philosophy:** The server never builds a plaintext index. All searchable
 content is synced to the client; search runs locally.
 
-```
+```text
 Server                         Client (Phase 3)
 ──────                         ────────────────
 Encrypted blobs in PostgreSQL  ←── full sync (non-file content)
@@ -311,7 +311,7 @@ non-local scenarios (e.g., server-side search across hives for admin).
 Full snapshot-based versioning for Pages. Every explicit save creates a new
 version row.
 
-```
+```text
 pages.updated_at            — last modified timestamp
 page_versions               — immutable snapshot history
   └── version_number INT    — monotonically increasing per page
@@ -438,7 +438,7 @@ Each content resource carries a `visibility` field:
 
 ### 5-stage access check (summary)
 
-```
+```text
 Stage 1: Load PersonShare + GroupShares in parallel
    → effectiveShareLevel = max(0, personal share, group shares)
 Stage 2: visibility = 'private' → creator OR share ≥ required

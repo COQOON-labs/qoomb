@@ -6,7 +6,7 @@ This document describes how releases are managed in the Qoomb project.
 
 Qoomb uses **GitHub Flow with Release Please** for automated release management. This approach combines simplicity with automation while giving maintainers full control over when releases are published.
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │  develop (Feature Development)                          │
 │     ↓  PR/Merge                                         │
@@ -99,7 +99,7 @@ When you're ready to publish the release:
 
 Versions follow [Semantic Versioning](https://semver.org/) (SemVer):
 
-```
+```text
 v MAJOR . MINOR . PATCH
     │       │       │
     │       │       └── Bug fixes (fix:)
@@ -124,7 +124,7 @@ v MAJOR . MINOR . PATCH
 
 All commits must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
-```
+```text
 <type>(<scope>): <description>
 
 [optional body]
@@ -254,4 +254,4 @@ cat package.json | grep '"version"'
 
 ---
 
-_Last updated: February 2026_
+Last updated: February 2026

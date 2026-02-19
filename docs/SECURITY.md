@@ -23,7 +23,7 @@ This document explains the comprehensive security measures implemented in Qoomb 
 
 Qoomb implements a **defense-in-depth** security strategy with multiple independent layers of protection:
 
-```
+```text
 ┌─────────────────────────────────────────────────┐
 │ Layer 1: Input Validation (Zod + Sanitization) │
 ├─────────────────────────────────────────────────┤
@@ -165,7 +165,7 @@ Qoomb uses a **dual-token model**:
 
 **Token validation flow:**
 
-```
+```text
 Request with Access Token
     ↓
 JWT signature verification
@@ -296,7 +296,7 @@ Higher levels imply lower levels.
 
 Implemented in `apps/api/src/common/guards/resource-access.guard.ts`:
 
-```
+```text
 Stage 1: Load PersonShare + GroupShares in parallel
    → effectiveShareLevel = max(0, all applicable levels)
 Stage 2: visibility = 'private' → creator OR share ≥ required → else FORBIDDEN
@@ -388,7 +388,7 @@ Custom request header required for all mutating requests (defense against CSRF v
 
 ### Security Headers (Helmet.js)
 
-```
+```text
 Strict-Transport-Security: max-age=31536000; includeSubDomains
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
@@ -560,7 +560,7 @@ ALLOWED_ORIGINS=https://yourdomain.com
 
 ## Reporting Security Issues
 
-If you discover a security vulnerability, please email security@qoomb.app or report via GitHub Security Advisories for the private repo.
+If you discover a security vulnerability, please email <security@qoomb.app> or report via GitHub Security Advisories for the private repo.
 
 **Please do not:**
 

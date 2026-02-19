@@ -79,7 +79,7 @@ Then:
 
 ## Project Structure
 
-```
+```text
 apps/mobile/
 ├── capacitor.config.ts  # Capacitor configuration
 ├── package.json         # Mobile-specific dependencies

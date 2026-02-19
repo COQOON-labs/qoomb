@@ -71,7 +71,7 @@ Branch naming convention:
 
 We enforce [Conventional Commits](https://www.conventionalcommits.org/):
 
-```
+```text
 <type>(<scope>): <description>
 
 [optional body]
@@ -83,7 +83,7 @@ We enforce [Conventional Commits](https://www.conventionalcommits.org/):
 
 **Examples:**
 
-```
+```text
 feat(events): add recurrence rule support
 fix(auth): prevent token reuse after rotation
 docs: update security architecture guide
@@ -118,7 +118,7 @@ Pre-commit hooks will auto-format your code with Prettier. Pre-push hooks will v
 
 ## Project Structure
 
-```
+```text
 apps/api/        → NestJS backend (tRPC, Prisma, encryption)
 apps/web/        → React 19 PWA frontend (Vite)
 apps/mobile/     → Capacitor mobile wrapper

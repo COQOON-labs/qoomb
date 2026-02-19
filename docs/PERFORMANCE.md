@@ -1,6 +1,6 @@
 # Prisma Performance Best Practices
 
-## Inhaltsverzeichnis
+## Table of Contents
 
 - [Common Performance Pitfalls](#common-performance-pitfalls)
 - [Prisma-Specific Optimizations](#prisma-specific-optimizations)
@@ -14,13 +14,13 @@
 
 ### ❌ Problem 1: N+1 Queries
 
-**Schlecht:**
+**Bad:**
 
 ```typescript
 // 1 query for events
 const events = await prisma.event.findMany();
 
-// N queries for participants - KATASTROPHE!
+// N queries for participants - CATASTROPHE!
 for (const event of events) {
   event.participants = await prisma.person.findMany({
     where: { id: { in: event.participantIds } },
@@ -29,7 +29,7 @@ for (const event of events) {
 // Total: 1 + N queries
 ```
 
-**✅ Lösung: Eager Loading mit `include`**
+**✅ Solution: Eager Loading with `include`**
 
 ```typescript
 const events = await prisma.event.findMany({
@@ -38,20 +38,20 @@ const events = await prisma.event.findMany({
     organizer: true,
   },
 });
-// Total: 1 query mit JOINs
+// Total: 1 query with JOINs
 ```
 
 ### ❌ Problem 2: Over-Fetching
 
-**Schlecht:**
+**Bad:**
 
 ```typescript
-// Holt ALLE Felder, inklusive großem embedding vector
+// Fetches ALL fields, including large embedding vector
 const events = await prisma.event.findMany();
-// SELECT * FROM events (könnte MBs an Daten sein!)
+// SELECT * FROM events (could be MBs of data!)
 ```
 
-**✅ Lösung: Selective Fields mit `select`**
+**✅ Solution: Selective Fields with `select`**
 
 ```typescript
 const events = await prisma.event.findMany({
@@ -60,33 +60,33 @@ const events = await prisma.event.findMany({
     title: true,
     startTime: true,
     endTime: true,
-    // Kein description, embedding, etc.
+    // No description, embedding, etc.
   },
 });
 // SELECT id, title, start_time, end_time FROM events
 ```
 
-### ❌ Problem 3: Fehlende Indizes
+### ❌ Problem 3: Missing Indexes
 
-**Schlecht:**
+**Bad:**
 
 ```typescript
-// Query auf unindexierter Spalte
+// Query on unindexed column
 const events = await prisma.event.findMany({
   where: { title: { contains: 'Meeting' } },
 });
 // Full table scan! 😱
 ```
 
-**✅ Lösung: Indizes im Schema**
+✅ Solution: Indexes in Schema
 
 ```prisma
 model Event {
   id    String @id
   title String
 
-  @@index([title]) // Macht 'contains' Queries schneller
-  @@index([startTime, familyId]) // Composite index für häufige Queries
+  @@index([title]) // Makes 'contains' queries faster
+  @@index([startTime, familyId]) // Composite index for frequent queries
 }
 ```
 
@@ -94,17 +94,17 @@ model Event {
 
 ## Prisma-Specific Optimizations
 
-### 1. Use `select` statt `include` für Performance
+### 1. Use `select` instead of `include` for Performance
 
 ```typescript
-// ❌ Holt zu viel (ganze Relations)
+// ❌ Fetches too much (whole relations)
 const events = await prisma.event.findMany({
   include: {
-    participants: true, // Alle Person-Felder
+    participants: true, // All person fields
   },
 });
 
-// ✅ Nur was wir brauchen
+// ✅ Only what we need
 const events = await prisma.event.findMany({
   select: {
     id: true,
@@ -112,45 +112,45 @@ const events = await prisma.event.findMany({
     participants: {
       select: {
         id: true,
-        name: true, // Nur Name, nicht birthdate, etc.
+        name: true, // Name only, not birthdate, etc.
       },
     },
   },
 });
 ```
 
-### 2. Batching mit `findMany` + `where: { id: { in: [...] } }`
+### 2. Batching with `findMany` + `where: { id: { in: [...] } }`
 
 ```typescript
-// ✅ Statt vieler einzelner findUnique calls
+// ✅ Instead of many individual findUnique calls
 const eventIds = ['id1', 'id2', 'id3'];
 const events = await prisma.event.findMany({
   where: {
     id: { in: eventIds },
   },
 });
-// 1 Query statt 3
+// 1 query instead of 3
 ```
 
-### 3. Pagination für große Datasets
+### 3. Pagination for Large Datasets
 
 ```typescript
-// ❌ Holt ALLE Events (könnte tausende sein)
+// ❌ Fetches ALL events (could be thousands)
 const events = await prisma.event.findMany();
 
-// ✅ Cursor-based Pagination (effizient!)
+// ✅ Cursor-based Pagination (efficient!)
 const events = await prisma.event.findMany({
   take: 20,
-  skip: 0, // Oder cursor-based für bessere Performance
+  skip: 0, // Or cursor-based for better performance
   cursor: lastEventId ? { id: lastEventId } : undefined,
   orderBy: { startTime: 'desc' },
 });
 ```
 
-### 4. Transactions richtig nutzen
+### 4. Using Transactions Correctly
 
 ```typescript
-// ✅ Interactive Transactions für komplexe Operationen
+// ✅ Interactive Transactions for complex operations
 await prisma.$transaction(async (tx) => {
   const event = await tx.event.create({ data: eventData });
   await tx.notification.createMany({
@@ -162,7 +162,7 @@ await prisma.$transaction(async (tx) => {
 });
 ```
 
-### 5. Connection Pooling konfigurieren
+### 5. Configure Connection Pooling
 
 ```env
 # .env
@@ -173,14 +173,14 @@ DATABASE_URL="postgresql://user:pass@localhost:5432/db?connection_limit=10&pool_
 
 ## When to Use Raw SQL
 
-### Prisma ist NICHT immer die beste Wahl!
+### Prisma is NOT always the best choice
 
-**Wann Raw SQL verwenden:**
+**When to use Raw SQL:**
 
-#### 1. Komplexe Analytics Queries
+#### 1. Complex Analytics Queries
 
 ```typescript
-// Prisma kann das nicht elegant ausdrücken
+// Prisma cannot express this elegantly
 const stats = await prisma.$queryRaw<
   Array<{
     month: string;
@@ -203,7 +203,7 @@ const stats = await prisma.$queryRaw<
 #### 2. Vector Search (pgvector)
 
 ```typescript
-// Semantic Search mit pgvector
+// Semantic search with pgvector
 const similarEvents = await prisma.$queryRaw<Event[]>`
   SELECT
     id,
@@ -222,7 +222,7 @@ const similarEvents = await prisma.$queryRaw<Event[]>`
 #### 3. Bulk Operations
 
 ```typescript
-// Effizienter als viele einzelne Prisma calls
+// More efficient than many individual Prisma calls
 await prisma.$executeRaw`
   UPDATE events
   SET is_archived = true
@@ -234,7 +234,7 @@ await prisma.$executeRaw`
 #### 4. Database-Specific Features
 
 ```typescript
-// PostgreSQL-spezifische Features
+// PostgreSQL-specific features
 await prisma.$executeRaw`
   CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_embedding
   ON events USING ivfflat (embedding vector_cosine_ops)
@@ -248,7 +248,7 @@ await prisma.$executeRaw`
 class EventsService {
   constructor(private prisma: PrismaService) {}
 
-  // ✅ Einfache CRUD: Prisma
+  // ✅ Simple CRUD: Prisma
   async getEvent(id: string) {
     return this.prisma.event.findUnique({
       where: { id },
@@ -256,7 +256,7 @@ class EventsService {
     });
   }
 
-  // ✅ Komplexe Analytics: Raw SQL
+  // ✅ Complex Analytics: Raw SQL
   async getEventStatistics(familyId: string) {
     return this.prisma.$queryRaw`
       SELECT
@@ -382,7 +382,7 @@ async getCalendarEvents(
           name: true,
         },
       },
-      // NICHT: description, embedding, encrypted_data
+      // NOT: description, embedding, encrypted_data
     },
     orderBy: {
       startTime: 'asc',
@@ -400,7 +400,7 @@ async searchEvents(
   familyId: string,
   query: string
 ): Promise<Event[]> {
-  // Option 1: Wenn AI enabled, nutze Vector Search
+  // Option 1: If AI enabled, use Vector Search
   if (this.config.aiEnabled) {
     const embedding = await this.llmService.embed(query);
 
@@ -414,7 +414,7 @@ async searchEvents(
     `;
   }
 
-  // Option 2: Fallback zu einfacher Text-Suche
+  // Option 2: Fallback to simple text search
   return this.prisma.event.findMany({
     where: {
       familyId,
@@ -441,7 +441,7 @@ async updateMultipleEvents(
   eventIds: string[],
   updates: Partial<Event>
 ): Promise<number> {
-  // ✅ Raw SQL für Bulk Update (viel schneller als N einzelne updates)
+  // ✅ Raw SQL for bulk update (much faster than N individual updates)
   const result = await this.prisma.$executeRaw`
     UPDATE events
     SET
@@ -451,7 +451,7 @@ async updateMultipleEvents(
     WHERE id = ANY(${eventIds}::uuid[])
   `;
 
-  return result; // Anzahl der betroffenen Rows
+  return result; // Number of affected rows
 }
 ```
 
@@ -459,48 +459,48 @@ async updateMultipleEvents(
 
 ## Performance Checklist
 
-✅ **Immer:**
+✅ **Always:**
 
-- [ ] `select` statt `include` wenn möglich
-- [ ] Indizes auf WHERE/ORDER BY Spalten
-- [ ] Pagination für Listen (take/skip)
-- [ ] Connection Pooling konfiguriert
+- [ ] `select` instead of `include` where possible
+- [ ] Indexes on WHERE/ORDER BY columns
+- [ ] Pagination for lists (take/skip)
+- [ ] Connection Pooling configured
 
-✅ **Bei großen Datasets:**
+✅ **For large datasets:**
 
 - [ ] Cursor-based Pagination
-- [ ] Batch Operations für Bulk Updates
-- [ ] Query Logging aktiviert (development)
+- [ ] Batch Operations for Bulk Updates
+- [ ] Query Logging enabled (development)
 
-✅ **Bei komplexen Queries:**
+✅ **For complex queries:**
 
-- [ ] Raw SQL in Betracht ziehen
-- [ ] EXPLAIN ANALYZE durchführen
+- [ ] Consider Raw SQL
+- [ ] Run EXPLAIN ANALYZE
 - [ ] Performance Monitoring
 
-✅ **Vermeiden:**
+✅ **Avoid:**
 
-- [ ] ❌ N+1 Queries (immer include/select nutzen)
-- [ ] ❌ SELECT \* (immer explizite fields)
-- [ ] ❌ Fehlende Indizes auf häufigen WHERE clauses
-- [ ] ❌ Große Transactions (deadlock-Gefahr)
+- [ ] ❌ N+1 Queries (always use include/select)
+- [ ] ❌ SELECT \* (always use explicit fields)
+- [ ] ❌ Missing indexes on frequent WHERE clauses
+- [ ] ❌ Large transactions (deadlock risk)
 
 ---
 
-## Zusammenfassung
+## Summary
 
-**Prisma Philosophie:**
+**Prisma Philosophy:**
 
-- ✅ Nutze Prisma für 80-90% der Queries (CRUD, simple Relations)
-- ✅ Nutze Raw SQL für 10-20% (Analytics, Complex Joins, DB-specific features)
-- ✅ Überwache Performance von Anfang an
-- ✅ Optimiere erst wenn nötig (premature optimization ist auch schlecht!)
+- ✅ Use Prisma for 80-90% of queries (CRUD, simple relations)
+- ✅ Use Raw SQL for 10-20% (Analytics, Complex Joins, DB-specific features)
+- ✅ Monitor performance from day one
+- ✅ Optimize only when needed (premature optimization is bad too)
 
 **Golden Rules:**
 
-1. **Measure first, optimize second** - Keine Vermutungen, sondern messen!
-2. **Select only what you need** - Weniger Daten = schneller
-3. **Use indexes wisely** - Aber nicht überall (Indexes kosten auch)
-4. **Know when to drop down to SQL** - Prisma ist kein Silberkugel
+1. **Measure first, optimize second** - No guessing, measure!
+2. **Select only what you need** - Less data = faster
+3. **Use indexes wisely** - But not everywhere (indexes have a cost too)
+4. **Know when to drop down to SQL** - Prisma is not a silver bullet
 
-Prisma ist **nicht langsam per se** - aber man kann es falsch nutzen (wie jedes ORM). Mit den richtigen Patterns ist es genauso schnell wie handgeschriebenes SQL, aber viel sicherer!
+Prisma is **not slow per se** — but it can be misused (like any ORM). With the right patterns it is just as fast as hand-written SQL, but much safer!

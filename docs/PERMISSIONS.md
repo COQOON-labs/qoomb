@@ -28,7 +28,7 @@
 
 Qoomb uses a layered, fail-closed permission system. Each layer adds defense-in-depth; no single layer is the sole gatekeeper.
 
-```
+```text
 Layer 1: JWT Authentication
     ↓  "are you who you say you are?"
 Layer 2: hiveProcedure (tRPC middleware)
@@ -94,7 +94,7 @@ Defined in `packages/types/src/permissions.ts` as `HIVE_ROLE_PERMISSIONS`. In-me
 
 ### HivePermission enum values
 
-```
+```text
 hive:update            hive:delete
 members:view           members:invite        members:manage        members:remove
 events:view            events:create
@@ -146,7 +146,7 @@ Stored in the `hive_role_permissions` table. Allows a hive admin to customize ro
 
 ### Mechanics
 
-```
+```text
 effective_permissions =
   global HIVE_ROLE_PERMISSIONS defaults for (hiveType, role)
   + rows with granted = true  (adds to the set)
@@ -260,7 +260,7 @@ Both use the same ordinal `accessLevel: Int` (`1|2|3` = `VIEW|EDIT|MANAGE`).
 
 ### Fields (both tables)
 
-```
+```text
 hiveId        — defense-in-depth filter (RLS also enforces this)
 resourceType  — 'event' | 'task' | 'note' | ...
 resourceId    — UUID of the resource (polymorphic, no FK)
@@ -287,7 +287,7 @@ accessLevel   — AccessLevel.VIEW (1) | EDIT (2) | MANAGE (3)
 
 When checking access, both personal and group shares for the current person are loaded in parallel. The **maximum** access level across all applicable shares is the effective share level:
 
-```
+```text
 effectiveShareLevel = max(
   0,                           // no shares → 0
   personalShare?.accessLevel,  // direct person grant
@@ -301,7 +301,7 @@ effectiveShareLevel = max(
 
 Implemented in `apps/api/src/common/guards/resource-access.guard.ts` as `requireResourceAccess`.
 
-```
+```text
 Input:
   - ctx.user: { hiveType, role, roleOverrides, personId, hiveId, groupIds }
   - resource:  { type, id, creatorId, visibility, groupId? }

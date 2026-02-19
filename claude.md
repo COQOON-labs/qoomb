@@ -115,7 +115,7 @@
 
 ## Project Structure
 
-```
+```text
 qoomb/
 ├── apps/
 │   ├── api/                    # NestJS backend (Fastify adapter)
@@ -317,7 +317,7 @@ qoomb/
 - **Fair Source License v1.0:** 10-employee threshold for commercial use
 - **Contributor License Agreement (CLA):** Protects both contributors and project
 - **Dual Licensing:** Free for individuals/small teams, commercial for enterprises
-- **Copyright:** Benjamin Gröner (bgroener@coqoon.com)
+- **Copyright:** Benjamin Gröner (<bgroener@coqoon.com>)
 - **Commercial Options:** Perpetual, Subscription, SaaS/Hosting, OEM licenses
 - **Location:** `LICENSE.md`, `COMMERCIAL-LICENSE.md`
 
@@ -477,7 +477,7 @@ These principles apply to **all code** in the project - backend, frontend, scrip
 
 #### Single Responsibility Principle (SRP)
 
-**One module = one reason to change**
+One module = one reason to change
 
 ```typescript
 // ✅ GOOD: Separate concerns
@@ -517,7 +517,7 @@ db-reset:
 
 #### Open/Closed Principle (OCP)
 
-**Open for extension, closed for modification**
+Open for extension, closed for modification
 
 ```typescript
 // ✅ GOOD: Extensible via abstraction
@@ -539,7 +539,7 @@ function getKey(type: string) {
 
 #### Liskov Substitution Principle (LSP)
 
-**Subtypes must be substitutable for base types**
+Subtypes must be substitutable for base types
 
 ```typescript
 // ✅ GOOD: All implementations work the same
@@ -556,7 +556,7 @@ class BrokenKeyProvider implements KeyProvider {
 
 #### Interface Segregation Principle (ISP)
 
-**Don't force clients to depend on unused methods**
+Don't force clients to depend on unused methods
 
 ```typescript
 // ✅ GOOD: Small, focused interfaces
@@ -581,7 +581,7 @@ interface CryptoService {
 
 #### Dependency Inversion Principle (DIP)
 
-**Depend on abstractions, not concretions**
+Depend on abstractions, not concretions
 
 ```typescript
 // ✅ GOOD: Depend on interface
@@ -599,7 +599,7 @@ class UserService {
 
 #### Don't Repeat Yourself (DRY)
 
-**Every piece of knowledge must have a single, unambiguous representation**
+Every piece of knowledge must have a single, unambiguous representation
 
 ```typescript
 // ✅ GOOD: Extract common logic
@@ -638,7 +638,7 @@ db-reset:
 
 #### Keep It Simple, Stupid (KISS)
 
-**Simplicity should be a key goal**
+Simplicity should be a key goal
 
 ```typescript
 // ✅ GOOD: Simple and clear
@@ -657,7 +657,7 @@ function isAdmin(user: User): boolean {
 
 #### You Aren't Gonna Need It (YAGNI)
 
-**Don't add functionality until it's necessary**
+Don't add functionality until it's necessary
 
 ```typescript
 // ✅ GOOD: Only implement what's needed NOW
@@ -680,7 +680,7 @@ class User {
 
 #### Composition over Inheritance
 
-**Prefer composing objects over class hierarchies**
+Prefer composing objects over class hierarchies
 
 ```typescript
 // ✅ GOOD: Composition
@@ -700,9 +700,9 @@ class BaseService extends LoggingService
 
 #### Separation of Concerns (SoC)
 
-**Different concerns should be in different modules**
+Different concerns should be in different modules
 
-```
+```text
 ✅ GOOD Structure:
 apps/api/src/
 ├── modules/
@@ -815,24 +815,26 @@ async create(input: CreateEventInput) {
 ### Roles
 
 **Family Hive** (minimum 1 `parent` required, enforced by DB trigger `enforce_minimum_admin`)
-| Role | Permissions |
+
+| Role     | Permissions                                                                                     |
 | -------- | ----------------------------------------------------------------------------------------------- |
-| `parent` | Everything |
-| `child` | members:view, events:view/create/update:own/delete:own, tasks:view/create/update:own/delete:own |
+| `parent` | Everything                                                                                      |
+| `child`  | members:view, events:view/create/update:own/delete:own, tasks:view/create/update:own/delete:own |
 
 **Organization Hive** (minimum 1 `org_admin` required)
-| Role | Permissions |
+
+| Role        | Permissions                                                               |
 | ----------- | ------------------------------------------------------------------------- |
-| `org_admin` | Everything |
-| `manager` | events:_, tasks:_, members:view/invite/remove |
-| `member` | members:view, events:view/create/update:own, tasks:view/create/update:own |
-| `guest` | members:view, events:view, tasks:view |
+| `org_admin` | Everything                                                                |
+| `manager`   | events:_, tasks:_, members:view/invite/remove                             |
+| `member`    | members:view, events:view/create/update:own, tasks:view/create/update:own |
+| `guest`     | members:view, events:view, tasks:view                                     |
 
 Global defaults defined in `packages/types/src/permissions.ts`. Per-hive overrides stored in `hive_role_permissions` table.
 
 ### Resource Permission Resolution (5-stage check)
 
-```
+```text
 Stage 1: Load PersonShare + GroupShares in parallel
    → effectiveShareLevel = max(0, personal share, all group shares)
 
@@ -890,7 +892,7 @@ Higher levels imply lower: `MANAGE >= EDIT >= VIEW`.
 
 ### Multi-Tenant Isolation (Defense-in-Depth)
 
-```
+```text
 Layer 1: JWT Authentication
     ↓
 Layer 2: Authorization Middleware (hiveProcedure)
@@ -906,7 +908,7 @@ Layer 5: Audit Logging
 
 ### Encryption Architecture
 
-```
+```text
 Master Key (from KEY_PROVIDER)
     ↓ HKDF (deterministic derivation)
 Hive-Specific Keys (one per hive, 32 bytes)

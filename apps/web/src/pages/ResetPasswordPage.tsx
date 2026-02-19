@@ -2,10 +2,12 @@ import { Button, Input } from '@qoomb/ui';
 import { useCallback, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { useI18nContext } from '../i18n/i18n-react';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { trpc } from '../lib/trpc/client';
 
 export function ResetPasswordPage() {
+  const { LL } = useI18nContext();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') ?? '';
   const navigate = useNavigate();
@@ -26,32 +28,32 @@ export function ResetPasswordPage() {
       e.preventDefault();
       setFormError('');
       if (password !== confirm) {
-        setFormError('Passwords do not match.');
+        setFormError(LL.auth.resetPassword.passwordMismatch());
         return;
       }
       mutation.mutate({ token, newPassword: password });
     },
-    [password, confirm, token, mutation, setFormError]
+    [LL, password, confirm, token, mutation, setFormError]
   );
 
   // No token → back to login
   if (!token) return <Navigate to="/login" replace />;
 
   return (
-    <AuthLayout title="Reset password" subtitle="Choose a new password for your account">
+    <AuthLayout title={LL.auth.resetPassword.title()} subtitle={LL.auth.resetPassword.subtitle()}>
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <Input
-          label="New password"
+          label={LL.auth.resetPassword.newPasswordLabel()}
           type="password"
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           showPasswordToggle
-          helperText="Min. 8 characters with uppercase, number and special character"
+          helperText={LL.auth.resetPassword.passwordHint()}
         />
         <Input
-          label="Confirm password"
+          label={LL.auth.resetPassword.confirmPasswordLabel()}
           type="password"
           autoComplete="new-password"
           value={confirm}
@@ -62,13 +64,13 @@ export function ResetPasswordPage() {
         />
 
         <Button type="submit" fullWidth isLoading={mutation.isPending} className="mt-2">
-          Set new password
+          {LL.auth.resetPassword.setNewPassword()}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         <Link to="/login" className="font-medium text-foreground hover:underline">
-          Back to sign in
+          {LL.auth.resetPassword.backToSignIn()}
         </Link>
       </p>
     </AuthLayout>

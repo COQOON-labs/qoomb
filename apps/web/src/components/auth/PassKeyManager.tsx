@@ -3,6 +3,7 @@ import { startRegistration } from '@simplewebauthn/browser';
 import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/browser';
 import { useState } from 'react';
 
+import { useI18nContext } from '../../i18n/i18n-react';
 import { trpc } from '../../lib/trpc/client';
 
 /**
@@ -10,6 +11,7 @@ import { trpc } from '../../lib/trpc/client';
  * Lists registered PassKeys, allows adding new ones, and removing existing ones.
  */
 export function PassKeyManager() {
+  const { LL } = useI18nContext();
   const utils = trpc.useUtils();
   const credentials = trpc.auth.passkey.list.useQuery();
 
@@ -39,21 +41,21 @@ export function PassKeyManager() {
       setDeviceName('');
     } catch (err) {
       if (err instanceof Error && err.name === 'NotAllowedError') return;
-      setAddError(err instanceof Error ? err.message : 'Registration failed');
+      setAddError(err instanceof Error ? err.message : LL.auth.passKey.registrationFailed());
     }
   }
 
   function formatDate(date: Date | string | null): string {
-    if (!date) return 'Never';
+    if (!date) return LL.auth.passKey.never();
     return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(date));
   }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-foreground">PassKeys</h3>
+        <h3 className="font-semibold text-foreground">{LL.auth.passKey.sectionTitle()}</h3>
         <Button size="sm" variant="outline" onClick={() => setShowAddForm((v) => !v)}>
-          {showAddForm ? 'Cancel' : 'Add PassKey'}
+          {showAddForm ? LL.common.cancel() : LL.auth.passKey.addPassKey()}
         </Button>
       </div>
 
@@ -61,13 +63,13 @@ export function PassKeyManager() {
         <div className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3">
           <input
             type="text"
-            placeholder="Device name (optional)"
+            placeholder={LL.auth.passKey.deviceNamePlaceholder()}
             value={deviceName}
             onChange={(e) => setDeviceName(e.target.value)}
             className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <Button size="sm" fullWidth isLoading={isAdding} onClick={() => void handleAdd()}>
-            Register PassKey
+            {LL.auth.passKey.registerPassKey()}
           </Button>
           {addError && <p className="text-xs text-destructive">{addError}</p>}
         </div>
@@ -80,7 +82,7 @@ export function PassKeyManager() {
       )}
 
       {credentials.data && credentials.data.length === 0 && (
-        <p className="text-sm text-muted-foreground">No PassKeys registered yet.</p>
+        <p className="text-sm text-muted-foreground">{LL.auth.passKey.noPassKeysYet()}</p>
       )}
 
       {credentials.data?.map((cred) => (
@@ -90,10 +92,11 @@ export function PassKeyManager() {
         >
           <div className="flex flex-col gap-0.5">
             <span className="text-sm font-medium text-foreground">
-              {cred.deviceName ?? 'PassKey'}
+              {cred.deviceName ?? LL.auth.passKey.defaultName()}
             </span>
             <span className="text-xs text-muted-foreground">
-              Added {formatDate(cred.createdAt)} · Last used {formatDate(cred.lastUsedAt)}
+              {LL.auth.passKey.added()} {formatDate(cred.createdAt)} · {LL.auth.passKey.lastUsed()}{' '}
+              {formatDate(cred.lastUsedAt)}
             </span>
           </div>
           <Button
@@ -103,7 +106,7 @@ export function PassKeyManager() {
             isLoading={removeKey.isPending}
             onClick={() => removeKey.mutate({ credentialId: cred.id })}
           >
-            Remove
+            {LL.common.remove()}
           </Button>
         </div>
       ))}

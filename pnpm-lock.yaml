@@ -247,6 +247,9 @@ importers:
       tailwindcss:
         specifier: ^4.1.18
         version: 4.1.18
+      typesafe-i18n:
+        specifier: ^5.27.1
+        version: 5.27.1(typescript@5.9.3)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

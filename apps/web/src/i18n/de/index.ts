@@ -1,0 +1,164 @@
+import type { BaseTranslation } from '../i18n-types';
+
+const de = {
+  // ── Common ────────────────────────────────────────────────────────────────
+  common: {
+    brand: 'QOOMB',
+    tagline: 'Dein Hive, organisiert',
+    loading: 'Laden...',
+    save: 'Speichern',
+    saving: 'Speichern...',
+    cancel: 'Abbrechen',
+    add: 'Hinzufügen',
+    remove: 'Entfernen',
+    back: 'Zurück',
+    details: 'Details',
+    showAll: 'Alle anzeigen',
+    or: 'oder',
+  },
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  auth: {
+    login: {
+      title: 'Willkommen zurück',
+      subtitle: 'Melde dich in deinem Hive an',
+      emailLabel: 'E-Mail',
+      passwordLabel: 'Passwort',
+      forgotPassword: 'Passwort vergessen?',
+      signIn: 'Anmelden',
+      noAccount: 'Noch kein Konto?',
+      createOne: 'Jetzt erstellen',
+    },
+    register: {
+      title: 'Erstelle deinen Hive',
+      titleLoading: 'Erstelle deinen Hive',
+      titleInvite: 'Einladung annehmen',
+      subtitleInvite: 'Richte dein Konto ein, um dem Hive beizutreten',
+      subtitle: 'Organisiere deine Familie oder dein Team',
+      nameLabel: 'Dein Name',
+      emailLabel: 'E-Mail',
+      passwordLabel: 'Passwort',
+      passwordHint: 'Min. 8 Zeichen mit Großbuchstabe, Zahl und Sonderzeichen',
+      hiveNameLabel: 'Hive-Name',
+      hiveNamePlaceholder: 'z.B. Familie Müller',
+      hiveTypeLabel: 'Hive-Typ',
+      joinHive: 'Hive beitreten',
+      createHive: 'Hive erstellen',
+      alreadyHaveAccount: 'Du hast bereits ein Konto?',
+      signIn: 'Anmelden',
+    },
+    forgotPassword: {
+      title: 'Passwort vergessen',
+      subtitle: 'Gib deine E-Mail ein und wir senden dir einen Link zum Zurücksetzen',
+      emailLabel: 'E-Mail',
+      sendResetLink: 'Link senden',
+      backToSignIn: 'Zurück zur Anmeldung',
+      successTitle: 'E-Mail prüfen',
+      successSubtitle:
+        'Falls ein Konto mit dieser Adresse existiert, haben wir einen Link zum Zurücksetzen gesendet. Er ist 1 Stunde gültig.',
+    },
+    resetPassword: {
+      title: 'Passwort zurücksetzen',
+      subtitle: 'Wähle ein neues Passwort für dein Konto',
+      newPasswordLabel: 'Neues Passwort',
+      passwordHint: 'Min. 8 Zeichen mit Großbuchstabe, Zahl und Sonderzeichen',
+      confirmPasswordLabel: 'Passwort bestätigen',
+      passwordMismatch: 'Passwörter stimmen nicht überein.',
+      setNewPassword: 'Neues Passwort setzen',
+      backToSignIn: 'Zurück zur Anmeldung',
+    },
+    verifyEmail: {
+      loadingTitle: 'E-Mail wird verifiziert…',
+      successTitle: 'E-Mail bestätigt',
+      successSubtitle:
+        'Deine E-Mail-Adresse wurde bestätigt. Du kannst jetzt alle Funktionen nutzen.',
+      goToDashboard: 'Zum Dashboard',
+      failedTitle: 'Verifizierung fehlgeschlagen',
+      failedSubtitle: 'Dieser Link ist ungültig oder abgelaufen.',
+      backToSignIn: 'Zurück zur Anmeldung',
+    },
+    passKey: {
+      signInWithPassKey: 'Mit PassKey anmelden',
+      authFailed: 'PassKey-Authentifizierung fehlgeschlagen',
+      registrationFailed: 'Registrierung fehlgeschlagen',
+      sectionTitle: 'PassKeys',
+      addPassKey: 'PassKey hinzufügen',
+      deviceNamePlaceholder: 'Gerätename (optional)',
+      registerPassKey: 'PassKey registrieren',
+      noPassKeysYet: 'Noch keine PassKeys registriert.',
+      defaultName: 'PassKey',
+      added: 'Hinzugefügt',
+      lastUsed: 'Zuletzt verwendet',
+      never: 'Nie',
+    },
+  },
+
+  // ── Layout ────────────────────────────────────────────────────────────────
+  layout: {
+    emailVerification: {
+      message: 'Bitte bestätige deine E-Mail-Adresse, um alle Funktionen freizuschalten.',
+      sent: 'E-Mail gesendet ✓',
+      resend: 'Erneut senden',
+      dismiss: 'Schließen',
+    },
+    hiveSwitcher: {
+      selectHive: 'Hive auswählen',
+    },
+    userMenu: {
+      profile: 'Profil',
+      logout: 'Abmelden',
+    },
+  },
+
+  // ── Profile ───────────────────────────────────────────────────────────────
+  profile: {
+    title: 'Profil',
+    displayNameLabel: 'Anzeigename',
+    displayNamePlaceholder: 'Dein Name',
+    emailLabel: 'E-Mail',
+    birthdayLabel: 'Geburtstag',
+    saved: 'Profil gespeichert!',
+    saveError: 'Fehler beim Speichern. Bitte erneut versuchen.',
+  },
+
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+  dashboard: {
+    nav: {
+      overview: 'Übersicht',
+      calendar: 'Kalender',
+      tasks: 'Aufgaben',
+      members: 'Mitglieder',
+      pages: 'Seiten',
+      settings: 'Einstellungen',
+    },
+    memberCount: '{count:number} Mitglieder',
+    create: 'Erstellen',
+    invite: 'Einladen',
+    greeting: 'Guten Morgen, {name:string}! 👋',
+    todayIntro: 'Heute: ',
+    tasksLabel: 'Aufgaben',
+    openLabel: 'offen',
+    nextEvent: 'Nächster Termin',
+    moreEvents: 'Weitere Termine',
+    progressText: '{done:number} von {total:number} erledigt',
+    addTask: 'Aufgabe hinzufügen',
+    quickAdd: {
+      title: 'Schnell hinzufügen',
+      placeholder: 'Was steht als nächstes an?',
+      button: 'Hinzufügen',
+      event: 'Termin',
+      task: 'Aufgabe',
+      page: 'Seite',
+    },
+    roles: {
+      parent: 'Elternteil',
+      child: 'Kind',
+      guest: 'Gast',
+      orgAdmin: 'Admin',
+      manager: 'Manager',
+      member: 'Mitglied',
+    },
+  },
+} satisfies BaseTranslation;
+
+export default de;

@@ -344,6 +344,20 @@ qoomb/
 - Used for email templates and user-facing error messages
 - **Location:** `apps/api/src/i18n/`
 
+**Frontend i18n (PRODUCTION-READY):**
+
+- typesafe-i18n v5.27.1 with React adapter (`typesafe-i18n/react`)
+- Base locale: `de` (German); secondary locale: `en` (English)
+- Config: `apps/web/.typesafe-i18n.json` (`baseLocale: "de"`, `adapter: "react"`)
+- Provider: `<TypesafeI18n locale="de">` wraps the entire app in `apps/web/src/main.tsx`
+- Hook: `const { LL } = useI18nContext()` → call `LL.section.key()` in JSX
+- Parameterized strings: `LL.dashboard.greeting({ name })`, `LL.dashboard.memberCount({ count })`
+- Generated files (do not edit manually): `i18n-types.ts`, `i18n-util*.ts`, `i18n-react.tsx`, `formatters.ts`
+- Translation files (edit these): `apps/web/src/i18n/de/index.ts`, `apps/web/src/i18n/en/index.ts`
+- Applied to: all auth pages, ProfilePage, Dashboard, UserMenu, PassKeyButton/Manager, EmailVerificationBanner, HiveSwitcher, AuthLayout
+- **All user-visible strings must use `LL.*()` — never hardcode text in JSX**
+- **Location:** `apps/web/src/i18n/`
+
 **Phase 2 (Core Content):**
 
 - Persons module: `me`, `list`, `get`, `updateProfile`, `updateRole`, `remove`, `invite`
@@ -716,6 +730,77 @@ apps/api/src/
 apps/api/src/
 └── services/
     └── user-service.ts  # Auth + Encryption + Events mixed!
+```
+
+### 8. Event Handler Naming Conventions (Critical)
+
+Follow official React naming conventions. Consistent naming makes the data-flow direction immediately clear.
+
+#### Props (callbacks received from parent) → always `on*`
+
+Use the `on` prefix for function props that a parent passes to a component. This mirrors React's built-in events (`onClick`, `onChange`, `onSubmit`).
+
+```typescript
+// ✅ GOOD: prop callbacks use on*
+interface UserMenuProps {
+  onProfileClick: () => void;
+  onLogoutClick: () => void;
+}
+
+<UserMenu onProfileClick={handleProfileClick} onLogoutClick={handleLogoutClick} />
+
+// ❌ BAD: non-standard prefix for props
+interface UserMenuProps {
+  profileClickHandler: () => void;   // Unclear direction
+  handleLogout: () => void;          // Looks like internal handler
+}
+```
+
+#### Internal handlers (defined inside a component) → `handle*`
+
+Use `handle` as the prefix for functions defined inside the component body that respond to events.
+
+```typescript
+// ✅ GOOD: internal handlers use handle*
+function Dashboard() {
+  function handleAddTask() { ... }
+  function handleProfileClick() { ... }
+
+  return <UserMenu onProfileClick={handleProfileClick} />;
+  //              ↑ prop name (on*)   ↑ local impl (handle*)
+}
+
+// ❌ BAD: on* for internal handlers
+function Dashboard() {
+  function onProfileClick() { ... }  // Looks like a prop, not a handler
+}
+```
+
+#### Inline handlers → anonymous arrow functions are fine for trivial cases
+
+```typescript
+// ✅ GOOD: trivial inline handler
+<Button onClick={() => setOpen(false)}>Cancel</Button>
+
+// ✅ GOOD: extracted for reuse or complexity
+const handleSubmit = useCallback((e: React.FormEvent) => {
+  e.preventDefault();
+  // …
+}, [deps]);
+```
+
+#### `useCallback` dependencies
+
+When a handler uses context values (e.g. `LL` from i18n), include them in the dependency array.
+
+```typescript
+// ✅ GOOD: LL included in deps
+const handleSubmit = useCallback(
+  (e: React.FormEvent) => {
+    if (invalid) setError(LL.auth.passwordMismatch());
+  },
+  [LL, invalid, setError] // ← LL is a dependency
+);
 ```
 
 ---

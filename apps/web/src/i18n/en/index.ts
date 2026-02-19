@@ -1,0 +1,163 @@
+import type { Translation } from '../i18n-types';
+
+const en = {
+  // ── Common ────────────────────────────────────────────────────────────────
+  common: {
+    brand: 'QOOMB',
+    tagline: 'Your hive, organised',
+    loading: 'Loading...',
+    save: 'Save',
+    saving: 'Saving...',
+    cancel: 'Cancel',
+    add: 'Add',
+    remove: 'Remove',
+    back: 'Back',
+    details: 'Details',
+    showAll: 'Show all',
+    or: 'or',
+  },
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  auth: {
+    login: {
+      title: 'Welcome back',
+      subtitle: 'Sign in to your hive',
+      emailLabel: 'Email',
+      passwordLabel: 'Password',
+      forgotPassword: 'Forgot password?',
+      signIn: 'Sign in',
+      noAccount: 'No account?',
+      createOne: 'Create one',
+    },
+    register: {
+      title: 'Create your hive',
+      titleLoading: 'Create your hive',
+      titleInvite: 'Accept invitation',
+      subtitleInvite: 'Set up your account to join the hive',
+      subtitle: 'Start organising your family or team',
+      nameLabel: 'Your name',
+      emailLabel: 'Email',
+      passwordLabel: 'Password',
+      passwordHint: 'Min. 8 characters with uppercase, number and special character',
+      hiveNameLabel: 'Hive name',
+      hiveNamePlaceholder: 'e.g. Doe Family',
+      hiveTypeLabel: 'Hive type',
+      joinHive: 'Join hive',
+      createHive: 'Create hive',
+      alreadyHaveAccount: 'Already have an account?',
+      signIn: 'Sign in',
+    },
+    forgotPassword: {
+      title: 'Forgot password',
+      subtitle: "Enter your email and we'll send you a reset link",
+      emailLabel: 'Email',
+      sendResetLink: 'Send reset link',
+      backToSignIn: 'Back to sign in',
+      successTitle: 'Check your email',
+      successSubtitle:
+        'If an account exists for that address, we sent a reset link. It expires in 1 hour.',
+    },
+    resetPassword: {
+      title: 'Reset password',
+      subtitle: 'Choose a new password for your account',
+      newPasswordLabel: 'New password',
+      passwordHint: 'Min. 8 characters with uppercase, number and special character',
+      confirmPasswordLabel: 'Confirm password',
+      passwordMismatch: 'Passwords do not match.',
+      setNewPassword: 'Set new password',
+      backToSignIn: 'Back to sign in',
+    },
+    verifyEmail: {
+      loadingTitle: 'Verifying your email…',
+      successTitle: 'Email verified',
+      successSubtitle: 'Your email address has been confirmed. You can now use all features.',
+      goToDashboard: 'Go to dashboard',
+      failedTitle: 'Verification failed',
+      failedSubtitle: 'This link is invalid or has expired.',
+      backToSignIn: 'Back to sign in',
+    },
+    passKey: {
+      signInWithPassKey: 'Sign in with PassKey',
+      authFailed: 'PassKey authentication failed',
+      registrationFailed: 'Registration failed',
+      sectionTitle: 'PassKeys',
+      addPassKey: 'Add PassKey',
+      deviceNamePlaceholder: 'Device name (optional)',
+      registerPassKey: 'Register PassKey',
+      noPassKeysYet: 'No PassKeys registered yet.',
+      defaultName: 'PassKey',
+      added: 'Added',
+      lastUsed: 'Last used',
+      never: 'Never',
+    },
+  },
+
+  // ── Layout ────────────────────────────────────────────────────────────────
+  layout: {
+    emailVerification: {
+      message: 'Please verify your email address to unlock all features.',
+      sent: 'Email sent ✓',
+      resend: 'Resend',
+      dismiss: 'Dismiss',
+    },
+    hiveSwitcher: {
+      selectHive: 'Select hive',
+    },
+    userMenu: {
+      profile: 'Profile',
+      logout: 'Sign out',
+    },
+  },
+
+  // ── Profile ───────────────────────────────────────────────────────────────
+  profile: {
+    title: 'Profile',
+    displayNameLabel: 'Display name',
+    displayNamePlaceholder: 'Your name',
+    emailLabel: 'Email',
+    birthdayLabel: 'Birthday',
+    saved: 'Profile saved!',
+    saveError: 'Failed to save. Please try again.',
+  },
+
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+  dashboard: {
+    nav: {
+      overview: 'Overview',
+      calendar: 'Calendar',
+      tasks: 'Tasks',
+      members: 'Members',
+      pages: 'Pages',
+      settings: 'Settings',
+    },
+    memberCount: '{count} members',
+    create: 'Create',
+    invite: 'Invite',
+    greeting: 'Good morning, {name}! 👋',
+    todayIntro: 'Today: ',
+    tasksLabel: 'Tasks',
+    openLabel: 'open',
+    nextEvent: 'Next event',
+    moreEvents: 'More events',
+    progressText: '{done} of {total} completed',
+    addTask: 'Add task',
+    quickAdd: {
+      title: 'Quick add',
+      placeholder: "What's coming up next?",
+      button: 'Add',
+      event: 'Event',
+      task: 'Task',
+      page: 'Page',
+    },
+    roles: {
+      parent: 'Parent',
+      child: 'Child',
+      guest: 'Guest',
+      orgAdmin: 'Admin',
+      manager: 'Manager',
+      member: 'Member',
+    },
+  },
+} satisfies Translation;
+
+export default en;

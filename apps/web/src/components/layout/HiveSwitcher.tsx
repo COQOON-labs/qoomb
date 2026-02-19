@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 
+import { useI18nContext } from '../../i18n/i18n-react';
 import { useAuth } from '../../lib/auth/useAuth';
 import { trpc } from '../../lib/trpc/client';
 
@@ -8,6 +9,7 @@ import { trpc } from '../../lib/trpc/client';
  * Only renders when the user belongs to more than one hive.
  */
 export function HiveSwitcher() {
+  const { LL } = useI18nContext();
   const { user, switchHive } = useAuth();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,7 +45,9 @@ export function HiveSwitcher() {
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className="max-w-[120px] truncate">{user?.hiveName ?? 'Select hive'}</span>
+        <span className="max-w-[120px] truncate">
+          {user?.hiveName ?? LL.layout.hiveSwitcher.selectHive()}
+        </span>
         <svg
           className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none"

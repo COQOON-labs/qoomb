@@ -1,8 +1,23 @@
 import { Button, Card, cn, Input } from '@qoomb/ui';
 import { useState } from 'react';
 
+import {
+  BellIcon,
+  CalendarIcon,
+  CheckIcon,
+  CheckMarkIcon,
+  ChevronUpDownIcon,
+  DocumentIcon,
+  HomeIcon,
+  MenuIcon,
+  PlusIcon,
+  SettingsIcon,
+  UsersIcon,
+} from '../components/icons';
 import { EmailVerificationBanner } from '../components/layout/EmailVerificationBanner';
 import { HiveSwitcher } from '../components/layout/HiveSwitcher';
+import { UserMenu } from '../components/layout/UserMenu';
+import { useI18nContext } from '../i18n/i18n-react';
 
 // ── Static placeholder data (Phase 2 will replace with tRPC queries) ─────────
 
@@ -153,198 +168,10 @@ const NAV_ITEMS = [
   { id: 'pages', label: 'Seiten', icon: DocumentIcon, active: false, badge: null },
 ];
 
-// ── Icons ─────────────────────────────────────────────────────────────────────
-
-function HomeIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.75}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
-      />
-    </svg>
-  );
-}
-
-function CalendarIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.75}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-      />
-    </svg>
-  );
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.75}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function CheckMarkIcon() {
-  return (
-    <svg
-      className="w-2.5 h-2.5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={3}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-  );
-}
-
-function UsersIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.75}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
-      />
-    </svg>
-  );
-}
-
-function DocumentIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.75}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-      />
-    </svg>
-  );
-}
-
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-    </svg>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg
-      className="w-5 h-5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.75}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
-      />
-    </svg>
-  );
-}
-
-function MenuIcon() {
-  return (
-    <svg
-      className="w-5 h-5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.75}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-      />
-    </svg>
-  );
-}
-
-function ChevronUpDownIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn('w-3.5 h-3.5', className)}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-    </svg>
-  );
-}
-
-function SettingsIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.75}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"
-      />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
-}
-
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export function Dashboard() {
+  const { LL } = useI18nContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [quickAdd, setQuickAdd] = useState('');
   const [tasks, setTasks] = useState(TASKS);
@@ -393,7 +220,7 @@ export function Dashboard() {
             <div className="flex-1 min-w-0">
               <div className="text-sm font-bold text-white truncate leading-tight">{HIVE.name}</div>
               <div className="text-xs text-white/50 leading-tight mt-0.5">
-                {HIVE.memberCount} Mitglieder
+                {LL.dashboard.memberCount({ count: HIVE.memberCount })}
               </div>
             </div>
             <ChevronUpDownIcon className="text-white/40" />
@@ -439,26 +266,20 @@ export function Dashboard() {
           <div className="mt-3 pt-3 border-t border-white/10">
             <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors">
               <SettingsIcon className="w-4 h-4 shrink-0" />
-              <span className="text-xs font-bold uppercase tracking-wider">Einstellungen</span>
+              <span className="text-xs font-bold uppercase tracking-wider">
+                {LL.dashboard.nav.settings()}
+              </span>
             </button>
           </div>
         </nav>
 
         {/* User */}
         <div className="px-3 pb-3 pt-2 border-t border-white/10 shrink-0">
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-xs font-black text-primary-foreground shrink-0">
-              {USER.initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold text-white truncate leading-tight">
-                {USER.fullName}
-              </div>
-              <div className="text-xs text-white/50 leading-tight mt-0.5 uppercase tracking-wide">
-                {USER.role === 'parent' ? 'Elternteil' : USER.role}
-              </div>
-            </div>
-          </div>
+          <UserMenu
+            displayName={USER.fullName}
+            initials={USER.initials}
+            roleLabel={USER.role === 'parent' ? LL.dashboard.roles.parent() : USER.role}
+          />
         </div>
       </aside>
 
@@ -470,17 +291,17 @@ export function Dashboard() {
             className="md:hidden p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground"
             onClick={() => setSidebarOpen(true)}
           >
-            <MenuIcon />
+            <MenuIcon className="w-5 h-5" />
           </button>
           <HiveSwitcher />
           <div className="flex-1" />
           <button className="relative p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-            <BellIcon />
+            <BellIcon className="w-5 h-5" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
           </button>
           <Button size="sm" className="gap-1.5 hidden md:inline-flex">
             <PlusIcon className="w-3.5 h-3.5" />
-            Erstellen
+            {LL.dashboard.create()}
           </Button>
         </header>
 
@@ -525,7 +346,7 @@ export function Dashboard() {
                   <PlusIcon className="w-5 h-5" />
                 </div>
                 <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-                  Einladen
+                  {LL.dashboard.invite()}
                 </span>
               </button>
             </div>
@@ -545,16 +366,17 @@ export function Dashboard() {
                   Donnerstag · Februar 2026
                 </p>
                 <h1 className="text-3xl font-black text-foreground tracking-tight leading-tight">
-                  Guten Morgen, {USER.name}! 👋
+                  {LL.dashboard.greeting({ name: USER.name })}
                 </h1>
                 <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
-                  Heute: <span className="text-foreground font-medium">{nextEvent?.title}</span>
+                  {LL.dashboard.todayIntro()}
+                  <span className="text-foreground font-medium">{nextEvent?.title}</span>
                   {nextEvent && ` um ${nextEvent.time}`}
                   {' · '}
                   <span className="text-foreground font-medium">
-                    {tasks.filter((t) => !t.done).length} Aufgaben
+                    {tasks.filter((t) => !t.done).length} {LL.dashboard.tasksLabel()}
                   </span>{' '}
-                  offen
+                  {LL.dashboard.openLabel()}
                 </p>
               </div>
             </div>
@@ -581,7 +403,7 @@ export function Dashboard() {
                   <div className="px-5 py-4 flex flex-1 items-center justify-between gap-4 min-w-0">
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-                        Nächster Termin
+                        {LL.dashboard.nextEvent()}
                       </p>
                       <p className="text-lg font-bold text-foreground leading-tight truncate">
                         {nextEvent.title}
@@ -589,7 +411,7 @@ export function Dashboard() {
                       <p className="text-sm text-muted-foreground mt-0.5">{nextEvent.time}</p>
                     </div>
                     <Button variant="outline" size="sm" className="shrink-0">
-                      Details
+                      {LL.common.details()}
                     </Button>
                   </div>
                 </div>
@@ -603,14 +425,14 @@ export function Dashboard() {
                 <div className="px-5 pt-5 pb-4">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="font-black text-foreground uppercase tracking-wide text-sm">
-                      Weitere Termine
+                      {LL.dashboard.moreEvents()}
                     </h2>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-muted-foreground hover:text-foreground"
                     >
-                      Alle anzeigen
+                      {LL.common.showAll()}
                     </Button>
                   </div>
 
@@ -656,14 +478,14 @@ export function Dashboard() {
                 <div className="px-5 pt-5 pb-4">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="font-black text-foreground uppercase tracking-wide text-sm">
-                      Aufgaben
+                      {LL.dashboard.tasksLabel()}
                     </h2>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-muted-foreground hover:text-foreground"
                     >
-                      Alle anzeigen
+                      {LL.common.showAll()}
                     </Button>
                   </div>
 
@@ -671,7 +493,7 @@ export function Dashboard() {
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-xs text-muted-foreground">
-                        {doneTasks} von {tasks.length} erledigt
+                        {LL.dashboard.progressText({ done: doneTasks, total: tasks.length })}
                       </span>
                       <span className="text-xs font-semibold text-foreground">{taskProgress}%</span>
                     </div>
@@ -726,7 +548,7 @@ export function Dashboard() {
                       className="justify-start text-muted-foreground hover:text-foreground"
                     >
                       <PlusIcon className="w-4 h-4 mr-1.5" />
-                      Aufgabe hinzufügen
+                      {LL.dashboard.addTask()}
                     </Button>
                   </div>
                 </div>
@@ -736,11 +558,11 @@ export function Dashboard() {
             {/* ── Quick create ─────────────────────────────────────────────── */}
             <div>
               <h2 className="font-black text-foreground uppercase tracking-wide text-sm mb-3">
-                Schnell hinzufügen
+                {LL.dashboard.quickAdd.title()}
               </h2>
               <div className="flex gap-2 mb-3">
                 <Input
-                  placeholder="Was steht als nächstes an?"
+                  placeholder={LL.dashboard.quickAdd.placeholder()}
                   value={quickAdd}
                   onChange={(e) => setQuickAdd(e.target.value)}
                   onKeyDown={(e) => {
@@ -748,21 +570,21 @@ export function Dashboard() {
                   }}
                 />
                 <Button disabled={!quickAdd.trim()} onClick={() => setQuickAdd('')}>
-                  Hinzufügen
+                  {LL.dashboard.quickAdd.button()}
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <CalendarIcon className="w-3.5 h-3.5" />
-                  Termin
+                  {LL.dashboard.quickAdd.event()}
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <CheckIcon className="w-3.5 h-3.5" />
-                  Aufgabe
+                  {LL.dashboard.quickAdd.task()}
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <DocumentIcon className="w-3.5 h-3.5" />
-                  Seite
+                  {LL.dashboard.quickAdd.page()}
                 </Button>
               </div>
             </div>

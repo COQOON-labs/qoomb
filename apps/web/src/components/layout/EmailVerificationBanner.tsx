@@ -1,6 +1,7 @@
 import { Button } from '@qoomb/ui';
 import { useState } from 'react';
 
+import { useI18nContext } from '../../i18n/i18n-react';
 import { trpc } from '../../lib/trpc/client';
 
 /**
@@ -8,6 +9,7 @@ import { trpc } from '../../lib/trpc/client';
  * Non-blocking — users can dismiss it and continue using the app.
  */
 export function EmailVerificationBanner() {
+  const { LL } = useI18nContext();
   const [dismissed, setDismissed] = useState(false);
 
   const meQuery = trpc.auth.me.useQuery(undefined, { staleTime: 5 * 60_000 });
@@ -34,10 +36,10 @@ export function EmailVerificationBanner() {
         />
       </svg>
 
-      <span className="flex-1">Please verify your email address to unlock all features.</span>
+      <span className="flex-1">{LL.layout.emailVerification.message()}</span>
 
       {resendMutation.isSuccess ? (
-        <span className="text-xs">Email sent ✓</span>
+        <span className="text-xs">{LL.layout.emailVerification.sent()}</span>
       ) : (
         <Button
           size="sm"
@@ -46,14 +48,14 @@ export function EmailVerificationBanner() {
           isLoading={resendMutation.isPending}
           onClick={() => resendMutation.mutate()}
         >
-          Resend
+          {LL.layout.emailVerification.resend()}
         </Button>
       )}
 
       <button
         onClick={() => setDismissed(true)}
         className="ml-1 rounded p-0.5 hover:bg-primary-hover transition-colors shrink-0"
-        aria-label="Dismiss"
+        aria-label={LL.layout.emailVerification.dismiss()}
       >
         <svg
           className="h-4 w-4"

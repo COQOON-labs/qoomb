@@ -18,6 +18,35 @@ const de = {
     emailLabel: 'E-Mail',
     passwordLabel: 'Passwort',
     passwordHint: 'Min. 8 Zeichen mit Großbuchstabe, Zahl und Sonderzeichen',
+    create: 'Erstellen',
+    invite: 'Einladen',
+  },
+
+  // ── Navigation ───────────────────────────────────────────────────────────────────────────────
+  nav: {
+    overview: 'Übersicht',
+    calendar: 'Kalender',
+    tasks: 'Aufgaben',
+    members: 'Mitglieder',
+    pages: 'Seiten',
+    settings: 'Einstellungen',
+  },
+
+  // ── Domain entities ───────────────────────────────────────────────────────────────────
+  entities: {
+    event: 'Termin',
+    task: 'Aufgabe',
+    page: 'Seite',
+  },
+
+  // ── Roles ──────────────────────────────────────────────────────────────────────────────────
+  roles: {
+    parent: 'Elternteil',
+    child: 'Kind',
+    guest: 'Gast',
+    orgAdmin: 'Admin',
+    manager: 'Manager',
+    member: 'Mitglied',
   },
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -114,17 +143,7 @@ const de = {
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
   dashboard: {
-    nav: {
-      overview: 'Übersicht',
-      calendar: 'Kalender',
-      tasks: 'Aufgaben',
-      members: 'Mitglieder',
-      pages: 'Seiten',
-      settings: 'Einstellungen',
-    },
     memberCount: '{count:number} Mitglieder',
-    create: 'Erstellen',
-    invite: 'Einladen',
     greeting: 'Guten Morgen, {name:string}! 👋',
     todayIntro: 'Heute: ',
     openLabel: 'offen',
@@ -135,17 +154,6 @@ const de = {
     quickAdd: {
       title: 'Schnell hinzufügen',
       placeholder: 'Was steht als nächstes an?',
-      event: 'Termin',
-      task: 'Aufgabe',
-      page: 'Seite',
-    },
-    roles: {
-      parent: 'Elternteil',
-      child: 'Kind',
-      guest: 'Gast',
-      orgAdmin: 'Admin',
-      manager: 'Manager',
-      member: 'Mitglied',
     },
   },
 } satisfies BaseTranslation;

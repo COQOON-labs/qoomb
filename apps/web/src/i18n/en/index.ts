@@ -18,6 +18,35 @@ const en = {
     emailLabel: 'Email',
     passwordLabel: 'Password',
     passwordHint: 'Min. 8 characters with uppercase, number and special character',
+    create: 'Create',
+    invite: 'Invite',
+  },
+
+  // ── Navigation ───────────────────────────────────────────────────────────────────────────────
+  nav: {
+    overview: 'Overview',
+    calendar: 'Calendar',
+    tasks: 'Tasks',
+    members: 'Members',
+    pages: 'Pages',
+    settings: 'Settings',
+  },
+
+  // ── Domain entities ───────────────────────────────────────────────────────────────────
+  entities: {
+    event: 'Event',
+    task: 'Task',
+    page: 'Page',
+  },
+
+  // ── Roles ──────────────────────────────────────────────────────────────────────────────────
+  roles: {
+    parent: 'Parent',
+    child: 'Child',
+    guest: 'Guest',
+    orgAdmin: 'Admin',
+    manager: 'Manager',
+    member: 'Member',
   },
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -113,17 +142,7 @@ const en = {
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
   dashboard: {
-    nav: {
-      overview: 'Overview',
-      calendar: 'Calendar',
-      tasks: 'Tasks',
-      members: 'Members',
-      pages: 'Pages',
-      settings: 'Settings',
-    },
     memberCount: '{count} members',
-    create: 'Create',
-    invite: 'Invite',
     greeting: 'Good morning, {name}! 👋',
     todayIntro: 'Today: ',
     openLabel: 'open',
@@ -134,17 +153,6 @@ const en = {
     quickAdd: {
       title: 'Quick add',
       placeholder: "What's coming up next?",
-      event: 'Event',
-      task: 'Task',
-      page: 'Page',
-    },
-    roles: {
-      parent: 'Parent',
-      child: 'Child',
-      guest: 'Guest',
-      orgAdmin: 'Admin',
-      manager: 'Manager',
-      member: 'Member',
     },
   },
 } satisfies Translation;

@@ -77,6 +77,80 @@ type RootTranslation = {
      * M​i​n​.​ ​8​ ​Z​e​i​c​h​e​n​ ​m​i​t​ ​G​r​o​ß​b​u​c​h​s​t​a​b​e​,​ ​Z​a​h​l​ ​u​n​d​ ​S​o​n​d​e​r​z​e​i​c​h​e​n
      */
     passwordHint: string;
+    /**
+     * E​r​s​t​e​l​l​e​n
+     */
+    create: string;
+    /**
+     * E​i​n​l​a​d​e​n
+     */
+    invite: string;
+  };
+  nav: {
+    /**
+     * Ü​b​e​r​s​i​c​h​t
+     */
+    overview: string;
+    /**
+     * K​a​l​e​n​d​e​r
+     */
+    calendar: string;
+    /**
+     * A​u​f​g​a​b​e​n
+     */
+    tasks: string;
+    /**
+     * M​i​t​g​l​i​e​d​e​r
+     */
+    members: string;
+    /**
+     * S​e​i​t​e​n
+     */
+    pages: string;
+    /**
+     * E​i​n​s​t​e​l​l​u​n​g​e​n
+     */
+    settings: string;
+  };
+  entities: {
+    /**
+     * T​e​r​m​i​n
+     */
+    event: string;
+    /**
+     * A​u​f​g​a​b​e
+     */
+    task: string;
+    /**
+     * S​e​i​t​e
+     */
+    page: string;
+  };
+  roles: {
+    /**
+     * E​l​t​e​r​n​t​e​i​l
+     */
+    parent: string;
+    /**
+     * K​i​n​d
+     */
+    child: string;
+    /**
+     * G​a​s​t
+     */
+    guest: string;
+    /**
+     * A​d​m​i​n
+     */
+    orgAdmin: string;
+    /**
+     * M​a​n​a​g​e​r
+     */
+    manager: string;
+    /**
+     * M​i​t​g​l​i​e​d
+     */
+    member: string;
   };
   auth: {
     /**
@@ -343,45 +417,11 @@ type RootTranslation = {
     saveError: string;
   };
   dashboard: {
-    nav: {
-      /**
-       * Ü​b​e​r​s​i​c​h​t
-       */
-      overview: string;
-      /**
-       * K​a​l​e​n​d​e​r
-       */
-      calendar: string;
-      /**
-       * A​u​f​g​a​b​e​n
-       */
-      tasks: string;
-      /**
-       * M​i​t​g​l​i​e​d​e​r
-       */
-      members: string;
-      /**
-       * S​e​i​t​e​n
-       */
-      pages: string;
-      /**
-       * E​i​n​s​t​e​l​l​u​n​g​e​n
-       */
-      settings: string;
-    };
     /**
      * {​c​o​u​n​t​}​ ​M​i​t​g​l​i​e​d​e​r
      * @param {number} count
      */
     memberCount: RequiredParams<'count'>;
-    /**
-     * E​r​s​t​e​l​l​e​n
-     */
-    create: string;
-    /**
-     * E​i​n​l​a​d​e​n
-     */
-    invite: string;
     /**
      * G​u​t​e​n​ ​M​o​r​g​e​n​,​ ​{​n​a​m​e​}​!​ ​�​�
      * @param {string} name
@@ -422,44 +462,6 @@ type RootTranslation = {
        * W​a​s​ ​s​t​e​h​t​ ​a​l​s​ ​n​ä​c​h​s​t​e​s​ ​a​n​?
        */
       placeholder: string;
-      /**
-       * T​e​r​m​i​n
-       */
-      event: string;
-      /**
-       * A​u​f​g​a​b​e
-       */
-      task: string;
-      /**
-       * S​e​i​t​e
-       */
-      page: string;
-    };
-    roles: {
-      /**
-       * E​l​t​e​r​n​t​e​i​l
-       */
-      parent: string;
-      /**
-       * K​i​n​d
-       */
-      child: string;
-      /**
-       * G​a​s​t
-       */
-      guest: string;
-      /**
-       * A​d​m​i​n
-       */
-      orgAdmin: string;
-      /**
-       * M​a​n​a​g​e​r
-       */
-      manager: string;
-      /**
-       * M​i​t​g​l​i​e​d
-       */
-      member: string;
     };
   };
 };
@@ -526,6 +528,80 @@ export type TranslationFunctions = {
      * Min. 8 Zeichen mit Großbuchstabe, Zahl und Sonderzeichen
      */
     passwordHint: () => LocalizedString;
+    /**
+     * Erstellen
+     */
+    create: () => LocalizedString;
+    /**
+     * Einladen
+     */
+    invite: () => LocalizedString;
+  };
+  nav: {
+    /**
+     * Übersicht
+     */
+    overview: () => LocalizedString;
+    /**
+     * Kalender
+     */
+    calendar: () => LocalizedString;
+    /**
+     * Aufgaben
+     */
+    tasks: () => LocalizedString;
+    /**
+     * Mitglieder
+     */
+    members: () => LocalizedString;
+    /**
+     * Seiten
+     */
+    pages: () => LocalizedString;
+    /**
+     * Einstellungen
+     */
+    settings: () => LocalizedString;
+  };
+  entities: {
+    /**
+     * Termin
+     */
+    event: () => LocalizedString;
+    /**
+     * Aufgabe
+     */
+    task: () => LocalizedString;
+    /**
+     * Seite
+     */
+    page: () => LocalizedString;
+  };
+  roles: {
+    /**
+     * Elternteil
+     */
+    parent: () => LocalizedString;
+    /**
+     * Kind
+     */
+    child: () => LocalizedString;
+    /**
+     * Gast
+     */
+    guest: () => LocalizedString;
+    /**
+     * Admin
+     */
+    orgAdmin: () => LocalizedString;
+    /**
+     * Manager
+     */
+    manager: () => LocalizedString;
+    /**
+     * Mitglied
+     */
+    member: () => LocalizedString;
   };
   auth: {
     /**
@@ -792,44 +868,10 @@ export type TranslationFunctions = {
     saveError: () => LocalizedString;
   };
   dashboard: {
-    nav: {
-      /**
-       * Übersicht
-       */
-      overview: () => LocalizedString;
-      /**
-       * Kalender
-       */
-      calendar: () => LocalizedString;
-      /**
-       * Aufgaben
-       */
-      tasks: () => LocalizedString;
-      /**
-       * Mitglieder
-       */
-      members: () => LocalizedString;
-      /**
-       * Seiten
-       */
-      pages: () => LocalizedString;
-      /**
-       * Einstellungen
-       */
-      settings: () => LocalizedString;
-    };
     /**
      * {count} Mitglieder
      */
     memberCount: (arg: { count: number }) => LocalizedString;
-    /**
-     * Erstellen
-     */
-    create: () => LocalizedString;
-    /**
-     * Einladen
-     */
-    invite: () => LocalizedString;
     /**
      * Guten Morgen, {name}! 👋
      */
@@ -867,44 +909,6 @@ export type TranslationFunctions = {
        * Was steht als nächstes an?
        */
       placeholder: () => LocalizedString;
-      /**
-       * Termin
-       */
-      event: () => LocalizedString;
-      /**
-       * Aufgabe
-       */
-      task: () => LocalizedString;
-      /**
-       * Seite
-       */
-      page: () => LocalizedString;
-    };
-    roles: {
-      /**
-       * Elternteil
-       */
-      parent: () => LocalizedString;
-      /**
-       * Kind
-       */
-      child: () => LocalizedString;
-      /**
-       * Gast
-       */
-      guest: () => LocalizedString;
-      /**
-       * Admin
-       */
-      orgAdmin: () => LocalizedString;
-      /**
-       * Manager
-       */
-      manager: () => LocalizedString;
-      /**
-       * Mitglied
-       */
-      member: () => LocalizedString;
     };
   };
 };

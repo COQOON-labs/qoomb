@@ -160,14 +160,6 @@ const MEMBERS = [
   },
 ];
 
-const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Übersicht', icon: HomeIcon, active: true, badge: null },
-  { id: 'events', label: 'Kalender', icon: CalendarIcon, active: false, badge: null },
-  { id: 'tasks', label: 'Aufgaben', icon: CheckIcon, active: false, badge: '4' },
-  { id: 'members', label: 'Mitglieder', icon: UsersIcon, active: false, badge: null },
-  { id: 'pages', label: 'Seiten', icon: DocumentIcon, active: false, badge: null },
-];
-
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export function Dashboard() {
@@ -175,6 +167,14 @@ export function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [quickAdd, setQuickAdd] = useState('');
   const [tasks, setTasks] = useState(TASKS);
+
+  const NAV_ITEMS = [
+    { id: 'dashboard', label: LL.nav.overview(), icon: HomeIcon, active: true, badge: null },
+    { id: 'events', label: LL.nav.calendar(), icon: CalendarIcon, active: false, badge: null },
+    { id: 'tasks', label: LL.nav.tasks(), icon: CheckIcon, active: false, badge: '4' },
+    { id: 'members', label: LL.nav.members(), icon: UsersIcon, active: false, badge: null },
+    { id: 'pages', label: LL.nav.pages(), icon: DocumentIcon, active: false, badge: null },
+  ];
 
   const toggleTask = (id: string) => {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
@@ -267,7 +267,7 @@ export function Dashboard() {
             <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors">
               <SettingsIcon className="w-4 h-4 shrink-0" />
               <span className="text-xs font-bold uppercase tracking-wider">
-                {LL.dashboard.nav.settings()}
+                {LL.nav.settings()}
               </span>
             </button>
           </div>
@@ -278,7 +278,7 @@ export function Dashboard() {
           <UserMenu
             displayName={USER.fullName}
             initials={USER.initials}
-            roleLabel={USER.role === 'parent' ? LL.dashboard.roles.parent() : USER.role}
+            roleLabel={USER.role === 'parent' ? LL.roles.parent() : USER.role}
           />
         </div>
       </aside>
@@ -301,7 +301,7 @@ export function Dashboard() {
           </button>
           <Button size="sm" className="gap-1.5 hidden md:inline-flex">
             <PlusIcon className="w-3.5 h-3.5" />
-            {LL.dashboard.create()}
+            {LL.common.create()}
           </Button>
         </header>
 
@@ -346,7 +346,7 @@ export function Dashboard() {
                   <PlusIcon className="w-5 h-5" />
                 </div>
                 <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-                  {LL.dashboard.invite()}
+                  {LL.common.invite()}
                 </span>
               </button>
             </div>
@@ -374,7 +374,7 @@ export function Dashboard() {
                   {nextEvent && ` um ${nextEvent.time}`}
                   {' · '}
                   <span className="text-foreground font-medium">
-                    {tasks.filter((t) => !t.done).length} {LL.dashboard.nav.tasks()}
+                    {tasks.filter((t) => !t.done).length} {LL.nav.tasks()}
                   </span>{' '}
                   {LL.dashboard.openLabel()}
                 </p>
@@ -478,7 +478,7 @@ export function Dashboard() {
                 <div className="px-5 pt-5 pb-4">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="font-black text-foreground uppercase tracking-wide text-sm">
-                      {LL.dashboard.nav.tasks()}
+                      {LL.nav.tasks()}
                     </h2>
                     <Button
                       variant="ghost"
@@ -576,15 +576,15 @@ export function Dashboard() {
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <CalendarIcon className="w-3.5 h-3.5" />
-                  {LL.dashboard.quickAdd.event()}
+                  {LL.entities.event()}
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <CheckIcon className="w-3.5 h-3.5" />
-                  {LL.dashboard.quickAdd.task()}
+                  {LL.entities.task()}
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <DocumentIcon className="w-3.5 h-3.5" />
-                  {LL.dashboard.quickAdd.page()}
+                  {LL.entities.page()}
                 </Button>
               </div>
             </div>

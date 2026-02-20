@@ -105,7 +105,7 @@ export function ProfilePage() {
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
-                    {LL.profile.emailLabel()}
+                    {LL.common.emailLabel()}
                   </label>
                   <Input value={user?.email ?? ''} disabled />
                 </div>

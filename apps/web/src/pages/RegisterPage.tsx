@@ -99,7 +99,7 @@ export function RegisterPage() {
 
   if (systemConfig.isLoading) {
     return (
-      <AuthLayout title={LL.auth.register.titleLoading()}>
+      <AuthLayout title={LL.auth.register.title()}>
         <div className="mt-8 flex justify-center">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
@@ -126,7 +126,7 @@ export function RegisterPage() {
           required
         />
         <Input
-          label={LL.auth.register.emailLabel()}
+          label={LL.common.emailLabel()}
           type="email"
           autoComplete="email"
           value={email}
@@ -134,14 +134,14 @@ export function RegisterPage() {
           required
         />
         <Input
-          label={LL.auth.register.passwordLabel()}
+          label={LL.common.passwordLabel()}
           type="password"
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           showPasswordToggle
-          helperText={LL.auth.register.passwordHint()}
+          helperText={LL.common.passwordHint()}
         />
 
         {!inviteToken && (
@@ -195,7 +195,7 @@ export function RegisterPage() {
       <p className="mt-6 text-center text-sm text-muted-foreground">
         {LL.auth.register.alreadyHaveAccount()}{' '}
         <Link to="/login" className="font-medium text-foreground hover:underline">
-          {LL.auth.register.signIn()}
+          {LL.auth.signIn()}
         </Link>
       </p>
     </AuthLayout>

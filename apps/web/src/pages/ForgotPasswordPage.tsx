@@ -41,7 +41,7 @@ export function ForgotPasswordPage() {
       >
         <div className="mt-6">
           <Button asChild fullWidth variant="outline">
-            <Link to="/login">{LL.auth.forgotPassword.backToSignIn()}</Link>
+            <Link to="/login">{LL.auth.backToSignIn()}</Link>
           </Button>
         </div>
       </AuthLayout>
@@ -52,7 +52,7 @@ export function ForgotPasswordPage() {
     <AuthLayout title={LL.auth.forgotPassword.title()} subtitle={LL.auth.forgotPassword.subtitle()}>
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <Input
-          label={LL.auth.forgotPassword.emailLabel()}
+          label={LL.common.emailLabel()}
           type="email"
           autoComplete="email"
           value={email}
@@ -69,7 +69,7 @@ export function ForgotPasswordPage() {
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         <Link to="/login" className="font-medium text-foreground hover:underline">
-          {LL.auth.forgotPassword.backToSignIn()}
+          {LL.auth.backToSignIn()}
         </Link>
       </p>
     </AuthLayout>

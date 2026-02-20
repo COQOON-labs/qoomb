@@ -65,7 +65,7 @@ export function VerifyEmailPage() {
     >
       <div className="mt-6 flex flex-col gap-3">
         <Button asChild fullWidth variant="outline">
-          <Link to="/login">{LL.auth.verifyEmail.backToSignIn()}</Link>
+          <Link to="/login">{LL.auth.backToSignIn()}</Link>
         </Button>
       </div>
     </AuthLayout>

@@ -374,7 +374,7 @@ export function Dashboard() {
                   {nextEvent && ` um ${nextEvent.time}`}
                   {' · '}
                   <span className="text-foreground font-medium">
-                    {tasks.filter((t) => !t.done).length} {LL.dashboard.tasksLabel()}
+                    {tasks.filter((t) => !t.done).length} {LL.dashboard.nav.tasks()}
                   </span>{' '}
                   {LL.dashboard.openLabel()}
                 </p>
@@ -478,7 +478,7 @@ export function Dashboard() {
                 <div className="px-5 pt-5 pb-4">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="font-black text-foreground uppercase tracking-wide text-sm">
-                      {LL.dashboard.tasksLabel()}
+                      {LL.dashboard.nav.tasks()}
                     </h2>
                     <Button
                       variant="ghost"
@@ -570,7 +570,7 @@ export function Dashboard() {
                   }}
                 />
                 <Button disabled={!quickAdd.trim()} onClick={() => setQuickAdd('')}>
-                  {LL.dashboard.quickAdd.button()}
+                  {LL.common.add()}
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">

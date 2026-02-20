@@ -50,7 +50,7 @@ export function ResetPasswordPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
           showPasswordToggle
-          helperText={LL.auth.resetPassword.passwordHint()}
+          helperText={LL.common.passwordHint()}
         />
         <Input
           label={LL.auth.resetPassword.confirmPasswordLabel()}
@@ -70,7 +70,7 @@ export function ResetPasswordPage() {
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         <Link to="/login" className="font-medium text-foreground hover:underline">
-          {LL.auth.resetPassword.backToSignIn()}
+          {LL.auth.backToSignIn()}
         </Link>
       </p>
     </AuthLayout>

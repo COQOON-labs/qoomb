@@ -54,7 +54,7 @@ export function LoginPage() {
     <AuthLayout title={LL.auth.login.title()} subtitle={LL.auth.login.subtitle()}>
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <Input
-          label={LL.auth.login.emailLabel()}
+          label={LL.common.emailLabel()}
           type="email"
           autoComplete="email"
           value={email}
@@ -62,7 +62,7 @@ export function LoginPage() {
           required
         />
         <Input
-          label={LL.auth.login.passwordLabel()}
+          label={LL.common.passwordLabel()}
           type="password"
           autoComplete="current-password"
           value={password}
@@ -84,7 +84,7 @@ export function LoginPage() {
         )}
 
         <Button type="submit" fullWidth isLoading={loginMutation.isPending} className="mt-2">
-          {LL.auth.login.signIn()}
+          {LL.auth.signIn()}
         </Button>
       </form>
 

@@ -65,8 +65,28 @@ type RootTranslation = {
      * o​d​e​r
      */
     or: string;
+    /**
+     * E​-​M​a​i​l
+     */
+    emailLabel: string;
+    /**
+     * P​a​s​s​w​o​r​t
+     */
+    passwordLabel: string;
+    /**
+     * M​i​n​.​ ​8​ ​Z​e​i​c​h​e​n​ ​m​i​t​ ​G​r​o​ß​b​u​c​h​s​t​a​b​e​,​ ​Z​a​h​l​ ​u​n​d​ ​S​o​n​d​e​r​z​e​i​c​h​e​n
+     */
+    passwordHint: string;
   };
   auth: {
+    /**
+     * A​n​m​e​l​d​e​n
+     */
+    signIn: string;
+    /**
+     * Z​u​r​ü​c​k​ ​z​u​r​ ​A​n​m​e​l​d​u​n​g
+     */
+    backToSignIn: string;
     login: {
       /**
        * W​i​l​l​k​o​m​m​e​n​ ​z​u​r​ü​c​k
@@ -77,21 +97,9 @@ type RootTranslation = {
        */
       subtitle: string;
       /**
-       * E​-​M​a​i​l
-       */
-      emailLabel: string;
-      /**
-       * P​a​s​s​w​o​r​t
-       */
-      passwordLabel: string;
-      /**
        * P​a​s​s​w​o​r​t​ ​v​e​r​g​e​s​s​e​n​?
        */
       forgotPassword: string;
-      /**
-       * A​n​m​e​l​d​e​n
-       */
-      signIn: string;
       /**
        * N​o​c​h​ ​k​e​i​n​ ​K​o​n​t​o​?
        */
@@ -106,10 +114,6 @@ type RootTranslation = {
        * E​r​s​t​e​l​l​e​ ​d​e​i​n​e​n​ ​H​i​v​e
        */
       title: string;
-      /**
-       * E​r​s​t​e​l​l​e​ ​d​e​i​n​e​n​ ​H​i​v​e
-       */
-      titleLoading: string;
       /**
        * E​i​n​l​a​d​u​n​g​ ​a​n​n​e​h​m​e​n
        */
@@ -126,18 +130,6 @@ type RootTranslation = {
        * D​e​i​n​ ​N​a​m​e
        */
       nameLabel: string;
-      /**
-       * E​-​M​a​i​l
-       */
-      emailLabel: string;
-      /**
-       * P​a​s​s​w​o​r​t
-       */
-      passwordLabel: string;
-      /**
-       * M​i​n​.​ ​8​ ​Z​e​i​c​h​e​n​ ​m​i​t​ ​G​r​o​ß​b​u​c​h​s​t​a​b​e​,​ ​Z​a​h​l​ ​u​n​d​ ​S​o​n​d​e​r​z​e​i​c​h​e​n
-       */
-      passwordHint: string;
       /**
        * H​i​v​e​-​N​a​m​e
        */
@@ -162,10 +154,6 @@ type RootTranslation = {
        * D​u​ ​h​a​s​t​ ​b​e​r​e​i​t​s​ ​e​i​n​ ​K​o​n​t​o​?
        */
       alreadyHaveAccount: string;
-      /**
-       * A​n​m​e​l​d​e​n
-       */
-      signIn: string;
     };
     forgotPassword: {
       /**
@@ -177,17 +165,9 @@ type RootTranslation = {
        */
       subtitle: string;
       /**
-       * E​-​M​a​i​l
-       */
-      emailLabel: string;
-      /**
        * L​i​n​k​ ​s​e​n​d​e​n
        */
       sendResetLink: string;
-      /**
-       * Z​u​r​ü​c​k​ ​z​u​r​ ​A​n​m​e​l​d​u​n​g
-       */
-      backToSignIn: string;
       /**
        * E​-​M​a​i​l​ ​p​r​ü​f​e​n
        */
@@ -211,10 +191,6 @@ type RootTranslation = {
        */
       newPasswordLabel: string;
       /**
-       * M​i​n​.​ ​8​ ​Z​e​i​c​h​e​n​ ​m​i​t​ ​G​r​o​ß​b​u​c​h​s​t​a​b​e​,​ ​Z​a​h​l​ ​u​n​d​ ​S​o​n​d​e​r​z​e​i​c​h​e​n
-       */
-      passwordHint: string;
-      /**
        * P​a​s​s​w​o​r​t​ ​b​e​s​t​ä​t​i​g​e​n
        */
       confirmPasswordLabel: string;
@@ -226,10 +202,6 @@ type RootTranslation = {
        * N​e​u​e​s​ ​P​a​s​s​w​o​r​t​ ​s​e​t​z​e​n
        */
       setNewPassword: string;
-      /**
-       * Z​u​r​ü​c​k​ ​z​u​r​ ​A​n​m​e​l​d​u​n​g
-       */
-      backToSignIn: string;
     };
     verifyEmail: {
       /**
@@ -256,10 +228,6 @@ type RootTranslation = {
        * D​i​e​s​e​r​ ​L​i​n​k​ ​i​s​t​ ​u​n​g​ü​l​t​i​g​ ​o​d​e​r​ ​a​b​g​e​l​a​u​f​e​n​.
        */
       failedSubtitle: string;
-      /**
-       * Z​u​r​ü​c​k​ ​z​u​r​ ​A​n​m​e​l​d​u​n​g
-       */
-      backToSignIn: string;
     };
     passKey: {
       /**
@@ -362,10 +330,6 @@ type RootTranslation = {
      */
     displayNamePlaceholder: string;
     /**
-     * E​-​M​a​i​l
-     */
-    emailLabel: string;
-    /**
      * G​e​b​u​r​t​s​t​a​g
      */
     birthdayLabel: string;
@@ -428,10 +392,6 @@ type RootTranslation = {
      */
     todayIntro: string;
     /**
-     * A​u​f​g​a​b​e​n
-     */
-    tasksLabel: string;
-    /**
      * o​f​f​e​n
      */
     openLabel: string;
@@ -462,10 +422,6 @@ type RootTranslation = {
        * W​a​s​ ​s​t​e​h​t​ ​a​l​s​ ​n​ä​c​h​s​t​e​s​ ​a​n​?
        */
       placeholder: string;
-      /**
-       * H​i​n​z​u​f​ü​g​e​n
-       */
-      button: string;
       /**
        * T​e​r​m​i​n
        */
@@ -558,8 +514,28 @@ export type TranslationFunctions = {
      * oder
      */
     or: () => LocalizedString;
+    /**
+     * E-Mail
+     */
+    emailLabel: () => LocalizedString;
+    /**
+     * Passwort
+     */
+    passwordLabel: () => LocalizedString;
+    /**
+     * Min. 8 Zeichen mit Großbuchstabe, Zahl und Sonderzeichen
+     */
+    passwordHint: () => LocalizedString;
   };
   auth: {
+    /**
+     * Anmelden
+     */
+    signIn: () => LocalizedString;
+    /**
+     * Zurück zur Anmeldung
+     */
+    backToSignIn: () => LocalizedString;
     login: {
       /**
        * Willkommen zurück
@@ -570,21 +546,9 @@ export type TranslationFunctions = {
        */
       subtitle: () => LocalizedString;
       /**
-       * E-Mail
-       */
-      emailLabel: () => LocalizedString;
-      /**
-       * Passwort
-       */
-      passwordLabel: () => LocalizedString;
-      /**
        * Passwort vergessen?
        */
       forgotPassword: () => LocalizedString;
-      /**
-       * Anmelden
-       */
-      signIn: () => LocalizedString;
       /**
        * Noch kein Konto?
        */
@@ -599,10 +563,6 @@ export type TranslationFunctions = {
        * Erstelle deinen Hive
        */
       title: () => LocalizedString;
-      /**
-       * Erstelle deinen Hive
-       */
-      titleLoading: () => LocalizedString;
       /**
        * Einladung annehmen
        */
@@ -619,18 +579,6 @@ export type TranslationFunctions = {
        * Dein Name
        */
       nameLabel: () => LocalizedString;
-      /**
-       * E-Mail
-       */
-      emailLabel: () => LocalizedString;
-      /**
-       * Passwort
-       */
-      passwordLabel: () => LocalizedString;
-      /**
-       * Min. 8 Zeichen mit Großbuchstabe, Zahl und Sonderzeichen
-       */
-      passwordHint: () => LocalizedString;
       /**
        * Hive-Name
        */
@@ -655,10 +603,6 @@ export type TranslationFunctions = {
        * Du hast bereits ein Konto?
        */
       alreadyHaveAccount: () => LocalizedString;
-      /**
-       * Anmelden
-       */
-      signIn: () => LocalizedString;
     };
     forgotPassword: {
       /**
@@ -670,17 +614,9 @@ export type TranslationFunctions = {
        */
       subtitle: () => LocalizedString;
       /**
-       * E-Mail
-       */
-      emailLabel: () => LocalizedString;
-      /**
        * Link senden
        */
       sendResetLink: () => LocalizedString;
-      /**
-       * Zurück zur Anmeldung
-       */
-      backToSignIn: () => LocalizedString;
       /**
        * E-Mail prüfen
        */
@@ -704,10 +640,6 @@ export type TranslationFunctions = {
        */
       newPasswordLabel: () => LocalizedString;
       /**
-       * Min. 8 Zeichen mit Großbuchstabe, Zahl und Sonderzeichen
-       */
-      passwordHint: () => LocalizedString;
-      /**
        * Passwort bestätigen
        */
       confirmPasswordLabel: () => LocalizedString;
@@ -719,10 +651,6 @@ export type TranslationFunctions = {
        * Neues Passwort setzen
        */
       setNewPassword: () => LocalizedString;
-      /**
-       * Zurück zur Anmeldung
-       */
-      backToSignIn: () => LocalizedString;
     };
     verifyEmail: {
       /**
@@ -749,10 +677,6 @@ export type TranslationFunctions = {
        * Dieser Link ist ungültig oder abgelaufen.
        */
       failedSubtitle: () => LocalizedString;
-      /**
-       * Zurück zur Anmeldung
-       */
-      backToSignIn: () => LocalizedString;
     };
     passKey: {
       /**
@@ -855,10 +779,6 @@ export type TranslationFunctions = {
      */
     displayNamePlaceholder: () => LocalizedString;
     /**
-     * E-Mail
-     */
-    emailLabel: () => LocalizedString;
-    /**
      * Geburtstag
      */
     birthdayLabel: () => LocalizedString;
@@ -919,10 +839,6 @@ export type TranslationFunctions = {
      */
     todayIntro: () => LocalizedString;
     /**
-     * Aufgaben
-     */
-    tasksLabel: () => LocalizedString;
-    /**
      * offen
      */
     openLabel: () => LocalizedString;
@@ -951,10 +867,6 @@ export type TranslationFunctions = {
        * Was steht als nächstes an?
        */
       placeholder: () => LocalizedString;
-      /**
-       * Hinzufügen
-       */
-      button: () => LocalizedString;
       /**
        * Termin
        */

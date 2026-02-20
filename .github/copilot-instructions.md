@@ -63,6 +63,19 @@ function MyComponent() {
 }
 ```
 
+**Namespace structure:**
+
+| Namespace   | Scope                                    | Examples                                                                  |
+| ----------- | ---------------------------------------- | ------------------------------------------------------------------------- |
+| `common`    | Generic actions + primitives             | `save`, `cancel`, `add`, `create`, `invite`, `emailLabel`, `passwordHint` |
+| `nav`       | Navigation section labels                | `overview`, `calendar`, `tasks`, `members`, `pages`, `settings`           |
+| `entities`  | Domain object names                      | `event`, `task`, `page`                                                   |
+| `roles`     | Role display names                       | `parent`, `child`, `orgAdmin`, `manager`, `member`                        |
+| `auth`      | Auth flows (login, register, passKey, …) | `signIn`, `backToSignIn`, `login.title`                                   |
+| `layout`    | Shared layout chrome                     | `userMenu.profile`, `emailVerification.message`                           |
+| `profile`   | Profile page strings                     | `displayNameLabel`, `saved`                                               |
+| `dashboard` | **Dashboard-view-specific only**         | `greeting`, `memberCount`, `progressText`, `quickAdd.title`               |
+
 **Parameterised strings:**
 
 ```tsx

@@ -85,6 +85,7 @@ export default defineConfig({
       // Resolve @qoomb packages directly from source so HMR works without rebuilding
       '@qoomb/ui': path.resolve(__dirname, '../../packages/ui/src'),
       '@qoomb/types': path.resolve(__dirname, '../../packages/types/src'),
+      '@qoomb/validators': path.resolve(__dirname, '../../packages/validators/src'),
     },
   },
   server: {

@@ -23,8 +23,8 @@ ORM, PostgreSQL with Row-Level Security, Redis, and `typesafe-i18n` for both bac
 
 ### Encryption
 
-- Use **`@EncryptFields(['field'])`** to encrypt INPUT args before they are persisted
-- Use **`@DecryptFields(['field'])`** to decrypt RETURN VALUES after they are loaded
+- Use **`@EncryptFields({ fields: ['field'], hiveIdArg: N })`** to encrypt INPUT args before they are persisted
+- Use **`@DecryptFields({ fields: ['field'], hiveIdArg: N })`** to decrypt RETURN VALUES after they are loaded
 - Never encrypt manually — the decorator approach is DRY and prevents accidental plaintext storage
 
 ### Type Safety
@@ -47,7 +47,7 @@ ORM, PostgreSQL with Row-Level Security, Redis, and `typesafe-i18n` for both bac
 - Application layer (hooks, guards, handlers) imports domain — **never** the reverse
 - Both types and utils are available as `import { ... } from '@qoomb/types'`
 
-### Presentation Hooks (ADR-0003)
+### Presentation Hooks (ADR-0002)
 
 - Use `useCurrentPerson()` from `apps/web/src/hooks/` for person display data
 - Hooks encapsulate tRPC query + context + memoised derived values
@@ -62,8 +62,8 @@ ORM, PostgreSQL with Row-Level Security, Redis, and `typesafe-i18n` for both bac
 
 ### Hybrid Encryption (ADR-0005)
 
-- Use **`@EncryptFields(['field'])`** to encrypt INPUT args before they are persisted
-- Use **`@DecryptFields(['field'])`** to decrypt RETURN VALUES after they are loaded
+- Use **`@EncryptFields({ fields: ['field'], hiveIdArg: N })`** to encrypt INPUT args before they are persisted
+- Use **`@DecryptFields({ fields: ['field'], hiveIdArg: N })`** to decrypt RETURN VALUES after they are loaded
 - Per-hive keys via HKDF — compromise of one hive does not affect others
 - Per-user keys for global PII (email, full name) — independent from hive context
 - Pluggable key providers: Environment, File, Cloud KMS, Vault — **no default** (fail-safe)

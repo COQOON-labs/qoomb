@@ -151,7 +151,7 @@ qoomb/
 │   │       ├── lib/
 │   │       │   ├── auth/           # AuthContext, tokenStore, authStorage
 │   │       │   └── trpc/           # tRPC client (splitLink, CSRF, Bearer)
-│   │       ├── hooks/              # App-specific hooks (useCurrentPerson — ADR-0003)
+│   │       ├── hooks/              # App-specific hooks (useCurrentPerson — ADR-0002)
 │   │       └── styles/             # Tailwind v4 theme + CSS custom properties
 │   │
 │   └── mobile/                 # Capacitor mobile wrapper
@@ -180,7 +180,7 @@ qoomb/
 │   ├── adr/                        # Architecture Decision Records (MADR)
 │   │   ├── 0001-adr-process.md     # ADR process and format
 │   │   ├── 0002-shared-domain-utilities.md  # Domain-driven code structure (ADR-0002)
-│   │   ├── 0003-presentation-hooks-pattern.md # Presentation hooks (useCurrentPerson)
+│   │   ├── 0003-presentation-hooks-pattern.md # Deprecated — merged into ADR-0002
 │   │   ├── 0004-cloud-agnostic-architecture.md # Cloud-agnostic stack (ADR-0004)
 │   │   └── 0005-hybrid-encryption-architecture.md # Encryption architecture (ADR-0005)
 │   ├── CONTENT_ARCHITECTURE.md     # Content model, schema, encryption
@@ -458,8 +458,8 @@ if (!process.env.KEY_PROVIDER) {
 }
 
 // ✅ GOOD: Implicit where it prevents errors
-@EncryptFields(['sensitiveField'])  // Can't forget!
-async create() { ... }
+@EncryptFields({ fields: ['sensitiveField'], hiveIdArg: 1 })  // Can't forget!
+async create(data: Input, _hiveId: string) { ... }
 ```
 
 ### 3. Multi-Tenant Always
@@ -486,8 +486,8 @@ const data = createEventSchema.parse(input);  // Zod validation
 const sanitized = sanitizeHtml(data.description);
 
 // ✅ GOOD: Use decorators for encryption
-@EncryptFields(['sensitiveData'])
-async create() { ... }
+@EncryptFields({ fields: ['sensitiveData'], hiveIdArg: 1 })
+async create(data: Input, _hiveId: string) { ... }
 
 // ❌ BAD: Manual encryption (easy to forget)
 const encrypted = await encryptionService.encrypt(...);
@@ -847,28 +847,38 @@ export const eventsRouter = router({
 ### Pattern: Decorator-Based Encryption
 
 ```typescript
+// Decorator config — declared once, reused across methods
+const ENC_FIELDS = ['title', 'description', 'location', 'url', 'category'];
+
 @Injectable()
 export class EventsService {
   // @EncryptFields: encrypts the named fields in the INPUT argument before
   // the method executes — the method receives (and stores) encrypted data.
-  @EncryptFields(['title', 'description'])
-  async createEvent(data: CreateEventInput, hiveId: string) {
+  // hiveIdArg: positional index of the hiveId parameter (0-based)
+  @EncryptFields({ fields: ENC_FIELDS, hiveIdArg: 1 })
+  async createEvent(data: CreateEventInput, _hiveId: string) {
     return this.prisma.event.create({ data });
-    // data.title and data.description are encrypted in-place before prisma call
+    // data.title, data.description, etc. are encrypted in-place
   }
 
   // @DecryptFields: decrypts the named fields in the RETURN VALUE after the
   // method executes — the caller receives plaintext.
-  @DecryptFields(['title', 'description'])
-  async getEvent(id: string, hiveId: string) {
+  @DecryptFields({ fields: ENC_FIELDS, hiveIdArg: 1 })
+  async getEvent(id: string, _hiveId: string) {
     return this.prisma.event.findUnique({ where: { id } });
-    // returned title & description are automatically decrypted
+    // returned fields are automatically decrypted
   }
 
   // Works with arrays automatically
-  @DecryptFields(['title', 'description'])
-  async listEvents(hiveId: string) {
+  @DecryptFields({ fields: ENC_FIELDS, hiveIdArg: 0 })
+  async listEvents(_hiveId: string) {
     return this.prisma.event.findMany();
+  }
+
+  // @EncryptDecryptFields combines both in a single decorator
+  @EncryptDecryptFields({ fields: ENC_FIELDS, hiveIdArg: 2 })
+  async updateEvent(id: string, data: UpdateEventInput, _hiveId: string) {
+    return this.prisma.event.update({ where: { id }, data });
   }
 }
 ```
@@ -1031,8 +1041,8 @@ Encrypted Data (IV + AuthTag + Ciphertext)
 
 ### Key Provider Strategy
 
-| Provider        | Production Use           | Why                             |
-| --------------- | ------------------------ | ------------------------------- |
+| Provider        | Production Use            | Why                             |
+| --------------- | ------------------------- | ------------------------------- |
 | **Environment** | ✅ Most deployments       | Simple, Docker-friendly         |
 | **File**        | ✅ Advanced self-hosting  | Key rotation, separate from env |
 | **AWS KMS**     | ✅ Enterprise AWS         | Compliance, auto-rotation       |
@@ -1125,8 +1135,8 @@ await prisma.event.create({ data: { title: encrypted } });
 ```typescript
 // GOOD: @EncryptFields encrypts INPUT fields before the method stores them.
 // @DecryptFields decrypts RETURN VALUE fields after the method loads them.
-@EncryptFields(['title'])
-async createEvent(data: CreateEventInput, hiveId: string) {
+@EncryptFields({ fields: ['title'], hiveIdArg: 1 })
+async createEvent(data: CreateEventInput, _hiveId: string) {
   return prisma.event.create({ data }); // data.title is already encrypted
 }
 ```
@@ -1243,7 +1253,7 @@ docs/
   ├── adr/                        → Architecture Decision Records (MADR)
   │   ├── 0001-adr-process.md     → ADR format and process
   │   ├── 0002-shared-domain-utilities.md → Domain-driven code structure
-  │   ├── 0003-presentation-hooks-pattern.md → Presentation hooks
+  │   ├── 0003-presentation-hooks-pattern.md → Deprecated (merged into ADR-0002)
   │   ├── 0004-cloud-agnostic-architecture.md → Cloud-agnostic stack
   │   └── 0005-hybrid-encryption-architecture.md → Encryption architecture
   ├── CONTENT_ARCHITECTURE.md → Content model, schema, encryption

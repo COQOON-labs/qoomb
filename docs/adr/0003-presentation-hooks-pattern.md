@@ -1,6 +1,6 @@
 # ADR-0003: Presentation Hooks for Derived UI State
 
-**Status:** Accepted  
+**Status:** Deprecated — merged into [ADR-0002](0002-shared-domain-utilities.md) (Frontend Application Layer section)  
 **Date:** 2026-02-20  
 **Deciders:** Benjamin Gröner
 

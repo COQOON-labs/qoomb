@@ -100,8 +100,8 @@ Kubernetes cluster, across any cloud provider or bare-metal infrastructure.
 
 The architecture is validated against these deployment scenarios:
 
-| Scenario                  | Infrastructure                                   | Status                                         |
-| ------------------------- | ------------------------------------------------ | ---------------------------------------------- |
+| Scenario                  | Infrastructure                                   | Status                                          |
+| ------------------------- | ------------------------------------------------ | ----------------------------------------------- |
 | **Local development**     | Docker Compose on laptop                         | ✅ Supported                                    |
 | **Single VPS**            | Docker Compose on any Linux server               | ✅ Supported                                    |
 | **Kubernetes**            | Standard K8s (any provider)                      | ✅ Supported (stateless app, external DB/Redis) |
@@ -152,7 +152,7 @@ Proprietary databases (DynamoDB, Cloud Spanner, Cosmos DB, etc.) offer managed c
 
 - **Full serverless architecture** — too provider-specific, incompatible with self-hosting
 - **Managed auth service** — conflicts with privacy-first principle and self-hosting requirement
-- **Proprietary database** — creates permanant vendor lock-in
+- **Proprietary database** — creates permanent vendor lock-in
 - **Provider-specific message queues** — Redis covers our pub/sub and caching needs portably
 - **Multi-cloud abstraction layers** (Pulumi, Terraform in application code) — adds complexity
   without solving the application-level portability problem

@@ -90,11 +90,7 @@ export interface Person extends BaseEntity {
 
 ```typescript
 // permissions.ts — business rules as pure functions
-export function hasPermission(
-  hiveType: string,
-  role: string,
-  permission: HivePermission,
-): boolean {
+export function hasPermission(hiveType: string, role: string, permission: HivePermission): boolean {
   return getPermissionsForRole(hiveType, role).includes(permission);
 }
 
@@ -102,7 +98,7 @@ export function hasPermissionWithOverrides(
   hiveType: string,
   role: string,
   permission: HivePermission,
-  overrides: ReadonlyArray<{ permission: string; granted: boolean }>,
+  overrides: ReadonlyArray<{ permission: string; granted: boolean }>
 ): boolean {
   const effective = new Set(getPermissionsForRole(hiveType, role));
   for (const override of overrides) {
@@ -124,7 +120,12 @@ export function isAdminRole(hiveType: string, role: string): boolean {
 // entities/person.utils.ts — domain logic for the Person entity
 export function getInitials(name: string | null | undefined, fallback: string): string {
   if (!name) return fallback.slice(0, 1).toUpperCase();
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 export const ROLE_I18N_KEYS = {
@@ -155,11 +156,15 @@ export const ROLE_I18N_KEYS = {
 import { hasPermissionWithOverrides, isAdminRole } from '@qoomb/types';
 
 export async function requirePermission(ctx, permission: HivePermission) {
-  const overrides = await loadOverrides(ctx.hiveId);  // Infrastructure
-  const allowed = hasPermissionWithOverrides(           // Domain logic
-    ctx.hiveType, ctx.role, permission, overrides,
+  const overrides = await loadOverrides(ctx.hiveId); // Infrastructure
+  const allowed = hasPermissionWithOverrides(
+    // Domain logic
+    ctx.hiveType,
+    ctx.role,
+    permission,
+    overrides
   );
-  if (!allowed) throw new ForbiddenException();         // Framework
+  if (!allowed) throw new ForbiddenException(); // Framework
 }
 ```
 
@@ -169,9 +174,9 @@ export async function requirePermission(ctx, permission: HivePermission) {
 import { getInitials, ROLE_I18N_KEYS } from '@qoomb/types';
 
 export function useCurrentPerson(): CurrentPerson {
-  const { data: person } = trpc.persons.me.useQuery();  // Infrastructure
-  const initials = getInitials(person?.displayName);     // Domain logic
-  const roleLabel = LL.roles[ROLE_I18N_KEYS[role]]();    // Presentation
+  const { data: person } = trpc.persons.me.useQuery(); // Infrastructure
+  const initials = getInitials(person?.displayName); // Domain logic
+  const roleLabel = LL.roles[ROLE_I18N_KEYS[role]](); // Presentation
   return { displayName, initials, roleLabel, isLoading };
 }
 ```
@@ -261,89 +266,56 @@ export function useCurrentPerson(): CurrentPerson {
 
 ### Adding a New Domain Utility
 
-**Example:** Add event conflict detection for the calendar
+1. **Types** — add types/interfaces in `<entity>.ts` (if not already present)
+2. **Domain** — add pure function in `<entity>.utils.ts` (import only from layer 1)
+3. **Application** — use in backend handlers or frontend hooks (import from `@qoomb/types`)
+4. **Re-export** through barrel `index.ts` — consumers always import from `@qoomb/types`
 
-1. **Types** already exist in `event.ts` — no change needed
+### Frontend Application Layer (Presentation Hooks)
 
-2. **Domain**: Add pure function in `event.utils.ts`
+When multiple frontend components need the same **derived data** (display names, initials,
+localised role labels), that logic is encapsulated in a presentation hook rather than
+duplicated across components.
 
-   ```typescript
-   // entities/event.utils.ts
-   export function hasTimeConflict(a: EventTimeRange, b: EventTimeRange): boolean {
-     return a.startTime < b.endTime && b.startTime < a.endTime;
-   }
+**Pattern:** `use<Entity>()` hooks in `apps/web/src/hooks/`
 
-   export function findConflicts(
-     newEvent: EventTimeRange,
-     existing: EventTimeRange[],
-   ): EventTimeRange[] {
-     return existing.filter(e => hasTimeConflict(newEvent, e));
-   }
-   ```
+```typescript
+// apps/web/src/hooks/useCurrentPerson.ts
+export function useCurrentPerson(): CurrentPerson {
+  const { LL } = useI18nContext();
+  const { user } = useAuth();
+  const { data: person, isLoading } = trpc.persons.me.useQuery(...);
 
-3. **Application** (backend): Use in tRPC handler
+  const displayName = person?.displayName ?? user?.email ?? '—';
+  const initials = useMemo(() => getInitials(...), [deps]);
+  const roleLabel = useMemo(() => LL.roles[ROLE_I18N_KEYS[role]](), [deps]);
 
-   ```typescript
-   // apps/api/src/modules/events/events.router.ts
-   import { findConflicts } from '@qoomb/types';
+  return { displayName, initials, role, roleLabel, isLoading };
+}
+```
 
-   create: hiveProcedure.input(createEventSchema).mutation(async ({ ctx, input }) => {
-     const existing = await ctx.prisma.event.findMany({ ... });
-     const conflicts = findConflicts(input, existing);
-     if (conflicts.length > 0) throw new ConflictException();
-     return ctx.prisma.event.create({ data: input });
-   });
-   ```
+**Hook placement:**
 
-4. **Application** (frontend): Use in React component
+| Hook type          | Location              | Example                                |
+| ------------------ | --------------------- | -------------------------------------- |
+| App-specific hooks | `apps/web/src/hooks/` | `useCurrentPerson`, `useCurrentHive`   |
+| Generic UI hooks   | `@qoomb/ui`           | `useMediaQuery()`, `useOnlineStatus()` |
 
-   ```typescript
-   // apps/web/src/components/EventForm.tsx
-   import { findConflicts } from '@qoomb/types';
+**Rules:**
 
-   const conflicts = useMemo(
-     () => findConflicts(formValues, existingEvents),
-     [formValues, existingEvents],
-   );
-   ```
-
-5. **Re-export** through barrel `index.ts` — consumers import from `@qoomb/types`
+- One hook per entity/concern (SRP)
+- Hooks compose domain utils (`@qoomb/types`) + tRPC + context — never duplicate logic
+- Return a typed interface (not loose object) with `isLoading` for loading states
+- All derived values are memoised
+- tRPC query deduplication is handled automatically by `@tanstack/react-query`
 
 ### Testing Strategy
 
-```typescript
-// ✅ Domain: No mocks needed — pure functions
-describe('hasPermissionWithOverrides', () => {
-  it('grants added permission', () => {
-    const result = hasPermissionWithOverrides('family', 'child', HivePermission.EVENTS_DELETE_ANY, [
-      { permission: 'events:delete:any', granted: true },
-    ]);
-    expect(result).toBe(true);
-  });
-
-  it('revokes default permission', () => {
-    const result = hasPermissionWithOverrides('family', 'parent', HivePermission.HIVE_DELETE, [
-      { permission: 'hive:delete', granted: false },
-    ]);
-    expect(result).toBe(false);
-  });
-});
-
-// ✅ Domain: Pure function, trivially testable
-describe('getInitials', () => {
-  it('extracts two initials', () => expect(getInitials('John Doe', '')).toBe('JD'));
-  it('falls back to email', () => expect(getInitials(null, 'j@x.com')).toBe('J'));
-});
-
-// ✅ Application: Mock only infrastructure (database)
-describe('requirePermission guard', () => {
-  it('allows when role has permission', async () => {
-    const mockOverrides = vi.fn().mockResolvedValue([]);
-    // Domain logic (hasPermissionWithOverrides) is real — no mock needed
-    await expect(requirePermission(ctx, HivePermission.EVENTS_VIEW)).resolves.not.toThrow();
-  });
-});
-```
+| Layer       | What to mock         | Example                                          |
+| ----------- | -------------------- | ------------------------------------------------ |
+| Domain      | Nothing — pure funcs | `expect(getInitials('John Doe', '')).toBe('JD')` |
+| Application | Infrastructure only  | Mock Prisma/Redis, real domain logic             |
+| Hooks       | tRPC + context       | `renderHook()` with mocked providers             |
 
 ## Consequences
 
@@ -351,6 +323,7 @@ describe('requirePermission guard', () => {
 
 - **Fewer mocks in tests** — domain layer needs zero, application layer mocks only infrastructure
 - **Clear ownership** — each layer has one reason to change (SRP)
+- **DRY presentation logic** — `use<Entity>()` hooks eliminate duplicate derived-state computation across components
 - **Newcomer-friendly** — structure guides where code belongs (types? utils? hook? guard?)
 - **Refactoring safety** — TypeScript enforces contracts across layer boundaries
 - **Portable business logic** — domain layer runs anywhere TypeScript runs
@@ -358,7 +331,7 @@ describe('requirePermission guard', () => {
 
 ### Negative
 
-- **More files** — each entity may get a companion `.utils.ts` (mitigated by YAGNI — only when needed)
+- **More files** — each entity may get `.utils.ts` + a presentation hook (mitigated by YAGNI — only when needed)
 - **Rebuild step** — changes to `@qoomb/types` require `pnpm --filter @qoomb/types build`
 - **Learning curve** — developers must understand which layer owns which responsibility
 

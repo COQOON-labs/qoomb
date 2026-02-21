@@ -69,6 +69,7 @@ Master Key (from pluggable KeyProvider)
 same derived key. No additional key storage required beyond the master key.
 
 **Cipher:** AES-256-GCM (authenticated encryption). Each encryption produces:
+
 - 12-byte random IV (initialization vector)
 - 16-byte authentication tag (tamper detection)
 - Variable-length ciphertext
@@ -95,36 +96,74 @@ The version prefix enables decryption with the correct key version after rotatio
 #### Decorator Pattern (DRY Encryption)
 
 Encryption is applied via method decorators on service classes — developers never call
-encrypt/decrypt manually:
+encrypt/decrypt manually. Decorators use a `FieldCryptoOptions` configuration:
 
 ```typescript
+interface FieldCryptoOptions {
+  fields: string[]; // field names to encrypt/decrypt
+  hiveIdArg: number; // positional index of the hiveId parameter
+  transforms?: Record<
+    string,
+    {
+      serialize: (value: unknown) => string; // before encryption
+      deserialize: (value: string) => unknown; // after decryption
+    }
+  >;
+}
+```
+
+```typescript
+const ENC_FIELDS = ['title', 'description', 'location', 'url', 'category'];
+
 @Injectable()
 export class EventsService {
   // @EncryptFields encrypts INPUT data before the method stores it
-  @EncryptFields(['title', 'description', 'location'])
-  async createEvent(data: CreateEventInput, hiveId: string) {
+  @EncryptFields({ fields: ENC_FIELDS, hiveIdArg: 1 })
+  async createEvent(data: CreateEventInput, _hiveId: string) {
     return this.prisma.event.create({ data });
-    // data.title, data.description, data.location are encrypted in-place
+    // data.title, data.description, etc. are encrypted in-place
   }
 
   // @DecryptFields decrypts RETURN VALUE after the method loads it
-  @DecryptFields(['title', 'description', 'location'])
-  async getEvent(id: string, hiveId: string) {
+  @DecryptFields({ fields: ENC_FIELDS, hiveIdArg: 1 })
+  async getEvent(id: string, _hiveId: string) {
     return this.prisma.event.findUnique({ where: { id } });
     // returned fields are automatically decrypted
   }
 
   // Works with arrays — each element is decrypted individually
-  @DecryptFields(['title', 'description', 'location'])
-  async listEvents(hiveId: string) {
+  @DecryptFields({ fields: ENC_FIELDS, hiveIdArg: 0 })
+  async listEvents(_hiveId: string) {
     return this.prisma.event.findMany();
+  }
+
+  // @EncryptDecryptFields combines both in a single decorator
+  @EncryptDecryptFields({ fields: ENC_FIELDS, hiveIdArg: 2 })
+  async updateEvent(id: string, data: UpdateEventInput, _hiveId: string) {
+    return this.prisma.event.update({ where: { id }, data });
   }
 }
 ```
 
-**Compile-time safety:** If a field name is misspelled in the decorator, the encryption
-interceptor logs a warning. New fields cannot be "forgotten" because the decorator
-makes the intent explicit and visible in code review.
+The optional `transforms` map handles type conversions for fields that aren't stored as
+strings in the application model (e.g. `birthdate: Date` → encrypted ISO string → `Date`):
+
+```typescript
+const BIRTHDATE_TRANSFORMS = {
+  birthdate: {
+    serialize: (v: unknown) => (v as Date).toISOString(),
+    deserialize: (s: string) => { const d = new Date(s); return isNaN(d.getTime()) ? null : d; },
+  },
+};
+
+@DecryptFields({ fields: ['displayName', 'birthdate'], hiveIdArg: 1, transforms: BIRTHDATE_TRANSFORMS })
+async getPersonDetail(id: string, _hiveId: string) { ... }
+```
+
+**How it works:** Each decorator wraps the method's `descriptor.value`, calling
+`EncryptionService.serializeToStorage(encrypt(value, hiveId))` before the method (encrypt)
+or `decrypt(parseFromStorage(value), hiveId)` after it (decrypt). The service instance is
+located by scanning `this` for an `EncryptionService` property.
 
 #### Email Blind Index
 
@@ -207,6 +246,11 @@ without any cloud service. Cloud KMS and Vault are available for organisations t
 have compliance requirements mandating external key management — but they are never
 the only option.
 
+> **Implementation status:** Environment and File providers are fully implemented.
+> Cloud KMS and Vault providers exist as class shells (interface-conformant stubs)
+> without SDK dependencies installed. They will be completed when an enterprise
+> deployment requires them — YAGNI applies.
+
 ### Key Rotation
 
 Key versioning is built into the storage format and the service:
@@ -219,12 +263,12 @@ Key versioning is built into the storage format and the service:
 
 ```typescript
 // Storage format embeds version
-"v1:AAABBBCCC..."  // encrypted with key version 1
-"v2:XXXYYYZZZ..."  // encrypted with key version 2
+'v1:AAABBBCCC...'; // encrypted with key version 1
+'v2:XXXYYYZZZ...'; // encrypted with key version 2
 
 // Decryption auto-selects correct version
-const parsed = service.parseFromStorage(stored);  // extracts version
-const plain = service.decrypt(parsed, hiveId);    // uses matching key
+const parsed = service.parseFromStorage(stored); // extracts version
+const plain = service.decrypt(parsed, hiveId); // uses matching key
 ```
 
 ### Startup Self-Test
@@ -295,9 +339,10 @@ Manual `encrypt()`/`decrypt()` calls in every service method:
 - Violate DRY (same pattern repeated in every CRUD operation)
 - Are hard to audit (must check every method individually)
 
-Decorators make encryption **declarative**: the fields and the intent are visible in one
-place, and the interceptor handles the mechanics. Code review only needs to verify that
-the right fields are listed in the decorator.
+Decorators make encryption **declarative**: the fields, hive-ID position, and any type
+transforms are visible in one place. Code review only needs to verify that the right
+fields are listed. The decorator wraps the method descriptor directly — no NestJS
+interceptor involved — so it works with any class method.
 
 ### Rejected Alternatives
 

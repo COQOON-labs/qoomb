@@ -33,6 +33,7 @@ export function RegisterPage() {
           personId: data.user.personId ?? '',
           hiveName: data.hive.name,
           isSystemAdmin: data.user.isSystemAdmin,
+          locale: data.locale,
         },
         data.accessToken,
         data.refreshToken
@@ -51,6 +52,7 @@ export function RegisterPage() {
           hiveId: data.user.hiveId,
           personId: data.user.personId ?? '',
           hiveName: data.hive.name,
+          locale: data.locale,
         },
         data.accessToken,
         data.refreshToken

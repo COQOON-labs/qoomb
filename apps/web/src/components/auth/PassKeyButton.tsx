@@ -33,6 +33,7 @@ export function PassKeyButton({ email, redirectTo = '/dashboard' }: PassKeyButto
           hiveId: data.user.hiveId,
           personId: data.user.personId ?? '',
           hiveName: data.hive.name,
+          locale: data.locale,
         },
         data.accessToken,
         data.refreshToken

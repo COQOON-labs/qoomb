@@ -18,7 +18,7 @@ export function HiveSwitcher() {
   const switchMutation = trpc.auth.switchHive.useMutation({
     onSuccess: (data, variables) => {
       const hive = hivesQuery.data?.hives.find((h) => h.id === variables.hiveId);
-      switchHive(data.hive.id, data.hive.name, hive?.personId ?? '', data.accessToken);
+      switchHive(data.hive.id, data.hive.name, hive?.personId ?? '', data.accessToken, data.locale);
       setOpen(false);
     },
   });

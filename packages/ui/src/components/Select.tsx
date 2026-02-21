@@ -38,8 +38,7 @@ function ChevronDownIcon() {
 }
 
 export interface SelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement>,
-    VariantProps<typeof selectVariants> {
+  extends React.SelectHTMLAttributes<HTMLSelectElement>, VariantProps<typeof selectVariants> {
   /** Label for the select */
   label?: string;
   /** Error message to display */

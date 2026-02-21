@@ -14,8 +14,8 @@ import * as bcrypt from 'bcrypt';
 
 import { AccountLockoutService } from '../../common/services/account-lockout.service';
 import { TokenBlacklistService } from '../../common/services/token-blacklist.service';
-import { PASSWORD_CONFIG, JWT_CONFIG } from '../../config/security.config';
 import { getEnv } from '../../config/env.validation';
+import { PASSWORD_CONFIG, JWT_CONFIG } from '../../config/security.config';
 import { PrismaService, TransactionClient } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { EncryptionService } from '../encryption';
@@ -608,7 +608,7 @@ export class AuthService {
       locale: resolveLocale(
         userWithMemberships.locale,
         primaryMembership.hive.locale,
-        getEnv().DEFAULT_LOCALE,
+        getEnv().DEFAULT_LOCALE
       ),
     };
   }
@@ -1025,7 +1025,7 @@ export class AuthService {
   async updateUserLocale(
     userId: string,
     locale: string,
-    hiveId?: string,
+    hiveId?: string
   ): Promise<{ locale: string }> {
     await this.prisma.user.update({
       where: { id: userId },

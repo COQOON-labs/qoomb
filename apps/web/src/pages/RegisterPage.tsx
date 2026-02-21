@@ -1,11 +1,16 @@
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
+import { registerSchema } from '@qoomb/validators';
 import { Button, Input } from '@qoomb/ui';
-import { useCallback, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import type { z } from 'zod';
 
 import { useI18nContext } from '../i18n/i18n-react';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { useAuth } from '../lib/auth/useAuth';
 import { trpc } from '../lib/trpc/client';
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export function RegisterPage() {
   const { LL } = useI18nContext();
@@ -14,14 +19,26 @@ export function RegisterPage() {
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get('token') ?? '';
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [adminName, setAdminName] = useState('');
-  const [hiveName, setHiveName] = useState('');
-  const [hiveType, setHiveType] = useState<'family' | 'organization'>('family');
-  const [error, setError] = useState('');
-
   const systemConfig = trpc.auth.getSystemConfig.useQuery();
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setError,
+    formState: { errors },
+  } = useForm<RegisterFormValues>({
+    resolver: standardSchemaResolver(registerSchema),
+    defaultValues: {
+      adminName: '',
+      email: '',
+      password: '',
+      hiveName: '',
+      hiveType: 'family',
+    },
+  });
+
+  const hiveType = watch('hiveType');
 
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: (data) => {
@@ -40,7 +57,7 @@ export function RegisterPage() {
       );
       void navigate('/dashboard', { replace: true });
     },
-    onError: (err) => setError(err.message),
+    onError: (err) => setError('root', { message: err.message }),
   });
 
   const registerWithInviteMutation = trpc.auth.registerWithInvitation.useMutation({
@@ -59,45 +76,21 @@ export function RegisterPage() {
       );
       void navigate('/dashboard', { replace: true });
     },
-    onError: (err) => setError(err.message),
+    onError: (err) => setError('root', { message: err.message }),
   });
 
   const isPending = registerMutation.isPending || registerWithInviteMutation.isPending;
 
-  // Block if open registration is disabled and no invite token
   const isOpenRegistrationBlocked =
     systemConfig.data?.allowOpenRegistration === false && !inviteToken;
 
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      setError('');
-
-      if (inviteToken) {
-        registerWithInviteMutation.mutate({
-          email,
-          password,
-          adminName,
-          hiveName,
-          hiveType,
-          inviteToken,
-        });
-      } else {
-        registerMutation.mutate({ email, password, adminName, hiveName, hiveType });
-      }
-    },
-    [
-      email,
-      password,
-      adminName,
-      hiveName,
-      hiveType,
-      inviteToken,
-      registerMutation,
-      registerWithInviteMutation,
-      setError,
-    ]
-  );
+  const onSubmit = handleSubmit((data) => {
+    if (inviteToken) {
+      registerWithInviteMutation.mutate({ ...data, inviteToken });
+    } else {
+      registerMutation.mutate(data);
+    }
+  });
 
   if (systemConfig.isLoading) {
     return (
@@ -118,32 +111,29 @@ export function RegisterPage() {
       title={inviteToken ? LL.auth.register.titleInvite() : LL.auth.register.title()}
       subtitle={inviteToken ? LL.auth.register.subtitleInvite() : LL.auth.register.subtitle()}
     >
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
         <Input
           label={LL.auth.register.nameLabel()}
           type="text"
           autoComplete="name"
-          value={adminName}
-          onChange={(e) => setAdminName(e.target.value)}
-          required
+          error={errors.adminName?.message}
+          {...register('adminName')}
         />
         <Input
           label={LL.common.emailLabel()}
           type="email"
           autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+          error={errors.email?.message}
+          {...register('email')}
         />
         <Input
           label={LL.common.passwordLabel()}
           type="password"
           autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
           showPasswordToggle
           helperText={LL.common.passwordHint()}
+          error={errors.password?.message}
+          {...register('password')}
         />
 
         {!inviteToken && (
@@ -152,12 +142,11 @@ export function RegisterPage() {
               label={LL.auth.register.hiveNameLabel()}
               type="text"
               placeholder={LL.auth.register.hiveNamePlaceholder()}
-              value={hiveName}
-              onChange={(e) => setHiveName(e.target.value)}
-              required
+              error={errors.hiveName?.message}
+              {...register('hiveName')}
             />
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-foreground">
                 {LL.auth.register.hiveTypeLabel()}
               </label>
@@ -173,21 +162,22 @@ export function RegisterPage() {
                   >
                     <input
                       type="radio"
-                      name="hiveType"
                       value={type}
-                      checked={hiveType === type}
-                      onChange={() => setHiveType(type)}
                       className="sr-only"
+                      {...register('hiveType')}
                     />
                     {type}
                   </label>
                 ))}
               </div>
+              {errors.hiveType && (
+                <p className="text-sm text-destructive">{errors.hiveType.message}</p>
+              )}
             </div>
           </>
         )}
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
 
         <Button type="submit" fullWidth isLoading={isPending} className="mt-2">
           {inviteToken ? LL.auth.register.joinHive() : LL.auth.register.createHive()}

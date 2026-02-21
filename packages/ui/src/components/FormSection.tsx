@@ -1,6 +1,7 @@
-import * as React from 'react';
+import type * as React from 'react';
 
 import { cn } from '../utils/cn';
+
 import { Card } from './Card';
 
 export interface FormSectionProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -30,7 +31,14 @@ export interface FormSectionProps extends React.HTMLAttributes<HTMLDivElement> {
  * </FormSection>
  * ```
  */
-export function FormSection({ title, description, footer, children, className, ...props }: FormSectionProps) {
+export function FormSection({
+  title,
+  description,
+  footer,
+  children,
+  className,
+  ...props
+}: FormSectionProps) {
   return (
     <Card padding="lg" className={cn('flex flex-col gap-6', className)} {...props}>
       {(title || description) && (
@@ -38,23 +46,13 @@ export function FormSection({ title, description, footer, children, className, .
           {title && (
             <h2 className="text-base font-semibold text-foreground leading-snug">{title}</h2>
           )}
-          {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          )}
+          {description && <p className="text-sm text-muted-foreground">{description}</p>}
         </div>
       )}
 
-      {children && (
-        <div className="flex flex-col gap-5">
-          {children}
-        </div>
-      )}
+      {children && <div className="flex flex-col gap-5">{children}</div>}
 
-      {footer && (
-        <div className="flex flex-col gap-2 pt-2">
-          {footer}
-        </div>
-      )}
+      {footer && <div className="flex flex-col gap-2 pt-2">{footer}</div>}
     </Card>
   );
 }

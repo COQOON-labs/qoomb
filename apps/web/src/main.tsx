@@ -2,26 +2,28 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 
 import App from './App';
-import TypesafeI18n from './i18n/i18n-react';
-import { loadAllLocales } from './i18n/i18n-util.sync';
+import { baseLocale } from './i18n/i18n-util';
+import { loadLocale } from './i18n/i18n-util.sync';
 import { AuthProvider } from './lib/auth/AuthContext';
+import { LocaleProvider } from './lib/locale/LocaleProvider';
 import { TrpcProvider } from './lib/trpc/Provider';
 import './styles/index.css';
 
-// Load all locales synchronously at startup
-loadAllLocales();
+// Only preload the base locale synchronously.
+// All other locales are loaded on demand by LocaleProvider.
+loadLocale(baseLocale);
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Root element #root not found in document');
 
 createRoot(rootElement).render(
   <React.StrictMode>
-    <TypesafeI18n locale="de">
+    <LocaleProvider>
       <AuthProvider>
         <TrpcProvider>
           <App />
         </TrpcProvider>
       </AuthProvider>
-    </TypesafeI18n>
+    </LocaleProvider>
   </React.StrictMode>
 );

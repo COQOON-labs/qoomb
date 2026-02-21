@@ -2,8 +2,6 @@ import type * as React from 'react';
 
 import { cn } from '../utils/cn';
 
-import { Card } from './Card';
-
 export interface FormSectionProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Section heading */
   title?: string;
@@ -17,8 +15,8 @@ export interface FormSectionProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * A Card-based form section with a clear visual hierarchy:
- * header (title + description) → fields → footer (action + feedback).
+ * Flat, integrated form section — no card background, no box shadow.
+ * Sections are visually separated by spacing and a muted group-label heading.
  *
  * Usage:
  * ```tsx
@@ -40,19 +38,21 @@ export function FormSection({
   ...props
 }: FormSectionProps) {
   return (
-    <Card padding="lg" className={cn('flex flex-col gap-6', className)} {...props}>
+    <div className={cn('flex flex-col gap-5', className)} {...props}>
       {(title || description) && (
-        <div className={cn('flex flex-col gap-1', children && 'pb-6 border-b border-border')}>
+        <div className="flex flex-col gap-1">
           {title && (
-            <h2 className="text-base font-semibold text-foreground leading-snug">{title}</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              {title}
+            </h2>
           )}
           {description && <p className="text-sm text-muted-foreground">{description}</p>}
         </div>
       )}
 
-      {children && <div className="flex flex-col gap-5">{children}</div>}
+      {children && <div className="flex flex-col gap-4">{children}</div>}
 
-      {footer && <div className="flex flex-col gap-2 pt-2">{footer}</div>}
-    </Card>
+      {footer && <div className="flex flex-col gap-2">{footer}</div>}
+    </div>
   );
 }

@@ -136,101 +136,108 @@ export function ProfilePage() {
 
   return (
     <AppShell>
-      <div className="px-4 md:px-8 py-8 max-w-2xl mx-auto space-y-6">
+      <div className="px-4 md:px-8 py-8 max-w-2xl mx-auto">
         {/* ── Page title ───────────────────────────────────────────────────── */}
-        <h1 className="text-2xl font-black text-foreground tracking-tight">{LL.profile.title()}</h1>
+        <h1 className="text-2xl font-black text-foreground tracking-tight mb-8">
+          {LL.profile.title()}
+        </h1>
 
-        {/* ── Section 1: Profile ───────────────────────────────────────────── */}
-        <FormSection
-          title={LL.profile.title()}
-          footer={
-            <>
-              <Button
-                onClick={() => void onProfileSubmit()}
-                disabled={updateProfile.isPending || !isProfileDirty}
-                fullWidth
-              >
-                {updateProfile.isPending ? LL.common.saving() : LL.common.save()}
-              </Button>
-              {updateProfile.isSuccess && (
-                <p className="text-sm text-success text-center">{LL.profile.saved()}</p>
-              )}
-              {updateProfile.isError && (
-                <p className="text-sm text-destructive text-center">{LL.profile.saveError()}</p>
-              )}
-            </>
-          }
-        >
-          {/* Avatar + Name header */}
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-xl font-black text-primary-foreground shrink-0">
-              {initials}
-            </div>
-            <div>
-              <p className="text-lg font-bold text-foreground">
-                {person?.displayName ?? user?.email ?? '—'}
-              </p>
-              <p className="text-sm text-muted-foreground">{roleLabel}</p>
-            </div>
-          </div>
-
-          {/* Form fields */}
-          <Input
-            label={LL.profile.displayNameLabel()}
-            placeholder={LL.profile.displayNamePlaceholder()}
-            error={profileErrors.displayName?.message}
-            {...registerProfile('displayName')}
-          />
-
-          <Input label={LL.profile.emailLabel()} value={user?.email ?? ''} disabled />
-
-          <Input label={LL.profile.roleLabel()} value={roleLabel} disabled />
-
-          {formattedBirthdate && (
-            <Input label={LL.profile.birthdayLabel()} value={formattedBirthdate} disabled />
-          )}
-        </FormSection>
-
-        {/* ── Section 2: Language ──────────────────────────────────────────── */}
-        <FormSection
-          title={LL.profile.language.title()}
-          description={LL.profile.language.description()}
-          footer={
-            <>
-              <Button
-                onClick={() => void onLanguageSubmit()}
-                disabled={updateLocale.isPending || !isLanguageDirty}
-                fullWidth
-              >
-                {updateLocale.isPending ? LL.common.saving() : LL.common.save()}
-              </Button>
-              {updateLocale.isSuccess && (
-                <p className="text-sm text-success text-center">{LL.profile.language.saved()}</p>
-              )}
-              {updateLocale.isError && (
-                <p className="text-sm text-destructive text-center">
-                  {LL.profile.language.saveError()}
+        <div className="flex flex-col divide-y divide-border">
+          {/* ── Section 1: Profile ───────────────────────────────────────────── */}
+          <FormSection
+            className="py-6 first:pt-0"
+            title={LL.profile.title()}
+            footer={
+              <>
+                <Button
+                  onClick={() => void onProfileSubmit()}
+                  disabled={updateProfile.isPending || !isProfileDirty}
+                  fullWidth
+                >
+                  {updateProfile.isPending ? LL.common.saving() : LL.common.save()}
+                </Button>
+                {updateProfile.isSuccess && (
+                  <p className="text-sm text-success text-center">{LL.profile.saved()}</p>
+                )}
+                {updateProfile.isError && (
+                  <p className="text-sm text-destructive text-center">{LL.profile.saveError()}</p>
+                )}
+              </>
+            }
+          >
+            {/* Avatar + Name header */}
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-xl font-black text-primary-foreground shrink-0">
+                {initials}
+              </div>
+              <div>
+                <p className="text-lg font-bold text-foreground">
+                  {person?.displayName ?? user?.email ?? '—'}
                 </p>
-              )}
-            </>
-          }
-        >
-          <Select label={LL.profile.language.title()} {...registerLanguage('locale')}>
-            {SUPPORTED_TRANSLATION_LOCALES.map((tl: TranslationLocale) => (
-              <option key={tl} value={tl}>
-                {localeLabel(tl)}
-              </option>
-            ))}
-          </Select>
-        </FormSection>
+                <p className="text-sm text-muted-foreground">{roleLabel}</p>
+              </div>
+            </div>
 
-        {/* ── Section 3: Security ─────────────────────────────────────────── */}
-        <FormSection
-          title={LL.profile.security.title()}
-          description={LL.profile.security.description()}
-        >
-          <PassKeyManager />
-        </FormSection>
+            {/* Form fields */}
+            <Input
+              label={LL.profile.displayNameLabel()}
+              placeholder={LL.profile.displayNamePlaceholder()}
+              error={profileErrors.displayName?.message}
+              {...registerProfile('displayName')}
+            />
+
+            <Input label={LL.profile.emailLabel()} value={user?.email ?? ''} disabled />
+
+            <Input label={LL.profile.roleLabel()} value={roleLabel} disabled />
+
+            {formattedBirthdate && (
+              <Input label={LL.profile.birthdayLabel()} value={formattedBirthdate} disabled />
+            )}
+          </FormSection>
+
+          {/* ── Section 2: Language ──────────────────────────────────────────── */}
+          <FormSection
+            className="py-6"
+            title={LL.profile.language.title()}
+            description={LL.profile.language.description()}
+            footer={
+              <>
+                <Button
+                  onClick={() => void onLanguageSubmit()}
+                  disabled={updateLocale.isPending || !isLanguageDirty}
+                  fullWidth
+                >
+                  {updateLocale.isPending ? LL.common.saving() : LL.common.save()}
+                </Button>
+                {updateLocale.isSuccess && (
+                  <p className="text-sm text-success text-center">{LL.profile.language.saved()}</p>
+                )}
+                {updateLocale.isError && (
+                  <p className="text-sm text-destructive text-center">
+                    {LL.profile.language.saveError()}
+                  </p>
+                )}
+              </>
+            }
+          >
+            <Select label={LL.profile.language.title()} {...registerLanguage('locale')}>
+              {SUPPORTED_TRANSLATION_LOCALES.map((tl: TranslationLocale) => (
+                <option key={tl} value={tl}>
+                  {localeLabel(tl)}
+                </option>
+              ))}
+            </Select>
+          </FormSection>
+
+          {/* ── Section 3: Security ─────────────────────────────────────────── */}
+          <FormSection
+            className="py-6 last:pb-0"
+            title={LL.profile.security.title()}
+            description={LL.profile.security.description()}
+          >
+            <PassKeyManager />
+          </FormSection>
+        </div>
       </div>
     </AppShell>
   );

@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { useI18nContext } from '../i18n/i18n-react';
+
 interface AuthLayoutProps {
   children: ReactNode;
   title: string;
@@ -12,6 +14,7 @@ interface AuthLayoutProps {
  * Mobile: black background, yellow QOOMB above a centered form card.
  */
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
+  const { LL } = useI18nContext();
   return (
     <>
       {/* ── Desktop: two-panel layout ─────────────────────────────── */}
@@ -22,10 +25,10 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             className="text-6xl font-black tracking-widest text-primary uppercase select-none"
             aria-label="Qoomb"
           >
-            QOOMB
+            {LL.common.brand()}
           </span>
           <p className="mt-4 text-sm tracking-wide text-muted-foreground/60 uppercase">
-            Your hive, organised
+            {LL.common.tagline()}
           </p>
         </div>
 
@@ -45,7 +48,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
           className="text-5xl font-black tracking-widest text-primary uppercase select-none mb-10"
           aria-label="Qoomb"
         >
-          QOOMB
+          {LL.common.brand()}
         </span>
 
         <div className="w-full max-w-sm bg-card rounded-xl p-6 shadow-2xl">

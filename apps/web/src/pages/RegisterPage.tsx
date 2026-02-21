@@ -2,11 +2,13 @@ import { Button, Input } from '@qoomb/ui';
 import { useCallback, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { useI18nContext } from '../i18n/i18n-react';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { useAuth } from '../lib/auth/useAuth';
 import { trpc } from '../lib/trpc/client';
 
 export function RegisterPage() {
+  const { LL } = useI18nContext();
   const { login } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -31,6 +33,7 @@ export function RegisterPage() {
           personId: data.user.personId ?? '',
           hiveName: data.hive.name,
           isSystemAdmin: data.user.isSystemAdmin,
+          locale: data.locale,
         },
         data.accessToken,
         data.refreshToken
@@ -49,6 +52,7 @@ export function RegisterPage() {
           hiveId: data.user.hiveId,
           personId: data.user.personId ?? '',
           hiveName: data.hive.name,
+          locale: data.locale,
         },
         data.accessToken,
         data.refreshToken
@@ -97,7 +101,7 @@ export function RegisterPage() {
 
   if (systemConfig.isLoading) {
     return (
-      <AuthLayout title="Create your hive">
+      <AuthLayout title={LL.auth.register.title()}>
         <div className="mt-8 flex justify-center">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
@@ -111,16 +115,12 @@ export function RegisterPage() {
 
   return (
     <AuthLayout
-      title={inviteToken ? 'Accept invitation' : 'Create your hive'}
-      subtitle={
-        inviteToken
-          ? 'Set up your account to join the hive'
-          : 'Start organising your family or team'
-      }
+      title={inviteToken ? LL.auth.register.titleInvite() : LL.auth.register.title()}
+      subtitle={inviteToken ? LL.auth.register.subtitleInvite() : LL.auth.register.subtitle()}
     >
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <Input
-          label="Your name"
+          label={LL.auth.register.nameLabel()}
           type="text"
           autoComplete="name"
           value={adminName}
@@ -128,7 +128,7 @@ export function RegisterPage() {
           required
         />
         <Input
-          label="Email"
+          label={LL.common.emailLabel()}
           type="email"
           autoComplete="email"
           value={email}
@@ -136,29 +136,31 @@ export function RegisterPage() {
           required
         />
         <Input
-          label="Password"
+          label={LL.common.passwordLabel()}
           type="password"
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           showPasswordToggle
-          helperText="Min. 8 characters with uppercase, number and special character"
+          helperText={LL.common.passwordHint()}
         />
 
         {!inviteToken && (
           <>
             <Input
-              label="Hive name"
+              label={LL.auth.register.hiveNameLabel()}
               type="text"
-              placeholder="e.g. Doe Family"
+              placeholder={LL.auth.register.hiveNamePlaceholder()}
               value={hiveName}
               onChange={(e) => setHiveName(e.target.value)}
               required
             />
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-foreground">Hive type</label>
+              <label className="text-sm font-medium text-foreground">
+                {LL.auth.register.hiveTypeLabel()}
+              </label>
               <div className="flex gap-3">
                 {(['family', 'organization'] as const).map((type) => (
                   <label
@@ -188,14 +190,14 @@ export function RegisterPage() {
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button type="submit" fullWidth isLoading={isPending} className="mt-2">
-          {inviteToken ? 'Join hive' : 'Create hive'}
+          {inviteToken ? LL.auth.register.joinHive() : LL.auth.register.createHive()}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Already have an account?{' '}
+        {LL.auth.register.alreadyHaveAccount()}{' '}
         <Link to="/login" className="font-medium text-foreground hover:underline">
-          Sign in
+          {LL.auth.signIn()}
         </Link>
       </p>
     </AuthLayout>

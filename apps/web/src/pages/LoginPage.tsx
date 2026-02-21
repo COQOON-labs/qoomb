@@ -3,11 +3,13 @@ import { useCallback, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { PassKeyButton } from '../components/auth/PassKeyButton';
+import { useI18nContext } from '../i18n/i18n-react';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { useAuth } from '../lib/auth/useAuth';
 import { trpc } from '../lib/trpc/client';
 
 export function LoginPage() {
+  const { LL } = useI18nContext();
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,6 +28,7 @@ export function LoginPage() {
           hiveId: data.user.hiveId,
           personId: data.user.personId ?? '',
           hiveName: data.hive.name,
+          locale: data.locale,
         },
         data.accessToken,
         data.refreshToken
@@ -49,10 +52,10 @@ export function LoginPage() {
   );
 
   return (
-    <AuthLayout title="Welcome back" subtitle="Sign in to your hive">
+    <AuthLayout title={LL.auth.login.title()} subtitle={LL.auth.login.subtitle()}>
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <Input
-          label="Email"
+          label={LL.common.emailLabel()}
           type="email"
           autoComplete="email"
           value={email}
@@ -60,7 +63,7 @@ export function LoginPage() {
           required
         />
         <Input
-          label="Password"
+          label={LL.common.passwordLabel()}
           type="password"
           autoComplete="current-password"
           value={password}
@@ -76,13 +79,13 @@ export function LoginPage() {
               to="/forgot-password"
               className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
             >
-              Forgot password?
+              {LL.auth.login.forgotPassword()}
             </Link>
           </div>
         )}
 
         <Button type="submit" fullWidth isLoading={loginMutation.isPending} className="mt-2">
-          Sign in
+          {LL.auth.signIn()}
         </Button>
       </form>
 
@@ -93,7 +96,7 @@ export function LoginPage() {
               <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">or</span>
+              <span className="bg-background px-2 text-muted-foreground">{LL.common.or()}</span>
             </div>
           </div>
           <PassKeyButton email={email || undefined} redirectTo={from} />
@@ -102,9 +105,9 @@ export function LoginPage() {
 
       {systemConfig.data?.allowOpenRegistration && (
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          No account?{' '}
+          {LL.auth.login.noAccount()}{' '}
           <Link to="/register" className="font-medium text-foreground hover:underline">
-            Create one
+            {LL.auth.login.createOne()}
           </Link>
         </p>
       )}

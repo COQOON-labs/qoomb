@@ -19,6 +19,8 @@ model Hive {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String   @db.Text
   type      String   @db.VarChar(50)
+  // BCP 47 locale tag (e.g. 'de-DE', 'en-US'). NULL = inherit platform default.
+  locale    String?  @db.VarChar(12)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -47,6 +49,8 @@ model User {
   emailVerified Boolean  @default(false) @map("email_verified")
   isSystemAdmin Boolean  @default(false) @map("is_system_admin")
   fullName      String?  @map("full_name") @db.Text
+  // BCP 47 locale tag (e.g. 'de-DE', 'en-US'). NULL = inherit hive or platform default.
+  locale        String?  @db.VarChar(12)
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -111,26 +115,26 @@ model RefreshToken {
 model Person {
   // displayName, avatarUrl, birthdate: AES-256-GCM ciphertext (hive-scoped key).
   // Stored as v{version}:{base64(IV+AuthTag+Ciphertext)} — see EncryptionService.
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  hiveId      String    @map("hive_id") @db.Uuid
-  userId      String?   @map("user_id") @db.Uuid
-  role        String    @db.VarChar(50)
-  displayName String?   @map("display_name") @db.Text
-  avatarUrl   String?   @map("avatar_url") @db.Text
-  birthdate   String?   @map("birthdate") @db.Text
-  publicKey   String?   @map("public_key") @db.Text
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hiveId      String   @map("hive_id") @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  role        String   @db.VarChar(50)
+  displayName String?  @map("display_name") @db.Text
+  avatarUrl   String?  @map("avatar_url") @db.Text
+  birthdate   String?  @map("birthdate") @db.Text
+  publicKey   String?  @map("public_key") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  hive               Hive                 @relation(fields: [hiveId], references: [id], onDelete: Cascade)
-  user               User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
-  memberships        UserHiveMembership[]
-  personShares       PersonShare[]
-  groupMemberships   HiveGroupMember[]    @relation("GroupMember")
-  groupMembersAdded  HiveGroupMember[]    @relation("GroupMemberAddedBy")
-  createdEvents      Event[]
-  createdTasks       Task[]
-  assignedTasks      Task[]               @relation("TaskAssignee")
+  hive              Hive                 @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  user              User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  memberships       UserHiveMembership[]
+  personShares      PersonShare[]
+  groupMemberships  HiveGroupMember[]    @relation("GroupMember")
+  groupMembersAdded HiveGroupMember[]    @relation("GroupMemberAddedBy")
+  createdEvents     Event[]
+  createdTasks      Task[]
+  assignedTasks     Task[]               @relation("TaskAssignee")
 
   @@index([hiveId])
   @@index([userId])
@@ -227,14 +231,14 @@ model GroupShare {
   // All current and future members of the group inherit this access level.
   // accessLevel: 1=VIEW, 2=EDIT, 3=MANAGE (hierarchical — higher implies lower)
   // resourceId is polymorphic (references events, tasks, etc.) — no FK.
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  hiveId       String    @map("hive_id") @db.Uuid
-  resourceType String    @map("resource_type") @db.VarChar(50)
-  resourceId   String    @map("resource_id") @db.Uuid
-  groupId      String    @map("group_id") @db.Uuid
-  accessLevel  Int       @map("access_level") @db.SmallInt
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hiveId       String   @map("hive_id") @db.Uuid
+  resourceType String   @map("resource_type") @db.VarChar(50)
+  resourceId   String   @map("resource_id") @db.Uuid
+  groupId      String   @map("group_id") @db.Uuid
+  accessLevel  Int      @map("access_level") @db.SmallInt
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   hive  Hive      @relation(fields: [hiveId], references: [id], onDelete: Cascade)
   group HiveGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -251,23 +255,23 @@ model GroupShare {
 model Event {
   // title, description, location, url, category are stored encrypted by the service layer.
   // recurrenceRule is unencrypted — needed for server-side occurrence expansion.
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  hiveId         String    @map("hive_id") @db.Uuid
-  creatorId      String    @map("creator_id") @db.Uuid
-  groupId        String?   @map("group_id") @db.Uuid
-  title          String    @db.Text
-  description    String?   @db.Text
-  startAt        DateTime  @map("start_at") @db.Timestamptz
-  endAt          DateTime  @map("end_at") @db.Timestamptz
-  allDay         Boolean   @default(false) @map("all_day")
-  location       String?   @db.Text
-  url            String?   @db.Text
-  color          String?   @db.VarChar(20)
-  category       String?   @db.Text
-  visibility     String    @default("hive") @db.VarChar(20)
-  recurrenceRule Json?     @map("recurrence_rule") @db.JsonB
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hiveId         String   @map("hive_id") @db.Uuid
+  creatorId      String   @map("creator_id") @db.Uuid
+  groupId        String?  @map("group_id") @db.Uuid
+  title          String   @db.Text
+  description    String?  @db.Text
+  startAt        DateTime @map("start_at") @db.Timestamptz
+  endAt          DateTime @map("end_at") @db.Timestamptz
+  allDay         Boolean  @default(false) @map("all_day")
+  location       String?  @db.Text
+  url            String?  @db.Text
+  color          String?  @db.VarChar(20)
+  category       String?  @db.Text
+  visibility     String   @default("hive") @db.VarChar(20)
+  recurrenceRule Json?    @map("recurrence_rule") @db.JsonB
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   hive    Hive       @relation(fields: [hiveId], references: [id], onDelete: Cascade)
   creator Person     @relation(fields: [creatorId], references: [id], onDelete: Cascade)

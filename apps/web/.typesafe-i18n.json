@@ -1,0 +1,8 @@
+{
+  "baseLocale": "en",
+  "adapter": "react",
+  "outputPath": "./src/i18n/",
+  "outputFormat": "TypeScript",
+  "generateOnlyTypes": false,
+  "banner": "/* eslint-disable */"
+}

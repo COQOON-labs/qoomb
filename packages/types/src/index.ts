@@ -1,5 +1,6 @@
 // Re-export all entity types
 export * from './entities';
+export * from './locale';
 export * from './permissions';
 
 // Re-export API types (to be added later)

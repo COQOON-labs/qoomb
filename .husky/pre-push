@@ -8,6 +8,10 @@ pnpm run db:generate
 echo "🔎 Linting..."
 pnpm run lint
 
+# Check formatting (catches files not touched by lint-staged)
+echo "🎨 Checking formatting..."
+pnpm run format:check
+
 # Type check all packages
 echo "📝 Type checking..."
 pnpm turbo run type-check

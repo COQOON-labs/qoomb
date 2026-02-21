@@ -19,7 +19,8 @@ export {
   EncryptFields,
   DecryptFields,
   EncryptDecryptFields,
-  type EncryptFieldsOptions,
+  type FieldCryptoOptions,
+  type FieldTransforms,
 } from './decorators/encrypt-fields.decorator';
 export type { KeyProvider, EncryptedData, KeyMetadata } from './interfaces/key-provider.interface';
 export { KeyProviderFactory } from './key-provider.factory';

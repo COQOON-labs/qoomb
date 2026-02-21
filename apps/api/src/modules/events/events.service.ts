@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { type Event, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import { EncryptionService } from '../encryption';
+import { DecryptFields, EncryptDecryptFields, EncryptionService } from '../encryption';
 
 // ============================================
 // TYPES
@@ -65,10 +65,11 @@ export interface UpdateEventData {
  * - Authorization checks (use requirePermission / requireResourceAccess in the router)
  * - Input sanitization (sanitizeHtml in the router before calling service methods)
  */
+/** Encrypted fields on the Event model */
+const ENC_FIELDS = ['title', 'description', 'location', 'url', 'category'];
+
 @Injectable()
 export class EventsService {
-  private readonly logger = new Logger(EventsService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly enc: EncryptionService
@@ -78,6 +79,7 @@ export class EventsService {
    * List events matching the given visibility filter and optional filters.
    * @param visibilityFilter - Prisma WHERE clause built by the router (role-based visibility)
    */
+  @DecryptFields({ fields: ENC_FIELDS, hiveIdArg: 0 })
   async list(
     hiveId: string,
     visibilityFilter: Prisma.EventWhereInput,
@@ -92,75 +94,73 @@ export class EventsService {
     if (filters?.endAt !== undefined) where.endAt = { lte: filters.endAt };
     if (filters?.groupId !== undefined) where.groupId = filters.groupId;
 
-    const rows = await this.prisma.event.findMany({
+    return this.prisma.event.findMany({
       where,
       orderBy: { startAt: 'asc' },
     });
-
-    return rows.map((row) => this.decryptRow(row, hiveId));
   }
 
   /**
    * Get a single event by ID. Returns null if not found or hiveId mismatch.
    * Defense-in-depth: explicit hiveId filter on top of RLS.
    */
+  @DecryptFields({ fields: ENC_FIELDS, hiveIdArg: 1 })
   async getById(id: string, hiveId: string): Promise<EventRow | null> {
-    const row = await this.prisma.event.findFirst({ where: { id, hiveId } });
-    return row ? this.decryptRow(row, hiveId) : null;
+    return this.prisma.event.findFirst({ where: { id, hiveId } });
   }
 
   /**
-   * Create a new event. Encrypts sensitive fields before storing.
+   * Create a new event. Sensitive fields are encrypted by @EncryptDecryptFields.
    * @param creatorId - personId of the creator (set by router from ctx.user.personId)
    */
+  @EncryptDecryptFields({ fields: ENC_FIELDS, hiveIdArg: 1 })
   async create(data: CreateEventData, hiveId: string, creatorId: string): Promise<EventRow> {
-    const row = await this.prisma.event.create({
+    return this.prisma.event.create({
       data: {
         hiveId,
         creatorId,
-        title: this.encStr(data.title, hiveId),
-        description: this.encOpt(data.description, hiveId),
+        title: data.title,
+        description: data.description ?? null,
         startAt: data.startAt,
         endAt: data.endAt,
         allDay: data.allDay,
-        location: this.encOpt(data.location, hiveId),
-        url: this.encOpt(data.url, hiveId),
+        location: data.location ?? null,
+        url: data.url ?? null,
         color: data.color ?? null,
-        category: this.encOpt(data.category, hiveId),
+        category: data.category ?? null,
         visibility: data.visibility,
         groupId: data.groupId ?? null,
         recurrenceRule: (data.recurrenceRule as Prisma.InputJsonValue) ?? Prisma.JsonNull,
       },
     });
-
-    return this.decryptRow(row, hiveId);
   }
 
   /**
-   * Update an existing event. Only encrypts fields that are present in the update.
+   * Update an existing event. Only provided fields are encrypted by @EncryptDecryptFields.
    * Supports nullish fields (null clears the column, undefined skips it).
    */
+  @EncryptDecryptFields({ fields: ENC_FIELDS, hiveIdArg: 2 })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- hiveId is used by @EncryptDecryptFields via args[2]
   async update(id: string, data: UpdateEventData, hiveId: string): Promise<EventRow> {
     // Use UncheckedUpdateInput to update scalar FK fields (groupId) directly.
     // Prisma.EventUpdateInput only exposes relation-style fields (group: { connect/disconnect }).
     const patch: Prisma.EventUncheckedUpdateInput = {};
 
-    if (data.title !== undefined) patch.title = this.encStr(data.title, hiveId);
-    if ('description' in data) patch.description = this.encOpt(data.description, hiveId);
+    if (data.title !== undefined) patch.title = data.title;
+    if ('description' in data) patch.description = data.description ?? null;
     if (data.startAt !== undefined) patch.startAt = data.startAt;
     if (data.endAt !== undefined) patch.endAt = data.endAt;
     if (data.allDay !== undefined) patch.allDay = data.allDay;
-    if ('location' in data) patch.location = this.encOpt(data.location, hiveId);
-    if ('url' in data) patch.url = this.encOpt(data.url, hiveId);
+    if ('location' in data) patch.location = data.location ?? null;
+    if ('url' in data) patch.url = data.url ?? null;
     if ('color' in data) patch.color = data.color ?? null;
-    if ('category' in data) patch.category = this.encOpt(data.category, hiveId);
+    if ('category' in data) patch.category = data.category ?? null;
     if (data.visibility !== undefined) patch.visibility = data.visibility;
     if ('groupId' in data) patch.groupId = data.groupId ?? null;
     if ('recurrenceRule' in data)
       patch.recurrenceRule = (data.recurrenceRule as Prisma.InputJsonValue) ?? Prisma.JsonNull;
 
-    const row = await this.prisma.event.update({ where: { id }, data: patch });
-    return this.decryptRow(row, hiveId);
+    return this.prisma.event.update({ where: { id }, data: patch });
   }
 
   /**
@@ -170,45 +170,5 @@ export class EventsService {
   async remove(id: string, hiveId: string): Promise<boolean> {
     const result = await this.prisma.event.deleteMany({ where: { id, hiveId } });
     return result.count > 0;
-  }
-
-  // -----------------------------------------------------------------------
-  // Private encryption helpers
-  // -----------------------------------------------------------------------
-
-  private encStr(value: string, hiveId: string): string {
-    return this.enc.serializeToStorage(this.enc.encrypt(value, hiveId));
-  }
-
-  private encOpt(value: string | null | undefined, hiveId: string): string | null {
-    if (value === null || value === undefined) return null;
-    return this.encStr(value, hiveId);
-  }
-
-  private decStr(value: string, hiveId: string): string {
-    try {
-      return this.enc.decrypt(this.enc.parseFromStorage(value), hiveId);
-    } catch {
-      // Migration window: field not yet encrypted. Log so operators can track
-      // progress and know when it is safe to enable STRICT_ENCRYPTION mode.
-      this.logger.warn(`Plaintext fallback for hive ${hiveId} — field not yet encrypted`);
-      return value;
-    }
-  }
-
-  private decOpt(value: string | null, hiveId: string): string | null {
-    if (value === null) return null;
-    return this.decStr(value, hiveId);
-  }
-
-  private decryptRow(row: Event, hiveId: string): EventRow {
-    return {
-      ...row,
-      title: this.decStr(row.title, hiveId),
-      description: this.decOpt(row.description, hiveId),
-      location: this.decOpt(row.location, hiveId),
-      url: this.decOpt(row.url, hiveId),
-      category: this.decOpt(row.category, hiveId),
-    };
   }
 }

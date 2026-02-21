@@ -2,10 +2,12 @@ import { Button, Input } from '@qoomb/ui';
 import { useCallback, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 
+import { useI18nContext } from '../i18n/i18n-react';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { trpc } from '../lib/trpc/client';
 
 export function ForgotPasswordPage() {
+  const { LL } = useI18nContext();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
@@ -34,12 +36,12 @@ export function ForgotPasswordPage() {
   if (sent) {
     return (
       <AuthLayout
-        title="Check your email"
-        subtitle="If an account exists for that address, we sent a reset link. It expires in 1 hour."
+        title={LL.auth.forgotPassword.successTitle()}
+        subtitle={LL.auth.forgotPassword.successSubtitle()}
       >
         <div className="mt-6">
           <Button asChild fullWidth variant="outline">
-            <Link to="/login">Back to sign in</Link>
+            <Link to="/login">{LL.auth.backToSignIn()}</Link>
           </Button>
         </div>
       </AuthLayout>
@@ -47,10 +49,10 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthLayout title="Forgot password" subtitle="Enter your email and we'll send you a reset link">
+    <AuthLayout title={LL.auth.forgotPassword.title()} subtitle={LL.auth.forgotPassword.subtitle()}>
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <Input
-          label="Email"
+          label={LL.common.emailLabel()}
           type="email"
           autoComplete="email"
           value={email}
@@ -61,13 +63,13 @@ export function ForgotPasswordPage() {
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button type="submit" fullWidth isLoading={mutation.isPending} className="mt-2">
-          Send reset link
+          {LL.auth.forgotPassword.sendResetLink()}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         <Link to="/login" className="font-medium text-foreground hover:underline">
-          Back to sign in
+          {LL.auth.backToSignIn()}
         </Link>
       </p>
     </AuthLayout>

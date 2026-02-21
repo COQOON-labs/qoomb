@@ -5,6 +5,7 @@ import { DevPanel } from './components/dev/DevPanel';
 import { Dashboard } from './pages/Dashboard';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
@@ -45,6 +46,7 @@ function App() {
         {/* Protected routes */}
         <Route element={<AuthGuard />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>
 

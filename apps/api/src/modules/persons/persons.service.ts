@@ -1,30 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import { EncryptionService } from '../encryption';
+import {
+  DecryptFields,
+  EncryptFields,
+  EncryptionService,
+  type FieldTransforms,
+} from '../encryption';
 
 // ============================================
 // TYPES
 // ============================================
-
-/**
- * Raw person row as returned by Prisma after the encrypt_person_fields migration.
- * displayName, avatarUrl, birthdate are encrypted ciphertext strings in the DB.
- * Internal to PersonsService — never exported.
- */
-type PersonSummaryRaw = {
-  id: string;
-  role: string;
-  displayName: string | null;
-  avatarUrl: string | null;
-  createdAt: Date;
-};
-
-type PersonDetailRaw = PersonSummaryRaw & {
-  birthdate: string | null; // encrypted ISO 8601 UTC string
-  userId: string | null;
-};
 
 /**
  * Decrypted person summary — returned by list().
@@ -62,6 +49,23 @@ const DETAIL_SELECT = {
   userId: true,
 } as const;
 
+/** Encrypted string fields on Person (no special transforms needed) */
+const SUMMARY_ENC_FIELDS = ['displayName', 'avatarUrl'];
+
+/** All encrypted fields including birthdate (Date ↔ ISO string transform) */
+const DETAIL_ENC_FIELDS = ['displayName', 'avatarUrl', 'birthdate'];
+
+/** Birthdate requires Date ↔ ISO string conversion around encryption */
+const BIRTHDATE_TRANSFORMS: Record<string, FieldTransforms> = {
+  birthdate: {
+    serialize: (value: unknown) => (value as Date).toISOString(),
+    deserialize: (value: string) => {
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? null : d;
+    },
+  },
+};
+
 // ============================================
 // SERVICE
 // ============================================
@@ -79,8 +83,6 @@ const DETAIL_SELECT = {
  */
 @Injectable()
 export class PersonsService {
-  private readonly logger = new Logger(PersonsService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly enc: EncryptionService
@@ -90,25 +92,26 @@ export class PersonsService {
    * List all persons in a hive, ordered by join date.
    * Returns PersonSummary (decrypted). No userId — not exposed in list views.
    */
+  @DecryptFields({ fields: SUMMARY_ENC_FIELDS, hiveIdArg: 0 })
   async list(hiveId: string): Promise<PersonSummary[]> {
-    const rows = await this.prisma.person.findMany({
+    return this.prisma.person.findMany({
       where: { hiveId },
       select: SUMMARY_SELECT,
       orderBy: { createdAt: 'asc' },
     });
-    return rows.map((row) => this.decryptSummary(row, hiveId));
   }
 
   /**
    * Get a single person by ID within the hive. Returns null if not found.
    * Defense-in-depth: explicit hiveId filter on top of RLS.
    */
+  @DecryptFields({ fields: DETAIL_ENC_FIELDS, hiveIdArg: 1, transforms: BIRTHDATE_TRANSFORMS })
   async getById(id: string, hiveId: string): Promise<PersonDetail | null> {
-    const row = await this.prisma.person.findFirst({
+    // Decorator transforms birthdate from string → Date at runtime
+    return this.prisma.person.findFirst({
       where: { id, hiveId },
       select: DETAIL_SELECT,
-    });
-    return row ? this.decryptDetail(row, hiveId) : null;
+    }) as Promise<PersonDetail | null>;
   }
 
   /**
@@ -118,6 +121,8 @@ export class PersonsService {
    * @param hiveId - Required for per-hive encryption key derivation
    * @throws Prisma P2025 if personId does not exist (handled by router)
    */
+  @EncryptFields({ fields: DETAIL_ENC_FIELDS, hiveIdArg: 1, transforms: BIRTHDATE_TRANSFORMS })
+  @DecryptFields({ fields: DETAIL_ENC_FIELDS, hiveIdArg: 1, transforms: BIRTHDATE_TRANSFORMS })
   async updateProfile(
     personId: string,
     hiveId: string,
@@ -129,17 +134,17 @@ export class PersonsService {
   ): Promise<PersonDetail> {
     const data: Prisma.PersonUncheckedUpdateInput = {};
 
-    if (input.displayName !== undefined) data.displayName = this.encStr(input.displayName, hiveId);
-    if (input.avatarUrl !== undefined) data.avatarUrl = this.encStr(input.avatarUrl, hiveId);
-    if (input.birthdate !== undefined)
-      data.birthdate = this.encStr(input.birthdate.toISOString(), hiveId);
+    if (input.displayName !== undefined) data.displayName = input.displayName;
+    if (input.avatarUrl !== undefined) data.avatarUrl = input.avatarUrl;
+    // After @EncryptFields, birthdate is an encrypted string at runtime
+    if (input.birthdate !== undefined) data.birthdate = input.birthdate as unknown as string;
 
-    const row = await this.prisma.person.update({
+    // Decorator transforms birthdate from string → Date at runtime
+    return this.prisma.person.update({
       where: { id: personId },
       data,
       select: DETAIL_SELECT,
-    });
-    return this.decryptDetail(row, hiveId);
+    }) as Promise<PersonDetail>;
   }
 
   /**
@@ -149,13 +154,14 @@ export class PersonsService {
    * @throws Prisma P2025 if personId does not exist (handled by router)
    * @throws DB trigger error if this would remove the last admin (handled by router)
    */
+  @DecryptFields({ fields: DETAIL_ENC_FIELDS, hiveIdArg: 1, transforms: BIRTHDATE_TRANSFORMS })
   async updateRole(personId: string, hiveId: string, role: string): Promise<PersonDetail> {
-    const row = await this.prisma.person.update({
+    // Decorator transforms birthdate from string → Date at runtime
+    return this.prisma.person.update({
       where: { id: personId },
       data: { role },
       select: DETAIL_SELECT,
-    });
-    return this.decryptDetail(row, hiveId);
+    }) as Promise<PersonDetail>;
   }
 
   /**
@@ -172,53 +178,5 @@ export class PersonsService {
       where: { id: personId, hiveId },
     });
     return result.count > 0;
-  }
-
-  // -----------------------------------------------------------------------
-  // Private encryption helpers
-  // -----------------------------------------------------------------------
-
-  private encStr(value: string, hiveId: string): string {
-    return this.enc.serializeToStorage(this.enc.encrypt(value, hiveId));
-  }
-
-  private decStr(value: string, hiveId: string): string {
-    try {
-      return this.enc.decrypt(this.enc.parseFromStorage(value), hiveId);
-    } catch {
-      // Migration window: field not yet encrypted. Log so operators can track
-      // progress and know when it is safe to enable STRICT_ENCRYPTION mode.
-      this.logger.warn(`Plaintext fallback for hive ${hiveId} — field not yet encrypted`);
-      return value;
-    }
-  }
-
-  private decOpt(value: string | null, hiveId: string): string | null {
-    if (value === null) return null;
-    return this.decStr(value, hiveId);
-  }
-
-  private decBirthdate(value: string | null, hiveId: string): Date | null {
-    const s = this.decOpt(value, hiveId);
-    if (s === null) return null;
-    const d = new Date(s);
-    // isNaN guard handles both legacy plain ISO strings and invalid values
-    return isNaN(d.getTime()) ? null : d;
-  }
-
-  private decryptSummary(row: PersonSummaryRaw, hiveId: string): PersonSummary {
-    return {
-      ...row,
-      displayName: this.decOpt(row.displayName, hiveId),
-      avatarUrl: this.decOpt(row.avatarUrl, hiveId),
-    };
-  }
-
-  private decryptDetail(row: PersonDetailRaw, hiveId: string): PersonDetail {
-    return {
-      ...this.decryptSummary(row, hiveId),
-      birthdate: this.decBirthdate(row.birthdate, hiveId),
-      userId: row.userId,
-    };
   }
 }

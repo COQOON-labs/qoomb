@@ -3,6 +3,8 @@ import { createTRPCProxyClient, httpLink } from '@trpc/client';
 import { createContext, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react';
 import superjson from 'superjson';
 
+import { useLocale } from '../locale/LocaleProvider';
+
 import { getRefreshToken, setRefreshToken, clearRefreshToken } from './authStorage';
 import { setAccessToken } from './tokenStore';
 
@@ -15,6 +17,8 @@ export interface AuthUser {
   personId: string;
   hiveName?: string;
   isSystemAdmin?: boolean;
+  /** Resolved BCP 47 locale from server (user > hive > platform default) */
+  locale?: string;
 }
 
 export interface AuthState {
@@ -27,7 +31,14 @@ type AuthAction =
   | { type: 'SET_LOADING'; loading: boolean }
   | { type: 'LOGIN'; user: AuthUser; accessToken: string; refreshToken: string }
   | { type: 'REFRESH'; user: AuthUser; accessToken: string; refreshToken: string }
-  | { type: 'SWITCH_HIVE'; hiveId: string; hiveName: string; personId: string; accessToken: string }
+  | {
+      type: 'SWITCH_HIVE';
+      hiveId: string;
+      hiveName: string;
+      personId: string;
+      accessToken: string;
+      locale?: string;
+    }
   | { type: 'LOGOUT' };
 
 interface AuthContextValue {
@@ -35,7 +46,13 @@ interface AuthContextValue {
   login: (user: AuthUser, accessToken: string, refreshToken: string) => void;
   logout: () => Promise<void>;
   updateToken: (accessToken: string, refreshToken: string) => void;
-  switchHive: (hiveId: string, hiveName: string, personId: string, accessToken: string) => void;
+  switchHive: (
+    hiveId: string,
+    hiveName: string,
+    personId: string,
+    accessToken: string,
+    locale?: string
+  ) => void;
 }
 
 // ── Reducer ───────────────────────────────────────────────────────────────────
@@ -64,6 +81,7 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
               hiveId: action.hiveId,
               hiveName: action.hiveName,
               personId: action.personId,
+              locale: action.locale ?? state.user.locale,
             }
           : state.user,
       };
@@ -122,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   });
 
+  const { setLocale } = useLocale();
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refreshClientRef = useRef<ReturnType<typeof createRefreshClient> | null>(null);
 
@@ -149,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function doRefresh(refreshToken: string): Promise<boolean> {
     try {
       const result = await getRefreshClient().auth.refresh.mutate({ refreshToken });
+      const resolvedLocale = result.locale;
       dispatch({
         type: 'REFRESH',
         user: {
@@ -157,10 +177,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           hiveId: result.user.hiveId,
           personId: result.user.personId,
           hiveName: result.hive.name,
+          locale: resolvedLocale,
         },
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       });
+      if (resolvedLocale) setLocale(resolvedLocale);
       scheduleRefresh(result.accessToken, result.refreshToken);
       return true;
     } catch {
@@ -193,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function login(user: AuthUser, accessToken: string, refreshToken: string) {
     dispatch({ type: 'LOGIN', user, accessToken, refreshToken });
+    if (user.locale) setLocale(user.locale);
     scheduleRefresh(accessToken, refreshToken);
   }
 
@@ -222,10 +245,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     scheduleRefresh(accessToken, refreshToken);
   }
 
-  function switchHive(hiveId: string, hiveName: string, personId: string, accessToken: string) {
+  function switchHive(
+    hiveId: string,
+    hiveName: string,
+    personId: string,
+    accessToken: string,
+    locale?: string
+  ) {
     // Hive switch issues a new access token; refresh token is unchanged
     const existingRefreshToken = getRefreshToken() ?? '';
-    dispatch({ type: 'SWITCH_HIVE', hiveId, hiveName, personId, accessToken });
+    dispatch({ type: 'SWITCH_HIVE', hiveId, hiveName, personId, accessToken, locale });
+    if (locale) setLocale(locale);
     scheduleRefresh(accessToken, existingRefreshToken);
   }
 

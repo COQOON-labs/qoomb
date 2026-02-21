@@ -6,6 +6,7 @@ import {
   verifyEmailSchema,
   sendInvitationSchema,
   registerWithInviteSchema,
+  updateLocaleSchema,
 } from '@qoomb/validators';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
@@ -245,8 +246,23 @@ export const authRouter = (
           hiveName,
           emailVerified: dbUser?.emailVerified ?? false,
           isSystemAdmin: dbUser?.isSystemAdmin ?? false,
+          locale: ctx.user.locale,
         },
       };
+    }),
+
+    /**
+     * Update the current user's locale preference (BCP 47 tag).
+     */
+    updateLocale: protectedProcedure.input(updateLocaleSchema).mutation(async ({ input, ctx }) => {
+      try {
+        return await authService.updateUserLocale(ctx.user.id, input.locale, ctx.user.hiveId);
+      } catch (error) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: error instanceof Error ? error.message : 'Failed to update locale',
+        });
+      }
     }),
 
     /**

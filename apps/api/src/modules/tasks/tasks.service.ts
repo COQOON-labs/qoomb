@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { type Task, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import { EncryptionService } from '../encryption';
+import { DecryptFields, EncryptDecryptFields, EncryptionService } from '../encryption';
 
 // ============================================
 // TYPES
@@ -57,10 +57,11 @@ export interface UpdateTaskData {
  * - Authorization checks (use requirePermission / requireResourceAccess in the router)
  * - Input sanitization (sanitizeHtml in the router before calling service methods)
  */
+/** Encrypted fields on the Task model */
+const ENC_FIELDS = ['title', 'description'];
+
 @Injectable()
 export class TasksService {
-  private readonly logger = new Logger(TasksService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly enc: EncryptionService
@@ -70,6 +71,7 @@ export class TasksService {
    * List tasks matching the given visibility filter and optional filters.
    * @param visibilityFilter - Prisma WHERE clause built by the router (role-based visibility)
    */
+  @DecryptFields({ fields: ENC_FIELDS, hiveIdArg: 0 })
   async list(
     hiveId: string,
     visibilityFilter: Prisma.TaskWhereInput,
@@ -98,34 +100,33 @@ export class TasksService {
       };
     }
 
-    const rows = await this.prisma.task.findMany({
+    return this.prisma.task.findMany({
       where,
       orderBy: [{ dueAt: 'asc' }, { createdAt: 'asc' }],
     });
-
-    return rows.map((row) => this.decryptRow(row, hiveId));
   }
 
   /**
    * Get a single task by ID. Returns null if not found or hiveId mismatch.
    * Defense-in-depth: explicit hiveId filter on top of RLS.
    */
+  @DecryptFields({ fields: ENC_FIELDS, hiveIdArg: 1 })
   async getById(id: string, hiveId: string): Promise<TaskRow | null> {
-    const row = await this.prisma.task.findFirst({ where: { id, hiveId } });
-    return row ? this.decryptRow(row, hiveId) : null;
+    return this.prisma.task.findFirst({ where: { id, hiveId } });
   }
 
   /**
    * Create a new task. Encrypts title and description before storing.
    * @param creatorId - personId of the creator (set by router from ctx.user.personId)
    */
+  @EncryptDecryptFields({ fields: ENC_FIELDS, hiveIdArg: 1 })
   async create(data: CreateTaskData, hiveId: string, creatorId: string): Promise<TaskRow> {
-    const row = await this.prisma.task.create({
+    return this.prisma.task.create({
       data: {
         hiveId,
         creatorId,
-        title: this.encStr(data.title, hiveId),
-        description: this.encOpt(data.description, hiveId),
+        title: data.title,
+        description: data.description ?? null,
         assigneeId: data.assigneeId ?? null,
         eventId: data.eventId ?? null,
         dueAt: data.dueAt ?? null,
@@ -135,21 +136,21 @@ export class TasksService {
         groupId: data.groupId ?? null,
       },
     });
-
-    return this.decryptRow(row, hiveId);
   }
 
   /**
    * Update an existing task. Only encrypts fields that are present in the update.
    * Supports nullish fields (null clears the column, undefined skips it).
    */
+  @EncryptDecryptFields({ fields: ENC_FIELDS, hiveIdArg: 2 })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- hiveId is used by @EncryptDecryptFields via args[2]
   async update(id: string, data: UpdateTaskData, hiveId: string): Promise<TaskRow> {
     // Use UncheckedUpdateInput to update scalar FK fields (assigneeId, eventId, groupId) directly.
     // Prisma.TaskUpdateInput only exposes relation-style fields (assignee: { connect/disconnect }).
     const patch: Prisma.TaskUncheckedUpdateInput = {};
 
-    if (data.title !== undefined) patch.title = this.encStr(data.title, hiveId);
-    if ('description' in data) patch.description = this.encOpt(data.description, hiveId);
+    if (data.title !== undefined) patch.title = data.title;
+    if ('description' in data) patch.description = data.description ?? null;
     if ('assigneeId' in data) patch.assigneeId = data.assigneeId ?? null;
     if ('eventId' in data) patch.eventId = data.eventId ?? null;
     if ('dueAt' in data) patch.dueAt = data.dueAt ?? null;
@@ -159,8 +160,7 @@ export class TasksService {
     if (data.visibility !== undefined) patch.visibility = data.visibility;
     if ('groupId' in data) patch.groupId = data.groupId ?? null;
 
-    const row = await this.prisma.task.update({ where: { id }, data: patch });
-    return this.decryptRow(row, hiveId);
+    return this.prisma.task.update({ where: { id }, data: patch });
   }
 
   /**
@@ -170,42 +170,5 @@ export class TasksService {
   async remove(id: string, hiveId: string): Promise<boolean> {
     const result = await this.prisma.task.deleteMany({ where: { id, hiveId } });
     return result.count > 0;
-  }
-
-  // -----------------------------------------------------------------------
-  // Private encryption helpers
-  // -----------------------------------------------------------------------
-
-  private encStr(value: string, hiveId: string): string {
-    return this.enc.serializeToStorage(this.enc.encrypt(value, hiveId));
-  }
-
-  private encOpt(value: string | null | undefined, hiveId: string): string | null {
-    if (value === null || value === undefined) return null;
-    return this.encStr(value, hiveId);
-  }
-
-  private decStr(value: string, hiveId: string): string {
-    try {
-      return this.enc.decrypt(this.enc.parseFromStorage(value), hiveId);
-    } catch {
-      // Migration window: field not yet encrypted. Log so operators can track
-      // progress and know when it is safe to enable STRICT_ENCRYPTION mode.
-      this.logger.warn(`Plaintext fallback for hive ${hiveId} — field not yet encrypted`);
-      return value;
-    }
-  }
-
-  private decOpt(value: string | null, hiveId: string): string | null {
-    if (value === null) return null;
-    return this.decStr(value, hiveId);
-  }
-
-  private decryptRow(row: Task, hiveId: string): TaskRow {
-    return {
-      ...row,
-      title: this.decStr(row.title, hiveId),
-      description: this.decOpt(row.description, hiveId),
-    };
   }
 }

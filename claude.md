@@ -151,16 +151,18 @@ qoomb/
 │   │       ├── lib/
 │   │       │   ├── auth/           # AuthContext, tokenStore, authStorage
 │   │       │   └── trpc/           # tRPC client (splitLink, CSRF, Bearer)
-│   │       ├── hooks/              # App-specific hooks
+│   │       ├── hooks/              # App-specific hooks (useCurrentPerson — ADR-0002)
 │   │       └── styles/             # Tailwind v4 theme + CSS custom properties
 │   │
 │   └── mobile/                 # Capacitor mobile wrapper
 │       └── capacitor.config.ts     # iOS/Android configuration (dirs generated on demand)
 │
 ├── packages/
-│   ├── types/                  # Shared TypeScript types
+│   ├── types/                  # Shared TypeScript types + domain utilities
 │   │   └── src/
 │   │       ├── entities/           # Hive, Person, Event, Task, common types
+│   │       │   ├── person.ts       # PersonRole enum, Person interface
+│   │       │   └── person.utils.ts # Domain utils: getInitials(), ROLE_I18N_KEYS (ADR-0002)
 │   │       ├── permissions.ts      # HivePermission enum + role mappings
 │   │       ├── api/                # [TODO] API response types (empty)
 │   │       └── sync/               # [Phase 4] Sync types (empty)
@@ -175,6 +177,11 @@ qoomb/
 │   └── config/                 # Shared tsconfig
 │
 ├── docs/                       # Documentation for humans
+│   ├── adr/                        # Architecture Decision Records (MADR)
+│   │   ├── 0001-adr-process.md     # ADR process and format
+│   │   ├── 0002-shared-domain-utilities.md  # Domain-driven code structure (ADR-0002)
+│   │   ├── 0004-cloud-agnostic-architecture.md # Cloud-agnostic stack (ADR-0004)
+│   │   └── 0005-hybrid-encryption-architecture.md # Encryption architecture (ADR-0005)
 │   ├── CONTENT_ARCHITECTURE.md     # Content model, schema, encryption
 │   ├── DESIGN_SYSTEM.md            # Tailwind v4 design tokens
 │   ├── LOCAL_DEVELOPMENT.md        # qoomb.localhost + Caddy setup
@@ -344,6 +351,33 @@ qoomb/
 - Used for email templates and user-facing error messages
 - **Location:** `apps/api/src/i18n/`
 
+**Frontend i18n (PRODUCTION-READY):**
+
+- typesafe-i18n v5.27.1 with React adapter (`typesafe-i18n/react`)
+- Base locale: `de` (German); secondary locale: `en` (English)
+- Config: `apps/web/.typesafe-i18n.json` (`baseLocale: "de"`, `adapter: "react"`)
+- Provider: `<TypesafeI18n locale="de">` wraps the entire app in `apps/web/src/main.tsx`
+- Hook: `const { LL } = useI18nContext()` → call `LL.section.key()` in JSX
+- Parameterized strings: `LL.dashboard.greeting({ name })`, `LL.dashboard.memberCount({ count })`
+- Generated files (do not edit manually): `i18n-types.ts`, `i18n-util*.ts`, `i18n-react.tsx`, `formatters.ts`
+- Translation files (edit these): `apps/web/src/i18n/de/index.ts`, `apps/web/src/i18n/en/index.ts`
+- Applied to: all auth pages, ProfilePage, Dashboard, UserMenu, PassKeyButton/Manager, EmailVerificationBanner, HiveSwitcher, AuthLayout
+- **All user-visible strings must use `LL.*()` — never hardcode text in JSX**
+- **Location:** `apps/web/src/i18n/`
+
+**Frontend i18n namespace structure:**
+
+| Namespace   | Scope                                    | Examples                                                                  |
+| ----------- | ---------------------------------------- | ------------------------------------------------------------------------- |
+| `common`    | Generic actions + primitives             | `save`, `cancel`, `add`, `create`, `invite`, `emailLabel`, `passwordHint` |
+| `nav`       | Navigation section labels                | `overview`, `calendar`, `tasks`, `members`, `pages`, `settings`           |
+| `entities`  | Domain object names                      | `event`, `task`, `page`                                                   |
+| `roles`     | Role display names                       | `parent`, `child`, `orgAdmin`, `manager`, `member`                        |
+| `auth`      | Auth flows (login, register, passKey, …) | `signIn`, `backToSignIn`, `login.title`                                   |
+| `layout`    | Shared layout chrome                     | `userMenu.profile`, `emailVerification.message`                           |
+| `profile`   | Profile page strings                     | `displayNameLabel`, `saved`                                               |
+| `dashboard` | **Dashboard-view-specific only**         | `greeting`, `memberCount`, `progressText`, `quickAdd.title`               |
+
 **Phase 2 (Core Content):**
 
 - Persons module: `me`, `list`, `get`, `updateProfile`, `updateRole`, `remove`, `invite`
@@ -423,8 +457,8 @@ if (!process.env.KEY_PROVIDER) {
 }
 
 // ✅ GOOD: Implicit where it prevents errors
-@EncryptFields(['sensitiveField'])  // Can't forget!
-async create() { ... }
+@EncryptFields({ fields: ['sensitiveField'], hiveIdArg: 1 })  // Can't forget!
+async create(data: Input, _hiveId: string) { ... }
 ```
 
 ### 3. Multi-Tenant Always
@@ -451,8 +485,8 @@ const data = createEventSchema.parse(input);  // Zod validation
 const sanitized = sanitizeHtml(data.description);
 
 // ✅ GOOD: Use decorators for encryption
-@EncryptFields(['sensitiveData'])
-async create() { ... }
+@EncryptFields({ fields: ['sensitiveData'], hiveIdArg: 1 })
+async create(data: Input, _hiveId: string) { ... }
 
 // ❌ BAD: Manual encryption (easy to forget)
 const encrypted = await encryptionService.encrypt(...);
@@ -718,6 +752,77 @@ apps/api/src/
     └── user-service.ts  # Auth + Encryption + Events mixed!
 ```
 
+### 8. Event Handler Naming Conventions (Critical)
+
+Follow official React naming conventions. Consistent naming makes the data-flow direction immediately clear.
+
+#### Props (callbacks received from parent) → always `on*`
+
+Use the `on` prefix for function props that a parent passes to a component. This mirrors React's built-in events (`onClick`, `onChange`, `onSubmit`).
+
+```typescript
+// ✅ GOOD: prop callbacks use on*
+interface UserMenuProps {
+  onProfileClick: () => void;
+  onLogoutClick: () => void;
+}
+
+<UserMenu onProfileClick={handleProfileClick} onLogoutClick={handleLogoutClick} />
+
+// ❌ BAD: non-standard prefix for props
+interface UserMenuProps {
+  profileClickHandler: () => void;   // Unclear direction
+  handleLogout: () => void;          // Looks like internal handler
+}
+```
+
+#### Internal handlers (defined inside a component) → `handle*`
+
+Use `handle` as the prefix for functions defined inside the component body that respond to events.
+
+```typescript
+// ✅ GOOD: internal handlers use handle*
+function Dashboard() {
+  function handleAddTask() { ... }
+  function handleProfileClick() { ... }
+
+  return <UserMenu onProfileClick={handleProfileClick} />;
+  //              ↑ prop name (on*)   ↑ local impl (handle*)
+}
+
+// ❌ BAD: on* for internal handlers
+function Dashboard() {
+  function onProfileClick() { ... }  // Looks like a prop, not a handler
+}
+```
+
+#### Inline handlers → anonymous arrow functions are fine for trivial cases
+
+```typescript
+// ✅ GOOD: trivial inline handler
+<Button onClick={() => setOpen(false)}>Cancel</Button>
+
+// ✅ GOOD: extracted for reuse or complexity
+const handleSubmit = useCallback((e: React.FormEvent) => {
+  e.preventDefault();
+  // …
+}, [deps]);
+```
+
+#### `useCallback` dependencies
+
+When a handler uses context values (e.g. `LL` from i18n), include them in the dependency array.
+
+```typescript
+// ✅ GOOD: LL included in deps
+const handleSubmit = useCallback(
+  (e: React.FormEvent) => {
+    if (invalid) setError(LL.auth.passwordMismatch());
+  },
+  [LL, invalid, setError] // ← LL is a dependency
+);
+```
+
 ---
 
 ## Key Code Patterns
@@ -741,28 +846,38 @@ export const eventsRouter = router({
 ### Pattern: Decorator-Based Encryption
 
 ```typescript
+// Decorator config — declared once, reused across methods
+const ENC_FIELDS = ['title', 'description', 'location', 'url', 'category'];
+
 @Injectable()
 export class EventsService {
   // @EncryptFields: encrypts the named fields in the INPUT argument before
   // the method executes — the method receives (and stores) encrypted data.
-  @EncryptFields(['title', 'description'])
-  async createEvent(data: CreateEventInput, hiveId: string) {
+  // hiveIdArg: positional index of the hiveId parameter (0-based)
+  @EncryptFields({ fields: ENC_FIELDS, hiveIdArg: 1 })
+  async createEvent(data: CreateEventInput, _hiveId: string) {
     return this.prisma.event.create({ data });
-    // data.title and data.description are encrypted in-place before prisma call
+    // data.title, data.description, etc. are encrypted in-place
   }
 
   // @DecryptFields: decrypts the named fields in the RETURN VALUE after the
   // method executes — the caller receives plaintext.
-  @DecryptFields(['title', 'description'])
-  async getEvent(id: string, hiveId: string) {
+  @DecryptFields({ fields: ENC_FIELDS, hiveIdArg: 1 })
+  async getEvent(id: string, _hiveId: string) {
     return this.prisma.event.findUnique({ where: { id } });
-    // returned title & description are automatically decrypted
+    // returned fields are automatically decrypted
   }
 
   // Works with arrays automatically
-  @DecryptFields(['title', 'description'])
-  async listEvents(hiveId: string) {
+  @DecryptFields({ fields: ENC_FIELDS, hiveIdArg: 0 })
+  async listEvents(_hiveId: string) {
     return this.prisma.event.findMany();
+  }
+
+  // @EncryptDecryptFields combines both in a single decorator
+  @EncryptDecryptFields({ fields: ENC_FIELDS, hiveIdArg: 2 })
+  async updateEvent(id: string, data: UpdateEventInput, _hiveId: string) {
+    return this.prisma.event.update({ where: { id }, data });
   }
 }
 ```
@@ -1019,8 +1134,8 @@ await prisma.event.create({ data: { title: encrypted } });
 ```typescript
 // GOOD: @EncryptFields encrypts INPUT fields before the method stores them.
 // @DecryptFields decrypts RETURN VALUE fields after the method loads them.
-@EncryptFields(['title'])
-async createEvent(data: CreateEventInput, hiveId: string) {
+@EncryptFields({ fields: ['title'], hiveIdArg: 1 })
+async createEvent(data: CreateEventInput, _hiveId: string) {
   return prisma.event.create({ data }); // data.title is already encrypted
 }
 ```
@@ -1134,6 +1249,11 @@ JWT_SECRET=<32+ chars>    # Generate: openssl rand -base64 32
 README.md              → Human onboarding
 claude.md              → This file (AI context)
 docs/
+  ├── adr/                        → Architecture Decision Records (MADR)
+  │   ├── 0001-adr-process.md     → ADR format and process
+  │   ├── 0002-shared-domain-utilities.md → Domain-driven code structure
+  │   ├── 0004-cloud-agnostic-architecture.md → Cloud-agnostic stack
+  │   └── 0005-hybrid-encryption-architecture.md → Encryption architecture
   ├── CONTENT_ARCHITECTURE.md → Content model, schema, encryption
   ├── DESIGN_SYSTEM.md       → Tailwind v4 design tokens
   ├── LOCAL_DEVELOPMENT.md   → qoomb.localhost + Caddy setup

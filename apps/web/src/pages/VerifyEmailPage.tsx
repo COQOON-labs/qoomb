@@ -2,12 +2,14 @@ import { Button } from '@qoomb/ui';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 
+import { useI18nContext } from '../i18n/i18n-react';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { trpc } from '../lib/trpc/client';
 
 type Status = 'verifying' | 'success' | 'error';
 
 export function VerifyEmailPage() {
+  const { LL } = useI18nContext();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') ?? '';
   const [status, setStatus] = useState<Status>('verifying');
@@ -33,7 +35,7 @@ export function VerifyEmailPage() {
 
   if (status === 'verifying') {
     return (
-      <AuthLayout title="Verifying your email…">
+      <AuthLayout title={LL.auth.verifyEmail.loadingTitle()}>
         <div className="mt-8 flex justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
@@ -44,12 +46,12 @@ export function VerifyEmailPage() {
   if (status === 'success') {
     return (
       <AuthLayout
-        title="Email verified"
-        subtitle="Your email address has been confirmed. You can now use all features."
+        title={LL.auth.verifyEmail.successTitle()}
+        subtitle={LL.auth.verifyEmail.successSubtitle()}
       >
         <div className="mt-6">
           <Button asChild fullWidth>
-            <Link to="/dashboard">Go to dashboard</Link>
+            <Link to="/dashboard">{LL.auth.verifyEmail.goToDashboard()}</Link>
           </Button>
         </div>
       </AuthLayout>
@@ -58,12 +60,12 @@ export function VerifyEmailPage() {
 
   return (
     <AuthLayout
-      title="Verification failed"
-      subtitle={errorMessage || 'This link is invalid or has expired.'}
+      title={LL.auth.verifyEmail.failedTitle()}
+      subtitle={errorMessage || LL.auth.verifyEmail.failedSubtitle()}
     >
       <div className="mt-6 flex flex-col gap-3">
         <Button asChild fullWidth variant="outline">
-          <Link to="/login">Back to sign in</Link>
+          <Link to="/login">{LL.auth.backToSignIn()}</Link>
         </Button>
       </div>
     </AuthLayout>

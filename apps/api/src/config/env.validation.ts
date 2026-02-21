@@ -93,17 +93,6 @@ const envSchema = z.object({
   VAULT_KEY_PATH: z.string().optional(),
 
   /**
-   * AI Provider Configuration (Optional)
-   */
-  AI_PROVIDER: z.enum(['openai', 'anthropic', 'ollama', 'disabled']).default('disabled'),
-
-  OPENAI_API_KEY: z.string().startsWith('sk-').optional(),
-
-  ANTHROPIC_API_KEY: z.string().startsWith('sk-ant-').optional(),
-
-  OLLAMA_BASE_URL: z.string().url().optional(),
-
-  /**
    * CORS Configuration
    */
   ALLOWED_ORIGINS: z
@@ -145,6 +134,20 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug', 'verbose']).default('info'),
 
   /**
+   * Locale Configuration
+   *
+   * Platform-wide default locale (BCP 47 tag, e.g. 'en-US', 'de-DE').
+   * This is the lowest-priority fallback — overridden by hive and user preferences.
+   */
+  DEFAULT_LOCALE: z
+    .string()
+    .regex(
+      /^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?$/,
+      'DEFAULT_LOCALE must be a valid BCP 47 locale (e.g. "en-US", "de-DE")'
+    )
+    .default('en-US'),
+
+  /**
    * Session Configuration
    */
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters').optional(),
@@ -173,8 +176,14 @@ export type Env = z.infer<typeof envSchema>;
  * @throws {Error} if validation fails with detailed error message
  */
 export function validateEnv(): Env {
+  // Env files may contain KEY= with no value — treat empty strings as undefined
+  // so that Zod's .optional() properly skips validation for unset variables.
+  const env = Object.fromEntries(
+    Object.entries(process.env).map(([key, val]) => [key, val === '' ? undefined : val])
+  );
+
   try {
-    return envSchema.parse(process.env);
+    return envSchema.parse(env);
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missingVars: string[] = [];

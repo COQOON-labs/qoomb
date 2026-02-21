@@ -1,5 +1,6 @@
 import { Button, Card, cn, Input } from '@qoomb/ui';
-import { useState } from 'react';
+import { getInitials } from '@qoomb/types';
+import { useMemo, useState } from 'react';
 
 import {
   BellIcon,
@@ -17,12 +18,14 @@ import {
 import { EmailVerificationBanner } from '../components/layout/EmailVerificationBanner';
 import { HiveSwitcher } from '../components/layout/HiveSwitcher';
 import { UserMenu } from '../components/layout/UserMenu';
+import { useCurrentPerson } from '../hooks/useCurrentPerson';
 import { useI18nContext } from '../i18n/i18n-react';
+import { useAuth } from '../lib/auth/useAuth';
+import { trpc } from '../lib/trpc/client';
 
 // ── Static placeholder data (Phase 2 will replace with tRPC queries) ─────────
 
-const HIVE = { name: 'Doe Familie', memberCount: 5, initials: 'DF' };
-const USER = { name: 'John', fullName: 'John Doe', role: 'parent', initials: 'JD' };
+// USER and HIVE data are now fetched via tRPC (persons.me + persons.list + useAuth)
 
 const EVENTS = [
   {
@@ -164,9 +167,18 @@ const MEMBERS = [
 
 export function Dashboard() {
   const { LL } = useI18nContext();
+  const { user } = useAuth();
+  const { displayName, initials: userInitials, roleLabel } = useCurrentPerson();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [quickAdd, setQuickAdd] = useState('');
   const [tasks, setTasks] = useState(TASKS);
+
+  // ── Hive data from tRPC ────────────────────────────────────────────────────
+  const { data: members } = trpc.persons.list.useQuery(undefined, { enabled: !!user });
+
+  const hiveName = user?.hiveName ?? '—';
+  const hiveInitials = useMemo(() => getInitials(hiveName, '?'), [hiveName]);
+  const memberCount = members?.length ?? 0;
 
   const NAV_ITEMS = [
     { id: 'dashboard', label: LL.nav.overview(), icon: HomeIcon, active: true, badge: null },
@@ -215,12 +227,12 @@ export function Dashboard() {
         <div className="px-3 pt-3 pb-2 shrink-0">
           <button className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors text-left">
             <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-sm font-black shrink-0">
-              {HIVE.initials}
+              {hiveInitials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold text-white truncate leading-tight">{HIVE.name}</div>
+              <div className="text-sm font-bold text-white truncate leading-tight">{hiveName}</div>
               <div className="text-xs text-white/50 leading-tight mt-0.5">
-                {LL.dashboard.memberCount({ count: HIVE.memberCount })}
+                {LL.dashboard.memberCount({ count: memberCount })}
               </div>
             </div>
             <ChevronUpDownIcon className="text-white/40" />
@@ -276,9 +288,9 @@ export function Dashboard() {
         {/* User */}
         <div className="px-3 pb-3 pt-2 border-t border-white/10 shrink-0">
           <UserMenu
-            displayName={USER.fullName}
-            initials={USER.initials}
-            roleLabel={USER.role === 'parent' ? LL.roles.parent() : USER.role}
+            displayName={displayName}
+            initials={userInitials}
+            roleLabel={roleLabel}
           />
         </div>
       </aside>
@@ -366,7 +378,7 @@ export function Dashboard() {
                   Donnerstag · Februar 2026
                 </p>
                 <h1 className="text-3xl font-black text-foreground tracking-tight leading-tight">
-                  {LL.dashboard.greeting({ name: USER.name })}
+                  {LL.dashboard.greeting({ name: displayName })}
                 </h1>
                 <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
                   {LL.dashboard.todayIntro()}

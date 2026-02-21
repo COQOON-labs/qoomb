@@ -1,4 +1,5 @@
 import { Button, Card, Input } from '@qoomb/ui';
+import { getInitials } from '@qoomb/types';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -42,14 +43,7 @@ export function ProfilePage() {
   };
 
   // Derive initials from display name
-  const initials = displayName
-    ? displayName
-        .split(' ')
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : (user?.email?.[0]?.toUpperCase() ?? '?');
+  const initials = getInitials(displayName || null, user?.email ?? '?');
 
   return (
     <div className="min-h-screen bg-background">

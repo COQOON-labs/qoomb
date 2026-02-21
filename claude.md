@@ -180,7 +180,6 @@ qoomb/
 │   ├── adr/                        # Architecture Decision Records (MADR)
 │   │   ├── 0001-adr-process.md     # ADR process and format
 │   │   ├── 0002-shared-domain-utilities.md  # Domain-driven code structure (ADR-0002)
-│   │   ├── 0003-presentation-hooks-pattern.md # Deprecated — merged into ADR-0002
 │   │   ├── 0004-cloud-agnostic-architecture.md # Cloud-agnostic stack (ADR-0004)
 │   │   └── 0005-hybrid-encryption-architecture.md # Encryption architecture (ADR-0005)
 │   ├── CONTENT_ARCHITECTURE.md     # Content model, schema, encryption
@@ -1253,7 +1252,6 @@ docs/
   ├── adr/                        → Architecture Decision Records (MADR)
   │   ├── 0001-adr-process.md     → ADR format and process
   │   ├── 0002-shared-domain-utilities.md → Domain-driven code structure
-  │   ├── 0003-presentation-hooks-pattern.md → Deprecated (merged into ADR-0002)
   │   ├── 0004-cloud-agnostic-architecture.md → Cloud-agnostic stack
   │   └── 0005-hybrid-encryption-architecture.md → Encryption architecture
   ├── CONTENT_ARCHITECTURE.md → Content model, schema, encryption

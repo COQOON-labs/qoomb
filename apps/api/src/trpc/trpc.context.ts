@@ -13,6 +13,8 @@ export interface TrpcContext {
     personId?: string;
     email?: string;
     hiveName?: string;
+    /** Resolved BCP 47 locale (user > hive > platform default > 'en-US') */
+    locale?: string;
     /** Hive type string ('family' | 'organization') populated by hiveProcedure */
     hiveType?: string;
     /** Person role string populated by hiveProcedure */

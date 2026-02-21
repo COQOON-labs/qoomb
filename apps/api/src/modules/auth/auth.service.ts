@@ -9,12 +9,13 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Hive, Person, User, UserHiveMembership } from '@prisma/client';
-import { type CreateHiveInput } from '@qoomb/types';
+import { type CreateHiveInput, resolveLocale } from '@qoomb/types';
 import * as bcrypt from 'bcrypt';
 
 import { AccountLockoutService } from '../../common/services/account-lockout.service';
 import { TokenBlacklistService } from '../../common/services/token-blacklist.service';
 import { PASSWORD_CONFIG, JWT_CONFIG } from '../../config/security.config';
+import { getEnv } from '../../config/env.validation';
 import { PrismaService, TransactionClient } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { EncryptionService } from '../encryption';
@@ -178,6 +179,7 @@ export class AuthService {
         id: hiveIdReturn,
         name: hiveName,
       },
+      locale: resolveLocale(result.user.locale, result.hive.locale, getEnv().DEFAULT_LOCALE),
     };
   }
 
@@ -290,6 +292,7 @@ export class AuthService {
         role: m.person.role,
         isPrimary: m.isPrimary,
       })),
+      locale: resolveLocale(user.locale, primaryMembership.hive.locale, getEnv().DEFAULT_LOCALE),
     };
   }
 
@@ -357,6 +360,7 @@ export class AuthService {
         hiveId: hiveId,
         personId: personId,
         hiveName: hiveName,
+        locale: resolveLocale(user.locale, membership.hive.locale, getEnv().DEFAULT_LOCALE),
       };
     } catch (_error) {
       // SECURITY: Generic error for all token validation failures
@@ -456,6 +460,7 @@ export class AuthService {
         id: hiveId,
         name: hiveName,
       },
+      locale: resolveLocale(user.locale, primaryMembership.hive.locale, getEnv().DEFAULT_LOCALE),
     };
   }
 
@@ -512,6 +517,7 @@ export class AuthService {
     accessToken: string;
     expiresIn: number;
     hive: { id: string; name: string; role: string };
+    locale: string;
   }> {
     // Verify membership exists
     const membership: MembershipWithHiveAndPerson | null =
@@ -523,6 +529,12 @@ export class AuthService {
     if (!membership) {
       throw new UnauthorizedException('No access to this hive');
     }
+
+    // Fetch user to resolve locale preference
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { locale: true },
+    });
 
     // Generate new access token for the target hive
     const { token: accessToken } = this.generateAccessToken(
@@ -539,6 +551,7 @@ export class AuthService {
         name: this.decryptHiveName(membership.hive.name, membership.hive.id),
         role: membership.person.role,
       },
+      locale: resolveLocale(user?.locale, membership.hive.locale, getEnv().DEFAULT_LOCALE),
     };
   }
 
@@ -592,6 +605,11 @@ export class AuthService {
         id: primaryMembership.hive.id,
         name: this.decryptHiveName(primaryMembership.hive.name, primaryMembership.hive.id),
       },
+      locale: resolveLocale(
+        userWithMemberships.locale,
+        primaryMembership.hive.locale,
+        getEnv().DEFAULT_LOCALE,
+      ),
     };
   }
 
@@ -935,6 +953,7 @@ export class AuthService {
         personId: result.personId,
       },
       hive: { id: result.hive.id, name: this.decryptHiveName(result.hive.name, result.hive.id) },
+      locale: resolveLocale(result.user.locale, result.hive.locale, getEnv().DEFAULT_LOCALE),
     };
   }
 
@@ -976,6 +995,7 @@ export class AuthService {
       role: string;
       isPrimary: boolean;
       personId: string;
+      locale: string | null;
     }>
   > {
     const memberships: MembershipWithHiveAndPerson[] =
@@ -991,6 +1011,39 @@ export class AuthService {
       role: m.person.role,
       isPrimary: m.isPrimary,
       personId: m.personId,
+      locale: m.hive.locale,
     }));
+  }
+
+  /**
+   * Update the user's locale preference.
+   *
+   * @param userId - ID of the user to update.
+   * @param locale - BCP 47 locale tag (e.g. 'de-DE', 'en-US').
+   * @returns The resolved locale after the update (user > hive > platform).
+   */
+  async updateUserLocale(
+    userId: string,
+    locale: string,
+    hiveId?: string,
+  ): Promise<{ locale: string }> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { locale },
+    });
+
+    // Re-resolve to return the effective locale
+    let hiveLocale: string | null = null;
+    if (hiveId) {
+      const hive = await this.prisma.hive.findUnique({
+        where: { id: hiveId },
+        select: { locale: true },
+      });
+      hiveLocale = hive?.locale ?? null;
+    }
+
+    return {
+      locale: resolveLocale(locale, hiveLocale, getEnv().DEFAULT_LOCALE),
+    };
   }
 }

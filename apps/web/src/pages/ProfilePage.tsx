@@ -28,7 +28,7 @@ const profileSchema = z.object({
 });
 
 const languageSchema = z.object({
-  locale: z.enum(SUPPORTED_TRANSLATION_LOCALES as [TranslationLocale, ...TranslationLocale[]]),
+  locale: z.enum([...SUPPORTED_TRANSLATION_LOCALES] as [TranslationLocale, ...TranslationLocale[]]),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;

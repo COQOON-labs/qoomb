@@ -85,6 +85,10 @@ export default defineConfig({
       // Resolve @qoomb packages directly from source so HMR works without rebuilding
       '@qoomb/ui': path.resolve(__dirname, '../../packages/ui/src'),
       '@qoomb/types': path.resolve(__dirname, '../../packages/types/src'),
+      '@qoomb/validators': path.resolve(__dirname, '../../packages/validators/src'),
+      // sanitize-html uses Node.js built-ins (path, fs, postcss) — stub it for
+      // the browser. It is only ever called server-side, never in client code.
+      'sanitize-html': path.resolve(__dirname, './src/lib/sanitize-html-stub.ts'),
     },
   },
   server: {

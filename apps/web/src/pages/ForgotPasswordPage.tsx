@@ -1,39 +1,44 @@
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Button, Input } from '@qoomb/ui';
-import { useCallback, useState } from 'react';
+import { requestPasswordResetSchema } from '@qoomb/validators';
+import { useForm } from 'react-hook-form';
 import { Link, Navigate } from 'react-router-dom';
+import type { z } from 'zod';
 
 import { useI18nContext } from '../i18n/i18n-react';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { trpc } from '../lib/trpc/client';
 
+type ForgotPasswordFormValues = z.infer<typeof requestPasswordResetSchema>;
+
 export function ForgotPasswordPage() {
   const { LL } = useI18nContext();
-  const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState('');
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<ForgotPasswordFormValues>({
+    resolver: standardSchemaResolver(requestPasswordResetSchema),
+    defaultValues: { email: '' },
+  });
 
   const systemConfig = trpc.auth.getSystemConfig.useQuery();
 
   const mutation = trpc.auth.requestPasswordReset.useMutation({
-    onSuccess: () => setSent(true),
-    onError: (err) => setError(err.message),
+    onError: (err) => setError('email', { message: err.message }),
   });
 
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      setError('');
-      mutation.mutate({ email });
-    },
-    [email, mutation, setError]
-  );
+  const onSubmit = handleSubmit((data) => {
+    mutation.mutate(data);
+  });
 
-  // Redirect if forgot password is disabled
   if (systemConfig.data?.allowForgotPassword === false) {
     return <Navigate to="/login" replace />;
   }
 
-  if (sent) {
+  if (mutation.isSuccess) {
     return (
       <AuthLayout
         title={LL.auth.forgotPassword.successTitle()}
@@ -50,17 +55,14 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthLayout title={LL.auth.forgotPassword.title()} subtitle={LL.auth.forgotPassword.subtitle()}>
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+      <form onSubmit={(e) => void onSubmit(e)} className="mt-6 flex flex-col gap-4">
         <Input
           label={LL.common.emailLabel()}
           type="email"
           autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+          error={errors.email?.message}
+          {...register('email')}
         />
-
-        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button type="submit" fullWidth isLoading={mutation.isPending} className="mt-2">
           {LL.auth.forgotPassword.sendResetLink()}

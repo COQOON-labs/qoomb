@@ -12,51 +12,44 @@ interface AuthLayoutProps {
  * Shared layout for all auth pages.
  * Desktop: dark brand panel left, white form panel right.
  * Mobile: black background, yellow QOOMB above a centered form card.
+ *
+ * Children are rendered exactly once to avoid duplicate DOM inputs which
+ * would break react-hook-form refs and make inputs unresponsive.
  */
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   const { LL } = useI18nContext();
   return (
-    <>
-      {/* ── Desktop: two-panel layout ─────────────────────────────── */}
-      <div className="hidden lg:flex min-h-screen">
-        {/* Left brand panel */}
-        <div className="w-1/2 flex flex-col items-center justify-center bg-foreground p-12">
-          <span
-            className="text-6xl font-black tracking-widest text-primary uppercase select-none"
-            aria-label="Qoomb"
-          >
-            {LL.common.brand()}
-          </span>
-          <p className="mt-4 text-sm tracking-wide text-muted-foreground/60 uppercase">
-            {LL.common.tagline()}
-          </p>
-        </div>
-
-        {/* Right form panel */}
-        <div className="flex-1 flex flex-col items-center justify-center bg-background px-6 py-12">
-          <div className="w-full max-w-sm">
-            <h1 className="text-2xl font-black text-foreground mb-1">{title}</h1>
-            {subtitle && <p className="text-sm text-muted-foreground mb-6">{subtitle}</p>}
-            {children}
-          </div>
-        </div>
+    <div className="min-h-screen flex">
+      {/* Left brand panel (desktop only) */}
+      <div className="hidden lg:flex w-1/2 flex-col items-center justify-center bg-foreground p-12">
+        <span
+          className="text-6xl font-black tracking-widest text-primary uppercase select-none"
+          aria-label="Qoomb"
+        >
+          {LL.common.brand()}
+        </span>
+        <p className="mt-4 text-sm tracking-wide text-muted-foreground/60 uppercase">
+          {LL.common.tagline()}
+        </p>
       </div>
 
-      {/* ── Mobile: dark background + card ────────────────────────── */}
-      <div className="lg:hidden flex min-h-screen flex-col items-center justify-center bg-foreground px-6 py-12">
+      {/* Right panel — full-width on mobile, half-width on desktop */}
+      <div className="flex-1 flex flex-col items-center justify-center bg-foreground lg:bg-background px-6 py-12">
+        {/* Mobile-only logo */}
         <span
-          className="text-5xl font-black tracking-widest text-primary uppercase select-none mb-10"
+          className="lg:hidden text-5xl font-black tracking-widest text-primary uppercase select-none mb-10"
           aria-label="Qoomb"
         >
           {LL.common.brand()}
         </span>
 
-        <div className="w-full max-w-sm bg-card rounded-xl p-6 shadow-2xl">
+        {/* Form card: styled for mobile, transparent on desktop */}
+        <div className="w-full max-w-sm bg-card lg:bg-transparent rounded-xl lg:rounded-none p-6 lg:p-0 shadow-2xl lg:shadow-none">
           <h1 className="text-2xl font-black text-foreground mb-1">{title}</h1>
           {subtitle && <p className="text-sm text-muted-foreground mb-6">{subtitle}</p>}
           {children}
         </div>
       </div>
-    </>
+    </div>
   );
 }

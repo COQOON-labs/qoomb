@@ -3,10 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "clean": "rm -rf dist",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts",
     "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts --fix",
@@ -23,6 +31,7 @@
     "@types/node": "^25.2.3",
     "@types/sanitize-html": "^2.16.0",
     "eslint": "^9.39.2",
+    "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   }
 }

@@ -5,15 +5,15 @@ import * as React from 'react';
 import { cn } from '../utils/cn';
 
 const inputVariants = cva(
-  'flex h-10 w-full rounded-lg border bg-card px-3 py-2 text-sm transition-colors ' +
+  'flex h-11 w-full rounded-lg border bg-card px-4 py-2.5 text-sm transition-colors ' +
     'placeholder:text-muted-foreground ' +
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 ' +
-    'disabled:cursor-not-allowed disabled:opacity-50',
+    'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted',
   {
     variants: {
       state: {
-        default: 'border-border',
-        error: 'border-destructive focus-visible:ring-destructive',
+        default: 'border-border hover:border-muted-foreground',
+        error: 'border-destructive hover:border-destructive focus-visible:ring-destructive',
       },
     },
     defaultVariants: { state: 'default' },
@@ -90,7 +90,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <LabelPrimitive.Root
             htmlFor={inputId}
-            className="mb-1.5 block text-sm font-medium text-foreground"
+            className="mb-2 block text-sm font-medium text-foreground"
           >
             {label}
           </LabelPrimitive.Root>
@@ -117,19 +117,19 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               tabIndex={-1}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus:outline-none"
+              className="absolute inset-y-0 right-0 flex items-center px-3.5 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
             >
               {showPassword ? <EyeOffIcon /> : <EyeIcon />}
             </button>
           )}
         </div>
         {error && (
-          <p id={`${inputId}-error`} className="mt-1.5 text-sm text-destructive">
+          <p id={`${inputId}-error`} className="mt-2 text-sm text-destructive">
             {error}
           </p>
         )}
         {helperText && !error && (
-          <p id={`${inputId}-helper`} className="mt-1.5 text-sm text-muted-foreground">
+          <p id={`${inputId}-helper`} className="mt-2 text-sm text-muted-foreground">
             {helperText}
           </p>
         )}

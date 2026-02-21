@@ -20,8 +20,8 @@ pnpm turbo run type-check
 echo "🧪 Running tests..."
 pnpm turbo run test --filter='!@qoomb/web'
 
-# Build check
+# Build check (full build to catch Vite import resolution errors)
 echo "🏗️  Build check..."
-pnpm turbo run build --dry-run=json > /dev/null
+pnpm turbo run build
 
 echo "✅ Pre-push checks passed!"

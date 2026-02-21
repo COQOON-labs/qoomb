@@ -9,7 +9,8 @@ const cardVariants = cva('rounded-xl border border-border bg-card text-card-fore
       none: '',
       sm: 'p-3',
       md: 'p-5',
-      lg: 'p-8',
+      lg: 'p-6',
+      xl: 'p-8',
     },
     hoverable: {
       true: 'cursor-pointer transition-shadow hover:shadow-md',
@@ -36,7 +37,9 @@ Card.displayName = 'Card';
 export type CardHeaderProps = React.HTMLAttributes<HTMLDivElement>;
 
 export const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
-  ({ className, ...props }, ref) => <div ref={ref} className={cn('mb-4', className)} {...props} />
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('mb-5 pb-5 border-b border-border', className)} {...props} />
+  )
 );
 
 CardHeader.displayName = 'CardHeader';
@@ -47,7 +50,7 @@ export const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-lg font-semibold text-card-foreground', className)}
+      className={cn('text-base font-semibold text-card-foreground leading-snug', className)}
       {...props}
     />
   )
@@ -59,7 +62,7 @@ export type CardDescriptionProps = React.HTMLAttributes<HTMLParagraphElement>;
 
 export const CardDescription = React.forwardRef<HTMLParagraphElement, CardDescriptionProps>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn('text-sm text-muted-foreground', className)} {...props} />
+    <p ref={ref} className={cn('mt-1 text-sm text-muted-foreground', className)} {...props} />
   )
 );
 
@@ -68,7 +71,9 @@ CardDescription.displayName = 'CardDescription';
 export type CardContentProps = React.HTMLAttributes<HTMLDivElement>;
 
 export const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(
-  ({ className, ...props }, ref) => <div ref={ref} className={cn('', className)} {...props} />
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('flex flex-col gap-5', className)} {...props} />
+  )
 );
 
 CardContent.displayName = 'CardContent';
@@ -77,7 +82,7 @@ export type CardFooterProps = React.HTMLAttributes<HTMLDivElement>;
 
 export const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('mt-4 flex items-center', className)} {...props} />
+    <div ref={ref} className={cn('mt-6 flex flex-col gap-2', className)} {...props} />
   )
 );
 

@@ -1,5 +1,5 @@
 {
-  "baseLocale": "de",
+  "baseLocale": "en",
   "adapter": "react",
   "outputPath": "./src/i18n/",
   "outputFormat": "TypeScript",

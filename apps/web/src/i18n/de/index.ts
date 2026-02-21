@@ -1,4 +1,4 @@
-import type { BaseTranslation } from '../i18n-types';
+import type { Translation } from '../i18n-types';
 
 const de = {
   // ── Common ────────────────────────────────────────────────────────────────
@@ -143,19 +143,19 @@ const de = {
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
   dashboard: {
-    memberCount: '{count:number} Mitglieder',
-    greeting: 'Guten Morgen, {name:string}! 👋',
+    memberCount: '{count} Mitglieder',
+    greeting: 'Guten Morgen, {name}! 👋',
     todayIntro: 'Heute: ',
     openLabel: 'offen',
     nextEvent: 'Nächster Termin',
     moreEvents: 'Weitere Termine',
-    progressText: '{done:number} von {total:number} erledigt',
+    progressText: '{done} von {total} erledigt',
     addTask: 'Aufgabe hinzufügen',
     quickAdd: {
       title: 'Schnell hinzufügen',
       placeholder: 'Was steht als nächstes an?',
     },
   },
-} satisfies BaseTranslation;
+} satisfies Translation;
 
 export default de;

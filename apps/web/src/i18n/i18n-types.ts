@@ -7,9 +7,9 @@ import type {
 } from 'typesafe-i18n';
 
 export type BaseTranslation = BaseTranslationType;
-export type BaseLocale = 'de';
+export type BaseLocale = 'en';
 
-export type Locales = 'de' | 'en';
+export type Locales = 'de' | 'de-AT' | 'en';
 
 export type Translation = RootTranslation;
 

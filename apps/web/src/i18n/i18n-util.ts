@@ -12,9 +12,9 @@ import { detectLocale as detectLocaleFn } from 'typesafe-i18n/detectors';
 import { initExtendDictionary } from 'typesafe-i18n/utils';
 import type { Formatters, Locales, Translations, TranslationFunctions } from './i18n-types';
 
-export const baseLocale: Locales = 'de';
+export const baseLocale: Locales = 'en';
 
-export const locales: Locales[] = ['de', 'en'];
+export const locales: Locales[] = ['de', 'de-AT', 'en'];
 
 export const isLocale = (locale: string): locale is Locales => locales.includes(locale as Locales);
 

@@ -7,6 +7,7 @@ import { loadedFormatters, loadedLocales, locales } from './i18n-util';
 
 const localeTranslationLoaders = {
   de: () => import('./de'),
+  'de-AT': () => import('./de-AT'),
   en: () => import('./en'),
 };
 

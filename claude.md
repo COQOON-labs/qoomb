@@ -151,16 +151,18 @@ qoomb/
 │   │       ├── lib/
 │   │       │   ├── auth/           # AuthContext, tokenStore, authStorage
 │   │       │   └── trpc/           # tRPC client (splitLink, CSRF, Bearer)
-│   │       ├── hooks/              # App-specific hooks
+│   │       ├── hooks/              # App-specific hooks (useCurrentPerson — ADR-0003)
 │   │       └── styles/             # Tailwind v4 theme + CSS custom properties
 │   │
 │   └── mobile/                 # Capacitor mobile wrapper
 │       └── capacitor.config.ts     # iOS/Android configuration (dirs generated on demand)
 │
 ├── packages/
-│   ├── types/                  # Shared TypeScript types
+│   ├── types/                  # Shared TypeScript types + domain utilities
 │   │   └── src/
 │   │       ├── entities/           # Hive, Person, Event, Task, common types
+│   │       │   ├── person.ts       # PersonRole enum, Person interface
+│   │       │   └── person.utils.ts # Domain utils: getInitials(), ROLE_I18N_KEYS (ADR-0002)
 │   │       ├── permissions.ts      # HivePermission enum + role mappings
 │   │       ├── api/                # [TODO] API response types (empty)
 │   │       └── sync/               # [Phase 4] Sync types (empty)
@@ -175,6 +177,12 @@ qoomb/
 │   └── config/                 # Shared tsconfig
 │
 ├── docs/                       # Documentation for humans
+│   ├── adr/                        # Architecture Decision Records (MADR)
+│   │   ├── 0001-adr-process.md     # ADR process and format
+│   │   ├── 0002-shared-domain-utilities.md  # Domain-driven code structure (ADR-0002)
+│   │   ├── 0003-presentation-hooks-pattern.md # Presentation hooks (useCurrentPerson)
+│   │   ├── 0004-cloud-agnostic-architecture.md # Cloud-agnostic stack (ADR-0004)
+│   │   └── 0005-hybrid-encryption-architecture.md # Encryption architecture (ADR-0005)
 │   ├── CONTENT_ARCHITECTURE.md     # Content model, schema, encryption
 │   ├── DESIGN_SYSTEM.md            # Tailwind v4 design tokens
 │   ├── LOCAL_DEVELOPMENT.md        # qoomb.localhost + Caddy setup
@@ -1023,8 +1031,8 @@ Encrypted Data (IV + AuthTag + Ciphertext)
 
 ### Key Provider Strategy
 
-| Provider        | Production Use            | Why                             |
-| --------------- | ------------------------- | ------------------------------- |
+| Provider        | Production Use           | Why                             |
+| --------------- | ------------------------ | ------------------------------- |
 | **Environment** | ✅ Most deployments       | Simple, Docker-friendly         |
 | **File**        | ✅ Advanced self-hosting  | Key rotation, separate from env |
 | **AWS KMS**     | ✅ Enterprise AWS         | Compliance, auto-rotation       |
@@ -1232,6 +1240,12 @@ JWT_SECRET=<32+ chars>    # Generate: openssl rand -base64 32
 README.md              → Human onboarding
 claude.md              → This file (AI context)
 docs/
+  ├── adr/                        → Architecture Decision Records (MADR)
+  │   ├── 0001-adr-process.md     → ADR format and process
+  │   ├── 0002-shared-domain-utilities.md → Domain-driven code structure
+  │   ├── 0003-presentation-hooks-pattern.md → Presentation hooks
+  │   ├── 0004-cloud-agnostic-architecture.md → Cloud-agnostic stack
+  │   └── 0005-hybrid-encryption-architecture.md → Encryption architecture
   ├── CONTENT_ARCHITECTURE.md → Content model, schema, encryption
   ├── DESIGN_SYSTEM.md       → Tailwind v4 design tokens
   ├── LOCAL_DEVELOPMENT.md   → qoomb.localhost + Caddy setup

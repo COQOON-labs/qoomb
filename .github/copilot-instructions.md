@@ -39,6 +39,36 @@ ORM, PostgreSQL with Row-Level Security, Redis, and `typesafe-i18n` for both bac
 - Use `sanitizeHtml()` from `@qoomb/validators` — do not roll your own HTML sanitizer
 - No default values for security-critical env vars (`KEY_PROVIDER`, `ENCRYPTION_KEY`, etc.)
 
+### Domain-Driven Code Structure (ADR-0002)
+
+- **Types layer** (`PersonRole`, `Person`, …) → `packages/types/src/entities/<entity>.ts` — zero runtime code
+- **Domain utils** (`getInitials`, `ROLE_I18N_KEYS`, `hasPermission`, …) → `<entity>.utils.ts` and `permissions.ts`
+- Domain utils must be **pure functions**, **framework-agnostic** (no React/NestJS imports)
+- Application layer (hooks, guards, handlers) imports domain — **never** the reverse
+- Both types and utils are available as `import { ... } from '@qoomb/types'`
+
+### Presentation Hooks (ADR-0003)
+
+- Use `useCurrentPerson()` from `apps/web/src/hooks/` for person display data
+- Hooks encapsulate tRPC query + context + memoised derived values
+- Pattern: `use<Entity>()` → returns typed interface with `isLoading`
+
+### Cloud-Agnostic Architecture (ADR-0004)
+
+- **No cloud-provider-specific imports** in application code — use pluggable interfaces
+- Every technology in the stack must be **open-source and self-hostable**
+- `docker-compose up` must be sufficient for full local development — no cloud credentials required
+- Deployment differences are expressed through **environment variables**, not code branches
+
+### Hybrid Encryption (ADR-0005)
+
+- Use **`@EncryptFields(['field'])`** to encrypt INPUT args before they are persisted
+- Use **`@DecryptFields(['field'])`** to decrypt RETURN VALUES after they are loaded
+- Per-hive keys via HKDF — compromise of one hive does not affect others
+- Per-user keys for global PII (email, full name) — independent from hive context
+- Pluggable key providers: Environment, File, Cloud KMS, Vault — **no default** (fail-safe)
+- Email stored as encrypted ciphertext + HMAC-SHA256 blind index — **zero plaintext email in DB**
+
 ---
 
 ## i18n (Frontend)
@@ -178,3 +208,4 @@ const handleSubmit = useCallback(
 | `claude.md`                       | AI assistants (full technical context)                     |
 | `.github/copilot-instructions.md` | This file — GitHub Copilot quick reference                 |
 | `docs/`                           | Deep-dive docs (permissions, security, prisma patterns, …) |
+| `docs/adr/`                       | Architecture Decision Records (MADR format)                |

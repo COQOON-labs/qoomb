@@ -22,35 +22,35 @@ type RootTranslation = {
      */
     brand: string;
     /**
-     * D​e​i​n​ ​H​i​v​e​,​ ​o​r​g​a​n​i​s​i​e​r​t
+     * Y​o​u​r​ ​h​i​v​e​,​ ​o​r​g​a​n​i​s​e​d
      */
     tagline: string;
     /**
-     * L​a​d​e​n​.​.​.
+     * L​o​a​d​i​n​g​.​.​.
      */
     loading: string;
     /**
-     * S​p​e​i​c​h​e​r​n
+     * S​a​v​e
      */
     save: string;
     /**
-     * S​p​e​i​c​h​e​r​n​.​.​.
+     * S​a​v​i​n​g​.​.​.
      */
     saving: string;
     /**
-     * A​b​b​r​e​c​h​e​n
+     * C​a​n​c​e​l
      */
     cancel: string;
     /**
-     * H​i​n​z​u​f​ü​g​e​n
+     * A​d​d
      */
     add: string;
     /**
-     * E​n​t​f​e​r​n​e​n
+     * R​e​m​o​v​e
      */
     remove: string;
     /**
-     * Z​u​r​ü​c​k
+     * B​a​c​k
      */
     back: string;
     /**
@@ -58,85 +58,85 @@ type RootTranslation = {
      */
     details: string;
     /**
-     * A​l​l​e​ ​a​n​z​e​i​g​e​n
+     * S​h​o​w​ ​a​l​l
      */
     showAll: string;
     /**
-     * o​d​e​r
+     * o​r
      */
     or: string;
     /**
-     * E​-​M​a​i​l
+     * E​m​a​i​l
      */
     emailLabel: string;
     /**
-     * P​a​s​s​w​o​r​t
+     * P​a​s​s​w​o​r​d
      */
     passwordLabel: string;
     /**
-     * M​i​n​.​ ​8​ ​Z​e​i​c​h​e​n​ ​m​i​t​ ​G​r​o​ß​b​u​c​h​s​t​a​b​e​,​ ​Z​a​h​l​ ​u​n​d​ ​S​o​n​d​e​r​z​e​i​c​h​e​n
+     * M​i​n​.​ ​8​ ​c​h​a​r​a​c​t​e​r​s​ ​w​i​t​h​ ​u​p​p​e​r​c​a​s​e​,​ ​n​u​m​b​e​r​ ​a​n​d​ ​s​p​e​c​i​a​l​ ​c​h​a​r​a​c​t​e​r
      */
     passwordHint: string;
     /**
-     * E​r​s​t​e​l​l​e​n
+     * C​r​e​a​t​e
      */
     create: string;
     /**
-     * E​i​n​l​a​d​e​n
+     * I​n​v​i​t​e
      */
     invite: string;
   };
   nav: {
     /**
-     * Ü​b​e​r​s​i​c​h​t
+     * O​v​e​r​v​i​e​w
      */
     overview: string;
     /**
-     * K​a​l​e​n​d​e​r
+     * C​a​l​e​n​d​a​r
      */
     calendar: string;
     /**
-     * A​u​f​g​a​b​e​n
+     * T​a​s​k​s
      */
     tasks: string;
     /**
-     * M​i​t​g​l​i​e​d​e​r
+     * M​e​m​b​e​r​s
      */
     members: string;
     /**
-     * S​e​i​t​e​n
+     * P​a​g​e​s
      */
     pages: string;
     /**
-     * E​i​n​s​t​e​l​l​u​n​g​e​n
+     * S​e​t​t​i​n​g​s
      */
     settings: string;
   };
   entities: {
     /**
-     * T​e​r​m​i​n
+     * E​v​e​n​t
      */
     event: string;
     /**
-     * A​u​f​g​a​b​e
+     * T​a​s​k
      */
     task: string;
     /**
-     * S​e​i​t​e
+     * P​a​g​e
      */
     page: string;
   };
   roles: {
     /**
-     * E​l​t​e​r​n​t​e​i​l
+     * P​a​r​e​n​t
      */
     parent: string;
     /**
-     * K​i​n​d
+     * C​h​i​l​d
      */
     child: string;
     /**
-     * G​a​s​t
+     * G​u​e​s​t
      */
     guest: string;
     /**
@@ -148,172 +148,172 @@ type RootTranslation = {
      */
     manager: string;
     /**
-     * M​i​t​g​l​i​e​d
+     * M​e​m​b​e​r
      */
     member: string;
   };
   auth: {
     /**
-     * A​n​m​e​l​d​e​n
+     * S​i​g​n​ ​i​n
      */
     signIn: string;
     /**
-     * Z​u​r​ü​c​k​ ​z​u​r​ ​A​n​m​e​l​d​u​n​g
+     * B​a​c​k​ ​t​o​ ​s​i​g​n​ ​i​n
      */
     backToSignIn: string;
     login: {
       /**
-       * W​i​l​l​k​o​m​m​e​n​ ​z​u​r​ü​c​k
+       * W​e​l​c​o​m​e​ ​b​a​c​k
        */
       title: string;
       /**
-       * M​e​l​d​e​ ​d​i​c​h​ ​i​n​ ​d​e​i​n​e​m​ ​H​i​v​e​ ​a​n
+       * S​i​g​n​ ​i​n​ ​t​o​ ​y​o​u​r​ ​h​i​v​e
        */
       subtitle: string;
       /**
-       * P​a​s​s​w​o​r​t​ ​v​e​r​g​e​s​s​e​n​?
+       * F​o​r​g​o​t​ ​p​a​s​s​w​o​r​d​?
        */
       forgotPassword: string;
       /**
-       * N​o​c​h​ ​k​e​i​n​ ​K​o​n​t​o​?
+       * N​o​ ​a​c​c​o​u​n​t​?
        */
       noAccount: string;
       /**
-       * J​e​t​z​t​ ​e​r​s​t​e​l​l​e​n
+       * C​r​e​a​t​e​ ​o​n​e
        */
       createOne: string;
     };
     register: {
       /**
-       * E​r​s​t​e​l​l​e​ ​d​e​i​n​e​n​ ​H​i​v​e
+       * C​r​e​a​t​e​ ​y​o​u​r​ ​h​i​v​e
        */
       title: string;
       /**
-       * E​i​n​l​a​d​u​n​g​ ​a​n​n​e​h​m​e​n
+       * A​c​c​e​p​t​ ​i​n​v​i​t​a​t​i​o​n
        */
       titleInvite: string;
       /**
-       * R​i​c​h​t​e​ ​d​e​i​n​ ​K​o​n​t​o​ ​e​i​n​,​ ​u​m​ ​d​e​m​ ​H​i​v​e​ ​b​e​i​z​u​t​r​e​t​e​n
+       * S​e​t​ ​u​p​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​j​o​i​n​ ​t​h​e​ ​h​i​v​e
        */
       subtitleInvite: string;
       /**
-       * O​r​g​a​n​i​s​i​e​r​e​ ​d​e​i​n​e​ ​F​a​m​i​l​i​e​ ​o​d​e​r​ ​d​e​i​n​ ​T​e​a​m
+       * S​t​a​r​t​ ​o​r​g​a​n​i​s​i​n​g​ ​y​o​u​r​ ​f​a​m​i​l​y​ ​o​r​ ​t​e​a​m
        */
       subtitle: string;
       /**
-       * D​e​i​n​ ​N​a​m​e
+       * Y​o​u​r​ ​n​a​m​e
        */
       nameLabel: string;
       /**
-       * H​i​v​e​-​N​a​m​e
+       * H​i​v​e​ ​n​a​m​e
        */
       hiveNameLabel: string;
       /**
-       * z​.​B​.​ ​F​a​m​i​l​i​e​ ​M​ü​l​l​e​r
+       * e​.​g​.​ ​D​o​e​ ​F​a​m​i​l​y
        */
       hiveNamePlaceholder: string;
       /**
-       * H​i​v​e​-​T​y​p
+       * H​i​v​e​ ​t​y​p​e
        */
       hiveTypeLabel: string;
       /**
-       * H​i​v​e​ ​b​e​i​t​r​e​t​e​n
+       * J​o​i​n​ ​h​i​v​e
        */
       joinHive: string;
       /**
-       * H​i​v​e​ ​e​r​s​t​e​l​l​e​n
+       * C​r​e​a​t​e​ ​h​i​v​e
        */
       createHive: string;
       /**
-       * D​u​ ​h​a​s​t​ ​b​e​r​e​i​t​s​ ​e​i​n​ ​K​o​n​t​o​?
+       * A​l​r​e​a​d​y​ ​h​a​v​e​ ​a​n​ ​a​c​c​o​u​n​t​?
        */
       alreadyHaveAccount: string;
     };
     forgotPassword: {
       /**
-       * P​a​s​s​w​o​r​t​ ​v​e​r​g​e​s​s​e​n
+       * F​o​r​g​o​t​ ​p​a​s​s​w​o​r​d
        */
       title: string;
       /**
-       * G​i​b​ ​d​e​i​n​e​ ​E​-​M​a​i​l​ ​e​i​n​ ​u​n​d​ ​w​i​r​ ​s​e​n​d​e​n​ ​d​i​r​ ​e​i​n​e​n​ ​L​i​n​k​ ​z​u​m​ ​Z​u​r​ü​c​k​s​e​t​z​e​n
+       * E​n​t​e​r​ ​y​o​u​r​ ​e​m​a​i​l​ ​a​n​d​ ​w​e​'​l​l​ ​s​e​n​d​ ​y​o​u​ ​a​ ​r​e​s​e​t​ ​l​i​n​k
        */
       subtitle: string;
       /**
-       * L​i​n​k​ ​s​e​n​d​e​n
+       * S​e​n​d​ ​r​e​s​e​t​ ​l​i​n​k
        */
       sendResetLink: string;
       /**
-       * E​-​M​a​i​l​ ​p​r​ü​f​e​n
+       * C​h​e​c​k​ ​y​o​u​r​ ​e​m​a​i​l
        */
       successTitle: string;
       /**
-       * F​a​l​l​s​ ​e​i​n​ ​K​o​n​t​o​ ​m​i​t​ ​d​i​e​s​e​r​ ​A​d​r​e​s​s​e​ ​e​x​i​s​t​i​e​r​t​,​ ​h​a​b​e​n​ ​w​i​r​ ​e​i​n​e​n​ ​L​i​n​k​ ​z​u​m​ ​Z​u​r​ü​c​k​s​e​t​z​e​n​ ​g​e​s​e​n​d​e​t​.​ ​E​r​ ​i​s​t​ ​1​ ​S​t​u​n​d​e​ ​g​ü​l​t​i​g​.
+       * I​f​ ​a​n​ ​a​c​c​o​u​n​t​ ​e​x​i​s​t​s​ ​f​o​r​ ​t​h​a​t​ ​a​d​d​r​e​s​s​,​ ​w​e​ ​s​e​n​t​ ​a​ ​r​e​s​e​t​ ​l​i​n​k​.​ ​I​t​ ​e​x​p​i​r​e​s​ ​i​n​ ​1​ ​h​o​u​r​.
        */
       successSubtitle: string;
     };
     resetPassword: {
       /**
-       * P​a​s​s​w​o​r​t​ ​z​u​r​ü​c​k​s​e​t​z​e​n
+       * R​e​s​e​t​ ​p​a​s​s​w​o​r​d
        */
       title: string;
       /**
-       * W​ä​h​l​e​ ​e​i​n​ ​n​e​u​e​s​ ​P​a​s​s​w​o​r​t​ ​f​ü​r​ ​d​e​i​n​ ​K​o​n​t​o
+       * C​h​o​o​s​e​ ​a​ ​n​e​w​ ​p​a​s​s​w​o​r​d​ ​f​o​r​ ​y​o​u​r​ ​a​c​c​o​u​n​t
        */
       subtitle: string;
       /**
-       * N​e​u​e​s​ ​P​a​s​s​w​o​r​t
+       * N​e​w​ ​p​a​s​s​w​o​r​d
        */
       newPasswordLabel: string;
       /**
-       * P​a​s​s​w​o​r​t​ ​b​e​s​t​ä​t​i​g​e​n
+       * C​o​n​f​i​r​m​ ​p​a​s​s​w​o​r​d
        */
       confirmPasswordLabel: string;
       /**
-       * P​a​s​s​w​ö​r​t​e​r​ ​s​t​i​m​m​e​n​ ​n​i​c​h​t​ ​ü​b​e​r​e​i​n​.
+       * P​a​s​s​w​o​r​d​s​ ​d​o​ ​n​o​t​ ​m​a​t​c​h​.
        */
       passwordMismatch: string;
       /**
-       * N​e​u​e​s​ ​P​a​s​s​w​o​r​t​ ​s​e​t​z​e​n
+       * S​e​t​ ​n​e​w​ ​p​a​s​s​w​o​r​d
        */
       setNewPassword: string;
     };
     verifyEmail: {
       /**
-       * E​-​M​a​i​l​ ​w​i​r​d​ ​v​e​r​i​f​i​z​i​e​r​t​…
+       * V​e​r​i​f​y​i​n​g​ ​y​o​u​r​ ​e​m​a​i​l​…
        */
       loadingTitle: string;
       /**
-       * E​-​M​a​i​l​ ​b​e​s​t​ä​t​i​g​t
+       * E​m​a​i​l​ ​v​e​r​i​f​i​e​d
        */
       successTitle: string;
       /**
-       * D​e​i​n​e​ ​E​-​M​a​i​l​-​A​d​r​e​s​s​e​ ​w​u​r​d​e​ ​b​e​s​t​ä​t​i​g​t​.​ ​D​u​ ​k​a​n​n​s​t​ ​j​e​t​z​t​ ​a​l​l​e​ ​F​u​n​k​t​i​o​n​e​n​ ​n​u​t​z​e​n​.
+       * Y​o​u​r​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s​ ​h​a​s​ ​b​e​e​n​ ​c​o​n​f​i​r​m​e​d​.​ ​Y​o​u​ ​c​a​n​ ​n​o​w​ ​u​s​e​ ​a​l​l​ ​f​e​a​t​u​r​e​s​.
        */
       successSubtitle: string;
       /**
-       * Z​u​m​ ​D​a​s​h​b​o​a​r​d
+       * G​o​ ​t​o​ ​d​a​s​h​b​o​a​r​d
        */
       goToDashboard: string;
       /**
-       * V​e​r​i​f​i​z​i​e​r​u​n​g​ ​f​e​h​l​g​e​s​c​h​l​a​g​e​n
+       * V​e​r​i​f​i​c​a​t​i​o​n​ ​f​a​i​l​e​d
        */
       failedTitle: string;
       /**
-       * D​i​e​s​e​r​ ​L​i​n​k​ ​i​s​t​ ​u​n​g​ü​l​t​i​g​ ​o​d​e​r​ ​a​b​g​e​l​a​u​f​e​n​.
+       * T​h​i​s​ ​l​i​n​k​ ​i​s​ ​i​n​v​a​l​i​d​ ​o​r​ ​h​a​s​ ​e​x​p​i​r​e​d​.
        */
       failedSubtitle: string;
     };
     passKey: {
       /**
-       * M​i​t​ ​P​a​s​s​K​e​y​ ​a​n​m​e​l​d​e​n
+       * S​i​g​n​ ​i​n​ ​w​i​t​h​ ​P​a​s​s​K​e​y
        */
       signInWithPassKey: string;
       /**
-       * P​a​s​s​K​e​y​-​A​u​t​h​e​n​t​i​f​i​z​i​e​r​u​n​g​ ​f​e​h​l​g​e​s​c​h​l​a​g​e​n
+       * P​a​s​s​K​e​y​ ​a​u​t​h​e​n​t​i​c​a​t​i​o​n​ ​f​a​i​l​e​d
        */
       authFailed: string;
       /**
-       * R​e​g​i​s​t​r​i​e​r​u​n​g​ ​f​e​h​l​g​e​s​c​h​l​a​g​e​n
+       * R​e​g​i​s​t​r​a​t​i​o​n​ ​f​a​i​l​e​d
        */
       registrationFailed: string;
       /**
@@ -321,19 +321,19 @@ type RootTranslation = {
        */
       sectionTitle: string;
       /**
-       * P​a​s​s​K​e​y​ ​h​i​n​z​u​f​ü​g​e​n
+       * A​d​d​ ​P​a​s​s​K​e​y
        */
       addPassKey: string;
       /**
-       * G​e​r​ä​t​e​n​a​m​e​ ​(​o​p​t​i​o​n​a​l​)
+       * D​e​v​i​c​e​ ​n​a​m​e​ ​(​o​p​t​i​o​n​a​l​)
        */
       deviceNamePlaceholder: string;
       /**
-       * P​a​s​s​K​e​y​ ​r​e​g​i​s​t​r​i​e​r​e​n
+       * R​e​g​i​s​t​e​r​ ​P​a​s​s​K​e​y
        */
       registerPassKey: string;
       /**
-       * N​o​c​h​ ​k​e​i​n​e​ ​P​a​s​s​K​e​y​s​ ​r​e​g​i​s​t​r​i​e​r​t​.
+       * N​o​ ​P​a​s​s​K​e​y​s​ ​r​e​g​i​s​t​e​r​e​d​ ​y​e​t​.
        */
       noPassKeysYet: string;
       /**
@@ -341,15 +341,15 @@ type RootTranslation = {
        */
       defaultName: string;
       /**
-       * H​i​n​z​u​g​e​f​ü​g​t
+       * A​d​d​e​d
        */
       added: string;
       /**
-       * Z​u​l​e​t​z​t​ ​v​e​r​w​e​n​d​e​t
+       * L​a​s​t​ ​u​s​e​d
        */
       lastUsed: string;
       /**
-       * N​i​e
+       * N​e​v​e​r
        */
       never: string;
     };
@@ -357,109 +357,157 @@ type RootTranslation = {
   layout: {
     emailVerification: {
       /**
-       * B​i​t​t​e​ ​b​e​s​t​ä​t​i​g​e​ ​d​e​i​n​e​ ​E​-​M​a​i​l​-​A​d​r​e​s​s​e​,​ ​u​m​ ​a​l​l​e​ ​F​u​n​k​t​i​o​n​e​n​ ​f​r​e​i​z​u​s​c​h​a​l​t​e​n​.
+       * P​l​e​a​s​e​ ​v​e​r​i​f​y​ ​y​o​u​r​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s​ ​t​o​ ​u​n​l​o​c​k​ ​a​l​l​ ​f​e​a​t​u​r​e​s​.
        */
       message: string;
       /**
-       * E​-​M​a​i​l​ ​g​e​s​e​n​d​e​t​ ​✓
+       * E​m​a​i​l​ ​s​e​n​t​ ​✓
        */
       sent: string;
       /**
-       * E​r​n​e​u​t​ ​s​e​n​d​e​n
+       * R​e​s​e​n​d
        */
       resend: string;
       /**
-       * S​c​h​l​i​e​ß​e​n
+       * D​i​s​m​i​s​s
        */
       dismiss: string;
     };
     hiveSwitcher: {
       /**
-       * H​i​v​e​ ​a​u​s​w​ä​h​l​e​n
+       * S​e​l​e​c​t​ ​h​i​v​e
        */
       selectHive: string;
     };
     userMenu: {
       /**
-       * P​r​o​f​i​l
+       * P​r​o​f​i​l​e
        */
       profile: string;
       /**
-       * A​b​m​e​l​d​e​n
+       * S​i​g​n​ ​o​u​t
        */
       logout: string;
     };
   };
   profile: {
     /**
-     * P​r​o​f​i​l
+     * P​r​o​f​i​l​e
      */
     title: string;
     /**
-     * A​n​z​e​i​g​e​n​a​m​e
+     * D​i​s​p​l​a​y​ ​n​a​m​e
      */
     displayNameLabel: string;
     /**
-     * D​e​i​n​ ​N​a​m​e
+     * Y​o​u​r​ ​n​a​m​e
      */
     displayNamePlaceholder: string;
     /**
-     * G​e​b​u​r​t​s​t​a​g
+     * E​m​a​i​l
+     */
+    emailLabel: string;
+    /**
+     * R​o​l​e
+     */
+    roleLabel: string;
+    /**
+     * B​i​r​t​h​d​a​y
      */
     birthdayLabel: string;
     /**
-     * P​r​o​f​i​l​ ​g​e​s​p​e​i​c​h​e​r​t​!
+     * P​r​o​f​i​l​e​ ​s​a​v​e​d​!
      */
     saved: string;
     /**
-     * F​e​h​l​e​r​ ​b​e​i​m​ ​S​p​e​i​c​h​e​r​n​.​ ​B​i​t​t​e​ ​e​r​n​e​u​t​ ​v​e​r​s​u​c​h​e​n​.
+     * F​a​i​l​e​d​ ​t​o​ ​s​a​v​e​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
      */
     saveError: string;
+    language: {
+      /**
+       * L​a​n​g​u​a​g​e
+       */
+      title: string;
+      /**
+       * C​h​o​o​s​e​ ​t​h​e​ ​l​a​n​g​u​a​g​e​ ​f​o​r​ ​t​h​e​ ​i​n​t​e​r​f​a​c​e
+       */
+      description: string;
+      /**
+       * L​a​n​g​u​a​g​e​ ​u​p​d​a​t​e​d​!
+       */
+      saved: string;
+      /**
+       * F​a​i​l​e​d​ ​t​o​ ​u​p​d​a​t​e​ ​l​a​n​g​u​a​g​e​.
+       */
+      saveError: string;
+      /**
+       * D​e​u​t​s​c​h
+       */
+      de: string;
+      /**
+       * D​e​u​t​s​c​h​ ​(​Ö​s​t​e​r​r​e​i​c​h​)
+       */
+      deAT: string;
+      /**
+       * E​n​g​l​i​s​h
+       */
+      en: string;
+    };
+    security: {
+      /**
+       * S​e​c​u​r​i​t​y
+       */
+      title: string;
+      /**
+       * M​a​n​a​g​e​ ​y​o​u​r​ ​P​a​s​s​K​e​y​s​ ​a​n​d​ ​l​o​g​i​n​ ​m​e​t​h​o​d​s
+       */
+      description: string;
+    };
   };
   dashboard: {
     /**
-     * {​c​o​u​n​t​}​ ​M​i​t​g​l​i​e​d​e​r
+     * {​c​o​u​n​t​}​ ​m​e​m​b​e​r​s
      * @param {number} count
      */
     memberCount: RequiredParams<'count'>;
     /**
-     * G​u​t​e​n​ ​M​o​r​g​e​n​,​ ​{​n​a​m​e​}​!​ ​�​�
+     * G​o​o​d​ ​m​o​r​n​i​n​g​,​ ​{​n​a​m​e​}​!​ ​�​�
      * @param {string} name
      */
     greeting: RequiredParams<'name'>;
     /**
-     * H​e​u​t​e​:​
+     * T​o​d​a​y​:​
      */
     todayIntro: string;
     /**
-     * o​f​f​e​n
+     * o​p​e​n
      */
     openLabel: string;
     /**
-     * N​ä​c​h​s​t​e​r​ ​T​e​r​m​i​n
+     * N​e​x​t​ ​e​v​e​n​t
      */
     nextEvent: string;
     /**
-     * W​e​i​t​e​r​e​ ​T​e​r​m​i​n​e
+     * M​o​r​e​ ​e​v​e​n​t​s
      */
     moreEvents: string;
     /**
-     * {​d​o​n​e​}​ ​v​o​n​ ​{​t​o​t​a​l​}​ ​e​r​l​e​d​i​g​t
+     * {​d​o​n​e​}​ ​o​f​ ​{​t​o​t​a​l​}​ ​c​o​m​p​l​e​t​e​d
      * @param {number} done
      * @param {number} total
      */
     progressText: RequiredParams<'done' | 'total'>;
     /**
-     * A​u​f​g​a​b​e​ ​h​i​n​z​u​f​ü​g​e​n
+     * A​d​d​ ​t​a​s​k
      */
     addTask: string;
     quickAdd: {
       /**
-       * S​c​h​n​e​l​l​ ​h​i​n​z​u​f​ü​g​e​n
+       * Q​u​i​c​k​ ​a​d​d
        */
       title: string;
       /**
-       * W​a​s​ ​s​t​e​h​t​ ​a​l​s​ ​n​ä​c​h​s​t​e​s​ ​a​n​?
+       * W​h​a​t​'​s​ ​c​o​m​i​n​g​ ​u​p​ ​n​e​x​t​?
        */
       placeholder: string;
     };
@@ -473,35 +521,35 @@ export type TranslationFunctions = {
      */
     brand: () => LocalizedString;
     /**
-     * Dein Hive, organisiert
+     * Your hive, organised
      */
     tagline: () => LocalizedString;
     /**
-     * Laden...
+     * Loading...
      */
     loading: () => LocalizedString;
     /**
-     * Speichern
+     * Save
      */
     save: () => LocalizedString;
     /**
-     * Speichern...
+     * Saving...
      */
     saving: () => LocalizedString;
     /**
-     * Abbrechen
+     * Cancel
      */
     cancel: () => LocalizedString;
     /**
-     * Hinzufügen
+     * Add
      */
     add: () => LocalizedString;
     /**
-     * Entfernen
+     * Remove
      */
     remove: () => LocalizedString;
     /**
-     * Zurück
+     * Back
      */
     back: () => LocalizedString;
     /**
@@ -509,85 +557,85 @@ export type TranslationFunctions = {
      */
     details: () => LocalizedString;
     /**
-     * Alle anzeigen
+     * Show all
      */
     showAll: () => LocalizedString;
     /**
-     * oder
+     * or
      */
     or: () => LocalizedString;
     /**
-     * E-Mail
+     * Email
      */
     emailLabel: () => LocalizedString;
     /**
-     * Passwort
+     * Password
      */
     passwordLabel: () => LocalizedString;
     /**
-     * Min. 8 Zeichen mit Großbuchstabe, Zahl und Sonderzeichen
+     * Min. 8 characters with uppercase, number and special character
      */
     passwordHint: () => LocalizedString;
     /**
-     * Erstellen
+     * Create
      */
     create: () => LocalizedString;
     /**
-     * Einladen
+     * Invite
      */
     invite: () => LocalizedString;
   };
   nav: {
     /**
-     * Übersicht
+     * Overview
      */
     overview: () => LocalizedString;
     /**
-     * Kalender
+     * Calendar
      */
     calendar: () => LocalizedString;
     /**
-     * Aufgaben
+     * Tasks
      */
     tasks: () => LocalizedString;
     /**
-     * Mitglieder
+     * Members
      */
     members: () => LocalizedString;
     /**
-     * Seiten
+     * Pages
      */
     pages: () => LocalizedString;
     /**
-     * Einstellungen
+     * Settings
      */
     settings: () => LocalizedString;
   };
   entities: {
     /**
-     * Termin
+     * Event
      */
     event: () => LocalizedString;
     /**
-     * Aufgabe
+     * Task
      */
     task: () => LocalizedString;
     /**
-     * Seite
+     * Page
      */
     page: () => LocalizedString;
   };
   roles: {
     /**
-     * Elternteil
+     * Parent
      */
     parent: () => LocalizedString;
     /**
-     * Kind
+     * Child
      */
     child: () => LocalizedString;
     /**
-     * Gast
+     * Guest
      */
     guest: () => LocalizedString;
     /**
@@ -599,172 +647,172 @@ export type TranslationFunctions = {
      */
     manager: () => LocalizedString;
     /**
-     * Mitglied
+     * Member
      */
     member: () => LocalizedString;
   };
   auth: {
     /**
-     * Anmelden
+     * Sign in
      */
     signIn: () => LocalizedString;
     /**
-     * Zurück zur Anmeldung
+     * Back to sign in
      */
     backToSignIn: () => LocalizedString;
     login: {
       /**
-       * Willkommen zurück
+       * Welcome back
        */
       title: () => LocalizedString;
       /**
-       * Melde dich in deinem Hive an
+       * Sign in to your hive
        */
       subtitle: () => LocalizedString;
       /**
-       * Passwort vergessen?
+       * Forgot password?
        */
       forgotPassword: () => LocalizedString;
       /**
-       * Noch kein Konto?
+       * No account?
        */
       noAccount: () => LocalizedString;
       /**
-       * Jetzt erstellen
+       * Create one
        */
       createOne: () => LocalizedString;
     };
     register: {
       /**
-       * Erstelle deinen Hive
+       * Create your hive
        */
       title: () => LocalizedString;
       /**
-       * Einladung annehmen
+       * Accept invitation
        */
       titleInvite: () => LocalizedString;
       /**
-       * Richte dein Konto ein, um dem Hive beizutreten
+       * Set up your account to join the hive
        */
       subtitleInvite: () => LocalizedString;
       /**
-       * Organisiere deine Familie oder dein Team
+       * Start organising your family or team
        */
       subtitle: () => LocalizedString;
       /**
-       * Dein Name
+       * Your name
        */
       nameLabel: () => LocalizedString;
       /**
-       * Hive-Name
+       * Hive name
        */
       hiveNameLabel: () => LocalizedString;
       /**
-       * z.B. Familie Müller
+       * e.g. Doe Family
        */
       hiveNamePlaceholder: () => LocalizedString;
       /**
-       * Hive-Typ
+       * Hive type
        */
       hiveTypeLabel: () => LocalizedString;
       /**
-       * Hive beitreten
+       * Join hive
        */
       joinHive: () => LocalizedString;
       /**
-       * Hive erstellen
+       * Create hive
        */
       createHive: () => LocalizedString;
       /**
-       * Du hast bereits ein Konto?
+       * Already have an account?
        */
       alreadyHaveAccount: () => LocalizedString;
     };
     forgotPassword: {
       /**
-       * Passwort vergessen
+       * Forgot password
        */
       title: () => LocalizedString;
       /**
-       * Gib deine E-Mail ein und wir senden dir einen Link zum Zurücksetzen
+       * Enter your email and we'll send you a reset link
        */
       subtitle: () => LocalizedString;
       /**
-       * Link senden
+       * Send reset link
        */
       sendResetLink: () => LocalizedString;
       /**
-       * E-Mail prüfen
+       * Check your email
        */
       successTitle: () => LocalizedString;
       /**
-       * Falls ein Konto mit dieser Adresse existiert, haben wir einen Link zum Zurücksetzen gesendet. Er ist 1 Stunde gültig.
+       * If an account exists for that address, we sent a reset link. It expires in 1 hour.
        */
       successSubtitle: () => LocalizedString;
     };
     resetPassword: {
       /**
-       * Passwort zurücksetzen
+       * Reset password
        */
       title: () => LocalizedString;
       /**
-       * Wähle ein neues Passwort für dein Konto
+       * Choose a new password for your account
        */
       subtitle: () => LocalizedString;
       /**
-       * Neues Passwort
+       * New password
        */
       newPasswordLabel: () => LocalizedString;
       /**
-       * Passwort bestätigen
+       * Confirm password
        */
       confirmPasswordLabel: () => LocalizedString;
       /**
-       * Passwörter stimmen nicht überein.
+       * Passwords do not match.
        */
       passwordMismatch: () => LocalizedString;
       /**
-       * Neues Passwort setzen
+       * Set new password
        */
       setNewPassword: () => LocalizedString;
     };
     verifyEmail: {
       /**
-       * E-Mail wird verifiziert…
+       * Verifying your email…
        */
       loadingTitle: () => LocalizedString;
       /**
-       * E-Mail bestätigt
+       * Email verified
        */
       successTitle: () => LocalizedString;
       /**
-       * Deine E-Mail-Adresse wurde bestätigt. Du kannst jetzt alle Funktionen nutzen.
+       * Your email address has been confirmed. You can now use all features.
        */
       successSubtitle: () => LocalizedString;
       /**
-       * Zum Dashboard
+       * Go to dashboard
        */
       goToDashboard: () => LocalizedString;
       /**
-       * Verifizierung fehlgeschlagen
+       * Verification failed
        */
       failedTitle: () => LocalizedString;
       /**
-       * Dieser Link ist ungültig oder abgelaufen.
+       * This link is invalid or has expired.
        */
       failedSubtitle: () => LocalizedString;
     };
     passKey: {
       /**
-       * Mit PassKey anmelden
+       * Sign in with PassKey
        */
       signInWithPassKey: () => LocalizedString;
       /**
-       * PassKey-Authentifizierung fehlgeschlagen
+       * PassKey authentication failed
        */
       authFailed: () => LocalizedString;
       /**
-       * Registrierung fehlgeschlagen
+       * Registration failed
        */
       registrationFailed: () => LocalizedString;
       /**
@@ -772,19 +820,19 @@ export type TranslationFunctions = {
        */
       sectionTitle: () => LocalizedString;
       /**
-       * PassKey hinzufügen
+       * Add PassKey
        */
       addPassKey: () => LocalizedString;
       /**
-       * Gerätename (optional)
+       * Device name (optional)
        */
       deviceNamePlaceholder: () => LocalizedString;
       /**
-       * PassKey registrieren
+       * Register PassKey
        */
       registerPassKey: () => LocalizedString;
       /**
-       * Noch keine PassKeys registriert.
+       * No PassKeys registered yet.
        */
       noPassKeysYet: () => LocalizedString;
       /**
@@ -792,15 +840,15 @@ export type TranslationFunctions = {
        */
       defaultName: () => LocalizedString;
       /**
-       * Hinzugefügt
+       * Added
        */
       added: () => LocalizedString;
       /**
-       * Zuletzt verwendet
+       * Last used
        */
       lastUsed: () => LocalizedString;
       /**
-       * Nie
+       * Never
        */
       never: () => LocalizedString;
     };
@@ -808,105 +856,153 @@ export type TranslationFunctions = {
   layout: {
     emailVerification: {
       /**
-       * Bitte bestätige deine E-Mail-Adresse, um alle Funktionen freizuschalten.
+       * Please verify your email address to unlock all features.
        */
       message: () => LocalizedString;
       /**
-       * E-Mail gesendet ✓
+       * Email sent ✓
        */
       sent: () => LocalizedString;
       /**
-       * Erneut senden
+       * Resend
        */
       resend: () => LocalizedString;
       /**
-       * Schließen
+       * Dismiss
        */
       dismiss: () => LocalizedString;
     };
     hiveSwitcher: {
       /**
-       * Hive auswählen
+       * Select hive
        */
       selectHive: () => LocalizedString;
     };
     userMenu: {
       /**
-       * Profil
+       * Profile
        */
       profile: () => LocalizedString;
       /**
-       * Abmelden
+       * Sign out
        */
       logout: () => LocalizedString;
     };
   };
   profile: {
     /**
-     * Profil
+     * Profile
      */
     title: () => LocalizedString;
     /**
-     * Anzeigename
+     * Display name
      */
     displayNameLabel: () => LocalizedString;
     /**
-     * Dein Name
+     * Your name
      */
     displayNamePlaceholder: () => LocalizedString;
     /**
-     * Geburtstag
+     * Email
+     */
+    emailLabel: () => LocalizedString;
+    /**
+     * Role
+     */
+    roleLabel: () => LocalizedString;
+    /**
+     * Birthday
      */
     birthdayLabel: () => LocalizedString;
     /**
-     * Profil gespeichert!
+     * Profile saved!
      */
     saved: () => LocalizedString;
     /**
-     * Fehler beim Speichern. Bitte erneut versuchen.
+     * Failed to save. Please try again.
      */
     saveError: () => LocalizedString;
+    language: {
+      /**
+       * Language
+       */
+      title: () => LocalizedString;
+      /**
+       * Choose the language for the interface
+       */
+      description: () => LocalizedString;
+      /**
+       * Language updated!
+       */
+      saved: () => LocalizedString;
+      /**
+       * Failed to update language.
+       */
+      saveError: () => LocalizedString;
+      /**
+       * Deutsch
+       */
+      de: () => LocalizedString;
+      /**
+       * Deutsch (Österreich)
+       */
+      deAT: () => LocalizedString;
+      /**
+       * English
+       */
+      en: () => LocalizedString;
+    };
+    security: {
+      /**
+       * Security
+       */
+      title: () => LocalizedString;
+      /**
+       * Manage your PassKeys and login methods
+       */
+      description: () => LocalizedString;
+    };
   };
   dashboard: {
     /**
-     * {count} Mitglieder
+     * {count} members
      */
     memberCount: (arg: { count: number }) => LocalizedString;
     /**
-     * Guten Morgen, {name}! 👋
+     * Good morning, {name}! 👋
      */
     greeting: (arg: { name: string }) => LocalizedString;
     /**
-     * Heute:
+     * Today:
      */
     todayIntro: () => LocalizedString;
     /**
-     * offen
+     * open
      */
     openLabel: () => LocalizedString;
     /**
-     * Nächster Termin
+     * Next event
      */
     nextEvent: () => LocalizedString;
     /**
-     * Weitere Termine
+     * More events
      */
     moreEvents: () => LocalizedString;
     /**
-     * {done} von {total} erledigt
+     * {done} of {total} completed
      */
     progressText: (arg: { done: number; total: number }) => LocalizedString;
     /**
-     * Aufgabe hinzufügen
+     * Add task
      */
     addTask: () => LocalizedString;
     quickAdd: {
       /**
-       * Schnell hinzufügen
+       * Quick add
        */
       title: () => LocalizedString;
       /**
-       * Was steht als nächstes an?
+       * What's coming up next?
        */
       placeholder: () => LocalizedString;
     };

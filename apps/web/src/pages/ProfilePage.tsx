@@ -1,21 +1,32 @@
+import { getInitials, SUPPORTED_TRANSLATION_LOCALES, type TranslationLocale } from '@qoomb/types';
 import { Button, Card, Input } from '@qoomb/ui';
-import { getInitials } from '@qoomb/types';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useState } from 'react';
 
-import { ArrowLeftIcon } from '../components/icons';
+import { PassKeyManager } from '../components/auth/PassKeyManager';
+import { useCurrentPerson } from '../hooks/useCurrentPerson';
 import { useI18nContext } from '../i18n/i18n-react';
+import { AppShell } from '../layouts/AppShell';
 import { useAuth } from '../lib/auth/useAuth';
+import { useLocale } from '../lib/locale/LocaleProvider';
 import { trpc } from '../lib/trpc/client';
+
+// ── Locale → BCP 47 mapping for the updateLocale endpoint ────────────────────
+
+const LOCALE_BCP47_MAP: Record<TranslationLocale, string> = {
+  en: 'en-US',
+  de: 'de-DE',
+  'de-AT': 'de-AT',
+};
 
 // ── Profile Page ──────────────────────────────────────────────────────────────
 
 export function ProfilePage() {
   const { LL } = useI18nContext();
-  const navigate = useNavigate();
   const { user } = useAuth();
+  const { roleLabel } = useCurrentPerson();
+  const { bcp47Locale, translationLocale, setLocale } = useLocale();
 
-  // Fetch person data (displayName, role, birthdate, avatarUrl)
+  // ── Person data ─────────────────────────────────────────────────────────────
   const { data: person, isLoading } = trpc.persons.me.useQuery(undefined, {
     enabled: !!user,
   });
@@ -31,114 +42,193 @@ export function ProfilePage() {
 
   const utils = trpc.useUtils();
 
+  // ── Profile mutation ────────────────────────────────────────────────────────
   const updateProfile = trpc.persons.updateProfile.useMutation({
     onSuccess: () => {
       void utils.persons.me.invalidate();
     },
   });
 
-  const handleSave = () => {
+  const handleSaveProfile = useCallback(() => {
     if (!displayName.trim()) return;
     updateProfile.mutate({ displayName: displayName.trim() });
-  };
+  }, [displayName, updateProfile]);
 
-  // Derive initials from display name
+  // ── Language mutation ───────────────────────────────────────────────────────
+  const [selectedLocale, setSelectedLocale] = useState<TranslationLocale>(translationLocale);
+
+  const updateLocale = trpc.auth.updateLocale.useMutation({
+    onSuccess: (result) => {
+      setLocale(result.locale);
+    },
+  });
+
+  const handleSaveLanguage = useCallback(() => {
+    const bcp47 = LOCALE_BCP47_MAP[selectedLocale] ?? selectedLocale;
+    updateLocale.mutate({ locale: bcp47 });
+  }, [selectedLocale, updateLocale]);
+
+  // ── Derived values ──────────────────────────────────────────────────────────
   const initials = getInitials(displayName || null, user?.email ?? '?');
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="h-14 bg-background border-b-2 border-primary flex items-center gap-3 px-4">
-        <button
-          onClick={() => void navigate('/dashboard')}
-          className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-        </button>
-        <h1 className="text-sm font-black uppercase tracking-wider text-foreground">
-          {LL.profile.title()}
-        </h1>
-      </header>
+  const formattedBirthdate = person?.birthdate
+    ? new Date(person.birthdate).toLocaleDateString(bcp47Locale, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : undefined;
 
-      {/* Content */}
-      <main className="max-w-lg mx-auto px-4 py-8">
-        {isLoading ? (
-          <div className="text-center text-muted-foreground py-12">{LL.common.loading()}</div>
-        ) : (
+  const localeLabel = useCallback(
+    (tl: TranslationLocale): string => {
+      const labels: Record<TranslationLocale, () => string> = {
+        en: () => LL.profile.language.en(),
+        de: () => LL.profile.language.de(),
+        'de-AT': () => LL.profile.language.deAT(),
+      };
+      return labels[tl]();
+    },
+    [LL]
+  );
+
+  const hasLanguageChanged = selectedLocale !== translationLocale;
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  if (isLoading) {
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center py-20 text-muted-foreground">
+          {LL.common.loading()}
+        </div>
+      </AppShell>
+    );
+  }
+
+  return (
+    <AppShell>
+      <div className="px-4 md:px-8 py-8 max-w-2xl mx-auto space-y-8">
+        {/* ── Page title ───────────────────────────────────────────────────── */}
+        <h1 className="text-2xl font-black text-foreground tracking-tight">{LL.profile.title()}</h1>
+
+        {/* ── Section 1: Profile ───────────────────────────────────────────── */}
+        <Card>
           <div className="space-y-6">
-            {/* Avatar + Name */}
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-2xl font-black text-primary-foreground">
+            {/* Avatar + Name header */}
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-xl font-black text-primary-foreground shrink-0">
                 {initials}
               </div>
-              <div className="text-center">
+              <div>
                 <p className="text-lg font-bold text-foreground">
                   {person?.displayName ?? user?.email ?? '—'}
                 </p>
-                <p className="text-sm text-muted-foreground capitalize">{person?.role ?? '—'}</p>
+                <p className="text-sm text-muted-foreground">{roleLabel}</p>
               </div>
             </div>
 
-            {/* Edit form */}
-            <Card>
-              <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="displayName"
-                    className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5"
-                  >
-                    {LL.profile.displayNameLabel()}
-                  </label>
-                  <Input
-                    id="displayName"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder={LL.profile.displayNamePlaceholder()}
-                  />
-                </div>
+            {/* Form fields */}
+            <div className="space-y-4">
+              <Input
+                label={LL.profile.displayNameLabel()}
+                id="displayName"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder={LL.profile.displayNamePlaceholder()}
+              />
 
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
-                    {LL.common.emailLabel()}
-                  </label>
-                  <Input value={user?.email ?? ''} disabled />
-                </div>
+              <Input label={LL.profile.emailLabel()} value={user?.email ?? ''} disabled />
 
-                {person?.birthdate && (
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
-                      {LL.profile.birthdayLabel()}
-                    </label>
-                    <Input
-                      value={new Date(person.birthdate).toLocaleDateString('de-DE')}
-                      disabled
-                    />
-                  </div>
-                )}
+              <Input label={LL.profile.roleLabel()} value={roleLabel} disabled />
 
-                <Button
-                  onClick={handleSave}
-                  disabled={
-                    updateProfile.isPending ||
-                    !displayName.trim() ||
-                    displayName.trim() === (person?.displayName ?? '')
-                  }
-                  className="w-full"
-                >
-                  {updateProfile.isPending ? LL.common.saving() : LL.common.save()}
-                </Button>
+              {formattedBirthdate && (
+                <Input label={LL.profile.birthdayLabel()} value={formattedBirthdate} disabled />
+              )}
+            </div>
 
-                {updateProfile.isSuccess && (
-                  <p className="text-sm text-success text-center">{LL.profile.saved()}</p>
-                )}
-                {updateProfile.isError && (
-                  <p className="text-sm text-destructive text-center">{LL.profile.saveError()}</p>
-                )}
-              </div>
-            </Card>
+            {/* Save */}
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={handleSaveProfile}
+                disabled={
+                  updateProfile.isPending ||
+                  !displayName.trim() ||
+                  displayName.trim() === (person?.displayName ?? '')
+                }
+                fullWidth
+              >
+                {updateProfile.isPending ? LL.common.saving() : LL.common.save()}
+              </Button>
+
+              {updateProfile.isSuccess && (
+                <p className="text-sm text-success text-center">{LL.profile.saved()}</p>
+              )}
+              {updateProfile.isError && (
+                <p className="text-sm text-destructive text-center">{LL.profile.saveError()}</p>
+              )}
+            </div>
           </div>
-        )}
-      </main>
-    </div>
+        </Card>
+
+        {/* ── Section 2: Language ──────────────────────────────────────────── */}
+        <Card>
+          <div className="space-y-4">
+            <div>
+              <h2 className="font-bold text-foreground text-base">{LL.profile.language.title()}</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {LL.profile.language.description()}
+              </p>
+            </div>
+
+            <div>
+              <select
+                value={selectedLocale}
+                onChange={(e) => setSelectedLocale(e.target.value as TranslationLocale)}
+                className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring appearance-none cursor-pointer"
+              >
+                {SUPPORTED_TRANSLATION_LOCALES.map((tl) => (
+                  <option key={tl} value={tl}>
+                    {localeLabel(tl)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={handleSaveLanguage}
+                disabled={updateLocale.isPending || !hasLanguageChanged}
+                fullWidth
+              >
+                {updateLocale.isPending ? LL.common.saving() : LL.common.save()}
+              </Button>
+
+              {updateLocale.isSuccess && (
+                <p className="text-sm text-success text-center">{LL.profile.language.saved()}</p>
+              )}
+              {updateLocale.isError && (
+                <p className="text-sm text-destructive text-center">
+                  {LL.profile.language.saveError()}
+                </p>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        {/* ── Section 3: Security ─────────────────────────────────────────── */}
+        <Card>
+          <div className="space-y-4">
+            <div>
+              <h2 className="font-bold text-foreground text-base">{LL.profile.security.title()}</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {LL.profile.security.description()}
+              </p>
+            </div>
+
+            <PassKeyManager />
+          </div>
+        </Card>
+      </div>
+    </AppShell>
   );
 }

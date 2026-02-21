@@ -1,6 +1,5 @@
-import { useMemo } from 'react';
-
 import { getInitials, ROLE_I18N_KEYS, type RoleI18nKey } from '@qoomb/types';
+import { useMemo } from 'react';
 
 import { useI18nContext } from '../i18n/i18n-react';
 import { useAuth } from '../lib/auth/useAuth';
@@ -45,7 +44,7 @@ export function useCurrentPerson(): CurrentPerson {
 
   const initials = useMemo(
     () => getInitials(person?.displayName, user?.email ?? '?'),
-    [person?.displayName, user?.email],
+    [person?.displayName, user?.email]
   );
 
   const role = person?.role ?? 'member';

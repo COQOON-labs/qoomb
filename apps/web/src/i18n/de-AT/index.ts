@@ -1,5 +1,5 @@
-import type { Translation } from '../i18n-types';
 import de from '../de';
+import type { Translation } from '../i18n-types';
 import { extendDictionary } from '../i18n-util';
 
 /**

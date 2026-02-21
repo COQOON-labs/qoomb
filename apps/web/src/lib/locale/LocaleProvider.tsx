@@ -1,3 +1,4 @@
+import { FALLBACK_LOCALE, resolveTranslationLocale, type TranslationLocale } from '@qoomb/types';
 import {
   createContext,
   useCallback,
@@ -7,12 +8,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-
-import {
-  FALLBACK_LOCALE,
-  resolveTranslationLocale,
-  type TranslationLocale,
-} from '@qoomb/types';
 
 import TypesafeI18n from '../../i18n/i18n-react';
 import type { Locales } from '../../i18n/i18n-types';
@@ -42,10 +37,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const [bcp47Locale, setBcp47Locale] = useState<string>(FALLBACK_LOCALE);
 
   // The locale we *want* to display (derived from BCP 47 tag).
-  const targetLocale = useMemo(
-    () => resolveTranslationLocale(bcp47Locale),
-    [bcp47Locale],
-  );
+  const targetLocale = useMemo(() => resolveTranslationLocale(bcp47Locale), [bcp47Locale]);
 
   // The locale that is *confirmed loaded* — only this one is passed to
   // TypesafeI18n so we never render with missing translations.
@@ -61,6 +53,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     void loadLocaleAsync(target).then(() => {
       if (!cancelled) setActiveLocale(target);
+      return;
     });
     return () => {
       cancelled = true;
@@ -73,14 +66,12 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<LocaleContextValue>(
     () => ({ bcp47Locale, translationLocale: activeLocale as TranslationLocale, setLocale }),
-    [bcp47Locale, activeLocale, setLocale],
+    [bcp47Locale, activeLocale, setLocale]
   );
 
   return (
     <LocaleContext.Provider value={value}>
-      <TypesafeI18n locale={activeLocale}>
-        {children}
-      </TypesafeI18n>
+      <TypesafeI18n locale={activeLocale}>{children}</TypesafeI18n>
     </LocaleContext.Provider>
   );
 }

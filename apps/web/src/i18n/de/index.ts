@@ -136,9 +136,24 @@ const de = {
     title: 'Profil',
     displayNameLabel: 'Anzeigename',
     displayNamePlaceholder: 'Dein Name',
+    emailLabel: 'E-Mail',
+    roleLabel: 'Rolle',
     birthdayLabel: 'Geburtstag',
     saved: 'Profil gespeichert!',
     saveError: 'Fehler beim Speichern. Bitte erneut versuchen.',
+    language: {
+      title: 'Sprache',
+      description: 'Wähle die Sprache für die Oberfläche',
+      saved: 'Sprache aktualisiert!',
+      saveError: 'Sprache konnte nicht aktualisiert werden.',
+      de: 'Deutsch',
+      deAT: 'Deutsch (Österreich)',
+      en: 'English',
+    },
+    security: {
+      title: 'Sicherheit',
+      description: 'Verwalte deine PassKeys und Anmeldemethoden',
+    },
   },
 
   // ── Dashboard ─────────────────────────────────────────────────────────────

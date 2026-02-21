@@ -135,9 +135,24 @@ const en = {
     title: 'Profile',
     displayNameLabel: 'Display name',
     displayNamePlaceholder: 'Your name',
+    emailLabel: 'Email',
+    roleLabel: 'Role',
     birthdayLabel: 'Birthday',
     saved: 'Profile saved!',
     saveError: 'Failed to save. Please try again.',
+    language: {
+      title: 'Language',
+      description: 'Choose the language for the interface',
+      saved: 'Language updated!',
+      saveError: 'Failed to update language.',
+      de: 'Deutsch',
+      deAT: 'Deutsch (Österreich)',
+      en: 'English',
+    },
+    security: {
+      title: 'Security',
+      description: 'Manage your PassKeys and login methods',
+    },
   },
 
   // ── Dashboard ─────────────────────────────────────────────────────────────

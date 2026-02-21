@@ -31,7 +31,14 @@ type AuthAction =
   | { type: 'SET_LOADING'; loading: boolean }
   | { type: 'LOGIN'; user: AuthUser; accessToken: string; refreshToken: string }
   | { type: 'REFRESH'; user: AuthUser; accessToken: string; refreshToken: string }
-  | { type: 'SWITCH_HIVE'; hiveId: string; hiveName: string; personId: string; accessToken: string; locale?: string }
+  | {
+      type: 'SWITCH_HIVE';
+      hiveId: string;
+      hiveName: string;
+      personId: string;
+      accessToken: string;
+      locale?: string;
+    }
   | { type: 'LOGOUT' };
 
 interface AuthContextValue {
@@ -44,7 +51,7 @@ interface AuthContextValue {
     hiveName: string,
     personId: string,
     accessToken: string,
-    locale?: string,
+    locale?: string
   ) => void;
 }
 
@@ -243,7 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hiveName: string,
     personId: string,
     accessToken: string,
-    locale?: string,
+    locale?: string
   ) {
     // Hive switch issues a new access token; refresh token is unchanged
     const existingRefreshToken = getRefreshToken() ?? '';

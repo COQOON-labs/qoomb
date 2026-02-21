@@ -106,7 +106,7 @@ export function resolveTranslationLocale(bcp47Locale: string): TranslationLocale
 export function resolveLocale(
   userLocale?: string | null,
   hiveLocale?: string | null,
-  platformDefault?: string | null,
+  platformDefault?: string | null
 ): string {
   return userLocale ?? hiveLocale ?? platformDefault ?? FALLBACK_LOCALE;
 }

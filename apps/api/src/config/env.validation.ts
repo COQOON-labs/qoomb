@@ -143,7 +143,7 @@ const envSchema = z.object({
     .string()
     .regex(
       /^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?$/,
-      'DEFAULT_LOCALE must be a valid BCP 47 locale (e.g. "en-US", "de-DE")',
+      'DEFAULT_LOCALE must be a valid BCP 47 locale (e.g. "en-US", "de-DE")'
     )
     .default('en-US'),
 
@@ -179,7 +179,7 @@ export function validateEnv(): Env {
   // Env files may contain KEY= with no value — treat empty strings as undefined
   // so that Zod's .optional() properly skips validation for unset variables.
   const env = Object.fromEntries(
-    Object.entries(process.env).map(([key, val]) => [key, val === '' ? undefined : val]),
+    Object.entries(process.env).map(([key, val]) => [key, val === '' ? undefined : val])
   );
 
   try {

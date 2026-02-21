@@ -17,7 +17,7 @@ export const bcp47LocaleSchema = z
   .max(12, 'Locale must be at most 12 characters')
   .regex(
     /^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?$/,
-    'Locale must be a valid BCP 47 language tag (e.g. "en-US", "de-DE", "de")',
+    'Locale must be a valid BCP 47 language tag (e.g. "en-US", "de-DE", "de")'
   );
 
 /**

@@ -8,7 +8,13 @@ export interface UseAuthReturn {
   login: (user: AuthUser, accessToken: string, refreshToken: string) => void;
   logout: () => Promise<void>;
   updateToken: (accessToken: string, refreshToken: string) => void;
-  switchHive: (hiveId: string, hiveName: string, personId: string, accessToken: string, locale?: string) => void;
+  switchHive: (
+    hiveId: string,
+    hiveName: string,
+    personId: string,
+    accessToken: string,
+    locale?: string
+  ) => void;
 }
 
 /**

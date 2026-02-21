@@ -192,6 +192,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@qoomb/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@qoomb/ui':
         specifier: workspace:*
         version: link:../../packages/ui

@@ -1,6 +1,6 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { registerSchema } from '@qoomb/validators';
 import { Button, Input } from '@qoomb/ui';
+import { registerSchema } from '@qoomb/validators';
 import { useForm } from 'react-hook-form';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import type { z } from 'zod';
@@ -111,7 +111,7 @@ export function RegisterPage() {
       title={inviteToken ? LL.auth.register.titleInvite() : LL.auth.register.title()}
       subtitle={inviteToken ? LL.auth.register.subtitleInvite() : LL.auth.register.subtitle()}
     >
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+      <form onSubmit={(e) => void onSubmit(e)} className="mt-6 flex flex-col gap-4">
         <Input
           label={LL.auth.register.nameLabel()}
           type="text"

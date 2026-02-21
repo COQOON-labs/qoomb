@@ -1,6 +1,6 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { loginSchema } from '@qoomb/validators';
 import { Button, Input } from '@qoomb/ui';
+import { loginSchema } from '@qoomb/validators';
 import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import type { z } from 'zod';
@@ -62,7 +62,7 @@ export function LoginPage() {
 
   return (
     <AuthLayout title={LL.auth.login.title()} subtitle={LL.auth.login.subtitle()}>
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+      <form onSubmit={(e) => void onSubmit(e)} className="mt-6 flex flex-col gap-4">
         <Input
           label={LL.common.emailLabel()}
           type="email"

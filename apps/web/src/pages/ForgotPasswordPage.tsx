@@ -1,6 +1,6 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { requestPasswordResetSchema } from '@qoomb/validators';
 import { Button, Input } from '@qoomb/ui';
+import { requestPasswordResetSchema } from '@qoomb/validators';
 import { useForm } from 'react-hook-form';
 import { Link, Navigate } from 'react-router-dom';
 import type { z } from 'zod';
@@ -55,7 +55,7 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthLayout title={LL.auth.forgotPassword.title()} subtitle={LL.auth.forgotPassword.subtitle()}>
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+      <form onSubmit={(e) => void onSubmit(e)} className="mt-6 flex flex-col gap-4">
         <Input
           label={LL.common.emailLabel()}
           type="email"

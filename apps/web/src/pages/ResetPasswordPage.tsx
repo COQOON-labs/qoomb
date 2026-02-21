@@ -1,6 +1,6 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { passwordSchema } from '@qoomb/validators';
 import { Button, Input } from '@qoomb/ui';
+import { passwordSchema } from '@qoomb/validators';
 import { useForm } from 'react-hook-form';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -52,7 +52,7 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout title={LL.auth.resetPassword.title()} subtitle={LL.auth.resetPassword.subtitle()}>
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+      <form onSubmit={(e) => void onSubmit(e)} className="mt-6 flex flex-col gap-4">
         <Input
           label={LL.auth.resetPassword.newPasswordLabel()}
           type="password"

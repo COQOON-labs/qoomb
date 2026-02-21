@@ -83,7 +83,6 @@ export function ProfilePage() {
   const {
     register: registerLanguage,
     handleSubmit: handleLanguageSubmit,
-    watch: watchLanguage,
     formState: { isDirty: isLanguageDirty },
   } = useForm<LanguageFormValues>({
     resolver: standardSchemaResolver(languageSchema),

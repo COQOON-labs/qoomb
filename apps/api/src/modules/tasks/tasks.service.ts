@@ -160,7 +160,13 @@ export class TasksService {
     if (data.visibility !== undefined) patch.visibility = data.visibility;
     if ('groupId' in data) patch.groupId = data.groupId ?? null;
 
-    return this.prisma.task.update({ where: { id }, data: patch });
+    // Defense-in-depth: updateMany accepts non-unique WHERE, so we can filter
+    // by hiveId to prevent cross-tenant modification even if RLS fails.
+    const result = await this.prisma.task.updateMany({ where: { id, hiveId }, data: patch });
+    if (result.count === 0) {
+      throw new Error('Task not found in this hive');
+    }
+    return this.prisma.task.findUniqueOrThrow({ where: { id } });
   }
 
   /**

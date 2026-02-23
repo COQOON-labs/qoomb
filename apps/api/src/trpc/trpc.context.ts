@@ -1,10 +1,12 @@
 import { type FastifyRequest } from 'fastify';
 
 import { type AuthService } from '../modules/auth/auth.service';
-import { type PrismaService } from '../prisma/prisma.service';
+import { type PrismaService, type TransactionClient } from '../prisma/prisma.service';
 
 export interface TrpcContext {
   prisma: PrismaService;
+  /** Transaction client with SET LOCAL hive context — defined inside hiveProcedure. */
+  tx?: TransactionClient;
   authService: AuthService;
   req?: FastifyRequest;
   user?: {

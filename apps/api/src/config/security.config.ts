@@ -102,7 +102,7 @@ export const PASSWORD_CONFIG = {
   /**
    * Password requirements regex
    */
-  REQUIREMENTS_REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+  REQUIREMENTS_REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
 } as const;
 
 /**

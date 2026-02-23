@@ -57,7 +57,7 @@ export const eventsRouter = (eventsService: EventsService) =>
 
       // Pre-query share IDs (PersonShare/GroupShare are polymorphic — no Prisma relations)
       const sharedIds = await getSharedResourceIds(
-        ctx.prisma,
+        ctx.tx,
         'event',
         ctx.user.personId ?? '',
         ctx.user.groupIds ?? []
@@ -94,7 +94,7 @@ export const eventsRouter = (eventsService: EventsService) =>
       }
       await requireResourceAccess(
         ctx,
-        ctx.prisma,
+        ctx.tx,
         { type: 'event', ...event, groupId: event.groupId ?? undefined },
         'view',
         EVENT_PERMISSIONS
@@ -160,7 +160,7 @@ export const eventsRouter = (eventsService: EventsService) =>
         }
         await requireResourceAccess(
           ctx,
-          ctx.prisma,
+          ctx.tx,
           { type: 'event', ...event, groupId: event.groupId ?? undefined },
           'edit',
           EVENT_PERMISSIONS
@@ -222,7 +222,7 @@ export const eventsRouter = (eventsService: EventsService) =>
       }
       await requireResourceAccess(
         ctx,
-        ctx.prisma,
+        ctx.tx,
         { type: 'event', ...event, groupId: event.groupId ?? undefined },
         'delete',
         EVENT_PERMISSIONS

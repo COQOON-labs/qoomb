@@ -199,41 +199,26 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Set RLS session variables for hive-scoped data isolation.
+   * Validate UUIDs and verify hive existence — the pre-checks that must
+   * run **before** opening the RLS transaction in hiveProcedure.
    *
-   * Security measures:
-   * 1. UUID format validation to prevent SQL injection
-   * 2. Hive existence verification in database
-   * 3. Session variables for Row-Level Security (RLS) policies
-   * 4. Logging for audit trail
+   * The actual SET LOCAL commands are issued inside the interactive
+   * transaction (see trpc.router.ts → hiveProcedure) so they are pinned
+   * to a single pooled connection and automatically reset on commit/rollback.
    *
    * SECURITY NOTE:
    * PostgreSQL SET commands require literal values, not parameters.
    * UUIDs are strictly validated (only [0-9a-f-] chars) before use,
    * making this safe from SQL injection.
-   *
-   * @param hiveId - The UUID of the hive to activate
-   * @param userId - Optional user ID to set for fine-grained RLS policies
-   * @throws {UnauthorizedException} if validation fails
    */
-  async setHiveSchema(hiveId: string, userId?: string): Promise<void> {
-    // Step 1: Validate UUID format (prevents SQL injection)
+  async setHiveSchemaValidation(hiveId: string, userId?: string): Promise<void> {
     this.validateUUID(hiveId);
-
     if (userId) {
       this.validateUUID(userId);
     }
-
-    // Step 2: Verify hive exists
     await this.verifyHiveExists(hiveId);
-
-    // Step 3: Set session variables for Row-Level Security (RLS)
-    await this.executeRawSql(`SET app.hive_id = '${hiveId}'`);
-
-    if (userId) {
-      await this.executeRawSql(`SET app.user_id = '${userId}'`);
-    }
-
-    this.logger.debug(`RLS context set for hive ${hiveId}${userId ? ` / user ${userId}` : ''}`);
+    this.logger.debug(
+      `RLS validation passed for hive ${hiveId}${userId ? ` / user ${userId}` : ''}`
+    );
   }
 }

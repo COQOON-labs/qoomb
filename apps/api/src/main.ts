@@ -12,7 +12,11 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter({
       logger: process.env.NODE_ENV === 'development',
-      trustProxy: true, // Enable trust proxy for correct IP detection
+      // Trust the first proxy hop (e.g. Caddy, Nginx, cloud LB).
+      // Set to a specific IP/CIDR (e.g. '10.0.0.0/8') in production if the
+      // proxy address is known.  Avoids trusting arbitrary X-Forwarded-For
+      // headers which would allow rate-limit bypass via IP spoofing (CWE-346).
+      trustProxy: process.env.TRUSTED_PROXY ?? 1,
     })
   );
 

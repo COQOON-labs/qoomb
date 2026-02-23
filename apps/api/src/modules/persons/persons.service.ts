@@ -139,10 +139,17 @@ export class PersonsService {
     // After @EncryptFields, birthdate is an encrypted string at runtime
     if (input.birthdate !== undefined) data.birthdate = input.birthdate as unknown as string;
 
-    // Decorator transforms birthdate from string → Date at runtime
-    return this.prisma.person.update({
-      where: { id: personId },
+    // Defense-in-depth: updateMany accepts non-unique WHERE, so we can filter
+    // by hiveId to prevent cross-tenant modification even if RLS fails.
+    const result = await this.prisma.person.updateMany({
+      where: { id: personId, hiveId },
       data,
+    });
+    if (result.count === 0) {
+      throw new Error('Person not found in this hive');
+    }
+    return this.prisma.person.findFirstOrThrow({
+      where: { id: personId, hiveId },
       select: DETAIL_SELECT,
     }) as Promise<PersonDetail>;
   }
@@ -156,10 +163,17 @@ export class PersonsService {
    */
   @DecryptFields({ fields: DETAIL_ENC_FIELDS, hiveIdArg: 1, transforms: BIRTHDATE_TRANSFORMS })
   async updateRole(personId: string, hiveId: string, role: string): Promise<PersonDetail> {
-    // Decorator transforms birthdate from string → Date at runtime
-    return this.prisma.person.update({
-      where: { id: personId },
+    // Defense-in-depth: updateMany accepts non-unique WHERE, so we can filter
+    // by hiveId to prevent cross-tenant modification even if RLS fails.
+    const result = await this.prisma.person.updateMany({
+      where: { id: personId, hiveId },
       data: { role },
+    });
+    if (result.count === 0) {
+      throw new Error('Person not found in this hive');
+    }
+    return this.prisma.person.findFirstOrThrow({
+      where: { id: personId, hiveId },
       select: DETAIL_SELECT,
     }) as Promise<PersonDetail>;
   }

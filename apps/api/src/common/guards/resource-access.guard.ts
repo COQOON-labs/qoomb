@@ -6,8 +6,15 @@ import {
 } from '@qoomb/types';
 import { TRPCError } from '@trpc/server';
 
-import { type PrismaService } from '../../prisma/prisma.service';
+import { type PrismaService, type TransactionClient } from '../../prisma/prisma.service';
 import { type TrpcContext } from '../../trpc/trpc.context';
+
+/**
+ * Database client type accepted by guard functions.
+ * Allows passing either the full PrismaService singleton or a
+ * transaction client from hiveProcedure (ctx.tx).
+ */
+type DbClient = PrismaService | TransactionClient;
 
 // ============================================
 // TYPES
@@ -91,7 +98,7 @@ export interface ResourcePermissions {
  */
 export async function requireResourceAccess(
   ctx: TrpcContext,
-  prisma: PrismaService,
+  db: DbClient,
   resource: ResourceAccessInput,
   action: ResourceAccessAction,
   permissions: ResourcePermissions
@@ -109,12 +116,12 @@ export async function requireResourceAccess(
   // Stage 1: Load personal share + all applicable group shares in parallel.
   // Defense-in-depth: filter by hiveId even though RLS already enforces this.
   const [personalShare, groupShareRows] = await Promise.all([
-    prisma.personShare.findFirst({
+    db.personShare.findFirst({
       where: { resourceType: resource.type, resourceId: resource.id, personId, hiveId },
       select: { accessLevel: true },
     }),
     groupIdsArr.length > 0
-      ? prisma.groupShare.findMany({
+      ? db.groupShare.findMany({
           where: {
             resourceType: resource.type,
             resourceId: resource.id,
@@ -277,7 +284,7 @@ export function buildVisibilityFilter(
  * @returns Deduplicated array of resource UUIDs accessible via shares
  */
 export async function getSharedResourceIds(
-  prisma: PrismaService,
+  db: DbClient,
   resourceType: string,
   personId: string,
   groupIds: ReadonlyArray<string>
@@ -285,12 +292,12 @@ export async function getSharedResourceIds(
   const groupIdsArr = [...groupIds];
 
   const [personShares, groupShares] = await Promise.all([
-    prisma.personShare.findMany({
+    db.personShare.findMany({
       where: { personId, resourceType, accessLevel: { gte: AccessLevel.VIEW } },
       select: { resourceId: true },
     }),
     groupIdsArr.length > 0
-      ? prisma.groupShare.findMany({
+      ? db.groupShare.findMany({
           where: {
             groupId: { in: groupIdsArr },
             resourceType,

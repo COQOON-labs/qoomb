@@ -15,8 +15,8 @@
   "devDependencies": {
     "@qoomb/eslint-config": "workspace:^",
     "@qoomb/tsconfig": "workspace:*",
-    "@types/node": "^25.2.3",
-    "eslint": "^9.39.2",
+    "@types/node": "^25.3.0",
+    "eslint": "^9.39.3",
     "typescript": "^5.9.3"
   }
 }

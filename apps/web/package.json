@@ -33,7 +33,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "eslint": "^9.39.2",
     "qrcode.react": "^4.2.0",
-    "tailwindcss": "^4.1.18",
+    "tailwindcss": "^4.2.0",
     "typesafe-i18n": "^5.27.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",

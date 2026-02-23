@@ -44,7 +44,7 @@ export type TranslationLocale = (typeof SUPPORTED_TRANSLATION_LOCALES)[number];
  * When adding a new locale, also add a matching translation folder **and**
  * update the labels in both `en/index.ts` and `de/index.ts`.
  */
-export const SUPPORTED_BCP47_LOCALES = ['de-AT', 'de-DE', 'en-US'] as const;
+export const SUPPORTED_BCP47_LOCALES = ['de-DE', 'de-AT', 'en-US'] as const;
 
 /** Union type of user-selectable BCP 47 locales. */
 export type Bcp47Locale = (typeof SUPPORTED_BCP47_LOCALES)[number];

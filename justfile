@@ -140,8 +140,96 @@ _check-docker:
         exit 1
     fi
 
+[private]
+_preflight:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo -e "\033[0;34m🔍 Pre-flight checks...\033[0m"
+
+    # 1. .env file
+    if [ ! -f .env ]; then
+        if [ -f .env.example ]; then
+            echo -e "\033[1;33m  ⚠ .env not found — creating from .env.example\033[0m"
+            cp .env.example .env
+            echo -e "\033[0;32m  ✓ .env created (review settings in .env)\033[0m"
+        else
+            echo -e "\033[0;31m  ✗ .env not found (no .env.example either)\033[0m"
+            exit 1
+        fi
+    else
+        echo -e "\033[0;32m  ✓ .env\033[0m"
+    fi
+
+    # 2. Dependencies (node_modules)
+    if [ ! -d node_modules ]; then
+        echo -e "\033[1;33m  ⚠ node_modules missing — running pnpm install...\033[0m"
+        pnpm install
+        echo -e "\033[0;32m  ✓ Dependencies installed\033[0m"
+    elif [ -f pnpm-lock.yaml ] && [ "pnpm-lock.yaml" -nt "node_modules" ]; then
+        echo -e "\033[1;33m  ⚠ Lock file changed — running pnpm install...\033[0m"
+        pnpm install
+        echo -e "\033[0;32m  ✓ Dependencies updated\033[0m"
+    else
+        echo -e "\033[0;32m  ✓ Dependencies\033[0m"
+    fi
+
+    # 3. Docker daemon
+    if ! docker info >/dev/null 2>&1; then
+        echo -e "\033[0;31m  ✗ Docker is not running\033[0m"
+        echo -e "\033[1;33m    → Start Docker Desktop and retry\033[0m"
+        echo -e "\033[0;36m      macOS:  open -a Docker\033[0m"
+        echo -e "\033[0;36m      Linux:  sudo systemctl start docker\033[0m"
+        exit 1
+    fi
+    echo -e "\033[0;32m  ✓ Docker\033[0m"
+
+    # 4. Docker services (PostgreSQL + Redis)
+    if docker ps --filter "name=qoomb-postgres" --filter "status=running" -q | grep -q . && \
+       docker ps --filter "name=qoomb-redis"    --filter "status=running" -q | grep -q .; then
+        echo -e "\033[0;32m  ✓ Docker services\033[0m"
+    else
+        echo -e "\033[1;33m  ⚠ Docker services not running — starting...\033[0m"
+        docker-compose up -d
+        sleep 3
+        echo -e "\033[0;32m  ✓ Docker services started\033[0m"
+    fi
+
+    # 5. Prisma client
+    if [ ! -d node_modules/.prisma/client ]; then
+        echo -e "\033[1;33m  ⚠ Prisma client missing — generating...\033[0m"
+        pnpm --filter @qoomb/api db:generate
+        echo -e "\033[0;32m  ✓ Prisma client generated\033[0m"
+    else
+        echo -e "\033[0;32m  ✓ Prisma client\033[0m"
+    fi
+
+    # 6. Database migrations
+    MIGRATION_TABLE=$(docker exec qoomb-postgres psql -U qoomb -d qoomb -tAc \
+        "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='_prisma_migrations')" \
+        2>/dev/null || echo "f")
+    MIGRATION_TABLE=$(echo "$MIGRATION_TABLE" | tr -d '[:space:]')
+    if [ "$MIGRATION_TABLE" != "t" ]; then
+        echo -e "\033[1;33m  ⚠ Database not set up — running migrations...\033[0m"
+        pnpm --filter @qoomb/api db:migrate
+        echo -e "\033[0;32m  ✓ Migrations applied\033[0m"
+    else
+        APPLIED=$(docker exec qoomb-postgres psql -U qoomb -d qoomb -tAc \
+            "SELECT COUNT(*) FROM public._prisma_migrations" 2>/dev/null || echo "0")
+        APPLIED=$(echo "$APPLIED" | tr -d '[:space:]')
+        AVAILABLE=$(ls -d apps/api/prisma/migrations/2* 2>/dev/null | wc -l | tr -d ' ')
+        if [ "$APPLIED" -lt "$AVAILABLE" ] 2>/dev/null; then
+            echo -e "\033[1;33m  ⚠ $((AVAILABLE - APPLIED)) pending migration(s) — applying...\033[0m"
+            pnpm --filter @qoomb/api db:migrate
+            echo -e "\033[0;32m  ✓ Migrations applied\033[0m"
+        else
+            echo -e "\033[0;32m  ✓ Database ($APPLIED migration(s))\033[0m"
+        fi
+    fi
+
+    echo ""
+
 # Start development servers on localhost (no HTTPS)
-start-simple: _dev-stop docker-up
+start-simple: _dev-stop _preflight
     #!/usr/bin/env bash
     set -euo pipefail
     echo ""
@@ -161,13 +249,35 @@ start-simple: _dev-stop docker-up
     (sleep 5 && (open http://localhost:5173 2>/dev/null || xdg-open http://localhost:5173 2>/dev/null || true)) &
     pnpm dev
 
-# Start with HTTPS + local domain (requires just setup first)
-start: _dev-stop
+# Start with HTTPS + local domain (runs setup interactively if needed)
+start: _dev-stop _preflight
     #!/usr/bin/env bash
     set -euo pipefail
-    command -v caddy >/dev/null || { echo -e "\033[0;31m✗ Caddy not installed — run: just setup\033[0m"; exit 1; }
-    ls certs/qoomb.localhost+*.pem >/dev/null 2>&1 || { echo -e "\033[0;31m✗ SSL certs missing — run: just setup\033[0m"; exit 1; }
-    just docker-up
+
+    # Check HTTPS setup (Caddy + SSL certs)
+    HTTPS_READY=1
+    if ! command -v caddy >/dev/null 2>&1; then
+        HTTPS_READY=0
+        echo -e "\033[1;33m  ⚠ Caddy not installed\033[0m"
+    fi
+    if ! ls certs/qoomb.localhost+*.pem >/dev/null 2>&1; then
+        HTTPS_READY=0
+        echo -e "\033[1;33m  ⚠ SSL certificates not found\033[0m"
+    fi
+
+    if [ "$HTTPS_READY" -eq 0 ]; then
+        echo ""
+        read -r -p "$(echo -e '\033[1;33mHTTPS setup not complete. Run setup now? [Y/n] \033[0m')" ANSWER
+        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
+            echo -e "\033[0;36m  → Use 'just start-simple' for localhost-only mode\033[0m"
+            exit 0
+        fi
+        bash scripts/setup-local-domain.sh
+        echo ""
+    else
+        echo -e "\033[0;32m  ✓ HTTPS (Caddy + certificates)\033[0m"
+    fi
+
     echo -e "\033[0;34mStarting Caddy...\033[0m"
     caddy stop 2>/dev/null || true
     caddy start --config Caddyfile.dev
@@ -422,9 +532,6 @@ clean-all: _check-docker
     echo -e "\033[0;32m✓ Full cleanup complete\033[0m"
 
 # ─── Aliases ─────────────────────────────────────────────────────────────────
-
-# Alias: docker-up
-start: docker-up
 
 # Alias: docker-restart
 restart: docker-restart

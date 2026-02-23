@@ -19,22 +19,61 @@ export interface FieldTransforms {
 }
 
 /**
- * Options for field encryption/decryption decorators.
+ * Base options shared by all field encryption scopes.
  */
-export interface FieldCryptoOptions {
+interface FieldCryptoOptionsBase {
   /** Field names to encrypt or decrypt */
   fields: string[];
 
+  /** Optional per-field type transforms (e.g. Date ↔ ISO string) */
+  transforms?: Record<string, FieldTransforms>;
+}
+
+/**
+ * Hive-scoped encryption: key derived from hive ID via HKDF.
+ *
+ * Use for content fields (event titles, task descriptions, etc.).
+ */
+interface HiveScopedCryptoOptions extends FieldCryptoOptionsBase {
   /**
    * Zero-based index of the hiveId parameter in the method signature.
    *
    * Example: `create(data, hiveId, creatorId)` → `hiveIdArg: 1`
    */
   hiveIdArg: number;
-
-  /** Optional per-field type transforms (e.g. Date ↔ ISO string) */
-  transforms?: Record<string, FieldTransforms>;
+  userIdArg?: never;
 }
+
+/**
+ * User-scoped encryption: key derived from user ID via HKDF.
+ *
+ * Use for user PII (email, fullName, locale) — isolated from hive context.
+ */
+interface UserScopedCryptoOptions extends FieldCryptoOptionsBase {
+  /**
+   * Zero-based index of the userId parameter in the method signature.
+   *
+   * Example: `updateLocale(userId, data)` → `userIdArg: 0`
+   */
+  userIdArg: number;
+  hiveIdArg?: never;
+}
+
+/**
+ * Options for field encryption/decryption decorators.
+ *
+ * Provide **either** `hiveIdArg` (hive-scoped) or `userIdArg` (user-scoped):
+ *
+ * @example
+ * ```typescript
+ * // Hive-scoped (events, tasks, groups):
+ * @EncryptFields({ fields: ['title'], hiveIdArg: 1 })
+ *
+ * // User-scoped (email, fullName, locale):
+ * @EncryptFields({ fields: ['locale'], userIdArg: 0 })
+ * ```
+ */
+export type FieldCryptoOptions = HiveScopedCryptoOptions | UserScopedCryptoOptions;
 
 // ============================================
 // Internal helpers
@@ -57,6 +96,25 @@ function getEnc(instance: unknown): EncryptionService {
     );
   }
   return enc;
+}
+
+/**
+ * Resolve the encryption key ID and scope from decorator options.
+ *
+ * @returns keyId — the hiveId or userId string
+ * @returns userScoped — true for user-scoped (encryptForUser/decryptForUser)
+ */
+function resolveKeyScope(
+  options: FieldCryptoOptions,
+  args: unknown[]
+): { keyId: string; userScoped: boolean } {
+  if ('userIdArg' in options && options.userIdArg !== undefined) {
+    return { keyId: String(args[options.userIdArg]), userScoped: true };
+  }
+  if ('hiveIdArg' in options && options.hiveIdArg !== undefined) {
+    return { keyId: String(args[options.hiveIdArg]), userScoped: false };
+  }
+  throw new Error('FieldEncryption: options must specify either hiveIdArg or userIdArg');
 }
 
 // ============================================
@@ -88,7 +146,7 @@ export function EncryptFields(options: FieldCryptoOptions): MethodDecorator {
 
     descriptor.value = function (this: unknown, ...args: unknown[]): unknown {
       const enc = getEnc(this);
-      const hiveId = String(args[options.hiveIdArg]);
+      const { keyId, userScoped } = resolveKeyScope(options, args);
 
       for (const arg of args) {
         if (!arg || typeof arg !== 'object' || Array.isArray(arg)) continue;
@@ -107,7 +165,9 @@ export function EncryptFields(options: FieldCryptoOptions): MethodDecorator {
             valueStr = JSON.stringify(obj[field]);
           }
 
-          obj[field] = enc.serializeToStorage(enc.encrypt(valueStr, hiveId));
+          obj[field] = userScoped
+            ? enc.encryptForUser(valueStr, keyId)
+            : enc.serializeToStorage(enc.encrypt(valueStr, keyId));
         }
       }
 
@@ -148,10 +208,10 @@ export function DecryptFields(options: FieldCryptoOptions): MethodDecorator {
 
     descriptor.value = async function (this: unknown, ...args: unknown[]) {
       const enc = getEnc(this);
-      const hiveId = String(args[options.hiveIdArg]);
+      const { keyId, userScoped } = resolveKeyScope(options, args);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       const result: unknown = await (original.apply(this, args) as Promise<unknown>);
-      return decryptData(result, options.fields, hiveId, enc, options.transforms);
+      return decryptData(result, options.fields, keyId, userScoped, enc, options.transforms);
     };
 
     return descriptor;
@@ -194,14 +254,15 @@ export function EncryptDecryptFields(options: FieldCryptoOptions): MethodDecorat
 function decryptData(
   data: unknown,
   fields: string[],
-  hiveId: string,
+  keyId: string,
+  userScoped: boolean,
   enc: EncryptionService,
   transforms?: Record<string, FieldTransforms>
 ): unknown {
   if (data === null || data === undefined) return data;
 
   if (Array.isArray(data)) {
-    return data.map((item) => decryptData(item, fields, hiveId, enc, transforms));
+    return data.map((item) => decryptData(item, fields, keyId, userScoped, enc, transforms));
   }
 
   if (typeof data === 'object') {
@@ -211,13 +272,19 @@ function decryptData(
       if (!(field in obj) || obj[field] === null) continue;
 
       try {
-        const encrypted = enc.parseFromStorage(obj[field] as string);
-        const plain = enc.decrypt(encrypted, hiveId);
+        let plain: string;
+        if (userScoped) {
+          plain = enc.decryptForUser(obj[field] as string, keyId);
+        } else {
+          const encrypted = enc.parseFromStorage(obj[field] as string);
+          plain = enc.decrypt(encrypted, keyId);
+        }
         const deserialize = transforms?.[field]?.deserialize;
         obj[field] = deserialize ? deserialize(plain) : plain;
       } catch {
         // Migration window: field not yet encrypted. Keep original value.
-        logger.warn(`Plaintext fallback for hive ${hiveId} — field '${field}' not yet encrypted`);
+        const scope = userScoped ? `user ${keyId}` : `hive ${keyId}`;
+        logger.warn(`Plaintext fallback for ${scope} — field '${field}' not yet encrypted`);
       }
     }
 

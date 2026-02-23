@@ -58,6 +58,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       if (desiredRef.current === bcp47) {
         setActiveLocale(target);
       }
+      return undefined;
     });
   }, []);
 

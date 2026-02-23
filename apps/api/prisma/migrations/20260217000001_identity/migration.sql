@@ -19,6 +19,8 @@ CREATE TABLE "hives" (
     -- AES-256-GCM ciphertext; raw name is never stored
     "name"       TEXT        NOT NULL,
     "type"       VARCHAR(50) NOT NULL CHECK (type IN ('family', 'organization')),
+    -- BCP 47 language tag (e.g. 'de-DE', 'en-US'). NULL = platform default.
+    "locale"     VARCHAR(12),
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ NOT NULL,
     CONSTRAINT "hives_pkey" PRIMARY KEY ("id")
@@ -35,6 +37,8 @@ CREATE TABLE "users" (
     "is_system_admin"  BOOLEAN     NOT NULL DEFAULT false,
     -- full_name: AES-256-GCM ciphertext (user-scoped HKDF key).
     "full_name"        TEXT,
+    -- AES-256-GCM ciphertext (user-scoped key); BCP 47 locale. NULL = inherit.
+    "locale"           TEXT,
     "created_at"       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at"       TIMESTAMPTZ NOT NULL,
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")

@@ -40,13 +40,13 @@
     "sbom": "npx @cyclonedx/cyclonedx-npm --output-file sbom.json --output-format JSON"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.4.1",
-    "@commitlint/config-conventional": "^20.4.1",
+    "@commitlint/cli": "^20.4.2",
+    "@commitlint/config-conventional": "^20.4.2",
     "dotenv-cli": "^11.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
-    "turbo": "^2.8.9",
+    "turbo": "^2.8.10",
     "typescript": "^5.9.3"
   },
   "engines": {

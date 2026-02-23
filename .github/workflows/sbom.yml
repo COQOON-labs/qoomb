@@ -45,10 +45,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Generate CycloneDX SBOM
+      # --ignore-npm-errors: pnpm's node_modules layout causes `npm ls` to
+      # report phantom missing/invalid packages. The SBOM is still accurate.
       - name: Generate CycloneDX SBOM
         run: |
-          npx @cyclonedx/cyclonedx-npm --output-file sbom.json --output-format JSON
-          npx @cyclonedx/cyclonedx-npm --output-file sbom.xml --output-format XML
+          npx @cyclonedx/cyclonedx-npm --ignore-npm-errors --output-file sbom.json --output-format JSON
+          npx @cyclonedx/cyclonedx-npm --ignore-npm-errors --output-file sbom.xml --output-format XML
 
       # Generate license report
       - name: Generate License Report

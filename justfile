@@ -235,16 +235,23 @@ _preflight:
     fi
 
     # 5. Prisma client
-    # pnpm stores the generated client in the virtual store, not at
-    # node_modules/.prisma/client. Use a glob that matches the pnpm layout.
-    if ls node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client/index.js >/dev/null 2>&1; then
-        echo -e "\033[0;32m  ✓ Prisma client\033[0m"
-    else
+    # pnpm stores the generated client in the virtual store. Prisma copies
+    # schema.prisma into the generated output — compare to detect staleness.
+    PRISMA_GENERATED=$(echo node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client)
+    if [ ! -f "$PRISMA_GENERATED/index.js" ]; then
         echo -e "\033[1;33m  ⚠ Prisma client not generated\033[0m"
         if ask "Generate now?" required; then
             pnpm --filter @qoomb/api db:generate
             echo -e "\033[0;32m  ✓ Prisma client generated\033[0m"
         fi
+    elif ! diff -q apps/api/prisma/schema.prisma "$PRISMA_GENERATED/schema.prisma" >/dev/null 2>&1; then
+        echo -e "\033[1;33m  ⚠ Prisma client outdated (schema changed)\033[0m"
+        if ask "Regenerate now?" required; then
+            pnpm --filter @qoomb/api db:generate
+            echo -e "\033[0;32m  ✓ Prisma client regenerated\033[0m"
+        fi
+    else
+        echo -e "\033[0;32m  ✓ Prisma client\033[0m"
     fi
 
     # 6. Database migrations

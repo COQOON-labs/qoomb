@@ -15,11 +15,16 @@
 export const RATE_LIMITS = {
   /**
    * Global rate limit (applies to all endpoints by default)
-   * 100 requests per 15 minutes per IP/user
+   * 300 requests per minute per IP/user
+   *
+   * This must be generous enough for normal SPA usage where a single
+   * page load triggers multiple tRPC queries in parallel.
+   * Sensitive endpoints (auth, registration, password reset) have their
+   * own much stricter limits applied via @Throttle() decorators.
    */
   GLOBAL: {
-    ttl: 15 * 60, // 15 minutes in seconds
-    limit: 100,
+    ttl: 60, // 1 minute in seconds
+    limit: 300,
   },
 
   /**

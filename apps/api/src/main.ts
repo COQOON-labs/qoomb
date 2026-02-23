@@ -121,10 +121,15 @@ function validateJwtKeys(logger: Logger): void {
   let keyBits: number | undefined;
   try {
     const keyObject = crypto.createPublicKey(publicKeyPem);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const keySizeBytes = keyObject.asymmetricKeySize;
-    if (keySizeBytes) {
-      keyBits = keySizeBytes * 8;
+    // Export the key as JWK to read the modulus length (n), which tells us
+    // the RSA key size.  `asymmetricKeySize` is not available in all Node
+    // versions, so JWK export is the portable approach.
+    const jwk = keyObject.export({ format: 'jwk' });
+    const modulus = jwk.n as string | undefined;
+    if (modulus) {
+      // JWK encodes the modulus as base64url; byte length * 8 = bit size
+      const modulusBytes = Buffer.from(modulus, 'base64url').length;
+      keyBits = modulusBytes * 8;
       if (keyBits < 2048) {
         throw new JwtKeyValidationError(
           '\n' +
@@ -228,26 +233,20 @@ async function bootstrap() {
   // document.cookie and sends the value as the X-CSRF-Token header.
   // The CsrfGuard validates that both match on state-changing requests.
   const fastifyInstance = app.getHttpAdapter().getInstance();
-  fastifyInstance.addHook(
-    'onRequest',
-    (
-      request: { cookies?: Record<string, string> },
-      reply: { setCookie: (name: string, value: string, opts: Record<string, unknown>) => void },
-      done: () => void
-    ) => {
-      if (!request.cookies?.[CSRF_CONFIG.COOKIE_NAME]) {
-        const token = crypto.randomBytes(CSRF_CONFIG.TOKEN_LENGTH).toString('base64url');
-        reply.setCookie(CSRF_CONFIG.COOKIE_NAME, token, {
-          httpOnly: false, // Must be readable by JavaScript
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          path: '/',
-          maxAge: CSRF_CONFIG.COOKIE_MAX_AGE_SECONDS,
-        });
-      }
-      done();
+  fastifyInstance.addHook('onRequest', (request, reply, done) => {
+    const cookies = request.cookies as Record<string, string | undefined> | undefined;
+    if (!cookies?.[CSRF_CONFIG.COOKIE_NAME]) {
+      const token = crypto.randomBytes(CSRF_CONFIG.TOKEN_LENGTH).toString('base64url');
+      void reply.setCookie(CSRF_CONFIG.COOKIE_NAME, token, {
+        httpOnly: false, // Must be readable by JavaScript
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: CSRF_CONFIG.COOKIE_MAX_AGE_SECONDS,
+      });
     }
-  );
+    done();
+  });
 
   // Enable CORS with comprehensive configuration
   app.enableCors({

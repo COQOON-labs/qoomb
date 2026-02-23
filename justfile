@@ -162,13 +162,23 @@ _preflight:
 
     # 2. Dependencies (node_modules)
     if [ ! -d node_modules ]; then
-        echo -e "\033[1;33m  ⚠ node_modules missing — running pnpm install...\033[0m"
+        echo -e "\033[1;33m  ⚠ node_modules missing\033[0m"
+        read -r -p "$(echo -e '    \033[1;33mRun pnpm install? [Y/n] \033[0m')" ANSWER
+        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
+            echo -e "\033[0;31m  ✗ Cannot start without dependencies\033[0m"
+            exit 1
+        fi
         pnpm install
         echo -e "\033[0;32m  ✓ Dependencies installed\033[0m"
     elif [ -f pnpm-lock.yaml ] && [ "pnpm-lock.yaml" -nt "node_modules" ]; then
-        echo -e "\033[1;33m  ⚠ Lock file changed — running pnpm install...\033[0m"
-        pnpm install
-        echo -e "\033[0;32m  ✓ Dependencies updated\033[0m"
+        echo -e "\033[1;33m  ⚠ Lock file changed since last install\033[0m"
+        read -r -p "$(echo -e '    \033[1;33mRun pnpm install to update? [Y/n] \033[0m')" ANSWER
+        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
+            echo -e "\033[1;33m  → Skipped (may cause issues)\033[0m"
+        else
+            pnpm install
+            echo -e "\033[0;32m  ✓ Dependencies updated\033[0m"
+        fi
     else
         echo -e "\033[0;32m  ✓ Dependencies\033[0m"
     fi
@@ -188,7 +198,12 @@ _preflight:
        docker ps --filter "name=qoomb-redis"    --filter "status=running" -q | grep -q .; then
         echo -e "\033[0;32m  ✓ Docker services\033[0m"
     else
-        echo -e "\033[1;33m  ⚠ Docker services not running — starting...\033[0m"
+        echo -e "\033[1;33m  ⚠ Docker services not running (PostgreSQL + Redis)\033[0m"
+        read -r -p "$(echo -e '    \033[1;33mStart Docker services? [Y/n] \033[0m')" ANSWER
+        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
+            echo -e "\033[0;31m  ✗ Cannot start without database and cache\033[0m"
+            exit 1
+        fi
         docker-compose up -d
         sleep 3
         echo -e "\033[0;32m  ✓ Docker services started\033[0m"
@@ -196,7 +211,12 @@ _preflight:
 
     # 5. Prisma client
     if [ ! -d node_modules/.prisma/client ]; then
-        echo -e "\033[1;33m  ⚠ Prisma client missing — generating...\033[0m"
+        echo -e "\033[1;33m  ⚠ Prisma client not generated\033[0m"
+        read -r -p "$(echo -e '    \033[1;33mGenerate now? [Y/n] \033[0m')" ANSWER
+        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
+            echo -e "\033[0;31m  ✗ Cannot start without Prisma client\033[0m"
+            exit 1
+        fi
         pnpm --filter @qoomb/api db:generate
         echo -e "\033[0;32m  ✓ Prisma client generated\033[0m"
     else
@@ -209,7 +229,12 @@ _preflight:
         2>/dev/null || echo "f")
     MIGRATION_TABLE=$(echo "$MIGRATION_TABLE" | tr -d '[:space:]')
     if [ "$MIGRATION_TABLE" != "t" ]; then
-        echo -e "\033[1;33m  ⚠ Database not set up — running migrations...\033[0m"
+        echo -e "\033[1;33m  ⚠ Database not set up yet\033[0m"
+        read -r -p "$(echo -e '    \033[1;33mRun database migrations? [Y/n] \033[0m')" ANSWER
+        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
+            echo -e "\033[0;31m  ✗ Cannot start without database schema\033[0m"
+            exit 1
+        fi
         pnpm --filter @qoomb/api db:migrate
         echo -e "\033[0;32m  ✓ Migrations applied\033[0m"
     else
@@ -218,9 +243,14 @@ _preflight:
         APPLIED=$(echo "$APPLIED" | tr -d '[:space:]')
         AVAILABLE=$(ls -d apps/api/prisma/migrations/2* 2>/dev/null | wc -l | tr -d ' ')
         if [ "$APPLIED" -lt "$AVAILABLE" ] 2>/dev/null; then
-            echo -e "\033[1;33m  ⚠ $((AVAILABLE - APPLIED)) pending migration(s) — applying...\033[0m"
-            pnpm --filter @qoomb/api db:migrate
-            echo -e "\033[0;32m  ✓ Migrations applied\033[0m"
+            echo -e "\033[1;33m  ⚠ $((AVAILABLE - APPLIED)) pending migration(s)\033[0m"
+            read -r -p "$(echo -e '    \033[1;33mApply now? [Y/n] \033[0m')" ANSWER
+            if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
+                echo -e "\033[1;33m  → Skipped (may cause errors)\033[0m"
+            else
+                pnpm --filter @qoomb/api db:migrate
+                echo -e "\033[0;32m  ✓ Migrations applied\033[0m"
+            fi
         else
             echo -e "\033[0;32m  ✓ Database ($APPLIED migration(s))\033[0m"
         fi

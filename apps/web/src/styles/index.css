@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Scan shared UI package for Tailwind class usage */
-@source "../../packages/ui/src";
+@source "../../../../packages/ui/src";
 
 /* ─────────────────────────────────────────────────────────────────
    Design Tokens — CSS variables mapped to Tailwind utilities
@@ -23,6 +23,9 @@
 
   --color-card:                   var(--card);
   --color-card-foreground:        var(--card-foreground);
+
+  --color-disabled:               var(--disabled);
+  --color-disabled-foreground:    var(--disabled-foreground);
 
   --color-destructive:            var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
@@ -58,6 +61,10 @@
   --card:                   #FFFFFF; /* clean white */
   --card-foreground:        #111110;
 
+  /* Disabled form fields */
+  --disabled:               #E5E4E1; /* visible grey background */
+  --disabled-foreground:    #9C9C96; /* greyed-out text */
+
   /* Dev panel (always dark, never changes with theme) */
   --dev-bg:                 #111110;
   --dev-surface:            #1A1A18;
@@ -77,11 +84,15 @@
   :root:not(.light) {
     --background:         #0F0F0E;
     --foreground:         #FAFAF9;
-    --muted:              #1C1C1A;
+    --muted:              #292523; /* slightly lighter than card for disabled states */
     --muted-foreground:   #A8A29E; /* stone-400 */
     --border:             #292524; /* stone-800 */
     --card:               #1C1C1A;
     --card-foreground:    #FAFAF9;
+
+    /* Disabled form fields */
+    --disabled:           #252422; /* clearly darker than card */
+    --disabled-foreground: #78756E; /* dim but readable */
   }
 }
 

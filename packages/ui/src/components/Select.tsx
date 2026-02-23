@@ -7,7 +7,7 @@ import { cn } from '../utils/cn';
 const selectVariants = cva(
   'flex h-11 w-full appearance-none rounded-lg border bg-card pl-4 pr-10 py-2.5 text-sm transition-colors ' +
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 ' +
-    'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted cursor-pointer',
+    'disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground disabled:border-border/40 cursor-pointer',
   {
     variants: {
       state: {
@@ -52,7 +52,7 @@ export interface SelectProps
  * Visually consistent with the Input component.
  */
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, label, error, helperText, id, children, ...props }, ref) => {
+  ({ className, label, error, helperText, id, children, disabled, ...props }, ref) => {
     const generatedId = React.useId();
     const selectId = id ?? generatedId;
 
@@ -61,7 +61,10 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <LabelPrimitive.Root
             htmlFor={selectId}
-            className="mb-2 block text-sm font-medium text-foreground"
+            className={cn(
+              'mb-2 block text-sm font-medium text-foreground transition-colors',
+              disabled && 'text-muted-foreground'
+            )}
           >
             {label}
           </LabelPrimitive.Root>
@@ -75,6 +78,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             aria-describedby={
               error ? `${selectId}-error` : helperText ? `${selectId}-helper` : undefined
             }
+            disabled={disabled}
             {...props}
           >
             {children}

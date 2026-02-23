@@ -8,7 +8,7 @@ const inputVariants = cva(
   'flex h-11 w-full rounded-lg border bg-card px-4 py-2.5 text-sm transition-colors ' +
     'placeholder:text-muted-foreground ' +
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 ' +
-    'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted',
+    'disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground disabled:border-border/40',
   {
     variants: {
       state: {
@@ -77,7 +77,10 @@ function EyeOffIcon() {
  * Designed to work across web and mobile (Capacitor).
  */
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, helperText, id, type, showPasswordToggle, ...props }, ref) => {
+  (
+    { className, label, error, helperText, id, type, showPasswordToggle, disabled, ...props },
+    ref
+  ) => {
     const generatedId = React.useId();
     const inputId = id ?? generatedId;
     const [showPassword, setShowPassword] = React.useState(false);
@@ -90,7 +93,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <LabelPrimitive.Root
             htmlFor={inputId}
-            className="mb-2 block text-sm font-medium text-foreground"
+            className={cn(
+              'mb-2 block text-sm font-medium text-foreground transition-colors',
+              disabled && 'text-muted-foreground'
+            )}
           >
             {label}
           </LabelPrimitive.Root>
@@ -109,6 +115,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-describedby={
               error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
             }
+            disabled={disabled}
             {...props}
           />
           {isPassword && showPasswordToggle && (

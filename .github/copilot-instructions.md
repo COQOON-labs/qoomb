@@ -188,14 +188,14 @@ const handleSubmit = useCallback(
 - Prettier auto-formats on pre-commit — do not fight it
 - Commits must follow **Conventional Commits** (`feat:`, `fix:`, `chore:`, etc.)
 - **Never add `Co-Authored-By:` trailers** — not for AI tools, not for anyone
-- Never increment `APP_VERSION` without explicit user approval
+- Never manually change version numbers — Release Please manages versioning
 
 ---
 
 ## Versioning Policy
 
-- Current version: `0.1.0` — defined in `apps/web/src/App.tsx` as `APP_VERSION`
-- Bumping requires explicit user approval + updates to `App.tsx`, `claude.md`, `README.md`
+- **Single source of truth:** Root `package.json` version (managed by Release Please)
+- Vite injects `__APP_VERSION__` at build time — no hardcoded version in app code
 - Development work (new features, refactors, docs) does **not** bump version
 
 ---

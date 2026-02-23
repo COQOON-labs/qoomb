@@ -125,7 +125,7 @@ function validateJwtKeys(logger: Logger): void {
     // the RSA key size.  `asymmetricKeySize` is not available in all Node
     // versions, so JWK export is the portable approach.
     const jwk = keyObject.export({ format: 'jwk' });
-    const modulus = jwk.n as string | undefined;
+    const modulus = jwk.n;
     if (modulus) {
       // JWK encodes the modulus as base64url; byte length * 8 = bit size
       const modulusBytes = Buffer.from(modulus, 'base64url').length;

@@ -1,5 +1,5 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { getInitials, SUPPORTED_TRANSLATION_LOCALES, type TranslationLocale } from '@qoomb/types';
+import { getInitials, SUPPORTED_BCP47_LOCALES, type Bcp47Locale } from '@qoomb/types';
 import { Button, FormSection, Input, Select } from '@qoomb/ui';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -13,14 +13,6 @@ import { useAuth } from '../lib/auth/useAuth';
 import { useLocale } from '../lib/locale/LocaleProvider';
 import { trpc } from '../lib/trpc/client';
 
-// ── Locale → BCP 47 mapping for the updateLocale endpoint ────────────────────
-
-const LOCALE_BCP47_MAP: Record<TranslationLocale, string> = {
-  en: 'en-US',
-  de: 'de-DE',
-  'de-AT': 'de-AT',
-};
-
 // ── Schemas ───────────────────────────────────────────────────────────────────
 
 const profileSchema = z.object({
@@ -28,7 +20,7 @@ const profileSchema = z.object({
 });
 
 const languageSchema = z.object({
-  locale: z.enum([...SUPPORTED_TRANSLATION_LOCALES] as [TranslationLocale, ...TranslationLocale[]]),
+  locale: z.enum([...SUPPORTED_BCP47_LOCALES] as [Bcp47Locale, ...Bcp47Locale[]]),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -40,7 +32,7 @@ export function ProfilePage() {
   const { LL } = useI18nContext();
   const { user } = useAuth();
   const { roleLabel } = useCurrentPerson();
-  const { bcp47Locale, translationLocale, setLocale } = useLocale();
+  const { bcp47Locale, setLocale } = useLocale();
 
   // ── Person data ─────────────────────────────────────────────────────────────
   const { data: person, isLoading } = trpc.persons.me.useQuery(undefined, {
@@ -83,11 +75,20 @@ export function ProfilePage() {
   const {
     register: registerLanguage,
     handleSubmit: handleLanguageSubmit,
+    reset: resetLanguage,
     formState: { isDirty: isLanguageDirty },
   } = useForm<LanguageFormValues>({
     resolver: standardSchemaResolver(languageSchema),
-    defaultValues: { locale: translationLocale },
+    defaultValues: { locale: bcp47Locale as Bcp47Locale },
   });
+
+  // Keep the language form in sync with the effective BCP 47 locale.
+  // Handles: async locale load after login, successful save, hive switch, token refresh.
+  useEffect(() => {
+    if (SUPPORTED_BCP47_LOCALES.includes(bcp47Locale as Bcp47Locale)) {
+      resetLanguage({ locale: bcp47Locale as Bcp47Locale });
+    }
+  }, [bcp47Locale, resetLanguage]);
 
   // ── Language mutation ───────────────────────────────────────────────────────
   const updateLocale = trpc.auth.updateLocale.useMutation({
@@ -97,8 +98,7 @@ export function ProfilePage() {
   });
 
   const onLanguageSubmit = handleLanguageSubmit(({ locale }) => {
-    const bcp47 = LOCALE_BCP47_MAP[locale] ?? locale;
-    updateLocale.mutate({ locale: bcp47 });
+    updateLocale.mutate({ locale });
   });
 
   // ── Derived values ──────────────────────────────────────────────────────────
@@ -113,13 +113,13 @@ export function ProfilePage() {
       })
     : undefined;
 
-  const localeLabel = (tl: TranslationLocale): string => {
-    const labels: Record<TranslationLocale, () => string> = {
-      en: () => LL.profile.language.en(),
-      de: () => LL.profile.language.de(),
+  const localeLabel = (bcp47: Bcp47Locale): string => {
+    const labels: Record<Bcp47Locale, () => string> = {
+      'en-US': () => LL.profile.language.enUS(),
+      'de-DE': () => LL.profile.language.deDE(),
       'de-AT': () => LL.profile.language.deAT(),
     };
-    return labels[tl]();
+    return labels[bcp47]();
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -221,9 +221,9 @@ export function ProfilePage() {
             }
           >
             <Select label={LL.profile.language.title()} {...registerLanguage('locale')}>
-              {SUPPORTED_TRANSLATION_LOCALES.map((tl: TranslationLocale) => (
-                <option key={tl} value={tl}>
-                  {localeLabel(tl)}
+              {SUPPORTED_BCP47_LOCALES.map((bcp47) => (
+                <option key={bcp47} value={bcp47}>
+                  {localeLabel(bcp47)}
                 </option>
               ))}
             </Select>

@@ -441,17 +441,17 @@ type RootTranslation = {
        */
       saveError: string;
       /**
-       * D​e​u​t​s​c​h
+       * D​e​u​t​s​c​h​ ​(​D​e​u​t​s​c​h​l​a​n​d​)
        */
-      de: string;
+      deDE: string;
       /**
        * D​e​u​t​s​c​h​ ​(​Ö​s​t​e​r​r​e​i​c​h​)
        */
       deAT: string;
       /**
-       * E​n​g​l​i​s​h
+       * E​n​g​l​i​s​h​ ​(​U​S​)
        */
-      en: string;
+      enUS: string;
     };
     security: {
       /**
@@ -940,17 +940,17 @@ export type TranslationFunctions = {
        */
       saveError: () => LocalizedString;
       /**
-       * Deutsch
+       * Deutsch (Deutschland)
        */
-      de: () => LocalizedString;
+      deDE: () => LocalizedString;
       /**
        * Deutsch (Österreich)
        */
       deAT: () => LocalizedString;
       /**
-       * English
+       * English (US)
        */
-      en: () => LocalizedString;
+      enUS: () => LocalizedString;
     };
     security: {
       /**

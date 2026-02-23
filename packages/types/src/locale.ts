@@ -26,11 +26,28 @@ export const FALLBACK_LOCALE = 'en-US' as const;
  *
  * To add a new translation language, add its key here **and** create the
  * corresponding translation files in both apps.
+ *
+ * NOTE: `'de'` and `'en'` are base/fallback files for their language families.
+ * Users always store a full BCP 47 tag (see `SUPPORTED_BCP47_LOCALES`).
  */
 export const SUPPORTED_TRANSLATION_LOCALES = ['de', 'de-AT', 'en'] as const;
 
 /** Union type of available translation locales. */
 export type TranslationLocale = (typeof SUPPORTED_TRANSLATION_LOCALES)[number];
+
+/**
+ * User-selectable BCP 47 locales.
+ *
+ * Every user must have a full BCP 47 locale — never a bare language code.
+ * The plain `'de'` / `'en'` translation files are fallback bases only.
+ *
+ * When adding a new locale, also add a matching translation folder **and**
+ * update the labels in both `en/index.ts` and `de/index.ts`.
+ */
+export const SUPPORTED_BCP47_LOCALES = ['de-AT', 'de-DE', 'en-US'] as const;
+
+/** Union type of user-selectable BCP 47 locales. */
+export type Bcp47Locale = (typeof SUPPORTED_BCP47_LOCALES)[number];
 
 // ---------------------------------------------------------------------------
 // BCP 47 helpers

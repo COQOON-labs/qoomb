@@ -145,9 +145,9 @@ const en = {
       description: 'Choose the language for the interface',
       saved: 'Language updated!',
       saveError: 'Failed to update language.',
-      de: 'Deutsch',
+      deDE: 'Deutsch (Deutschland)',
       deAT: 'Deutsch (Österreich)',
-      en: 'English',
+      enUS: 'English (US)',
     },
     security: {
       title: 'Security',

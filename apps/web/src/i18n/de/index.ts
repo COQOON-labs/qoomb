@@ -146,9 +146,9 @@ const de = {
       description: 'Wähle die Sprache für die Oberfläche',
       saved: 'Sprache aktualisiert!',
       saveError: 'Sprache konnte nicht aktualisiert werden.',
-      de: 'Deutsch',
+      deDE: 'Deutsch (Deutschland)',
       deAT: 'Deutsch (Österreich)',
-      en: 'English',
+      enUS: 'English (US)',
     },
     security: {
       title: 'Sicherheit',

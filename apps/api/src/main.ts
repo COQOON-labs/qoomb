@@ -121,6 +121,7 @@ function validateJwtKeys(logger: Logger): void {
   let keyBits: number | undefined;
   try {
     const keyObject = crypto.createPublicKey(publicKeyPem);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const keySizeBytes = keyObject.asymmetricKeySize;
     if (keySizeBytes) {
       keyBits = keySizeBytes * 8;

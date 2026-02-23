@@ -62,6 +62,10 @@ just db-studio     # Open Prisma Studio (DB GUI)
 just status        # Check service status
 just stop          # Stop development (Caddy)
 just clean         # Clean build artifacts
+
+# Auto-approve all prompts (useful for CI/scripts)
+AUTO=1 just start
+AUTO=1 just clean-all
 ```
 
 ### Option 2: Manual Setup

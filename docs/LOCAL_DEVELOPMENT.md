@@ -127,6 +127,25 @@ just stop          # Stop Caddy
 just docker-down   # Stop Docker services
 ```
 
+### Auto-Approve Mode
+
+Both `just start` and `just start-simple` run pre-flight checks that prompt before making changes (installing dependencies, starting Docker, running migrations, etc.). To skip all prompts and auto-approve everything:
+
+```bash
+AUTO=1 just start
+AUTO=1 just start-simple
+```
+
+This also works for destructive commands:
+
+```bash
+AUTO=1 just clean-all   # Delete node_modules + Docker volumes without confirmation
+AUTO=1 just db-reset    # Wipe and rebuild database without confirmation
+AUTO=1 just fresh       # Full rebuild without confirmation
+```
+
+> **Tip:** Useful for CI/CD pipelines, scripted setups, or when you just want to get going quickly.
+
 ## Mobile Device Testing
 
 ### Mobile Prerequisites

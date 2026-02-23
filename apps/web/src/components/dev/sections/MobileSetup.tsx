@@ -19,7 +19,7 @@ export function MobileSetup() {
 
       {!ip && (
         <p className="text-white/40 text-xs mb-3">
-          Waiting for backend connection… run <code>just dev</code> for full mobile support
+          Waiting for backend connection… run <code>just start</code> for full mobile support
         </p>
       )}
 

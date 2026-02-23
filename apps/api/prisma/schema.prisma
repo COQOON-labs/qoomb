@@ -49,8 +49,8 @@ model User {
   emailVerified Boolean  @default(false) @map("email_verified")
   isSystemAdmin Boolean  @default(false) @map("is_system_admin")
   fullName      String?  @map("full_name") @db.Text
-  // BCP 47 locale tag (e.g. 'de-DE', 'en-US'). NULL = inherit hive or platform default.
-  locale        String?  @db.VarChar(12)
+  // locale: AES-256-GCM ciphertext, per-user key — use encryptUserLocale / decryptUserLocale.\n  // BCP 47 locale tag (e.g. 'de-DE', 'en-US'). NULL = inherit hive or platform default.
+  locale        String?  @db.Text
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
 

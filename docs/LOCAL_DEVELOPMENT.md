@@ -44,7 +44,7 @@ This extended setup requires **macOS or Linux** with:
 - Homebrew (macOS) or package manager (Linux)
 - Ability to install system certificates (mkcert)
 
-**For Windows users:** Use `just dev-simple` instead.
+**For Windows users:** Use `just start-simple` instead.
 
 ## Setup (One-Time)
 
@@ -92,7 +92,7 @@ ping qoomb.localhost
 ### Simple Development (localhost only)
 
 ```bash
-just dev-simple
+just start-simple
 ```
 
 Access your app at:
@@ -103,7 +103,7 @@ Access your app at:
 ### Full Development (HTTPS + local domain, recommended)
 
 ```bash
-just dev
+just start
 ```
 
 Access your app at:
@@ -126,6 +126,45 @@ Press `Ctrl+C` to stop the development servers, then:
 just stop          # Stop Caddy
 just docker-down   # Stop Docker services
 ```
+
+### Auto-Approve Mode
+
+Both `just start` and `just start-simple` run pre-flight checks that prompt before making changes (installing dependencies, starting Docker, running migrations, etc.). To skip all prompts and auto-approve everything:
+
+```bash
+AUTO=1 just start
+AUTO=1 just start-simple
+```
+
+This also works for destructive commands:
+
+```bash
+AUTO=1 just clean-all   # Delete node_modules + Docker volumes without confirmation
+AUTO=1 just db-reset    # Wipe and rebuild database without confirmation
+AUTO=1 just fresh       # Full rebuild without confirmation
+```
+
+> **Tip:** Useful for CI/CD pipelines, scripted setups, or when you just want to get going quickly.
+
+### Dev Seed Data
+
+The pre-flight check detects whether seed data (the Doe Family test hive) is present. If not, you'll be prompted to install it. To pre-approve seeding without being asked:
+
+```bash
+SEED=1 just start           # Prompt for infra, auto-seed
+SEED=1 just start-simple    # Same for localhost mode
+SEED=1 AUTO=1 just start    # Full auto including seed
+```
+
+The seed creates three test accounts (password: `Dev1234!`):
+
+| Email          | Role              |
+| -------------- | ----------------- |
+| `john@doe.dev` | parent + sysadmin |
+| `anna@doe.dev` | parent            |
+| `tim@doe.dev`  | child             |
+
+`SEED=1` is separate from `AUTO=1` so you can auto-approve infrastructure prompts without automatically seeding (or vice versa). With `AUTO=1` alone, seeding is skipped silently.
 
 ## Mobile Device Testing
 
@@ -341,7 +380,7 @@ To use a different domain (e.g., `myapp.local`):
 
 ## Comparison: Development Modes
 
-| Feature              | Simple (`just dev-simple`)   | Full (`just dev`)                  |
+| Feature              | Simple (`just start-simple`) | Full (`just start`)                |
 | -------------------- | ---------------------------- | ---------------------------------- |
 | **Frontend URL**     | <http://localhost:5173>      | <https://qoomb.localhost:8443>     |
 | **Backend URL**      | <http://localhost:3001>      | <https://qoomb.localhost:8443/api> |
@@ -355,7 +394,7 @@ To use a different domain (e.g., `myapp.local`):
 
 ## When to Use What
 
-**Use `just dev-simple` when:**
+**Use `just start-simple` when:**
 
 - Doing regular development work
 - Developing backend features
@@ -364,7 +403,7 @@ To use a different domain (e.g., `myapp.local`):
 - Working on Windows
 - You don't need HTTPS/PWA features
 
-**Use `just dev` (recommended) when:**
+**Use `just start` (recommended) when:**
 
 - Testing PWA features
 - Testing on mobile devices
@@ -382,7 +421,7 @@ To use a different domain (e.g., `myapp.local`):
 
 ## Summary
 
-The full development setup with qoomb.localhost provides a production-like environment with HTTPS for mobile/PWA testing. Use `just dev-simple` if you only need localhost without HTTPS.
+The full development setup with qoomb.localhost provides a production-like environment with HTTPS for mobile/PWA testing. Use `just start-simple` if you only need localhost without HTTPS.
 
 **Simple Development (localhost only):**
 
@@ -391,7 +430,7 @@ The full development setup with qoomb.localhost provides a production-like envir
 just setup-simple
 
 # Daily development
-just dev-simple
+just start-simple
 
 # Access at http://localhost:5173
 ```
@@ -403,12 +442,12 @@ just dev-simple
 just setup
 
 # Daily development
-just dev
+just start
 
 # Access at https://qoomb.localhost:8443 (also works on mobile devices)
 ```
 
 **Platform Support:**
 
-- Simple mode (`just dev-simple`): ✅ Works on **all platforms** (Windows, macOS, Linux)
-- Full mode (`just dev`): ⚠️ Requires **macOS or Linux** (uses Homebrew/mkcert)
+- Simple mode (`just start-simple`): ✅ Works on **all platforms** (Windows, macOS, Linux)
+- Full mode (`just start`): ⚠️ Requires **macOS or Linux** (uses Homebrew/mkcert)

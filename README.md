@@ -22,7 +22,7 @@ A family organization platform with offline-first capabilities, hybrid encryptio
 just setup
 
 # Start development servers
-just dev
+just start
 ```
 
 Visit: **<https://qoomb.localhost:8443>** (also works on mobile devices)
@@ -31,7 +31,7 @@ Visit: **<https://qoomb.localhost:8443>** (also works on mobile devices)
 
 ```bash
 just setup-simple
-just dev-simple
+just start-simple
 # Visit: http://localhost:5173
 ```
 
@@ -45,8 +45,8 @@ just setup-simple  # Simple setup (Docker + DB, localhost only)
 just setup         # Full setup with HTTPS (macOS/Linux, recommended)
 
 # Development
-just dev           # Start with HTTPS & qoomb.localhost (recommended)
-just dev-simple    # Start on localhost only (no HTTPS)
+just start         # Start with HTTPS & qoomb.localhost (recommended)
+just start-simple  # Start on localhost only (no HTTPS)
 just dev-api       # Start only backend API
 just dev-web       # Start only frontend
 
@@ -62,6 +62,14 @@ just db-studio     # Open Prisma Studio (DB GUI)
 just status        # Check service status
 just stop          # Stop development (Caddy)
 just clean         # Clean build artifacts
+
+# Auto-approve all prompts (useful for CI/scripts)
+AUTO=1 just start
+AUTO=1 just clean-all
+
+# Pre-approve dev seed data (Doe Family test users)
+SEED=1 just start
+SEED=1 AUTO=1 just start   # Full auto including seed
 ```
 
 ### Option 2: Manual Setup

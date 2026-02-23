@@ -1,10 +1,25 @@
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Button, Input } from '@qoomb/ui';
-import { useCallback, useState } from 'react';
+import { passwordSchema } from '@qoomb/validators';
+import { useForm } from 'react-hook-form';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { z } from 'zod';
 
 import { useI18nContext } from '../i18n/i18n-react';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { trpc } from '../lib/trpc/client';
+
+const resetPasswordFormSchema = z
+  .object({
+    password: passwordSchema,
+    confirmPassword: z.string().min(1),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Passwords do not match',
+  });
+
+type ResetPasswordFormValues = z.infer<typeof resetPasswordFormSchema>;
 
 export function ResetPasswordPage() {
   const { LL } = useI18nContext();
@@ -12,55 +27,48 @@ export function ResetPasswordPage() {
   const token = searchParams.get('token') ?? '';
   const navigate = useNavigate();
 
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [formError, setFormError] = useState('');
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<ResetPasswordFormValues>({
+    resolver: standardSchemaResolver(resetPasswordFormSchema),
+    defaultValues: { password: '', confirmPassword: '' },
+  });
 
   const mutation = trpc.auth.resetPassword.useMutation({
     onSuccess: () => {
       void navigate('/login', { replace: true });
     },
-    onError: (err) => setFormError(err.message),
+    onError: (err) => setError('root', { message: err.message }),
   });
 
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      setFormError('');
-      if (password !== confirm) {
-        setFormError(LL.auth.resetPassword.passwordMismatch());
-        return;
-      }
-      mutation.mutate({ token, newPassword: password });
-    },
-    [LL, password, confirm, token, mutation, setFormError]
-  );
-
-  // No token → back to login
   if (!token) return <Navigate to="/login" replace />;
+
+  const onSubmit = handleSubmit(({ password }) => {
+    mutation.mutate({ token, newPassword: password });
+  });
 
   return (
     <AuthLayout title={LL.auth.resetPassword.title()} subtitle={LL.auth.resetPassword.subtitle()}>
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+      <form onSubmit={(e) => void onSubmit(e)} className="mt-6 flex flex-col gap-4">
         <Input
           label={LL.auth.resetPassword.newPasswordLabel()}
           type="password"
           autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
           showPasswordToggle
           helperText={LL.common.passwordHint()}
+          error={errors.password?.message}
+          {...register('password')}
         />
         <Input
           label={LL.auth.resetPassword.confirmPasswordLabel()}
           type="password"
           autoComplete="new-password"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          required
           showPasswordToggle
-          error={formError || undefined}
+          error={errors.confirmPassword?.message ?? errors.root?.message}
+          {...register('confirmPassword')}
         />
 
         <Button type="submit" fullWidth isLoading={mutation.isPending} className="mt-2">

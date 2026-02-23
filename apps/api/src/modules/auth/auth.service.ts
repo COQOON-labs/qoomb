@@ -157,7 +157,7 @@ export class AuthService {
       userAgent
     );
 
-    const userEmail: string = this.enc.decryptForUser(result.user.email, result.user.id);
+    const pii = this.decryptUserPii(result.user);
     const hiveIdReturn: string = result.hive.id;
     const hiveName: string = this.decryptHiveName(result.hive.name, result.hive.id);
 
@@ -170,7 +170,7 @@ export class AuthService {
       expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
       user: {
         id: userId,
-        email: userEmail,
+        email: pii.email,
         hiveId: hiveIdReturn,
         personId: personId,
         isSystemAdmin: result.user.isSystemAdmin,
@@ -179,7 +179,7 @@ export class AuthService {
         id: hiveIdReturn,
         name: hiveName,
       },
-      locale: resolveLocale(result.user.locale, result.hive.locale, getEnv().DEFAULT_LOCALE),
+      locale: resolveLocale(pii.locale, result.hive.locale, getEnv().DEFAULT_LOCALE),
     };
   }
 
@@ -266,7 +266,7 @@ export class AuthService {
       userAgent
     );
 
-    const userEmail: string = this.enc.decryptForUser(user.email, user.id);
+    const pii = this.decryptUserPii(user);
     const hiveName: string = this.decryptHiveName(
       primaryMembership.hive.name,
       primaryMembership.hive.id
@@ -278,7 +278,7 @@ export class AuthService {
       expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
       user: {
         id: userId,
-        email: userEmail,
+        email: pii.email,
         hiveId: hiveId,
         personId: personId,
       },
@@ -292,7 +292,7 @@ export class AuthService {
         role: m.person.role,
         isPrimary: m.isPrimary,
       })),
-      locale: resolveLocale(user.locale, primaryMembership.hive.locale, getEnv().DEFAULT_LOCALE),
+      locale: resolveLocale(pii.locale, primaryMembership.hive.locale, getEnv().DEFAULT_LOCALE),
     };
   }
 
@@ -350,17 +350,17 @@ export class AuthService {
       }
 
       const userId: string = user.id;
-      const userEmail: string = this.enc.decryptForUser(user.email, user.id);
+      const pii = this.decryptUserPii(user);
       const personId: string = membership.personId;
       const hiveName: string = this.decryptHiveName(membership.hive.name, hiveId);
 
       return {
         id: userId,
-        email: userEmail,
+        email: pii.email,
         hiveId: hiveId,
         personId: personId,
         hiveName: hiveName,
-        locale: resolveLocale(user.locale, membership.hive.locale, getEnv().DEFAULT_LOCALE),
+        locale: resolveLocale(pii.locale, membership.hive.locale, getEnv().DEFAULT_LOCALE),
       };
     } catch (_error) {
       // SECURITY: Generic error for all token validation failures
@@ -440,7 +440,7 @@ export class AuthService {
 
     const { token: accessToken } = this.generateAccessToken(userId, hiveId, personId);
 
-    const userEmail: string = this.enc.decryptForUser(user.email, user.id);
+    const pii = this.decryptUserPii(user);
     const hiveName: string = this.decryptHiveName(
       primaryMembership.hive.name,
       primaryMembership.hive.id
@@ -452,7 +452,7 @@ export class AuthService {
       expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
       user: {
         id: userId,
-        email: userEmail,
+        email: pii.email,
         hiveId,
         personId,
       },
@@ -460,7 +460,7 @@ export class AuthService {
         id: hiveId,
         name: hiveName,
       },
-      locale: resolveLocale(user.locale, primaryMembership.hive.locale, getEnv().DEFAULT_LOCALE),
+      locale: resolveLocale(pii.locale, primaryMembership.hive.locale, getEnv().DEFAULT_LOCALE),
     };
   }
 
@@ -551,7 +551,11 @@ export class AuthService {
         name: this.decryptHiveName(membership.hive.name, membership.hive.id),
         role: membership.person.role,
       },
-      locale: resolveLocale(user?.locale, membership.hive.locale, getEnv().DEFAULT_LOCALE),
+      locale: resolveLocale(
+        user?.locale ? this.enc.decryptForUser(user.locale, userId) : null,
+        membership.hive.locale,
+        getEnv().DEFAULT_LOCALE
+      ),
     };
   }
 
@@ -591,13 +595,15 @@ export class AuthService {
       userAgent
     );
 
+    const pii = this.decryptUserPii(userWithMemberships);
+
     return {
       accessToken,
       refreshToken: refreshTokenData.token,
       expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
       user: {
         id: user.id,
-        email: this.enc.decryptForUser(user.email, user.id),
+        email: pii.email,
         hiveId: primaryMembership.hiveId,
         personId: primaryMembership.personId,
       },
@@ -605,11 +611,7 @@ export class AuthService {
         id: primaryMembership.hive.id,
         name: this.decryptHiveName(primaryMembership.hive.name, primaryMembership.hive.id),
       },
-      locale: resolveLocale(
-        userWithMemberships.locale,
-        primaryMembership.hive.locale,
-        getEnv().DEFAULT_LOCALE
-      ),
+      locale: resolveLocale(pii.locale, primaryMembership.hive.locale, getEnv().DEFAULT_LOCALE),
     };
   }
 
@@ -739,10 +741,13 @@ export class AuthService {
       throw new ForbiddenException('Only system administrators can send invitations.');
     }
 
-    const inviterName = inviter.fullName
-      ? this.enc.decryptForUser(inviter.fullName, inviter.id)
-      : this.enc.decryptForUser(inviter.email, inviter.id);
-    await this.createAndSendInvitation(inviterUserId, inviterName, email, hiveId ?? null);
+    const inviterPii = this.decryptUserPii(inviter);
+    await this.createAndSendInvitation(
+      inviterUserId,
+      inviterPii.fullName ?? inviterPii.email,
+      email,
+      hiveId ?? null
+    );
   }
 
   /**
@@ -942,18 +947,20 @@ export class AuthService {
 
     void this.sendEmailVerification(result.user.id).catch(() => undefined);
 
+    const pii = this.decryptUserPii(result.user);
+
     return {
       accessToken,
       refreshToken: refreshTokenData.token,
       expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_SECONDS,
       user: {
         id: result.user.id,
-        email: this.enc.decryptForUser(result.user.email, result.user.id),
+        email: pii.email,
         hiveId: result.hive.id,
         personId: result.personId,
       },
       hive: { id: result.hive.id, name: this.decryptHiveName(result.hive.name, result.hive.id) },
-      locale: resolveLocale(result.user.locale, result.hive.locale, getEnv().DEFAULT_LOCALE),
+      locale: resolveLocale(pii.locale, result.hive.locale, getEnv().DEFAULT_LOCALE),
     };
   }
 
@@ -974,6 +981,23 @@ export class AuthService {
     // (wrong key, auth-tag mismatch, data corruption) is a real error and
     // must propagate instead of silently returning ciphertext to the client.
     return this.enc.decrypt(this.enc.parseFromStorage(encrypted), hiveId);
+  }
+
+  /**
+   * Decrypt all user-scoped PII fields from a database User record.
+   * Centralizes per-user key decryption — call once instead of per-field.
+   */
+  private decryptUserPii(user: {
+    id: string;
+    email: string;
+    fullName?: string | null;
+    locale?: string | null;
+  }): { email: string; fullName: string | null; locale: string | null } {
+    return {
+      email: this.enc.decryptForUser(user.email, user.id),
+      fullName: user.fullName ? this.enc.decryptForUser(user.fullName, user.id) : null,
+      locale: user.locale ? this.enc.decryptForUser(user.locale, user.id) : null,
+    };
   }
 
   private generateSecureToken(): { plainToken: string; tokenHash: string } {
@@ -1027,12 +1051,14 @@ export class AuthService {
     locale: string,
     hiveId?: string
   ): Promise<{ locale: string }> {
+    // Encrypt locale before storing
+    const encryptedLocale = this.enc.encryptForUser(locale, userId);
     await this.prisma.user.update({
       where: { id: userId },
-      data: { locale },
+      data: { locale: encryptedLocale },
     });
 
-    // Re-resolve to return the effective locale
+    // Re-resolve to return the effective (plaintext) locale
     let hiveLocale: string | null = null;
     if (hiveId) {
       const hive = await this.prisma.hive.findUnique({

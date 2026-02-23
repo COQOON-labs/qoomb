@@ -13,16 +13,20 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@qoomb/types": "workspace:*",
     "@qoomb/ui": "workspace:*",
+    "@qoomb/validators": "workspace:*",
     "@simplewebauthn/browser": "^13.2.2",
     "@tanstack/react-query": "^5.90.21",
     "@trpc/client": "^11.10.0",
     "@trpc/react-query": "^11.10.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-hook-form": "^7.71.2",
     "react-router-dom": "^7.13.0",
-    "superjson": "^2.2.6"
+    "superjson": "^2.2.6",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@qoomb/eslint-config": "workspace:^",

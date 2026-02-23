@@ -1,8 +1,6 @@
 import { cn } from '@qoomb/ui';
 import { useState } from 'react';
 
-import { APP_VERSION } from '../../App';
-
 import { DevPanelTab } from './DevPanelTab';
 import { EnvironmentInfo } from './sections/EnvironmentInfo';
 import { HealthCheck } from './sections/HealthCheck';
@@ -53,7 +51,7 @@ export function DevPanel() {
 
         {/* Footer */}
         <div className="py-3 px-4 border-t border-white/8 bg-dev-surface text-xs text-white/30 text-center uppercase tracking-widest">
-          Qoomb v{APP_VERSION} · Dev Mode
+          Qoomb v{__APP_VERSION__} · Dev Mode
         </div>
       </div>
 

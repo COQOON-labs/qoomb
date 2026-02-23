@@ -1301,9 +1301,17 @@ apps/api/src/modules/encryption/
 
 **⚠️ Version numbers are ONLY changed for actual releases, not for incremental development!**
 
-- **Current Version:** `0.1.0` (defined in `apps/web/src/App.tsx` as `APP_VERSION`)
-- **Single Source of Truth:** `apps/web/src/App.tsx` exports `APP_VERSION`
+- **Single Source of Truth:** Root `package.json` version (managed by Release Please)
+- **Build-time injection:** Vite injects `__APP_VERSION__` from root `package.json` at build time
+- **No hardcoded versions** in application code — use `__APP_VERSION__` global constant
 - **Semantic Versioning:** `MAJOR.MINOR.PATCH` (following semver.org)
+
+**How it works:**
+
+1. Release Please bumps `package.json` version + `.release-please-manifest.json` atomically
+2. Vite reads `package.json` at build time and defines `__APP_VERSION__`
+3. `version-check.yml` CI workflow validates `package.json` matches the manifest
+4. No manual sync needed — everything flows from `package.json`
 
 **When to bump versions:**
 
@@ -1321,15 +1329,7 @@ apps/api/src/modules/encryption/
 - ❌ Infrastructure changes (CI/CD, build config)
 - ❌ Work-in-progress features
 
-**Version changes require:**
-
-1. **Explicit user approval** - Never change version without asking
-2. Update `apps/web/src/App.tsx` (`APP_VERSION` constant)
-3. Update `claude.md` (this file, at bottom)
-4. Update `README.md` if version is mentioned
-5. Git commit: `chore: bump version to X.Y.Z`
-
-**LLM Instruction:** NEVER increment version numbers autonomously. Always keep `APP_VERSION = '0.1.0'` unless explicitly instructed by user for a release.
+**LLM Instruction:** NEVER increment version numbers in `package.json` or `.release-please-manifest.json` autonomously. Only Release Please should bump versions.
 
 ### Licensing & Contributions
 

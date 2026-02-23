@@ -39,7 +39,7 @@ All changes reach `main` via pull requests. Release Please automates versioning 
 | CI / Validate Commit Messages                | ci.yml            | Conventional Commits enforcement                    |
 | CI / Code Quality                            | ci.yml            | Lint, format, type-check, build, Prisma consistency |
 | CI / Tests                                   | ci.yml            | Unit/integration tests with PostgreSQL + Redis      |
-| Version Check / Check Version Consistency    | version-check.yml | APP_VERSION matches manifest                        |
+| Version Check / Check Version Consistency    | version-check.yml | package.json version matches manifest               |
 | Version Check / Prevent Manual Version Bumps | version-check.yml | Only Release Please changes versions                |
 | CodeQL / Analyze                             | codeql.yml        | SAST security scanning                              |
 | Trivy / Trivy Vulnerability Scan             | trivy.yml         | Dependency + config vulnerability scan              |

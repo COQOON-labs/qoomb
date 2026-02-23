@@ -2,7 +2,7 @@
 # Ensures version consistency and prevents unauthorized version bumps
 #
 # Rules:
-# 1. APP_VERSION must match .release-please-manifest.json
+# 1. Root package.json version must match .release-please-manifest.json
 # 2. Version changes only allowed in release-please PRs
 # 3. Prevents manual version bumps in regular PRs
 
@@ -29,12 +29,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Extract APP_VERSION from App.tsx
-        id: app_version
+      - name: Extract version from package.json
+        id: pkg_version
         run: |
-          APP_VERSION=$(grep -oP "APP_VERSION = '\K[^']*" apps/web/src/App.tsx)
-          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
-          echo "📦 APP_VERSION: $APP_VERSION"
+          PKG_VERSION=$(jq -r '.version' package.json)
+          echo "pkg_version=$PKG_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 package.json version: $PKG_VERSION"
 
       - name: Extract version from release-please manifest
         id: manifest_version
@@ -45,19 +45,17 @@ jobs:
 
       - name: Validate version consistency
         run: |
-          if [ "${{ steps.app_version.outputs.app_version }}" != "${{ steps.manifest_version.outputs.manifest_version }}" ]; then
+          if [ "${{ steps.pkg_version.outputs.pkg_version }}" != "${{ steps.manifest_version.outputs.manifest_version }}" ]; then
             echo "❌ Version mismatch detected!"
             echo ""
-            echo "APP_VERSION (apps/web/src/App.tsx): ${{ steps.app_version.outputs.app_version }}"
+            echo "package.json: ${{ steps.pkg_version.outputs.pkg_version }}"
             echo "Manifest (.release-please-manifest.json): ${{ steps.manifest_version.outputs.manifest_version }}"
             echo ""
             echo "These versions MUST match!"
             echo "Version changes should only happen through Release Please."
-            echo ""
-            echo "See claude.md 'Versioning Policy' for details."
             exit 1
           fi
-          echo "✅ Version consistency validated: ${{ steps.app_version.outputs.app_version }}"
+          echo "✅ Version consistency validated: ${{ steps.pkg_version.outputs.pkg_version }}"
 
   prevent-manual-bump:
     name: Prevent Manual Version Bumps
@@ -70,22 +68,22 @@ jobs:
         with:
           ref: ${{ github.base_ref }}
 
-      - name: Get base APP_VERSION
+      - name: Get base version
         id: base_version
         run: |
-          BASE_VERSION=$(grep -oP "APP_VERSION = '\K[^']*" apps/web/src/App.tsx || echo "0.1.0")
+          BASE_VERSION=$(jq -r '.version' package.json)
           echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Base APP_VERSION: $BASE_VERSION"
+          echo "📦 Base version: $BASE_VERSION"
 
       - name: Checkout PR branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Get PR APP_VERSION
+      - name: Get PR version
         id: pr_version
         run: |
-          PR_VERSION=$(grep -oP "APP_VERSION = '\K[^']*" apps/web/src/App.tsx)
+          PR_VERSION=$(jq -r '.version' package.json)
           echo "pr_version=$PR_VERSION" >> $GITHUB_OUTPUT
-          echo "📦 PR APP_VERSION: $PR_VERSION"
+          echo "📦 PR version: $PR_VERSION"
 
       - name: Check for unauthorized version bump
         run: |
@@ -102,11 +100,9 @@ jobs:
             echo "  • The PR title starts with 'chore: Release'"
             echo ""
             echo "For regular development PRs:"
-            echo "  • Keep APP_VERSION unchanged"
+            echo "  • Keep package.json version unchanged"
             echo "  • Use conventional commits (feat:, fix:, etc.)"
             echo "  • Release Please will handle versioning automatically"
-            echo ""
-            echo "See claude.md 'Versioning Policy' for details."
             exit 1
           fi
           echo "✅ No unauthorized version changes detected"

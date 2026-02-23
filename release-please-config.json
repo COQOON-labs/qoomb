@@ -24,14 +24,7 @@
     ".": {
       "release-type": "node",
       "component": "qoomb",
-      "changelog-path": "CHANGELOG.md",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "apps/web/src/App.tsx",
-          "glob": false
-        }
-      ]
+      "changelog-path": "CHANGELOG.md"
     }
   },
   "include-component-in-tag": false,

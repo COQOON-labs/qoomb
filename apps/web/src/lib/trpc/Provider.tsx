@@ -48,6 +48,9 @@ export function TrpcProvider({ children }: TrpcProviderProps) {
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),
               };
             },
+            // Include credentials so the browser accepts Set-Cookie headers
+            // from the server (needed for HttpOnly refresh token cookie).
+            fetch: (input, init) => globalThis.fetch(input, { ...init, credentials: 'include' }),
           }),
           false: httpBatchLink({
             url: tRPCUrl,
@@ -59,6 +62,7 @@ export function TrpcProvider({ children }: TrpcProviderProps) {
                 'X-CSRF-Protection': '1',
               };
             },
+            fetch: (input, init) => globalThis.fetch(input, { ...init, credentials: 'include' }),
           }),
         }),
       ],

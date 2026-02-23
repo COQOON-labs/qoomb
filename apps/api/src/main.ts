@@ -1,3 +1,4 @@
+import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -30,6 +31,9 @@ async function bootstrap() {
     xssFilter: SECURITY_HEADERS.xssFilter,
   };
   await app.register(helmet, helmetOptions);
+
+  // Cookie support — refresh token is stored in an HttpOnly cookie (CWE-922).
+  await app.register(cookie);
 
   // Enable CORS with comprehensive configuration
   app.enableCors({

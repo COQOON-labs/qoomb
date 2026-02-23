@@ -19,7 +19,7 @@ export class TrpcRouter {
       req,
       res,
       path,
-      createContext: () => this.trpc.createContext(req),
+      createContext: () => this.trpc.createContext(req, res),
     });
   }
 }

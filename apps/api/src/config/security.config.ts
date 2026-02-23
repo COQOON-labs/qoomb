@@ -274,6 +274,21 @@ export const SECURITY_HEADERS = {
 } as const;
 
 /**
+ * Refresh Token Cookie Configuration
+ *
+ * The refresh token is stored in an HttpOnly cookie instead of localStorage
+ * to prevent XSS-based token theft (CWE-922).
+ */
+export const REFRESH_TOKEN_COOKIE = {
+  NAME: 'qoomb_rt',
+  HTTP_ONLY: true,
+  SECURE: process.env.NODE_ENV === 'production',
+  SAME_SITE: 'strict' as const,
+  PATH: '/trpc',
+  MAX_AGE_SECONDS: 7 * 24 * 60 * 60, // 7 days — matches refresh token lifetime
+} as const;
+
+/**
  * Audit Log Configuration
  */
 export const AUDIT_CONFIG = {

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 import { CommonModule } from './common/common.module';
@@ -36,6 +37,7 @@ import { TrpcModule } from './trpc/trpc.module';
       }),
       inject: [RedisThrottlerStorage],
     }),
+    ScheduleModule.forRoot(),
     CommonModule,
     PrismaModule,
     EmailModule,

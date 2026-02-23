@@ -5,9 +5,9 @@ export interface UseAuthReturn {
   accessToken: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (user: AuthUser, accessToken: string, refreshToken: string) => void;
+  login: (user: AuthUser, accessToken: string) => void;
   logout: () => Promise<void>;
-  updateToken: (accessToken: string, refreshToken: string) => void;
+  updateToken: (accessToken: string) => void;
   switchHive: (
     hiveId: string,
     hiveName: string,

@@ -1,28 +1,15 @@
 /**
- * Persistent storage helpers for the refresh token.
+ * Auth storage helpers — DEPRECATED.
  *
- * Only the refresh token touches localStorage — the access token lives
- * exclusively in memory (AuthContext state) to reduce XSS exposure.
+ * The refresh token is now stored in an HttpOnly cookie set by the server.
+ * This module only clears any stale localStorage value left from a previous
+ * version.  It will be removed entirely in a future release.
  */
+
 const REFRESH_TOKEN_KEY = 'qoomb:refreshToken';
 
-export function getRefreshToken(): string | null {
-  try {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-export function setRefreshToken(token: string): void {
-  try {
-    localStorage.setItem(REFRESH_TOKEN_KEY, token);
-  } catch {
-    // Storage unavailable (private browsing quota, etc.) — fail silently
-  }
-}
-
-export function clearRefreshToken(): void {
+/** Remove any stale refresh token left from the localStorage era. */
+export function clearLegacyRefreshToken(): void {
   try {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
   } catch {

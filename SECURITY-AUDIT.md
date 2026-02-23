@@ -53,6 +53,7 @@ Content-Type: application/json
 4. **BUT**: If `getById` happens to reuse Connection X (which has `app.hive_id = 'hive-a-id'`), RLS also blocks it
 
 **Current mitigation:** The `getById` defense-in-depth filter catches this for **reads**. But the `update` method at `events.service.ts:163` uses:
+
 ```typescript
 return this.prisma.event.update({ where: { id }, data: patch });
 // ⚠️ No hiveId in WHERE clause!
@@ -61,12 +62,14 @@ return this.prisma.event.update({ where: { id }, data: patch });
 If the `getById` check were bypassed (race condition, future code change removing the pre-check), the update would execute on **any** event across all hives.
 
 **Similarly affected:**
+
 - `tasks.service.ts:163` — `update({ where: { id } })` — no hiveId
 - `persons.service.ts:143` — `update({ where: { id: personId } })` — no hiveId
 
 **Impact:** Cross-tenant data modification. An attacker who knows a resource UUID can modify it across hive boundaries.
 
 **Affected Code:**
+
 - `apps/api/src/prisma/prisma.service.ts:231` — `SET app.hive_id` (not `SET LOCAL`, not in transaction)
 - `apps/api/src/modules/events/events.service.ts:163` — `update({ where: { id } })` missing hiveId
 - `apps/api/src/modules/tasks/tasks.service.ts:163` — same issue
@@ -80,6 +83,7 @@ If the `getById` check were bypassed (race condition, future code change removin
 **Severity: HIGH**
 
 **The Attack:**
+
 ```
 Step 1: Send login request with known-invalid email: "nonexistent@test.com"
 Step 2: Measure response time: ~5ms (Redis lockout check + DB miss + Redis increment)
@@ -90,13 +94,16 @@ Step 5: The ~100-200ms difference from bcrypt reveals whether the email exists
 
 **Why it works:**
 At `auth.service.ts:221-224`, when a user doesn't exist:
+
 ```typescript
 if (!user) {
   await this.accountLockout.recordFailedAttempt(email); // Redis only, ~1ms
   throw new UnauthorizedException('Invalid credentials');
 }
 ```
+
 No `bcrypt.compare()` is performed. When a user DOES exist (`auth.service.ts:228`):
+
 ```typescript
 const isPasswordValid = await bcrypt.compare(password, user.passwordHash); // ~100-200ms
 ```
@@ -106,6 +113,7 @@ The router at `auth.router.ts:110-117` catches ALL errors and returns "Invalid c
 **Impact:** Attacker can enumerate valid email addresses, enabling targeted phishing or credential stuffing.
 
 **Fix:** Always run `bcrypt.compare` against a dummy hash when the user doesn't exist:
+
 ```typescript
 if (!user) {
   await bcrypt.compare(password, '$2b$10$dummyhashtopreventtimingattacks...');
@@ -121,6 +129,7 @@ if (!user) {
 **Severity: MEDIUM**
 
 **The Attack:**
+
 ```
 GET /trpc/health
 # No authentication required (publicProcedure)
@@ -134,6 +143,7 @@ Response:
 ```
 
 **Why it works:** At `app.router.ts:36-60`, the health endpoint is a `publicProcedure` that iterates `os.networkInterfaces()` and returns the server's internal IPv4 address. This gives an attacker:
+
 - Internal network topology information
 - A target IP for SSRF attacks from other compromised services
 - Infrastructure fingerprinting
@@ -147,6 +157,7 @@ Response:
 **Severity: HIGH**
 
 **The Attack:**
+
 ```
 Step 1: Find any XSS vector (e.g., stored XSS via improperly rendered content)
 Step 2: Inject: localStorage.getItem('qoomb:refreshToken')
@@ -156,6 +167,7 @@ Step 5: Full account takeover
 ```
 
 **Why it works:** At `apps/web/src/lib/auth/authStorage.ts:7-9`:
+
 ```typescript
 const REFRESH_TOKEN_KEY = 'qoomb:refreshToken';
 export function getRefreshToken(): string | null {
@@ -176,6 +188,7 @@ While the access token is correctly kept in-memory only (`tokenStore.ts`), the r
 **Severity: MEDIUM**
 
 **The Attack:**
+
 ```
 Step 1: Send login request with header: X-Forwarded-For: 1.2.3.4
 Step 2: Get rate-limited after 5 attempts
@@ -185,6 +198,7 @@ Step 5: Repeat with different IPs → unlimited login attempts
 ```
 
 **Why it works:**
+
 - `main.ts:15`: `trustProxy: true` — trusts ALL proxy headers unconditionally
 - `custom-throttler.guard.ts:54-58`: Takes the first IP from `X-Forwarded-For` without validating it came from a trusted proxy
 - If the application is deployed without a reverse proxy (or behind an untrusted one), any client can spoof their IP
@@ -200,30 +214,35 @@ Step 5: Repeat with different IPs → unlimited login attempts
 **File:** `apps/api/src/modules/encryption/encryption.service.ts`
 
 #### Nonce/IV Generation: SECURE
+
 ```typescript
 const iv = crypto.randomBytes(12); // 96-bit random nonce per operation
 ```
+
 - Fresh `crypto.randomBytes(12)` per encryption call — **correct**
 - Not deterministic, not counter-based, not reused
 - At 96 bits, birthday collision becomes probable at ~2^48 encryptions. For a typical Qoomb deployment, this is billions of years of normal usage
 - IV is stored alongside ciphertext in the serialized format — **correct**
 
 #### Auth Tag Handling: SECURE
+
 ```typescript
-const tag = cipher.getAuthTag();           // 16-byte tag extracted
+const tag = cipher.getAuthTag(); // 16-byte tag extracted
 // Stored with ciphertext in serialized format
 
 // During decryption:
-decipher.setAuthTag(encrypted.tag);        // Tag validated
+decipher.setAuthTag(encrypted.tag); // Tag validated
 const plain = Buffer.concat([decipher.update(encrypted.ciphertext), decipher.final()]);
 // decipher.final() throws if tag doesn't match — correct GCM behavior
 ```
+
 - Auth tag is always extracted and stored with the ciphertext
 - During decryption, `setAuthTag` is called before `final()`, which validates integrity
 - Failed tag validation throws an error (not silently ignored)
 - No oracle: errors return a generic "Decryption failed" message, not separate "tag invalid" vs "decryption failed"
 
 #### Serialization Format: SECURE
+
 ```typescript
 // Format: v1:<base64(iv + ciphertext + tag)>
 serializeToStorage(encrypted: EncryptedData): string {
@@ -231,6 +250,7 @@ serializeToStorage(encrypted: EncryptedData): string {
   return `v${encrypted.version}:${combined.toString('base64')}`;
 }
 ```
+
 - Version-prefixed for future algorithm migration
 - IV, ciphertext, and tag are bundled together (can't be manipulated independently)
 - Base64 encoding prevents encoding issues in DB storage
@@ -250,6 +270,7 @@ private deriveKey(masterKey: Buffer, scope: string, id: string): Buffer {
 - **Key caching:** Derived keys are cached in a `Map<string, Buffer>` — the cache key includes the scope and ID, so cross-hive contamination is prevented by design
 
 #### Key Rotation: IMPLEMENTED
+
 The `.env.example` documents a key rotation mechanism using `ENCRYPTION_KEY_CURRENT`, `_V1`, `_V2` variables. The key provider factory supports versioned keys, and there's a `db:reencrypt` script mentioned for re-encrypting existing data.
 
 ### 3.3 User-Scoped Encryption (PII): SECURE
@@ -260,6 +281,7 @@ encryptForUser(plaintext: string, userId: string): string {
   // ... AES-256-GCM encryption with per-user key
 }
 ```
+
 - User PII (email, fullName, locale) is encrypted with a key derived from the user's ID
 - Different scope ('user' vs 'hive') prevents key reuse between user and hive encryption
 - Blind email index (`emailHash`) uses HMAC-SHA256 for O(1) lookups without decryption
@@ -317,6 +339,7 @@ The encryption is **real security, not security theater**.
 **Attack Vector:** Prisma's connection pool assigns different connections per query. `SET app.hive_id` runs on Connection A, but subsequent queries may run on Connection B (which has a stale or absent `app.hive_id`), making RLS policies ineffective.
 
 **Affected Code:**
+
 ```
 apps/api/src/prisma/prisma.service.ts:231
     await this.executeRawSql(`SET app.hive_id = '${hiveId}'`);
@@ -328,6 +351,7 @@ apps/api/src/trpc/trpc.router.ts:42
 **Impact:** RLS is not functioning as a security boundary. Tenant isolation depends entirely on application-level `hiveId` WHERE filters.
 
 **Fix:**
+
 ```typescript
 // Option A: Wrap all hive-scoped operations in an interactive transaction
 async withHiveContext<T>(hiveId: string, userId: string, fn: (tx: TransactionClient) => Promise<T>): Promise<T> {
@@ -353,6 +377,7 @@ async withHiveContext<T>(hiveId: string, userId: string, fn: (tx: TransactionCli
 **Attack Vector:** Update operations use `where: { id }` without `hiveId`, relying solely on RLS (which is broken per C-1) for tenant isolation. If the pre-read check (`getById` with hiveId) is bypassed or removed, any resource across any hive can be modified.
 
 **Affected Code:**
+
 ```
 apps/api/src/modules/events/events.service.ts:163
     return this.prisma.event.update({ where: { id }, data: patch });
@@ -371,10 +396,11 @@ apps/api/src/modules/persons/persons.service.ts:160
 **Impact:** If the pre-check is bypassed (race condition, future refactor, direct service call), cross-tenant data modification is possible.
 
 **Fix:**
+
 ```typescript
 // Add hiveId to all update WHERE clauses
 return this.prisma.event.update({
-  where: { id, hiveId },  // ← Add hiveId
+  where: { id, hiveId }, // ← Add hiveId
   data: patch,
 });
 ```
@@ -392,6 +418,7 @@ return this.prisma.event.update({
 **Attack Vector:** When a user doesn't exist, `bcrypt.compare` is skipped, creating a ~100-200ms timing difference that reveals whether an email is registered.
 
 **Affected Code:**
+
 ```
 apps/api/src/modules/auth/auth.service.ts:221-224
     if (!user) {
@@ -404,6 +431,7 @@ apps/api/src/modules/auth/auth.service.ts:221-224
 **Impact:** Email enumeration, enabling targeted phishing and credential stuffing.
 
 **Fix:**
+
 ```typescript
 const DUMMY_HASH = '$2b$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ01234';
 
@@ -425,6 +453,7 @@ if (!user) {
 **Attack Vector:** The refresh token is stored in `localStorage`, accessible to any JavaScript on the same origin. An XSS vulnerability in any dependency or user-generated content can steal it.
 
 **Affected Code:**
+
 ```
 apps/web/src/lib/auth/authStorage.ts:7
     const REFRESH_TOKEN_KEY = 'qoomb:refreshToken';
@@ -446,6 +475,7 @@ apps/web/src/lib/auth/authStorage.ts:7
 **Attack Vector:** `trustProxy: true` trusts ALL `X-Forwarded-For` headers. If the API is directly exposed (no reverse proxy), any client can spoof their IP, bypassing rate limiting and IP-based security controls.
 
 **Affected Code:**
+
 ```
 apps/api/src/main.ts:15
     trustProxy: true,
@@ -458,11 +488,12 @@ apps/api/src/common/guards/custom-throttler.guard.ts:54-58
 **Impact:** Rate limit bypass, IP-based brute force protection defeated, IP logging falsified.
 
 **Fix:**
+
 ```typescript
 // Specify trusted proxy IPs or count
 new FastifyAdapter({
-  trustProxy: ['127.0.0.1', '10.0.0.0/8'],  // Only trust known proxies
-})
+  trustProxy: ['127.0.0.1', '10.0.0.0/8'], // Only trust known proxies
+});
 ```
 
 ---
@@ -476,6 +507,7 @@ new FastifyAdapter({
 **OWASP:** A01:2021 — Broken Access Control
 
 **Affected Code:**
+
 ```
 apps/api/src/trpc/app.router.ts:36-60
     health: publicProcedure.query(() => {
@@ -497,6 +529,7 @@ apps/api/src/trpc/app.router.ts:36-60
 **OWASP:** A09:2021 — Security Logging and Monitoring Failures
 
 **Affected Code:**
+
 ```
 apps/api/src/common/services/account-lockout.service.ts:181
     return `auth:failed:${email}`;
@@ -518,6 +551,7 @@ account-lockout.service.ts:67
 **OWASP:** A05:2021 — Security Misconfiguration
 
 **Affected Code:**
+
 ```
 apps/api/src/main.ts:22
     contentSecurityPolicy: process.env.NODE_ENV === 'development' ? false : SECURITY_HEADERS.contentSecurityPolicy,
@@ -535,6 +569,7 @@ apps/api/src/main.ts:22
 **CWE:** CWE-185 (Incorrect Regular Expression)
 
 **Affected Code:**
+
 ```
 apps/api/src/config/security.config.ts:105
     REQUIREMENTS_REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
@@ -544,6 +579,7 @@ apps/api/src/config/security.config.ts:105
 **Impact:** The regex lacks a `$` anchor and only matches a single character after the lookaheads. While this actually WIDENS the accepted character set (not a direct vulnerability), it means the character class restriction `[A-Za-z\d@$!%*?&]` is not enforced for the full password — only the first character after the lookaheads.
 
 **Fix:**
+
 ```typescript
 REQUIREMENTS_REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
 ```
@@ -556,6 +592,7 @@ REQUIREMENTS_REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%
 **CWE:** CWE-770 (Allocation of Resources Without Limits)
 
 **Affected Code:**
+
 ```
 apps/api/src/config/security.config.ts:140
     MAX_SESSIONS: 5,  // Defined but never enforced
@@ -577,6 +614,7 @@ apps/api/src/modules/auth/refresh-token.service.ts
 **OWASP:** A01:2021 — Broken Access Control
 
 **Affected Code:**
+
 ```
 apps/api/src/common/guards/csrf.guard.ts:62-64
     const csrfHeader = request.headers[CsrfGuard.REQUIRED_HEADER];
@@ -597,6 +635,7 @@ apps/api/src/common/guards/csrf.guard.ts:62-64
 **CWE:** CWE-400 (Uncontrolled Resource Consumption)
 
 **Affected Code:**
+
 ```
 apps/api/src/modules/events/events.service.ts:133
     recurrenceRule: (data.recurrenceRule as Prisma.InputJsonValue) ?? Prisma.JsonNull,
@@ -618,6 +657,7 @@ The `recurrenceRule` is stored as a JSON blob. If a client submits `{ "frequency
 **CWE:** CWE-327 (Use of a Broken or Risky Cryptographic Algorithm)
 
 **Affected Code:**
+
 ```
 apps/api/src/config/security.config.ts:125
     ALGORITHM: 'HS256' as const,
@@ -635,6 +675,7 @@ apps/api/src/config/security.config.ts:125
 **CWE:** CWE-1188 (Insecure Default Initialization of Resource)
 
 **Affected Code:**
+
 ```
 .gitignore:50
     prisma/migrations
@@ -652,6 +693,7 @@ apps/api/src/config/security.config.ts:125
 **CWE:** CWE-330 (Use of Insufficiently Random Values)
 
 **Affected Code:**
+
 ```
 apps/api/src/config/env.validation.ts:62-63
     const uniqueChars = new Set(secret.split('')).size;
@@ -668,6 +710,7 @@ apps/api/src/config/env.validation.ts:62-63
 **CWE:** CWE-459 (Incomplete Cleanup)
 
 **Affected Code:**
+
 ```
 apps/api/src/modules/auth/refresh-token.service.ts:236-254
     async cleanupExpiredTokens(): Promise<number> {
@@ -685,6 +728,7 @@ apps/api/src/modules/auth/refresh-token.service.ts:236-254
 **CWE:** CWE-532 (Insertion of Sensitive Information into Log File)
 
 **Affected Code:**
+
 ```
 apps/api/src/common/services/account-lockout.service.ts:67
     this.logger.warn(`Failed login attempt ${attempts}/${this.MAX_ATTEMPTS} for: ${normalizedEmail}`);
@@ -735,34 +779,29 @@ The development team deserves credit for several security decisions that are **a
 
 Ordered by: Severity x Exploitability x Fix Effort
 
-| Priority | Finding | Severity | Effort | Action |
-|----------|---------|----------|--------|--------|
-| **P0** | C-2: Add hiveId to all update WHERE clauses | Critical | **Low** | Add `hiveId` to `where` in `events.service.ts:163`, `tasks.service.ts:163`, `persons.service.ts:143,160` |
-| **P0** | C-1: Fix RLS connection pinning | Critical | **Medium** | Wrap `setHiveSchema` + queries in Prisma interactive transaction with `SET LOCAL` |
-| **P1** | H-1: Add dummy bcrypt for missing users | High | **Low** | Add `bcrypt.compare(password, DUMMY_HASH)` in the `!user` branch |
-| **P1** | H-3: Configure trusted proxy properly | High | **Medium** | Replace `trustProxy: true` with specific proxy IPs/CIDR |
-| **P1** | H-2: Move refresh token to HttpOnly cookie | High | **High** | Requires API changes (Set-Cookie header) and frontend changes |
-| **P2** | M-1: Remove localIp from health endpoint | Medium | **Low** | Delete the `getLocalIp()` function and `localIp` field |
-| **P2** | M-2: Hash email in Redis keys and logs | Medium | **Low** | Use `enc.hashEmail()` for Redis keys; redact emails in logs |
-| **P2** | M-5: Enforce MAX_SESSIONS limit | Medium | **Low** | Count active tokens before creating new ones |
-| **P2** | M-7: Validate recurrence rules | Medium | **Low** | Require `until` or `count`; cap at 1000 occurrences |
-| **P3** | M-4: Fix password regex | Medium | **Low** | Add `+$` to the end of the pattern |
-| **P3** | L-4: Add token cleanup cron | Low | **Low** | Add a NestJS `@Cron` scheduler calling `cleanupExpiredTokens()` |
-| **P3** | L-5: Redact emails in log messages | Low | **Low** | Replace email with hash in all logger calls |
-| **P4** | L-1: Consider RS256 for JWT | Low | **Medium** | Only relevant when adding external services |
-| **P4** | M-3: Don't fully disable CSP in dev | Low | **Low** | Use relaxed CSP instead of `false` |
+| Priority | Finding                                     | Severity | Effort     | Action                                                                                                   |
+| -------- | ------------------------------------------- | -------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| **P0**   | C-2: Add hiveId to all update WHERE clauses | Critical | **Low**    | Add `hiveId` to `where` in `events.service.ts:163`, `tasks.service.ts:163`, `persons.service.ts:143,160` |
+| **P0**   | C-1: Fix RLS connection pinning             | Critical | **Medium** | Wrap `setHiveSchema` + queries in Prisma interactive transaction with `SET LOCAL`                        |
+| **P1**   | H-1: Add dummy bcrypt for missing users     | High     | **Low**    | Add `bcrypt.compare(password, DUMMY_HASH)` in the `!user` branch                                         |
+| **P1**   | H-3: Configure trusted proxy properly       | High     | **Medium** | Replace `trustProxy: true` with specific proxy IPs/CIDR                                                  |
+| **P1**   | H-2: Move refresh token to HttpOnly cookie  | High     | **High**   | Requires API changes (Set-Cookie header) and frontend changes                                            |
+| **P2**   | M-1: Remove localIp from health endpoint    | Medium   | **Low**    | Delete the `getLocalIp()` function and `localIp` field                                                   |
+| **P2**   | M-2: Hash email in Redis keys and logs      | Medium   | **Low**    | Use `enc.hashEmail()` for Redis keys; redact emails in logs                                              |
+| **P2**   | M-5: Enforce MAX_SESSIONS limit             | Medium   | **Low**    | Count active tokens before creating new ones                                                             |
+| **P2**   | M-7: Validate recurrence rules              | Medium   | **Low**    | Require `until` or `count`; cap at 1000 occurrences                                                      |
+| **P3**   | M-4: Fix password regex                     | Medium   | **Low**    | Add `+$` to the end of the pattern                                                                       |
+| **P3**   | L-4: Add token cleanup cron                 | Low      | **Low**    | Add a NestJS `@Cron` scheduler calling `cleanupExpiredTokens()`                                          |
+| **P3**   | L-5: Redact emails in log messages          | Low      | **Low**    | Replace email with hash in all logger calls                                                              |
+| **P4**   | L-1: Consider RS256 for JWT                 | Low      | **Medium** | Only relevant when adding external services                                                              |
+| **P4**   | M-3: Don't fully disable CSP in dev         | Low      | **Low**    | Use relaxed CSP instead of `false`                                                                       |
 
 **Immediate Actions (before next deploy):**
+
 1. Add `hiveId` to all update WHERE clauses (30 minutes of work, eliminates the cross-tenant attack surface)
 2. Add dummy bcrypt hash for non-existent users (5 minutes, eliminates timing oracle)
 3. Remove `localIp` from health endpoint (2 minutes)
 
-**Short-term (this sprint):**
-4. Fix RLS with interactive transactions + `SET LOCAL`
-5. Configure `trustProxy` with actual proxy IPs
-6. Hash emails in Redis keys and log messages
+**Short-term (this sprint):** 4. Fix RLS with interactive transactions + `SET LOCAL` 5. Configure `trustProxy` with actual proxy IPs 6. Hash emails in Redis keys and log messages
 
-**Medium-term (next sprint):**
-7. Migrate refresh token from localStorage to HttpOnly cookie
-8. Enforce session limits
-9. Add recurrence rule validation
+**Medium-term (next sprint):** 7. Migrate refresh token from localStorage to HttpOnly cookie 8. Enforce session limits 9. Add recurrence rule validation

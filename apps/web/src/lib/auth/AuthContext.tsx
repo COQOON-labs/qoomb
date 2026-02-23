@@ -3,6 +3,7 @@ import { createTRPCProxyClient, httpLink } from '@trpc/client';
 import { createContext, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react';
 import superjson from 'superjson';
 
+import { getCsrfToken } from '../csrf';
 import { useLocale } from '../locale/LocaleProvider';
 
 import { setAccessToken } from './tokenStore';
@@ -108,7 +109,7 @@ function createRefreshClient() {
         url,
         transformer: superjson,
         headers: () => ({
-          'X-CSRF-Protection': '1',
+          'X-CSRF-Token': getCsrfToken(),
         }),
         // Include credentials so the browser sends the HttpOnly refresh token cookie
         fetch: (input, init) => globalThis.fetch(input, { ...init, credentials: 'include' }),

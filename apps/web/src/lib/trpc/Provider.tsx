@@ -4,6 +4,7 @@ import { useState } from 'react';
 import superjson from 'superjson';
 
 import { getAccessToken } from '../auth/tokenStore';
+import { getCsrfToken } from '../csrf';
 
 import { trpc } from './client';
 
@@ -59,7 +60,7 @@ export function TrpcProvider({ children }: TrpcProviderProps) {
               const token = getAccessToken();
               return {
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                'X-CSRF-Protection': '1',
+                'X-CSRF-Token': getCsrfToken(),
               };
             },
             fetch: (input, init) => globalThis.fetch(input, { ...init, credentials: 'include' }),

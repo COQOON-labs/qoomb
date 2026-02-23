@@ -578,8 +578,14 @@ status:
 generate-secrets:
     @echo -e "{{blue}}Generating secrets...{{nc}}"
     @echo ""
-    @echo -e "{{yellow}}JWT_SECRET:{{nc}}"
-    @openssl rand -base64 32
+    @echo -e "{{yellow}}JWT RS256 Key Pair:{{nc}}"
+    @tmpdir=$(mktemp -d) && \
+      openssl genpkey -algorithm RSA -out "$tmpdir/jwt-private.pem" -pkeyopt rsa_keygen_bits:2048 2>/dev/null && \
+      openssl rsa -pubout -in "$tmpdir/jwt-private.pem" -out "$tmpdir/jwt-public.pem" 2>/dev/null && \
+      echo "JWT_PRIVATE_KEY=$(base64 -w0 < "$tmpdir/jwt-private.pem")" && \
+      echo "" && \
+      echo "JWT_PUBLIC_KEY=$(base64 -w0 < "$tmpdir/jwt-public.pem")" && \
+      rm -rf "$tmpdir"
     @echo ""
     @echo -e "{{yellow}}ENCRYPTION_KEY:{{nc}}"
     @openssl rand -base64 32
@@ -595,7 +601,8 @@ env-check:
     @test -f .env            || { echo -e "{{red}}✗ .env not found{{nc}}"; exit 1; }
     @grep -q "DATABASE_URL"   .env || { echo -e "{{red}}✗ DATABASE_URL not set{{nc}}"; exit 1; }
     @grep -q "REDIS_URL"      .env || { echo -e "{{red}}✗ REDIS_URL not set{{nc}}"; exit 1; }
-    @grep -q "JWT_SECRET"     .env || { echo -e "{{red}}✗ JWT_SECRET not set{{nc}}"; exit 1; }
+    @grep -q "JWT_PRIVATE_KEY" .env || { echo -e "{{red}}✗ JWT_PRIVATE_KEY not set{{nc}}"; exit 1; }
+    @grep -q "JWT_PUBLIC_KEY"  .env || { echo -e "{{red}}✗ JWT_PUBLIC_KEY not set{{nc}}"; exit 1; }
     @grep -q "ENCRYPTION_KEY" .env || { echo -e "{{red}}✗ ENCRYPTION_KEY not set{{nc}}"; exit 1; }
     @echo -e "{{green}}✓ Environment configuration is valid{{nc}}"
 

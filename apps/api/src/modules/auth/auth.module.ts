@@ -17,9 +17,24 @@ import { TokenCleanupTask } from './token-cleanup.task';
     PrismaModule,
     EmailModule,
     EncryptionModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_IN },
+    JwtModule.registerAsync({
+      useFactory: () => {
+        const privateKey = Buffer.from(process.env.JWT_PRIVATE_KEY ?? '', 'base64').toString(
+          'utf8'
+        );
+        const publicKey = Buffer.from(process.env.JWT_PUBLIC_KEY ?? '', 'base64').toString('utf8');
+        return {
+          privateKey,
+          publicKey,
+          signOptions: {
+            algorithm: JWT_CONFIG.ALGORITHM,
+            expiresIn: JWT_CONFIG.ACCESS_TOKEN_EXPIRES_IN,
+          },
+          verifyOptions: {
+            algorithms: [JWT_CONFIG.ALGORITHM],
+          },
+        };
+      },
     }),
   ],
   providers: [

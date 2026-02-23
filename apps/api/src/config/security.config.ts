@@ -120,9 +120,10 @@ export const JWT_CONFIG = {
   REFRESH_TOKEN_EXPIRES_IN: '7d',
 
   /**
-   * JWT algorithm
+   * JWT algorithm — RS256 (asymmetric) allows distributing the public key
+   * for verification without exposing the private signing key.
    */
-  ALGORITHM: 'HS256' as const,
+  ALGORITHM: 'RS256' as const,
 
   /**
    * Access token expiration in seconds (for blacklist TTL)
@@ -206,7 +207,7 @@ export const CORS_CONFIG = {
     'Authorization',
     'X-Requested-With',
     'X-Request-ID',
-    'X-CSRF-Protection',
+    'X-CSRF-Token',
   ],
 
   /**
@@ -286,6 +287,25 @@ export const REFRESH_TOKEN_COOKIE = {
   SAME_SITE: 'strict' as const,
   PATH: '/trpc',
   MAX_AGE_SECONDS: 7 * 24 * 60 * 60, // 7 days — matches refresh token lifetime
+} as const;
+
+/**
+ * CSRF Double-Submit Cookie Configuration
+ *
+ * The server sets a random CSRF token as a non-HttpOnly cookie (readable by JS).
+ * For every state-changing request the client reads the cookie and sends the
+ * value as the X-CSRF-Token header.  The guard compares both values.
+ *
+ * Security properties:
+ * - SameSite=Strict prevents cross-origin cookie sending
+ * - Same-origin policy prevents cross-origin JS from reading the cookie
+ * - CORS prevents cross-origin responses (can't extract the token)
+ */
+export const CSRF_CONFIG = {
+  COOKIE_NAME: 'qoomb_csrf',
+  HEADER_NAME: 'x-csrf-token',
+  TOKEN_LENGTH: 32, // bytes → 43 base64url characters
+  COOKIE_MAX_AGE_SECONDS: 7 * 24 * 60 * 60, // 7 days
 } as const;
 
 /**

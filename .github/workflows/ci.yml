@@ -187,12 +187,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qoomb_test
 
+      - name: Generate JWT RS256 key pair for tests
+        run: |
+          openssl genpkey -algorithm RSA -out /tmp/jwt-private.pem -pkeyopt rsa_keygen_bits:2048
+          openssl rsa -pubout -in /tmp/jwt-private.pem -out /tmp/jwt-public.pem
+          echo "JWT_PRIVATE_KEY=$(base64 -w0 < /tmp/jwt-private.pem)" >> "$GITHUB_ENV"
+          echo "JWT_PUBLIC_KEY=$(base64 -w0 < /tmp/jwt-public.pem)" >> "$GITHUB_ENV"
+          rm /tmp/jwt-private.pem /tmp/jwt-public.pem
+
       - name: Run tests
         run: pnpm run test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qoomb_test
           REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test-secret-key-for-ci-only
           ENCRYPTION_KEY: dGVzdC1lbmNyeXB0aW9uLWtleS1mb3ItY2ktb25seQ==
           KEY_PROVIDER: environment
           NODE_ENV: test

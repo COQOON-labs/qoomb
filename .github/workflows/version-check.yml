@@ -61,7 +61,11 @@ jobs:
     name: Prevent Manual Version Bumps
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: "!contains(github.event.pull_request.title, 'chore: Release')"
+    # Skip for Release Please PRs (detected by title pattern or branch name)
+    if: >-
+      !contains(github.event.pull_request.title, 'chore: Release')
+      && !contains(github.event.pull_request.title, 'release')
+      && !startsWith(github.head_ref, 'release-please--')
     steps:
       - name: Checkout base branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

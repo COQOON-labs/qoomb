@@ -6,6 +6,9 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 
 project_dir := justfile_directory()
 
+# Auto-approve all prompts (YES=1 just start)
+export YES := env('YES', '0')
+
 # Color codes (work with echo -e in bash)
 green  := "\\033[0;32m"
 yellow := "\\033[1;33m"
@@ -93,7 +96,7 @@ setup-simple: check-deps check-ports install docker-up db-generate db-migrate
     echo ""
 
     read -r -p "Install dev seed data? (john@doe.dev, anna@doe.dev, tim@doe.dev) [y/N] " SEED
-    if [[ "${SEED:-n}" =~ ^[Yy]$ ]]; then
+    if [[ "${YES:-0}" = "1" ]] || [[ "${SEED:-n}" =~ ^[Yy]$ ]]; then
         just db-seed
     fi
 
@@ -144,6 +147,30 @@ _check-docker:
 _preflight:
     #!/usr/bin/env bash
     set -euo pipefail
+
+    # Helper: prompt user or auto-approve when YES=1
+    # Usage: ask "message" [required]
+    #   - If YES=1: auto-approve
+    #   - If required: abort on decline
+    #   - Otherwise: skip on decline
+    ask() {
+        local msg="$1" required="${2:-}"
+        if [ "${YES:-0}" = "1" ]; then
+            echo -e "    \033[0;36m→ Auto-approved (YES=1)\033[0m"
+            return 0
+        fi
+        read -r -p "$(echo -e "    \033[1;33m${msg} [Y/n] \033[0m")" ANSWER
+        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
+            if [ "$required" = "required" ]; then
+                echo -e "    \033[0;31m✗ Required — aborting\033[0m"
+                exit 1
+            fi
+            echo -e "    \033[1;33m→ Skipped\033[0m"
+            return 1
+        fi
+        return 0
+    }
+
     echo -e "\033[0;34m🔍 Pre-flight checks...\033[0m"
 
     # 1. .env file
@@ -163,19 +190,13 @@ _preflight:
     # 2. Dependencies (node_modules)
     if [ ! -d node_modules ]; then
         echo -e "\033[1;33m  ⚠ node_modules missing\033[0m"
-        read -r -p "$(echo -e '    \033[1;33mRun pnpm install? [Y/n] \033[0m')" ANSWER
-        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
-            echo -e "\033[0;31m  ✗ Cannot start without dependencies\033[0m"
-            exit 1
+        if ask "Run pnpm install?" required; then
+            pnpm install
+            echo -e "\033[0;32m  ✓ Dependencies installed\033[0m"
         fi
-        pnpm install
-        echo -e "\033[0;32m  ✓ Dependencies installed\033[0m"
     elif [ -f pnpm-lock.yaml ] && [ "pnpm-lock.yaml" -nt "node_modules" ]; then
         echo -e "\033[1;33m  ⚠ Lock file changed since last install\033[0m"
-        read -r -p "$(echo -e '    \033[1;33mRun pnpm install to update? [Y/n] \033[0m')" ANSWER
-        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
-            echo -e "\033[1;33m  → Skipped (may cause issues)\033[0m"
-        else
+        if ask "Run pnpm install to update?"; then
             pnpm install
             echo -e "\033[0;32m  ✓ Dependencies updated\033[0m"
         fi
@@ -199,26 +220,20 @@ _preflight:
         echo -e "\033[0;32m  ✓ Docker services\033[0m"
     else
         echo -e "\033[1;33m  ⚠ Docker services not running (PostgreSQL + Redis)\033[0m"
-        read -r -p "$(echo -e '    \033[1;33mStart Docker services? [Y/n] \033[0m')" ANSWER
-        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
-            echo -e "\033[0;31m  ✗ Cannot start without database and cache\033[0m"
-            exit 1
+        if ask "Start Docker services?" required; then
+            docker-compose up -d
+            sleep 3
+            echo -e "\033[0;32m  ✓ Docker services started\033[0m"
         fi
-        docker-compose up -d
-        sleep 3
-        echo -e "\033[0;32m  ✓ Docker services started\033[0m"
     fi
 
     # 5. Prisma client
     if [ ! -d node_modules/.prisma/client ]; then
         echo -e "\033[1;33m  ⚠ Prisma client not generated\033[0m"
-        read -r -p "$(echo -e '    \033[1;33mGenerate now? [Y/n] \033[0m')" ANSWER
-        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
-            echo -e "\033[0;31m  ✗ Cannot start without Prisma client\033[0m"
-            exit 1
+        if ask "Generate now?" required; then
+            pnpm --filter @qoomb/api db:generate
+            echo -e "\033[0;32m  ✓ Prisma client generated\033[0m"
         fi
-        pnpm --filter @qoomb/api db:generate
-        echo -e "\033[0;32m  ✓ Prisma client generated\033[0m"
     else
         echo -e "\033[0;32m  ✓ Prisma client\033[0m"
     fi
@@ -230,13 +245,10 @@ _preflight:
     MIGRATION_TABLE=$(echo "$MIGRATION_TABLE" | tr -d '[:space:]')
     if [ "$MIGRATION_TABLE" != "t" ]; then
         echo -e "\033[1;33m  ⚠ Database not set up yet\033[0m"
-        read -r -p "$(echo -e '    \033[1;33mRun database migrations? [Y/n] \033[0m')" ANSWER
-        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
-            echo -e "\033[0;31m  ✗ Cannot start without database schema\033[0m"
-            exit 1
+        if ask "Run database migrations?" required; then
+            pnpm --filter @qoomb/api db:migrate
+            echo -e "\033[0;32m  ✓ Migrations applied\033[0m"
         fi
-        pnpm --filter @qoomb/api db:migrate
-        echo -e "\033[0;32m  ✓ Migrations applied\033[0m"
     else
         APPLIED=$(docker exec qoomb-postgres psql -U qoomb -d qoomb -tAc \
             "SELECT COUNT(*) FROM public._prisma_migrations" 2>/dev/null || echo "0")
@@ -244,10 +256,7 @@ _preflight:
         AVAILABLE=$(ls -d apps/api/prisma/migrations/2* 2>/dev/null | wc -l | tr -d ' ')
         if [ "$APPLIED" -lt "$AVAILABLE" ] 2>/dev/null; then
             echo -e "\033[1;33m  ⚠ $((AVAILABLE - APPLIED)) pending migration(s)\033[0m"
-            read -r -p "$(echo -e '    \033[1;33mApply now? [Y/n] \033[0m')" ANSWER
-            if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
-                echo -e "\033[1;33m  → Skipped (may cause errors)\033[0m"
-            else
+            if ask "Apply now?"; then
                 pnpm --filter @qoomb/api db:migrate
                 echo -e "\033[0;32m  ✓ Migrations applied\033[0m"
             fi
@@ -297,12 +306,17 @@ start: _dev-stop _preflight
 
     if [ "$HTTPS_READY" -eq 0 ]; then
         echo ""
-        read -r -p "$(echo -e '\033[1;33mHTTPS setup not complete. Run setup now? [Y/n] \033[0m')" ANSWER
-        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
-            echo -e "\033[0;36m  → Use 'just start-simple' for localhost-only mode\033[0m"
-            exit 0
+        if [ "${YES:-0}" = "1" ]; then
+            echo -e "\033[0;36m  → Auto-approved (YES=1)\033[0m"
+            bash scripts/setup-local-domain.sh
+        else
+            read -r -p "$(echo -e '\033[1;33mHTTPS setup not complete. Run setup now? [Y/n] \033[0m')" ANSWER
+            if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
+                echo -e "\033[0;36m  → Use 'just start-simple' for localhost-only mode\033[0m"
+                exit 0
+            fi
+            bash scripts/setup-local-domain.sh
         fi
-        bash scripts/setup-local-domain.sh
         echo ""
     else
         echo -e "\033[0;32m  ✓ HTTPS (Caddy + certificates)\033[0m"
@@ -384,10 +398,18 @@ docker-logs: _check-docker
     docker-compose logs -f
 
 # ⚠️ DESTRUCTIVE: Stop containers and remove all volumes (deletes all data)
-[confirm("⚠️  This permanently deletes all PostgreSQL data and Redis volumes. Continue? [y/N]")]
 docker-clean: _check-docker
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ "${YES:-0}" != "1" ]; then
+        read -r -p "$(echo -e '\033[0;31m⚠️  This permanently deletes all PostgreSQL data and Redis volumes. Continue? [y/N] \033[0m')" ANSWER
+        if [[ ! "${ANSWER:-n}" =~ ^[Yy]$ ]]; then
+            echo "Aborted."
+            exit 0
+        fi
+    fi
     docker-compose down -v
-    @echo -e "{{green}}✓ Docker services and volumes removed{{nc}}"
+    echo -e "\033[0;32m✓ Docker services and volumes removed\033[0m"
 
 # ─── Database ────────────────────────────────────────────────────────────────
 
@@ -428,10 +450,16 @@ redis-cli: _check-docker
     docker exec -it qoomb-redis redis-cli
 
 # ⚠️ DESTRUCTIVE: Wipe database, re-run migrations, optionally seed
-[confirm("⚠️  This permanently deletes all data and rebuilds the schema. Continue? [y/N]")]
 db-reset: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
+    if [ "${YES:-0}" != "1" ]; then
+        read -r -p "$(echo -e '\033[0;31m⚠️  This permanently deletes all data and rebuilds the schema. Continue? [y/N] \033[0m')" ANSWER
+        if [[ ! "${ANSWER:-n}" =~ ^[Yy]$ ]]; then
+            echo "Aborted."
+            exit 0
+        fi
+    fi
     docker-compose down -v
     docker-compose up -d
     sleep 3
@@ -439,7 +467,7 @@ db-reset: _check-docker
     just db-migrate
     echo ""
     read -r -p "Install dev seed data? (john@doe.dev, anna@doe.dev, tim@doe.dev) [y/N] " SEED
-    if [[ "${SEED:-n}" =~ ^[Yy]$ ]]; then
+    if [[ "${YES:-0}" = "1" ]] || [[ "${SEED:-n}" =~ ^[Yy]$ ]]; then
         just db-seed
     fi
     echo -e "\033[0;32m✓ Database reset complete\033[0m"
@@ -553,10 +581,16 @@ clean: _dev-stop
     @echo -e "{{green}}✓ Cleanup complete{{nc}}"
 
 # ⚠️ DESTRUCTIVE: Clean everything (node_modules + all data)
-[confirm("⚠️  This deletes node_modules AND all Docker data. Continue? [y/N]")]
 clean-all: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
+    if [ "${YES:-0}" != "1" ]; then
+        read -r -p "$(echo -e '\033[0;31m⚠️  This deletes node_modules AND all Docker data. Continue? [y/N] \033[0m')" ANSWER
+        if [[ ! "${ANSWER:-n}" =~ ^[Yy]$ ]]; then
+            echo "Aborted."
+            exit 0
+        fi
+    fi
     just clean
     docker-compose down -v
     echo -e "\033[0;32m✓ Full cleanup complete\033[0m"
@@ -579,10 +613,16 @@ ps: status
 first-run: setup
 
 # ⚠️ DESTRUCTIVE: Complete fresh start (wipe everything + setup from scratch)
-[confirm("⚠️  This wipes EVERYTHING and starts fresh. Continue? [y/N]")]
 fresh: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
+    if [ "${YES:-0}" != "1" ]; then
+        read -r -p "$(echo -e '\033[0;31m⚠️  This wipes EVERYTHING and starts fresh. Continue? [y/N] \033[0m')" ANSWER
+        if [[ ! "${ANSWER:-n}" =~ ^[Yy]$ ]]; then
+            echo "Aborted."
+            exit 0
+        fi
+    fi
     just clean
     docker-compose down -v
     just setup

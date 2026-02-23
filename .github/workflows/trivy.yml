@@ -34,7 +34,7 @@ jobs:
 
       # Scan filesystem for vulnerabilities
       - name: Run Trivy vulnerability scanner (Filesystem)
-        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284 # 0.34.0
+        uses: aquasecurity/trivy-action@e368e328979b113139d6f9068e03accaed98a518 # 0.34.1
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -53,7 +53,7 @@ jobs:
 
       # Scan configuration files (IaC)
       - name: Run Trivy vulnerability scanner (Config)
-        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284 # 0.34.0
+        uses: aquasecurity/trivy-action@e368e328979b113139d6f9068e03accaed98a518 # 0.34.1
         if: always()
         with:
           scan-type: 'config'
@@ -73,7 +73,7 @@ jobs:
 
       # Generate human-readable report AND gate the job on findings
       - name: Run Trivy vulnerability scanner (Table format)
-        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284 # 0.34.0
+        uses: aquasecurity/trivy-action@e368e328979b113139d6f9068e03accaed98a518 # 0.34.1
         if: always()
         with:
           scan-type: 'fs'
@@ -96,7 +96,7 @@ jobs:
 
       # Scan for secrets and misconfigurations
       - name: Run Trivy secret scanner
-        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284 # 0.34.0
+        uses: aquasecurity/trivy-action@e368e328979b113139d6f9068e03accaed98a518 # 0.34.1
         with:
           scan-type: 'fs'
           scan-ref: '.'

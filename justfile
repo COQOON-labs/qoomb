@@ -101,11 +101,11 @@ setup-simple: check-deps check-ports install docker-up db-generate db-migrate
     echo -e "\033[0;36mNext steps:\033[0m"
     echo ""
     echo -e "  Option A — Simple (localhost only)"
-    echo -e "    \033[0;32mjust dev-simple\033[0m     Start on localhost:5173 & :3001"
+    echo -e "    \033[0;32mjust start-simple\033[0m   Start on localhost:5173 & :3001"
     echo ""
     echo -e "  Option B — Full (HTTPS + mobile)"
     echo -e "    \033[0;32mjust setup\033[0m         One-time HTTPS & cert setup"
-    echo -e "    \033[0;32mjust dev\033[0m           Start with HTTPS on :8443"
+    echo -e "    \033[0;32mjust start\033[0m         Start with HTTPS on :8443"
     echo ""
     echo -e "  Database:"
     echo -e "    \033[0;32mjust db-studio\033[0m      Open Prisma Studio (DB GUI)"
@@ -119,7 +119,7 @@ setup: setup-simple
     @bash scripts/setup-local-domain.sh
     @echo ""
     @echo -e "{{green}}✓ Full setup complete!{{nc}}"
-    @echo -e "{{yellow}}Next: just dev{{nc}}"
+    @echo -e "{{yellow}}Next: just start{{nc}}"
 
 # ─── Development ─────────────────────────────────────────────────────────────
 
@@ -141,7 +141,7 @@ _check-docker:
     fi
 
 # Start development servers on localhost (no HTTPS)
-dev-simple: _dev-stop docker-up
+start-simple: _dev-stop docker-up
     #!/usr/bin/env bash
     set -euo pipefail
     echo ""
@@ -162,7 +162,7 @@ dev-simple: _dev-stop docker-up
     pnpm dev
 
 # Start with HTTPS + local domain (requires just setup first)
-dev: _dev-stop
+start: _dev-stop
     #!/usr/bin/env bash
     set -euo pipefail
     command -v caddy >/dev/null || { echo -e "\033[0;31m✗ Caddy not installed — run: just setup\033[0m"; exit 1; }
@@ -191,7 +191,7 @@ dev: _dev-stop
     (sleep 5 && (open https://qoomb.localhost:8443 2>/dev/null || xdg-open https://qoomb.localhost:8443 2>/dev/null || true)) &
     pnpm dev
 
-# Stop dev (Caddy proxy)
+# Stop Caddy proxy
 stop:
     @caddy stop 2>/dev/null || echo -e "{{yellow}}Caddy was not running{{nc}}"
     @echo -e "{{green}}✓ Extended dev stopped{{nc}}"

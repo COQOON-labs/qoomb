@@ -6,8 +6,8 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 
 project_dir := justfile_directory()
 
-# Auto-approve all prompts (YES=1 just start)
-export YES := env('YES', '0')
+# Auto-approve all prompts (AUTO=1 just start)
+export AUTO := env('AUTO', '0')
 
 # Color codes (work with echo -e in bash)
 green  := "\\033[0;32m"
@@ -96,7 +96,7 @@ setup-simple: check-deps check-ports install docker-up db-generate db-migrate
     echo ""
 
     read -r -p "Install dev seed data? (john@doe.dev, anna@doe.dev, tim@doe.dev) [y/N] " SEED
-    if [[ "${YES:-0}" = "1" ]] || [[ "${SEED:-n}" =~ ^[Yy]$ ]]; then
+    if [[ "${AUTO:-0}" = "1" ]] || [[ "${SEED:-n}" =~ ^[Yy]$ ]]; then
         just db-seed
     fi
 
@@ -148,15 +148,15 @@ _preflight:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # Helper: prompt user or auto-approve when YES=1
+    # Helper: prompt user or auto-approve when AUTO=1
     # Usage: ask "message" [required]
-    #   - If YES=1: auto-approve
+    #   - If AUTO=1: auto-approve
     #   - If required: abort on decline
     #   - Otherwise: skip on decline
     ask() {
         local msg="$1" required="${2:-}"
-        if [ "${YES:-0}" = "1" ]; then
-            echo -e "    \033[0;36m→ Auto-approved (YES=1)\033[0m"
+        if [ "${AUTO:-0}" = "1" ]; then
+            echo -e "    \033[0;36m→ Auto-approved (AUTO=1)\033[0m"
             return 0
         fi
         read -r -p "$(echo -e "    \033[1;33m${msg} [Y/n] \033[0m")" ANSWER
@@ -306,8 +306,8 @@ start: _dev-stop _preflight
 
     if [ "$HTTPS_READY" -eq 0 ]; then
         echo ""
-        if [ "${YES:-0}" = "1" ]; then
-            echo -e "\033[0;36m  → Auto-approved (YES=1)\033[0m"
+        if [ "${AUTO:-0}" = "1" ]; then
+            echo -e "\033[0;36m  → Auto-approved (AUTO=1)\033[0m"
             bash scripts/setup-local-domain.sh
         else
             read -r -p "$(echo -e '\033[1;33mHTTPS setup not complete. Run setup now? [Y/n] \033[0m')" ANSWER
@@ -401,7 +401,7 @@ docker-logs: _check-docker
 docker-clean: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ "${YES:-0}" != "1" ]; then
+    if [ "${AUTO:-0}" != "1" ]; then
         read -r -p "$(echo -e '\033[0;31m⚠️  This permanently deletes all PostgreSQL data and Redis volumes. Continue? [y/N] \033[0m')" ANSWER
         if [[ ! "${ANSWER:-n}" =~ ^[Yy]$ ]]; then
             echo "Aborted."
@@ -453,7 +453,7 @@ redis-cli: _check-docker
 db-reset: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ "${YES:-0}" != "1" ]; then
+    if [ "${AUTO:-0}" != "1" ]; then
         read -r -p "$(echo -e '\033[0;31m⚠️  This permanently deletes all data and rebuilds the schema. Continue? [y/N] \033[0m')" ANSWER
         if [[ ! "${ANSWER:-n}" =~ ^[Yy]$ ]]; then
             echo "Aborted."
@@ -467,7 +467,7 @@ db-reset: _check-docker
     just db-migrate
     echo ""
     read -r -p "Install dev seed data? (john@doe.dev, anna@doe.dev, tim@doe.dev) [y/N] " SEED
-    if [[ "${YES:-0}" = "1" ]] || [[ "${SEED:-n}" =~ ^[Yy]$ ]]; then
+    if [[ "${AUTO:-0}" = "1" ]] || [[ "${SEED:-n}" =~ ^[Yy]$ ]]; then
         just db-seed
     fi
     echo -e "\033[0;32m✓ Database reset complete\033[0m"
@@ -584,7 +584,7 @@ clean: _dev-stop
 clean-all: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ "${YES:-0}" != "1" ]; then
+    if [ "${AUTO:-0}" != "1" ]; then
         read -r -p "$(echo -e '\033[0;31m⚠️  This deletes node_modules AND all Docker data. Continue? [y/N] \033[0m')" ANSWER
         if [[ ! "${ANSWER:-n}" =~ ^[Yy]$ ]]; then
             echo "Aborted."
@@ -616,7 +616,7 @@ first-run: setup
 fresh: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ "${YES:-0}" != "1" ]; then
+    if [ "${AUTO:-0}" != "1" ]; then
         read -r -p "$(echo -e '\033[0;31m⚠️  This wipes EVERYTHING and starts fresh. Continue? [y/N] \033[0m')" ANSWER
         if [[ ! "${ANSWER:-n}" =~ ^[Yy]$ ]]; then
             echo "Aborted."

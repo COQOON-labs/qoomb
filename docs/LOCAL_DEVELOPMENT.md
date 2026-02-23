@@ -146,6 +146,26 @@ AUTO=1 just fresh       # Full rebuild without confirmation
 
 > **Tip:** Useful for CI/CD pipelines, scripted setups, or when you just want to get going quickly.
 
+### Dev Seed Data
+
+The pre-flight check detects whether seed data (the Doe Family test hive) is present. If not, you'll be prompted to install it. To pre-approve seeding without being asked:
+
+```bash
+SEED=1 just start           # Prompt for infra, auto-seed
+SEED=1 just start-simple    # Same for localhost mode
+SEED=1 AUTO=1 just start    # Full auto including seed
+```
+
+The seed creates three test accounts (password: `Dev1234!`):
+
+| Email          | Role              |
+| -------------- | ----------------- |
+| `john@doe.dev` | parent + sysadmin |
+| `anna@doe.dev` | parent            |
+| `tim@doe.dev`  | child             |
+
+`SEED=1` is separate from `AUTO=1` so you can auto-approve infrastructure prompts without automatically seeding (or vice versa). With `AUTO=1` alone, seeding is skipped silently.
+
 ## Mobile Device Testing
 
 ### Mobile Prerequisites

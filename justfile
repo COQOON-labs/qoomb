@@ -9,6 +9,9 @@ project_dir := justfile_directory()
 # Auto-approve all prompts (AUTO=1 just start)
 export AUTO := env('AUTO', '0')
 
+# Auto-approve seed data (SEED=1 just start)
+export SEED := env('SEED', '0')
+
 # Color codes (work with echo -e in bash)
 green  := "\\033[0;32m"
 yellow := "\\033[1;33m"
@@ -95,9 +98,13 @@ setup-simple: check-deps check-ports install docker-up db-generate db-migrate
     echo -e "\033[0;32m========================================\033[0m"
     echo ""
 
-    read -r -p "Install dev seed data? (john@doe.dev, anna@doe.dev, tim@doe.dev) [y/N] " SEED
-    if [[ "${AUTO:-0}" = "1" ]] || [[ "${SEED:-n}" =~ ^[Yy]$ ]]; then
+    if [ "${SEED:-0}" = "1" ] || [ "${AUTO:-0}" = "1" ]; then
         just db-seed
+    else
+        read -r -p "Install dev seed data? (john@doe.dev, anna@doe.dev, tim@doe.dev) [y/N] " ANSWER
+        if [[ "${ANSWER:-n}" =~ ^[Yy]$ ]]; then
+            just db-seed
+        fi
     fi
 
     echo ""
@@ -262,6 +269,30 @@ _preflight:
             fi
         else
             echo -e "\033[0;32m  ✓ Database ($APPLIED migration(s))\033[0m"
+        fi
+    fi
+
+    # 7. Dev seed data
+    SEED_EXISTS=$(docker exec qoomb-postgres psql -U qoomb -d qoomb -tAc \
+        "SELECT EXISTS(SELECT 1 FROM public.hives WHERE id='10000000-0000-0000-0000-000000000001')" \
+        2>/dev/null || echo "f")
+    SEED_EXISTS=$(echo "$SEED_EXISTS" | tr -d '[:space:]')
+    if [ "$SEED_EXISTS" = "t" ]; then
+        echo -e "\033[0;32m  ✓ Seed data (Doe Family)\033[0m"
+    else
+        if [ "${SEED:-0}" = "1" ]; then
+            echo -e "\033[1;33m  ⚠ No seed data\033[0m"
+            echo -e "    \033[0;36m→ Auto-approved (SEED=1)\033[0m"
+            just db-seed
+            echo -e "\033[0;32m  ✓ Seed data installed\033[0m"
+        elif [ "${AUTO:-0}" = "1" ]; then
+            echo -e "\033[1;33m  ⚠ No seed data — skipped (use SEED=1 to auto-install)\033[0m"
+        else
+            echo -e "\033[1;33m  ⚠ No seed data — dev users not installed\033[0m"
+            if ask "Install dev seed? (john@doe.dev, anna@doe.dev, tim@doe.dev)"; then
+                just db-seed
+                echo -e "\033[0;32m  ✓ Seed data installed\033[0m"
+            fi
         fi
     fi
 
@@ -466,9 +497,13 @@ db-reset: _check-docker
     just db-generate
     just db-migrate
     echo ""
-    read -r -p "Install dev seed data? (john@doe.dev, anna@doe.dev, tim@doe.dev) [y/N] " SEED
-    if [[ "${AUTO:-0}" = "1" ]] || [[ "${SEED:-n}" =~ ^[Yy]$ ]]; then
+    if [ "${SEED:-0}" = "1" ] || [ "${AUTO:-0}" = "1" ]; then
         just db-seed
+    else
+        read -r -p "Install dev seed data? (john@doe.dev, anna@doe.dev, tim@doe.dev) [y/N] " ANSWER
+        if [[ "${ANSWER:-n}" =~ ^[Yy]$ ]]; then
+            just db-seed
+        fi
     fi
     echo -e "\033[0;32m✓ Database reset complete\033[0m"
 

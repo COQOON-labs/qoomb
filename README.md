@@ -66,6 +66,10 @@ just clean         # Clean build artifacts
 # Auto-approve all prompts (useful for CI/scripts)
 AUTO=1 just start
 AUTO=1 just clean-all
+
+# Pre-approve dev seed data (Doe Family test users)
+SEED=1 just start
+SEED=1 AUTO=1 just start   # Full auto including seed
 ```
 
 ### Option 2: Manual Setup

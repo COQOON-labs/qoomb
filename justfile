@@ -194,6 +194,50 @@ _preflight:
         echo -e "\033[0;32m  ✓ .env\033[0m"
     fi
 
+    # 1b. Detect outdated .env (old JWT_SECRET instead of RS256 key pair)
+    if grep -qE '^JWT_SECRET=' .env && ! grep -qE '^JWT_PRIVATE_KEY=' .env; then
+        echo -e "\033[1;33m  ⚠ .env uses deprecated JWT_SECRET — Qoomb now requires RS256 (JWT_PRIVATE_KEY / JWT_PUBLIC_KEY)\033[0m"
+        if ask "Recreate .env from .env.example? (current .env backed up as .env.backup)" required; then
+            cp .env .env.backup
+            cp .env.example .env
+            echo -e "\033[0;32m  ✓ .env recreated from .env.example (backup: .env.backup)\033[0m"
+            echo -e "\033[1;33m  ⚠ Review DATABASE_URL, REDIS_URL and other settings in .env!\033[0m"
+        fi
+    fi
+
+    # 1c. JWT RS256 key pair
+    JWT_PRIV=$(grep -E '^JWT_PRIVATE_KEY=' .env 2>/dev/null | sed 's/^JWT_PRIVATE_KEY="\{0,1\}\(.*\)"\{0,1\}$/\1/' || true)
+    JWT_PUB=$(grep -E '^JWT_PUBLIC_KEY=' .env 2>/dev/null | sed 's/^JWT_PUBLIC_KEY="\{0,1\}\(.*\)"\{0,1\}$/\1/' || true)
+    if [ -z "$JWT_PRIV" ] || [ -z "$JWT_PUB" ]; then
+        echo -e "\033[1;33m  ⚠ JWT_PRIVATE_KEY / JWT_PUBLIC_KEY not set — app cannot sign tokens\033[0m"
+        if ask "Generate RS256 key pair now?" required; then
+            command -v openssl >/dev/null 2>&1 || {
+                echo -e "\033[0;31m  ✗ openssl not found — cannot generate keys\033[0m"
+                echo -e "\033[0;36m    See .env.example for manual generation commands\033[0m"
+                exit 1
+            }
+            JWT_TMP=$(mktemp -d)
+            openssl genpkey -algorithm RSA -out "$JWT_TMP/private.pem" -pkeyopt rsa_keygen_bits:2048 2>/dev/null
+            openssl rsa -pubout -in "$JWT_TMP/private.pem" -out "$JWT_TMP/public.pem" 2>/dev/null
+            PRIV_B64=$(base64 -w0 < "$JWT_TMP/private.pem")
+            PUB_B64=$(base64 -w0 < "$JWT_TMP/public.pem")
+            rm -rf "$JWT_TMP"
+            if grep -qE '^JWT_PRIVATE_KEY=' .env; then
+                sed -i "s|^JWT_PRIVATE_KEY=.*|JWT_PRIVATE_KEY=\"$PRIV_B64\"|" .env
+            else
+                echo "JWT_PRIVATE_KEY=\"$PRIV_B64\"" >> .env
+            fi
+            if grep -qE '^JWT_PUBLIC_KEY=' .env; then
+                sed -i "s|^JWT_PUBLIC_KEY=.*|JWT_PUBLIC_KEY=\"$PUB_B64\"|" .env
+            else
+                echo "JWT_PUBLIC_KEY=\"$PUB_B64\"" >> .env
+            fi
+            echo -e "\033[0;32m  ✓ RS256 key pair generated and written to .env\033[0m"
+        fi
+    else
+        echo -e "\033[0;32m  ✓ JWT keys\033[0m"
+    fi
+
     # 2. Dependencies (node_modules)
     if [ ! -d node_modules ]; then
         echo -e "\033[1;33m  ⚠ node_modules missing\033[0m"

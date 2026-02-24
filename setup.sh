@@ -82,11 +82,35 @@ print_success "Node.js gefunden: $(node --version)"
 
 # Check .env
 if [ ! -f .env ]; then
-    print_error ".env Datei nicht gefunden!"
-    print_info "Bitte führe zuerst die .env Konfiguration durch."
-    exit 1
+    print_warning ".env Datei nicht gefunden."
+    print_info "Erstelle .env aus .env.example..."
+    cp .env.example .env
+    print_success ".env aus .env.example erstellt"
+else
+    print_success ".env Datei gefunden"
 fi
-print_success ".env Datei gefunden"
+
+# Detect outdated .env (old JWT_SECRET format instead of RS256 key pair)
+if grep -qE '^JWT_SECRET=' .env && ! grep -qE '^JWT_PRIVATE_KEY=' .env; then
+    echo ""
+    print_warning "Deine .env verwendet noch JWT_SECRET (veraltet)."
+    print_warning "Qoomb nutzt jetzt RS256 mit JWT_PRIVATE_KEY / JWT_PUBLIC_KEY."
+    print_info "Vergleiche deine .env mit .env.example — die Struktur hat sich geändert."
+    echo ""
+    read -r -p "$(echo -e "${YELLOW}.env jetzt aus .env.example neu erstellen? (Backup wird als .env.backup gesichert)${NC} [j/N] ")" RECREATE_ENV
+    echo ""
+    if [[ "${RECREATE_ENV:-n}" =~ ^[JjYy]$ ]]; then
+        cp .env .env.backup
+        cp .env.example .env
+        print_success ".env aus .env.example neu erstellt"
+        print_info "Alte .env gesichert als .env.backup"
+        print_warning "Prüfe deine neuen Einstellungen (DATABASE_URL, REDIS_URL etc.) in .env!"
+    else
+        print_error "Setup kann mit veralteter .env nicht fortfahren."
+        print_info "Bitte manuell aktualisieren: vergleiche .env mit .env.example"
+        exit 1
+    fi
+fi
 
 # JWT Key Check
 JWT_PRIV_VAL=$(grep -E '^JWT_PRIVATE_KEY=' .env | sed 's/^JWT_PRIVATE_KEY="\(.*\)"/\1/')
@@ -112,8 +136,17 @@ if [ -z "$JWT_PRIV_VAL" ] || [ -z "$JWT_PUB_VAL" ]; then
         PRIV_B64=$(base64 -w0 < "$JWT_TMP/private.pem")
         PUB_B64=$(base64 -w0 < "$JWT_TMP/public.pem")
         rm -rf "$JWT_TMP"
-        sed -i "s|^JWT_PRIVATE_KEY=.*|JWT_PRIVATE_KEY=\"$PRIV_B64\"|" .env
-        sed -i "s|^JWT_PUBLIC_KEY=.*|JWT_PUBLIC_KEY=\"$PUB_B64\"|" .env
+        # Replace existing line or append if missing
+        if grep -qE '^JWT_PRIVATE_KEY=' .env; then
+            sed -i "s|^JWT_PRIVATE_KEY=.*|JWT_PRIVATE_KEY=\"$PRIV_B64\"|" .env
+        else
+            echo "JWT_PRIVATE_KEY=\"$PRIV_B64\"" >> .env
+        fi
+        if grep -qE '^JWT_PUBLIC_KEY=' .env; then
+            sed -i "s|^JWT_PUBLIC_KEY=.*|JWT_PUBLIC_KEY=\"$PUB_B64\"|" .env
+        else
+            echo "JWT_PUBLIC_KEY=\"$PUB_B64\"" >> .env
+        fi
         print_success "RS256 Key-Pair generiert und in .env eingetragen"
         print_warning "Die Keys existieren nur in .env — lege ein sicheres Backup an!"
         print_warning "Für Production: eigene Keys generieren und sicher verwalten (siehe docs/SECURITY.md)"

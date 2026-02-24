@@ -155,7 +155,7 @@ _preflight:
     env_set() {
         local key="$1" value="$2"
         if grep -qE "^${key}=" .env; then
-            sed -i "s|^${key}=.*|${key}=\"${value}\"|" .env
+            sed -i.bak "s|^${key}=.*|${key}=\"${value}\"|" .env && rm -f .env.bak
         else
             echo "${key}=\"${value}\"" >> .env
         fi
@@ -197,8 +197,8 @@ _preflight:
             JWT_TMP=$(mktemp -d)
             openssl genpkey -algorithm RSA -out "$JWT_TMP/private.pem" -pkeyopt rsa_keygen_bits:2048 2>/dev/null
             openssl rsa -pubout -in "$JWT_TMP/private.pem" -out "$JWT_TMP/public.pem" 2>/dev/null
-            env_set JWT_PRIVATE_KEY "$(base64 -w0 < "$JWT_TMP/private.pem")"
-            env_set JWT_PUBLIC_KEY  "$(base64 -w0 < "$JWT_TMP/public.pem")"
+            env_set JWT_PRIVATE_KEY "$(base64 < "$JWT_TMP/private.pem" | tr -d '\n')"
+            env_set JWT_PUBLIC_KEY  "$(base64 < "$JWT_TMP/public.pem" | tr -d '\n')"
             rm -rf "$JWT_TMP"
             ok "RS256 key pair generated and written to .env"
         else
@@ -208,7 +208,18 @@ _preflight:
         ok "JWT keys"
     fi
 
-    # 3. Dependencies ─────────────────────────────────────────────────────
+    # 3. Encryption key (must be base64-encoded 32 bytes = 44 chars) ────
+    ENC_KEY=$(grep -E '^ENCRYPTION_KEY=' .env | sed 's/^ENCRYPTION_KEY="\{0,1\}\(.*\)"\{0,1\}$/\1/' || true)
+    if [ -z "$ENC_KEY" ] || [ "${#ENC_KEY}" -ne 44 ] || ! printf '%s' "$ENC_KEY" | grep -qE '^[A-Za-z0-9+/]+=*$'; then
+        warn "ENCRYPTION_KEY missing or invalid — generating..."
+        command -v openssl >/dev/null 2>&1 || fail "openssl not found"
+        env_set ENCRYPTION_KEY "$(openssl rand -base64 32)"
+        ok "ENCRYPTION_KEY generated and written to .env"
+    else
+        ok "ENCRYPTION_KEY"
+    fi
+
+    # 4. Dependencies ─────────────────────────────────────────────────────
     if [ ! -d node_modules ] || { [ -f pnpm-lock.yaml ] && [ pnpm-lock.yaml -nt node_modules ]; }; then
         warn "Installing dependencies..."
         pnpm install
@@ -217,7 +228,7 @@ _preflight:
         ok "Dependencies"
     fi
 
-    # 4. Docker ───────────────────────────────────────────────────────────
+    # 5. Docker ───────────────────────────────────────────────────────────
     if ! docker info >/dev/null 2>&1; then
         fail "Docker is not running (macOS: open -a Docker | Linux: sudo systemctl start docker)"
     fi
@@ -229,7 +240,7 @@ _preflight:
     fi
     ok "Docker services"
 
-    # 5. Prisma client ────────────────────────────────────────────────────
+    # 6. Prisma client ────────────────────────────────────────────────────
     PRISMA_GENERATED=$(echo node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client)
     if [ ! -f "$PRISMA_GENERATED/index.js" ] || \
        ! diff -q apps/api/prisma/schema.prisma "$PRISMA_GENERATED/schema.prisma" >/dev/null 2>&1; then
@@ -238,7 +249,7 @@ _preflight:
     fi
     ok "Prisma client"
 
-    # 6. Database migrations ──────────────────────────────────────────────
+    # 7. Database migrations ──────────────────────────────────────────────
     MIGRATION_TABLE=$(docker exec qoomb-postgres psql -U qoomb -d qoomb -tAc \
         "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='_prisma_migrations')" \
         2>/dev/null || echo "f")
@@ -261,7 +272,7 @@ _preflight:
         fi
     fi
 
-    # 7. Dev seed data (optional) ─────────────────────────────────────────
+    # 8. Dev seed data (optional) ─────────────────────────────────────────
     SEED_EXISTS=$(docker exec qoomb-postgres psql -U qoomb -d qoomb -tAc \
         "SELECT EXISTS(SELECT 1 FROM public.hives WHERE id='10000000-0000-0000-0000-000000000001')" \
         2>/dev/null || echo "f")

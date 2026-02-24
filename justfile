@@ -155,7 +155,7 @@ _preflight:
     env_set() {
         local key="$1" value="$2"
         if grep -qE "^${key}=" .env; then
-            sed -i "s|^${key}=.*|${key}=\"${value}\"|" .env
+            sed -i.bak "s|^${key}=.*|${key}=\"${value}\"|" .env && rm -f .env.bak
         else
             echo "${key}=\"${value}\"" >> .env
         fi
@@ -197,8 +197,8 @@ _preflight:
             JWT_TMP=$(mktemp -d)
             openssl genpkey -algorithm RSA -out "$JWT_TMP/private.pem" -pkeyopt rsa_keygen_bits:2048 2>/dev/null
             openssl rsa -pubout -in "$JWT_TMP/private.pem" -out "$JWT_TMP/public.pem" 2>/dev/null
-            env_set JWT_PRIVATE_KEY "$(base64 -w0 < "$JWT_TMP/private.pem")"
-            env_set JWT_PUBLIC_KEY  "$(base64 -w0 < "$JWT_TMP/public.pem")"
+            env_set JWT_PRIVATE_KEY "$(base64 < "$JWT_TMP/private.pem" | tr -d '\n')"
+            env_set JWT_PUBLIC_KEY  "$(base64 < "$JWT_TMP/public.pem" | tr -d '\n')"
             rm -rf "$JWT_TMP"
             ok "RS256 key pair generated and written to .env"
         else
@@ -208,9 +208,9 @@ _preflight:
         ok "JWT keys"
     fi
 
-    # 3. Encryption key ──────────────────────────────────────────────────
+    # 3. Encryption key (must be base64-encoded 32 bytes = 44 chars) ────
     ENC_KEY=$(grep -E '^ENCRYPTION_KEY=' .env | sed 's/^ENCRYPTION_KEY="\{0,1\}\(.*\)"\{0,1\}$/\1/' || true)
-    if [ -z "$ENC_KEY" ] || [ "$(printf '%s' "$ENC_KEY" | base64 -d 2>/dev/null | wc -c)" -ne 32 ]; then
+    if [ -z "$ENC_KEY" ] || [ "${#ENC_KEY}" -ne 44 ] || ! printf '%s' "$ENC_KEY" | grep -qE '^[A-Za-z0-9+/]+=*$'; then
         warn "ENCRYPTION_KEY missing or invalid — generating..."
         command -v openssl >/dev/null 2>&1 || fail "openssl not found"
         env_set ENCRYPTION_KEY "$(openssl rand -base64 32)"

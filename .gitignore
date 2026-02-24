@@ -56,3 +56,4 @@ yarn-error.log*
 *.sqlite
 *.sqlite3
 apps/web/.env.local
+.env.backup

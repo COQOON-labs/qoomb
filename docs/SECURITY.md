@@ -156,7 +156,8 @@ Qoomb uses a **dual-token model**:
 
 **Security features:**
 
-- Signed with HS256 (JWT_SECRET, 32+ chars required)
+- Signed with RS256 (asymmetric; private key signs, public key verifies)
+- Keys stored base64-encoded in `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY`
 - Minimal payload — no sensitive data, no email
 - Refresh tokens stored in DB (`refresh_tokens` table) with device/IP metadata
 - Refresh token rotation: each use issues a new token and invalidates the old one
@@ -471,7 +472,14 @@ Audit logs are immutable — no updates or deletes allowed.
 # Required — no defaults accepted
 KEY_PROVIDER=environment   # or: file | aws-kms | vault
 ENCRYPTION_KEY=$(openssl rand -base64 32)
-JWT_SECRET=$(openssl rand -base64 32)
+
+# RS256 key pair for JWT signing
+openssl genpkey -algorithm RSA -out jwt-private.pem -pkeyopt rsa_keygen_bits:2048
+openssl rsa -pubout -in jwt-private.pem -out jwt-public.pem
+JWT_PRIVATE_KEY=$(base64 -w0 < jwt-private.pem)
+JWT_PUBLIC_KEY=$(base64 -w0 < jwt-public.pem)
+# Store jwt-private.pem securely (KMS/vault) — delete the local copy after
+
 DATABASE_URL=postgresql://...
 REDIS_URL=redis://...
 NODE_ENV=production
@@ -483,7 +491,7 @@ ALLOWED_ORIGINS=https://yourdomain.com
 
 - Never commit secrets to version control
 - Use environment variables or a secrets manager
-- Rotate JWT_SECRET and ENCRYPTION_KEY quarterly
+- Rotate JWT key pair and ENCRYPTION_KEY quarterly
 - Use different secrets per environment
 
 ---
@@ -533,7 +541,7 @@ ALLOWED_ORIGINS=https://yourdomain.com
 
 ### Deployment
 
-- [ ] Generate strong JWT_SECRET (32+ characters)
+- [ ] Generate RS256 key pair (`JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY`)
 - [ ] Generate strong ENCRYPTION_KEY (32+ characters)
 - [ ] Set NODE_ENV=production
 - [ ] Configure ALLOWED_ORIGINS correctly

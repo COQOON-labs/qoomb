@@ -88,6 +88,43 @@ if [ ! -f .env ]; then
 fi
 print_success ".env Datei gefunden"
 
+# JWT Key Check
+JWT_PRIV_VAL=$(grep -E '^JWT_PRIVATE_KEY=' .env | sed 's/^JWT_PRIVATE_KEY="\(.*\)"/\1/')
+JWT_PUB_VAL=$(grep -E '^JWT_PUBLIC_KEY=' .env | sed 's/^JWT_PUBLIC_KEY="\(.*\)"/\1/')
+
+if [ -z "$JWT_PRIV_VAL" ] || [ -z "$JWT_PUB_VAL" ]; then
+    echo ""
+    print_warning "JWT_PRIVATE_KEY und JWT_PUBLIC_KEY sind nicht gesetzt."
+    print_info "Ohne diese Keys kann die App keine JWT-Tokens signieren und startet nicht."
+    echo ""
+    read -r -p "$(echo -e "${YELLOW}Jetzt automatisch ein RS256 Key-Pair generieren und in .env eintragen?${NC} [j/N] ")" GENERATE_KEYS
+    echo ""
+    if [[ "${GENERATE_KEYS:-n}" =~ ^[JjYy]$ ]]; then
+        command -v openssl >/dev/null 2>&1 || {
+            print_error "openssl ist nicht installiert — Key-Generierung nicht möglich."
+            print_info "Bitte manuell generieren (Befehle in .env.example, Abschnitt JWT RS256)."
+            exit 1
+        }
+        print_info "Generiere RS256 Key-Pair (2048 bit)..."
+        JWT_TMP=$(mktemp -d)
+        openssl genpkey -algorithm RSA -out "$JWT_TMP/private.pem" -pkeyopt rsa_keygen_bits:2048 2>/dev/null
+        openssl rsa -pubout -in "$JWT_TMP/private.pem" -out "$JWT_TMP/public.pem" 2>/dev/null
+        PRIV_B64=$(base64 -w0 < "$JWT_TMP/private.pem")
+        PUB_B64=$(base64 -w0 < "$JWT_TMP/public.pem")
+        rm -rf "$JWT_TMP"
+        sed -i "s|^JWT_PRIVATE_KEY=.*|JWT_PRIVATE_KEY=\"$PRIV_B64\"|" .env
+        sed -i "s|^JWT_PUBLIC_KEY=.*|JWT_PUBLIC_KEY=\"$PUB_B64\"|" .env
+        print_success "RS256 Key-Pair generiert und in .env eingetragen"
+        print_warning "Die Keys existieren nur in .env — lege ein sicheres Backup an!"
+        print_warning "Für Production: eigene Keys generieren und sicher verwalten (siehe docs/SECURITY.md)"
+    else
+        print_warning "JWT Keys werden nicht generiert."
+        print_warning "Die App wird ohne gültige JWT Keys nicht starten können."
+        print_info "Befehle zur manuellen Generierung: siehe .env.example (Abschnitt JWT RS256)"
+        echo ""
+    fi
+fi
+
 # Step 1: Start Docker Services
 print_header "STEP 1: Docker Services starten"
 
@@ -233,7 +270,7 @@ echo ""
 echo "📚 Dokumentation:"
 echo "   - SETUP.md - Detaillierte Setup-Anleitung"
 echo "   - STATUS_REPORT.md - Implementierungs-Status"
-echo "   - docs/JWT_REFRESH_TOKEN_IMPLEMENTATION.md - JWT Details"
+echo "   - docs/SECURITY.md - Security-Architektur und JWT-Konfiguration"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""

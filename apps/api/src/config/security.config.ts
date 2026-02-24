@@ -248,6 +248,25 @@ export const SECURITY_HEADERS = {
   },
 
   /**
+   * Relaxed CSP for development (M-3 audit finding).
+   * Uses 'unsafe-inline' and 'unsafe-eval' to support HMR / devtools,
+   * but still blocks object/frame embedding and off-origin resources.
+   */
+  contentSecurityPolicyDev: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'ws:', 'wss:'],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+
+  /**
    * HSTS (HTTP Strict Transport Security)
    */
   strictTransportSecurity: {

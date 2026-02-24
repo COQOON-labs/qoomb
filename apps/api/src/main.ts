@@ -216,7 +216,9 @@ async function bootstrap() {
   // Security Headers with Helmet
   const helmetOptions = {
     contentSecurityPolicy:
-      process.env.NODE_ENV === 'development' ? false : SECURITY_HEADERS.contentSecurityPolicy,
+      process.env.NODE_ENV === 'development'
+        ? SECURITY_HEADERS.contentSecurityPolicyDev
+        : SECURITY_HEADERS.contentSecurityPolicy,
     hsts: SECURITY_HEADERS.strictTransportSecurity,
     frameguard: SECURITY_HEADERS.frameguard,
     noSniff: SECURITY_HEADERS.noSniff,

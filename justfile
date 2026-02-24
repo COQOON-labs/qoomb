@@ -188,8 +188,8 @@ _preflight:
     fi
 
     # 2. JWT RS256 key pair ───────────────────────────────────────────────
-    JWT_PRIV=$(grep -E '^JWT_PRIVATE_KEY=' .env | sed 's/^JWT_PRIVATE_KEY="\{0,1\}\(.*\)"\{0,1\}$/\1/' || true)
-    JWT_PUB=$(grep -E '^JWT_PUBLIC_KEY=' .env | sed 's/^JWT_PUBLIC_KEY="\{0,1\}\(.*\)"\{0,1\}$/\1/' || true)
+    JWT_PRIV=$(grep -E '^JWT_PRIVATE_KEY=' .env | sed 's/^JWT_PRIVATE_KEY=//' | sed 's/^"//;s/"$//' || true)
+    JWT_PUB=$(grep -E '^JWT_PUBLIC_KEY=' .env | sed 's/^JWT_PUBLIC_KEY=//' | sed 's/^"//;s/"$//' || true)
     if [ -z "$JWT_PRIV" ] || [ -z "$JWT_PUB" ]; then
         warn "JWT_PRIVATE_KEY / JWT_PUBLIC_KEY not set"
         if ask "Generate RS256 key pair now?"; then
@@ -209,7 +209,7 @@ _preflight:
     fi
 
     # 3. Encryption key (must be base64-encoded 32 bytes = 44 chars) ────
-    ENC_KEY=$(grep -E '^ENCRYPTION_KEY=' .env | sed 's/^ENCRYPTION_KEY="\{0,1\}\(.*\)"\{0,1\}$/\1/' || true)
+    ENC_KEY=$(grep -E '^ENCRYPTION_KEY=' .env | sed 's/^ENCRYPTION_KEY=//' | sed 's/^"//;s/"$//' || true)
     if [ -z "$ENC_KEY" ] || [ "${#ENC_KEY}" -ne 44 ] || ! printf '%s' "$ENC_KEY" | grep -qE '^[A-Za-z0-9+/]+=*$'; then
         warn "ENCRYPTION_KEY missing or invalid — generating..."
         command -v openssl >/dev/null 2>&1 || fail "openssl not found"

@@ -228,7 +228,7 @@ export interface VisibilityFilterContext {
  * @example
  * ```typescript
  * // 1. Pre-query share IDs (in the router)
- * const sharedIds = await getSharedResourceIds(ctx.prisma, 'event', personId, groupIds);
+ * const sharedIds = await getSharedResourceIds(ctx.tx, 'event', personId, groupIds);
  *
  * // 2. Build filter
  * const filter = buildVisibilityFilter(ctx.user, HivePermission.EVENTS_VIEW, sharedIds);
@@ -277,7 +277,7 @@ export function buildVisibilityFilter(
  *
  * Use this before calling buildVisibilityFilter() to supply the sharedResourceIds param.
  *
- * @param prisma       - PrismaService instance
+ * @param db           - PrismaService or transaction client from hiveProcedure
  * @param resourceType - Polymorphic resource type string (e.g. 'event', 'task')
  * @param personId     - Current user's personId
  * @param groupIds     - Current user's group memberships

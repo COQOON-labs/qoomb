@@ -16,8 +16,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "clean": "rm -rf dist",
-    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts",
-    "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts --fix",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -30,7 +30,7 @@
     "@qoomb/types": "workspace:*",
     "@types/node": "^25.3.0",
     "@types/sanitize-html": "^2.16.0",
-    "eslint": "^9.39.3",
+    "eslint": "^10.0.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   }

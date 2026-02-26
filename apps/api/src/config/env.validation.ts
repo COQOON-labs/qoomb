@@ -128,13 +128,43 @@ const envSchema = z.object({
     .transform((val) => (val ? val.split(',').map((s) => s.trim()) : [])),
 
   /**
-   * Feature Flags
+   * System Configuration
+   *
+   * These are operator-level decisions that require a deliberate deployment
+   * change — they cannot be toggled at runtime or via the UI.
    */
-  ENABLE_REGISTRATION: z
+
+  /**
+   * Allow anyone to self-register a new hive.
+   * false (default) = invite-only. Set to true only for open SaaS deployments.
+   */
+  ALLOW_OPEN_REGISTRATION: z
+    .string()
+    .default('false')
+    .transform((val) => val === 'true'),
+
+  /**
+   * Allow users to request a password reset via email.
+   * false (default) = disabled until email delivery is configured and verified.
+   */
+  ALLOW_FORGOT_PASSWORD: z
+    .string()
+    .default('false')
+    .transform((val) => val === 'true'),
+
+  /**
+   * Allow PassKey (WebAuthn) authentication.
+   * true (default) = enabled. Set to false to disable WebAuthn entirely.
+   */
+  ALLOW_PASSKEYS: z
     .string()
     .default('true')
     .transform((val) => val === 'true'),
 
+  /**
+   * Enable external calendar synchronisation (Google, Apple, Outlook).
+   * false (default) = disabled until Phase 5 is complete.
+   */
   ENABLE_EXTERNAL_CALENDAR_SYNC: z
     .string()
     .default('false')

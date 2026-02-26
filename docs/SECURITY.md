@@ -207,6 +207,39 @@ const [hive, person, allHiveOverrides, groupMemberships] = await Promise.all([
 
 FIDO2/WebAuthn passkey authentication is supported as a password-free alternative. Credential public keys are stored in `passkey_credentials` with signature counter tracking to detect credential cloning. No biometric data leaves the user's device.
 
+**Configuration (required environment variables):**
+
+| Variable           | Description                                                                          | Example                    |
+| ------------------ | ------------------------------------------------------------------------------------ | -------------------------- |
+| `WEBAUTHN_RP_ID`   | Relying Party ID — must be a registrable domain suffix of **all** configured origins | `localhost`, `example.com` |
+| `WEBAUTHN_RP_NAME` | Human-readable name shown in the browser's PassKey dialog                            | `Qoomb`                    |
+| `WEBAUTHN_ORIGIN`  | Comma-separated list of allowed browser origins                                      | `https://app.example.com`  |
+
+**RP ID / Origin constraint (W3C WebAuthn spec):**
+
+The RP ID must be a registrable domain suffix of every origin in `WEBAUTHN_ORIGIN`. Credentials are bound to the RP ID — not the individual origin — so a single RP ID can cover multiple origins sharing the same domain root.
+
+```bash
+# ✅ Valid: "localhost" is a suffix of both localhost and *.localhost
+WEBAUTHN_RP_ID=localhost
+WEBAUTHN_ORIGIN=http://localhost:5173,https://qoomb.localhost:8443
+
+# ✅ Valid: single production origin
+WEBAUTHN_RP_ID=example.com
+WEBAUTHN_ORIGIN=https://app.example.com
+
+# ❌ Invalid: "example.com" is not a suffix of "other.com"
+WEBAUTHN_RP_ID=example.com
+WEBAUTHN_ORIGIN=https://app.example.com,https://other.com
+```
+
+**Security properties:**
+
+- Signature counter incremented on every authentication — replayed or cloned credentials are rejected
+- Challenge stored in Redis with 5-minute TTL — prevents replay attacks
+- Credential removal requires authenticated session ownership check
+- All error responses are generic — no credential enumeration possible
+
 ### 5. Email Verification
 
 Implemented via `email_verification_tokens` table. New registrations receive a verification email. Unverified accounts have limited access until verified.

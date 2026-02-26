@@ -1179,10 +1179,31 @@ KEY_PROVIDER=environment  # environment|file|aws-kms|vault
 ENCRYPTION_KEY=<base64>   # Generate: openssl rand -base64 32
 DATABASE_URL=postgresql://...
 REDIS_URL=redis://...
-JWT_SECRET=<32+ chars>    # Generate: openssl rand -base64 32
+
+# JWT RS256 asymmetric key pair (NOT symmetric — there is no JWT_SECRET)
+# Generate both at once: just generate-secrets
+JWT_PRIVATE_KEY=<base64-encoded RSA private key PEM>
+JWT_PUBLIC_KEY=<base64-encoded RSA public key PEM>
+
+# WebAuthn / PassKey — RP ID must be a registrable domain suffix of ALL origins
+WEBAUTHN_RP_ID=localhost             # "localhost" covers localhost + *.localhost
+WEBAUTHN_RP_NAME=Qoomb
+WEBAUTHN_ORIGIN=http://localhost:5173  # comma-separated for multiple origins
 ```
 
-**See:** `.env.example` for complete configuration.
+**WebAuthn RP ID / Origin constraint:** A single RP ID can cover multiple origins as long as it is a domain suffix of each. Credentials are bound to the RP ID — not the individual origin.
+
+```bash
+# ✅ "localhost" is valid for both dev modes simultaneously
+WEBAUTHN_RP_ID=localhost
+WEBAUTHN_ORIGIN=http://localhost:5173,https://qoomb.localhost:8443
+
+# ✅ Production
+WEBAUTHN_RP_ID=qoomb.com
+WEBAUTHN_ORIGIN=https://app.qoomb.com
+```
+
+**See:** `.env.example` for complete configuration, `docs/SECURITY.md §4` for WebAuthn details.
 
 ---
 

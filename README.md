@@ -19,10 +19,10 @@ A family organization platform with offline-first capabilities, hybrid encryptio
 
 ```bash
 # Full setup (HTTPS + local domain, macOS/Linux)
-just setup
+just dev-setup
 
 # Start development servers
-just start
+just dev-start
 ```
 
 Visit: **<https://qoomb.localhost:8443>** (also works on mobile devices)
@@ -30,46 +30,46 @@ Visit: **<https://qoomb.localhost:8443>** (also works on mobile devices)
 **Simple mode** (localhost only, works on all platforms including Windows):
 
 ```bash
-just setup-simple
-just start-simple
+just dev-setup-simple
+just dev-start-simple
 # Visit: http://localhost:5173
 ```
 
 #### Available Commands
 
 ```bash
-just help          # Show all available commands
+just help               # Show all available commands
 
 # Setup
-just setup-simple  # Simple setup (Docker + DB, localhost only)
-just setup         # Full setup with HTTPS (macOS/Linux, recommended)
+just dev-setup-simple   # Simple setup (Docker + DB, localhost only)
+just dev-setup          # Full setup with HTTPS (macOS/Linux, recommended)
 
 # Development
-just start         # Start with HTTPS & qoomb.localhost (recommended)
-just start-simple  # Start on localhost only (no HTTPS)
-just dev-api       # Start only backend API
-just dev-web       # Start only frontend
+just dev-start          # Start with HTTPS & qoomb.localhost (recommended)
+just dev-start-simple   # Start on localhost only (no HTTPS)
+just dev-api            # Start only backend API
+just dev-web            # Start only frontend
 
 # Docker
-just docker-up     # Start PostgreSQL and Redis
-just docker-down   # Stop Docker services
+just docker-up          # Start PostgreSQL and Redis
+just docker-down        # Stop Docker services
 
 # Database
-just db-migrate    # Run database migrations
-just db-studio     # Open Prisma Studio (DB GUI)
+just db-migrate         # Run database migrations
+just db-studio          # Open Prisma Studio (DB GUI)
 
 # Utilities
-just status        # Check service status
-just stop          # Stop development (Caddy)
-just clean         # Clean build artifacts
+just status             # Check service status
+just stop               # Stop development (Caddy)
+just clean              # Clean build artifacts
 
 # Auto-approve all prompts (useful for CI/scripts)
-AUTO=1 just start
+AUTO=1 just dev-start
 AUTO=1 just clean-all
 
 # Pre-approve dev seed data (Doe Family test users)
-SEED=1 just start
-SEED=1 AUTO=1 just start   # Full auto including seed
+SEED=1 just dev-start
+SEED=1 AUTO=1 just dev-start   # Full auto including seed
 ```
 
 ### Option 2: Manual Setup

@@ -34,8 +34,8 @@ if ! command -v just >/dev/null 2>&1; then
     echo "  macOS:  brew install just"
     echo "  Linux:  cargo install just  OR  https://github.com/casey/just#installation"
     echo ""
-    echo "Then run:  just setup"
+    echo "Then run:  just dev-setup"
     exit 1
 fi
 
-exec just setup
+exec just dev-setup

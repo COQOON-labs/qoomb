@@ -75,7 +75,7 @@ Each PR is independently reviewable, CI-green, and mergeable without breaking `m
 
 ### 2. Make Your Changes
 
-- Follow the existing code patterns (see `claude.md` for architecture details)
+- Follow the existing code patterns (see `CLAUDE.md` for architecture details)
 - Use TypeScript — no `any` types
 - Add Zod validation for new API inputs
 - Use `@EncryptFields` / `@DecryptFields` for sensitive data

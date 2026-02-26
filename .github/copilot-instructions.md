@@ -1,7 +1,7 @@
 # Copilot Instructions for Qoomb
 
 > These instructions apply to all AI-assisted code generation in this repository.
-> For full technical context, see [claude.md](../claude.md).
+> For full technical context, see [CLAUDE.md](../CLAUDE.md).
 
 ---
 
@@ -258,7 +258,7 @@ Never suggest accumulating work in a branch for more than 2 days.
 | File                              | Audience                                                   |
 | --------------------------------- | ---------------------------------------------------------- |
 | `README.md`                       | Human developers                                           |
-| `claude.md`                       | AI assistants (full technical context)                     |
+| `CLAUDE.md`                       | AI assistants (full technical context)                     |
 | `.github/copilot-instructions.md` | This file — GitHub Copilot quick reference                 |
 | `docs/`                           | Deep-dive docs (permissions, security, prisma patterns, …) |
 | `docs/adr/`                       | Architecture Decision Records (MADR format)                |

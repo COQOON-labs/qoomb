@@ -69,6 +69,15 @@ ORM, PostgreSQL with Row-Level Security, Redis, and `typesafe-i18n` for both bac
 - Pluggable key providers: Environment, File, Cloud KMS, Vault — **no default** (fail-safe)
 - Email stored as encrypted ciphertext + HMAC-SHA256 blind index — **zero plaintext email in DB**
 
+### Operator Feature Flags
+
+- All operator toggles (`ALLOW_OPEN_REGISTRATION`, `ALLOW_FORGOT_PASSWORD`, `ALLOW_PASSKEYS`) are Zod-validated at startup in `env.validation.ts`
+- **`SystemConfigService`** is the single place that reads these env vars — pure boolean getters, no framework imports
+- **`requireEnabled()`** in `apps/api/src/trpc/guards.ts` translates a boolean into a `FORBIDDEN` TRPCError
+- Routers call `requireEnabled(systemConfigService.is*Allowed(), 'message')` — one line per guard
+- Never call `getEnv()` directly inside a router; never put `TRPCError` inside a service
+- New cross-cutting guards (e.g. `requireSystemAdmin`) go in `apps/api/src/trpc/guards.ts`, never inline
+
 ---
 
 ## i18n (Frontend)
@@ -189,6 +198,49 @@ const handleSubmit = useCallback(
 - Commits must follow **Conventional Commits** (`feat:`, `fix:`, `chore:`, etc.)
 - **Never add `Co-Authored-By:` trailers** — not for AI tools, not for anyone
 - Never manually change version numbers — Release Please manages versioning
+
+---
+
+## Git & Branching (Trunk-Based Development)
+
+This project follows **Scaled Trunk-Based Development** — see [ADR-0003](../docs/adr/0003-branching-and-release-strategy.md) for the full rationale. Apply these rules when creating branches or suggesting workflows:
+
+### Branch Naming
+
+Always use the standard prefixes — **never** use `claude/`, `ai/`, or other non-standard prefixes:
+
+| Prefix      | Use for                          |
+| ----------- | -------------------------------- |
+| `feat/`     | New features                     |
+| `fix/`      | Bug fixes                        |
+| `docs/`     | Documentation only               |
+| `refactor/` | Code restructuring, no behaviour change |
+| `test/`     | Tests                            |
+| `chore/`    | Build, CI, tooling, deps         |
+| `perf/`     | Performance improvements         |
+
+Examples: `feat/event-recurrence`, `fix/csrf-token-missing`, `chore/upgrade-prisma`
+
+### Branch Lifetime
+
+- Branches must be **merged within 1–2 days** — no long-running feature branches
+- Split large tasks into multiple small PRs (Expand/Contract pattern)
+- Each PR must leave `main` in a **releasable state**
+
+### Splitting Large Changes
+
+When a task is too large for one PR, propose a sequence:
+1. **PR 1 — Foundation:** Types, schema, API surface (no breaking changes yet)
+2. **PR 2 — Feature:** Behaviour and UI wired up
+3. **PR 3 — Cleanup:** Remove deprecated paths
+
+Never suggest accumulating work in a branch for more than 2 days.
+
+### Merge Strategy
+
+- Always **squash merge** — one commit per PR on `main`
+- The squash commit message must follow Conventional Commits
+- Never force-push to `main`
 
 ---
 

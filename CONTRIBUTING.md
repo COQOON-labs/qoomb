@@ -59,6 +59,20 @@ Branch naming convention:
 | `test/`     | Adding or improving tests |
 | `chore/`    | Build, CI, tooling        |
 
+> **Trunk-Based Development:** Branches should be short-lived — ideally merged within 1–2 days.
+> Large changes should be split into multiple sequential PRs rather than one long-running branch.
+> `main` is always in a releasable state.
+
+### How to Split Large Features
+
+Instead of one big feature branch that lives for a week, use the **Expand/Contract** pattern:
+
+1. **PR 1 — Infrastructure:** Add the new data model, types, or API endpoint (disabled/unused)
+2. **PR 2 — Implementation:** Wire up the feature behind the new API
+3. **PR 3 — Cleanup:** Remove the old code path once the new one is stable
+
+Each PR is independently reviewable, CI-green, and mergeable without breaking `main`.
+
 ### 2. Make Your Changes
 
 - Follow the existing code patterns (see `claude.md` for architecture details)
@@ -103,7 +117,7 @@ Pre-commit hooks will auto-format your code with Prettier. Pre-push hooks will v
 1. CI runs automatically (lint, type-check, test, build, security scans)
 2. A maintainer reviews your PR
 3. You may be asked to make changes — push additional commits to your branch
-4. Once approved, the PR is merged via squash or merge commit
+4. Once approved, the PR is **squash merged** — one clean commit on `main` per PR
 
 ## Code Standards
 

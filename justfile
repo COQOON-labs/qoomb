@@ -28,7 +28,7 @@ default:
 
 # ─── Setup ───────────────────────────────────────────────────────────────────
 
-# Check if required CLI tools are installed
+# Check if required dependencies are installed
 check-deps:
     @echo -e "{{blue}}Checking dependencies...{{nc}}"
     @command -v docker >/dev/null 2>&1 || { echo -e "{{red}}✗ Docker not installed{{nc}}"; exit 1; }
@@ -86,30 +86,33 @@ install:
     pnpm install
     @echo -e "{{green}}✓ Dependencies installed{{nc}}"
 
-# Simple setup: deps + Docker + DB + optional seed (localhost only)
-setup-simple: check-ports _preflight
-    @echo ""
-    @echo -e "{{green}}========================================{{nc}}"
-    @echo -e "{{green}}✓ Setup complete!{{nc}}"
-    @echo -e "{{green}}========================================{{nc}}"
-    @echo ""
-    @echo -e "{{cyan}}Next steps:{{nc}}"
-    @echo ""
-    @echo -e "  Option A — Simple (localhost only)"
-    @echo -e "    {{green}}just start-simple{{nc}}   Start on localhost:5173 & :3001"
-    @echo ""
-    @echo -e "  Option B — Full (HTTPS + mobile)"
-    @echo -e "    {{green}}just setup{{nc}}         One-time HTTPS & cert setup"
-    @echo -e "    {{green}}just start{{nc}}         Start with HTTPS on :8443"
-    @echo ""
-    @echo -e "  Database:"
-    @echo -e "    {{green}}just db-studio{{nc}}      Open Prisma Studio (DB GUI)"
-    @echo -e "    {{green}}just db-seed{{nc}}        (Re-)load dev users"
-    @echo ""
+# Simple setup: first-time environment preparation (localhost only)
+# Delegates all checks to _preflight, then shows next steps.
+setup-simple: _preflight check-ports
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo ""
+    echo -e "\033[0;32m========================================\033[0m"
+    echo -e "\033[0;32m✓ Setup complete!\033[0m"
+    echo -e "\033[0;32m========================================\033[0m"
+    echo ""
+    echo -e "\033[0;36mNext steps:\033[0m"
+    echo ""
+    echo -e "  Option A — Simple (localhost only)"
+    echo -e "    \033[0;32mjust start-simple\033[0m   Start on localhost:5173 & :3001"
+    echo ""
+    echo -e "  Option B — Full (HTTPS + mobile)"
+    echo -e "    \033[0;32mjust setup\033[0m         One-time HTTPS & cert setup"
+    echo -e "    \033[0;32mjust start\033[0m         Start with HTTPS on :8443"
+    echo ""
+    echo -e "  Database:"
+    echo -e "    \033[0;32mjust db-studio\033[0m      Open Prisma Studio (DB GUI)"
+    echo -e "    \033[0;32mjust db-seed\033[0m        (Re-)load dev users"
+    echo ""
 
 # Full setup: HTTPS + local domain via Caddy + mkcert (macOS/Linux)
 setup: setup-simple
-    @echo -e "{{blue}}Setting up extended development environment...{{nc}}"
+    @echo -e "{{blue}}Setting up HTTPS local domain...{{nc}}"
     @test -f scripts/setup-local-domain.sh || { echo -e "{{red}}✗ scripts/setup-local-domain.sh not found{{nc}}"; exit 1; }
     @bash scripts/setup-local-domain.sh
     @echo ""
@@ -140,156 +143,195 @@ _preflight:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # ── Helpers ──────────────────────────────────────────────────────────
+    # Helper: prompt user or auto-approve when AUTO=1
+    # Usage: ask "message" [required]
+    #   - If AUTO=1: auto-approve
+    #   - If required: abort on decline
+    #   - Otherwise: skip on decline
     ask() {
-        local msg="$1"
+        local msg="$1" required="${2:-}"
         if [ "${AUTO:-0}" = "1" ]; then
             echo -e "    \033[0;36m→ Auto-approved (AUTO=1)\033[0m"
             return 0
         fi
         read -r -p "$(echo -e "    \033[1;33m${msg} [Y/n] \033[0m")" ANSWER
-        [[ "${ANSWER:-y}" =~ ^[Nn]$ ]] && return 1
+        if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
+            if [ "$required" = "required" ]; then
+                echo -e "    \033[0;31m✗ Required — aborting\033[0m"
+                exit 1
+            fi
+            echo -e "    \033[1;33m→ Skipped\033[0m"
+            return 1
+        fi
         return 0
     }
 
-    env_set() {
-        local key="$1" value="$2"
-        if grep -qE "^${key}=" .env; then
-            sed -i.bak "s|^${key}=.*|${key}=\"${value}\"|" .env && rm -f .env.bak
-        else
-            echo "${key}=\"${value}\"" >> .env
-        fi
-    }
-
-    ok()   { echo -e "\033[0;32m  ✓ $1\033[0m"; }
-    warn() { echo -e "\033[1;33m  ⚠ $1\033[0m"; }
-    fail() { echo -e "\033[0;31m  ✗ $1\033[0m"; exit 1; }
-
     echo -e "\033[0;34m🔍 Pre-flight checks...\033[0m"
 
-    # 1. .env ─────────────────────────────────────────────────────────────
+    # 1. Tool dependencies
+    for CMD in docker pnpm node openssl; do
+        command -v "$CMD" >/dev/null 2>&1 || { echo -e "\033[0;31m  ✗ $CMD not installed\033[0m"; exit 1; }
+    done
+    echo -e "\033[0;32m  ✓ Tools (docker, pnpm, node, openssl)\033[0m"
+
+    # 2. .env file
     if [ ! -f .env ]; then
-        [ -f .env.example ] || fail ".env not found (no .env.example either)"
-        warn ".env not found — creating from .env.example"
-        cp .env.example .env
-        ok ".env created"
-    elif grep -qE '^JWT_SECRET=' .env && ! grep -qE '^JWT_PRIVATE_KEY=' .env; then
-        warn ".env uses deprecated JWT_SECRET — Qoomb now requires RS256"
-        if ask "Recreate from .env.example? (backup saved as .env.backup)"; then
-            cp .env .env.backup
+        if [ -f .env.example ]; then
+            echo -e "\033[1;33m  ⚠ .env not found — creating from .env.example\033[0m"
             cp .env.example .env
-            ok ".env recreated (backup: .env.backup)"
-            warn "Review DATABASE_URL, REDIS_URL etc. in .env!"
+            echo -e "\033[0;32m  ✓ .env created (review settings in .env)\033[0m"
         else
-            fail "Cannot continue with outdated .env"
+            echo -e "\033[0;31m  ✗ .env not found (no .env.example either)\033[0m"
+            exit 1
         fi
     else
-        ok ".env"
+        echo -e "\033[0;32m  ✓ .env\033[0m"
     fi
 
-    # 2. JWT RS256 key pair ───────────────────────────────────────────────
-    JWT_PRIV=$(grep -E '^JWT_PRIVATE_KEY=' .env | sed 's/^JWT_PRIVATE_KEY=//' | sed 's/^"//;s/"$//' || true)
-    JWT_PUB=$(grep -E '^JWT_PUBLIC_KEY=' .env | sed 's/^JWT_PUBLIC_KEY=//' | sed 's/^"//;s/"$//' || true)
-    if [ -z "$JWT_PRIV" ] || [ -z "$JWT_PUB" ]; then
-        warn "JWT_PRIVATE_KEY / JWT_PUBLIC_KEY not set"
-        if ask "Generate RS256 key pair now?"; then
-            command -v openssl >/dev/null 2>&1 || fail "openssl not found"
-            JWT_TMP=$(mktemp -d)
-            openssl genpkey -algorithm RSA -out "$JWT_TMP/private.pem" -pkeyopt rsa_keygen_bits:2048 2>/dev/null
-            openssl rsa -pubout -in "$JWT_TMP/private.pem" -out "$JWT_TMP/public.pem" 2>/dev/null
-            env_set JWT_PRIVATE_KEY "$(base64 < "$JWT_TMP/private.pem" | tr -d '\n')"
-            env_set JWT_PUBLIC_KEY  "$(base64 < "$JWT_TMP/public.pem" | tr -d '\n')"
-            rm -rf "$JWT_TMP"
-            ok "RS256 key pair generated and written to .env"
-        else
-            fail "App cannot start without JWT keys"
+    # 1b. Required secrets in .env
+    #     If a secret is missing or still at the .env.example placeholder,
+    #     offer to auto-generate a cryptographically random value.
+    SECRETS_MISSING=0
+    for SECRET_NAME in JWT_SECRET ENCRYPTION_KEY SESSION_SECRET; do
+        CURRENT=$(grep "^${SECRET_NAME}=" .env 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)
+        if [ -z "$CURRENT" ] || echo "$CURRENT" | grep -qi "change-me"; then
+            SECRETS_MISSING=$((SECRETS_MISSING + 1))
+        fi
+    done
+    if ! grep -q "^KEY_PROVIDER=" .env 2>/dev/null; then
+        SECRETS_MISSING=$((SECRETS_MISSING + 1))
+    fi
+
+    if [ "$SECRETS_MISSING" -gt 0 ]; then
+        echo -e "\033[1;33m  ⚠ $SECRETS_MISSING secret(s) missing or placeholder in .env\033[0m"
+        if ask "Generate missing secrets automatically?" required; then
+            for SECRET_NAME in JWT_SECRET ENCRYPTION_KEY SESSION_SECRET; do
+                CURRENT=$(grep "^${SECRET_NAME}=" .env 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)
+                if [ -z "$CURRENT" ] || echo "$CURRENT" | grep -qi "change-me"; then
+                    NEW_VALUE=$(openssl rand -base64 32)
+                    if grep -q "^${SECRET_NAME}=" .env 2>/dev/null; then
+                        sed -i '' "s|^${SECRET_NAME}=.*|${SECRET_NAME}=\"${NEW_VALUE}\"|" .env
+                    else
+                        echo "${SECRET_NAME}=\"${NEW_VALUE}\"" >> .env
+                    fi
+                    echo -e "\033[0;32m    ✓ ${SECRET_NAME} generated\033[0m"
+                fi
+            done
+            if ! grep -q "^KEY_PROVIDER=" .env 2>/dev/null; then
+                echo 'KEY_PROVIDER="environment"' >> .env
+                echo -e "\033[0;32m    ✓ KEY_PROVIDER set to 'environment'\033[0m"
+            fi
+            echo -e "\033[0;32m  ✓ Secrets (review .env before production!)\033[0m"
         fi
     else
-        ok "JWT keys"
+        echo -e "\033[0;32m  ✓ Secrets\033[0m"
     fi
 
-    # 3. Encryption key (must be base64-encoded 32 bytes = 44 chars) ────
-    ENC_KEY=$(grep -E '^ENCRYPTION_KEY=' .env | sed 's/^ENCRYPTION_KEY=//' | sed 's/^"//;s/"$//' || true)
-    if [ -z "$ENC_KEY" ] || [ "${#ENC_KEY}" -ne 44 ] || ! printf '%s' "$ENC_KEY" | grep -qE '^[A-Za-z0-9+/]+=*$'; then
-        warn "ENCRYPTION_KEY missing or invalid — generating..."
-        command -v openssl >/dev/null 2>&1 || fail "openssl not found"
-        env_set ENCRYPTION_KEY "$(openssl rand -base64 32)"
-        ok "ENCRYPTION_KEY generated and written to .env"
-    else
-        ok "ENCRYPTION_KEY"
-    fi
-
-    # 4. Dependencies ─────────────────────────────────────────────────────
-    if [ ! -d node_modules ] || { [ -f pnpm-lock.yaml ] && [ pnpm-lock.yaml -nt node_modules ]; }; then
-        warn "Installing dependencies..."
+    # 2. Dependencies (node_modules)
+    if [ ! -d node_modules ]; then
+        echo -e "\033[1;33m  ⚠ node_modules missing — installing...\033[0m"
         pnpm install
-        ok "Dependencies"
+        echo -e "\033[0;32m  ✓ Dependencies installed\033[0m"
+    elif [ -f pnpm-lock.yaml ] && [ "pnpm-lock.yaml" -nt "node_modules" ]; then
+        echo -e "\033[1;33m  ⚠ Lock file changed since last install — updating...\033[0m"
+        pnpm install
+        echo -e "\033[0;32m  ✓ Dependencies updated\033[0m"
     else
-        ok "Dependencies"
+        echo -e "\033[0;32m  ✓ Dependencies\033[0m"
     fi
 
-    # 5. Docker ───────────────────────────────────────────────────────────
+    # 3. Docker daemon
     if ! docker info >/dev/null 2>&1; then
-        fail "Docker is not running (macOS: open -a Docker | Linux: sudo systemctl start docker)"
+        echo -e "\033[0;31m  ✗ Docker is not running\033[0m"
+        echo -e "\033[1;33m    → Start Docker Desktop and retry\033[0m"
+        echo -e "\033[0;36m      macOS:  open -a Docker\033[0m"
+        echo -e "\033[0;36m      Linux:  sudo systemctl start docker\033[0m"
+        exit 1
     fi
-    if ! (docker ps --filter "name=qoomb-postgres" --filter "status=running" -q | grep -q . && \
-          docker ps --filter "name=qoomb-redis"    --filter "status=running" -q | grep -q .); then
-        warn "Starting Docker services..."
-        docker-compose up -d
-        sleep 3
-    fi
-    ok "Docker services"
+    echo -e "\033[0;32m  ✓ Docker\033[0m"
 
-    # 6. Prisma client ────────────────────────────────────────────────────
+    # 4. Docker services (PostgreSQL + Redis)
+    if docker ps --filter "name=qoomb-postgres" --filter "status=running" -q | grep -q . && \
+       docker ps --filter "name=qoomb-redis"    --filter "status=running" -q | grep -q .; then
+        echo -e "\033[0;32m  ✓ Docker services\033[0m"
+    else
+        echo -e "\033[1;33m  ⚠ Docker services not running (PostgreSQL + Redis)\033[0m"
+        if ask "Start Docker services?" required; then
+            docker-compose up -d
+            sleep 3
+            echo -e "\033[0;32m  ✓ Docker services started\033[0m"
+        fi
+    fi
+
+    # 5. Prisma client
+    # pnpm stores the generated client in the virtual store. Prisma copies
+    # schema.prisma into the generated output — compare to detect staleness.
     PRISMA_GENERATED=$(echo node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client)
-    if [ ! -f "$PRISMA_GENERATED/index.js" ] || \
-       ! diff -q apps/api/prisma/schema.prisma "$PRISMA_GENERATED/schema.prisma" >/dev/null 2>&1; then
-        warn "Generating Prisma client..."
-        pnpm --filter @qoomb/api db:generate
+    if [ ! -f "$PRISMA_GENERATED/index.js" ]; then
+        echo -e "\033[1;33m  ⚠ Prisma client not generated\033[0m"
+        if ask "Generate now?" required; then
+            pnpm --filter @qoomb/api db:generate
+            echo -e "\033[0;32m  ✓ Prisma client generated\033[0m"
+        fi
+    elif ! diff -q apps/api/prisma/schema.prisma "$PRISMA_GENERATED/schema.prisma" >/dev/null 2>&1; then
+        echo -e "\033[1;33m  ⚠ Prisma client outdated (schema changed)\033[0m"
+        if ask "Regenerate now?" required; then
+            pnpm --filter @qoomb/api db:generate
+            echo -e "\033[0;32m  ✓ Prisma client regenerated\033[0m"
+        fi
+    else
+        echo -e "\033[0;32m  ✓ Prisma client\033[0m"
     fi
-    ok "Prisma client"
 
-    # 7. Database migrations ──────────────────────────────────────────────
+    # 6. Database migrations
     MIGRATION_TABLE=$(docker exec qoomb-postgres psql -U qoomb -d qoomb -tAc \
         "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='_prisma_migrations')" \
         2>/dev/null || echo "f")
     MIGRATION_TABLE=$(echo "$MIGRATION_TABLE" | tr -d '[:space:]')
     if [ "$MIGRATION_TABLE" != "t" ]; then
-        warn "Running database migrations..."
-        pnpm --filter @qoomb/api db:migrate
-        ok "Migrations applied"
+        echo -e "\033[1;33m  ⚠ Database not set up yet\033[0m"
+        if ask "Run database migrations?" required; then
+            pnpm --filter @qoomb/api db:migrate
+            echo -e "\033[0;32m  ✓ Migrations applied\033[0m"
+        fi
     else
         APPLIED=$(docker exec qoomb-postgres psql -U qoomb -d qoomb -tAc \
             "SELECT COUNT(*) FROM public._prisma_migrations" 2>/dev/null || echo "0")
         APPLIED=$(echo "$APPLIED" | tr -d '[:space:]')
         AVAILABLE=$(ls -d apps/api/prisma/migrations/2* 2>/dev/null | wc -l | tr -d ' ')
         if [ "$APPLIED" -lt "$AVAILABLE" ] 2>/dev/null; then
-            warn "$((AVAILABLE - APPLIED)) pending migration(s)..."
-            pnpm --filter @qoomb/api db:migrate
-            ok "Migrations applied"
+            echo -e "\033[1;33m  ⚠ $((AVAILABLE - APPLIED)) pending migration(s)\033[0m"
+            if ask "Apply now?"; then
+                pnpm --filter @qoomb/api db:migrate
+                echo -e "\033[0;32m  ✓ Migrations applied\033[0m"
+            fi
         else
-            ok "Database ($APPLIED migration(s))"
+            echo -e "\033[0;32m  ✓ Database ($APPLIED migration(s))\033[0m"
         fi
     fi
 
-    # 8. Dev seed data (optional) ─────────────────────────────────────────
+    # 7. Dev seed data
     SEED_EXISTS=$(docker exec qoomb-postgres psql -U qoomb -d qoomb -tAc \
         "SELECT EXISTS(SELECT 1 FROM public.hives WHERE id='10000000-0000-0000-0000-000000000001')" \
         2>/dev/null || echo "f")
     SEED_EXISTS=$(echo "$SEED_EXISTS" | tr -d '[:space:]')
     if [ "$SEED_EXISTS" = "t" ]; then
-        ok "Seed data (Doe Family)"
-    elif [ "${SEED:-0}" = "1" ]; then
-        just db-seed
-        ok "Seed data installed"
-    elif [ "${AUTO:-0}" != "1" ]; then
-        warn "No seed data"
-        if ask "Install dev seed? (john@doe.dev, anna@doe.dev, tim@doe.dev)"; then
-            just db-seed
-            ok "Seed data installed"
-        fi
+        echo -e "\033[0;32m  ✓ Seed data (Doe Family)\033[0m"
     else
-        warn "No seed data — skipped (use SEED=1 to auto-install)"
+        if [ "${SEED:-0}" = "1" ]; then
+            echo -e "\033[1;33m  ⚠ No seed data\033[0m"
+            echo -e "    \033[0;36m→ Auto-approved (SEED=1)\033[0m"
+            just db-seed
+            echo -e "\033[0;32m  ✓ Seed data installed\033[0m"
+        elif [ "${AUTO:-0}" = "1" ]; then
+            echo -e "\033[1;33m  ⚠ No seed data — skipped (use SEED=1 to auto-install)\033[0m"
+        else
+            echo -e "\033[1;33m  ⚠ No seed data — dev users not installed\033[0m"
+            if ask "Install dev seed? (john@doe.dev, anna@doe.dev, tim@doe.dev)"; then
+                just db-seed
+                echo -e "\033[0;32m  ✓ Seed data installed\033[0m"
+            fi
+        fi
     fi
 
     echo ""
@@ -397,6 +439,10 @@ build:
 docker-up: _check-docker
     #!/usr/bin/env bash
     set -euo pipefail
+    if [ ! -f .env ]; then
+        echo -e "\033[1;33mCreating .env from .env.example...\033[0m"
+        cp .env.example .env
+    fi
     if docker ps --filter "name=qoomb-postgres" --filter "status=running" -q | grep -q . && \
        docker ps --filter "name=qoomb-redis"    --filter "status=running" -q | grep -q .; then
         echo -e "\033[0;32m✓ Docker services already running\033[0m"
@@ -561,14 +607,8 @@ status:
 generate-secrets:
     @echo -e "{{blue}}Generating secrets...{{nc}}"
     @echo ""
-    @echo -e "{{yellow}}JWT RS256 Key Pair:{{nc}}"
-    @tmpdir=$(mktemp -d) && \
-      openssl genpkey -algorithm RSA -out "$tmpdir/jwt-private.pem" -pkeyopt rsa_keygen_bits:2048 2>/dev/null && \
-      openssl rsa -pubout -in "$tmpdir/jwt-private.pem" -out "$tmpdir/jwt-public.pem" 2>/dev/null && \
-      echo "JWT_PRIVATE_KEY=$(base64 -w0 < "$tmpdir/jwt-private.pem")" && \
-      echo "" && \
-      echo "JWT_PUBLIC_KEY=$(base64 -w0 < "$tmpdir/jwt-public.pem")" && \
-      rm -rf "$tmpdir"
+    @echo -e "{{yellow}}JWT_SECRET:{{nc}}"
+    @openssl rand -base64 32
     @echo ""
     @echo -e "{{yellow}}ENCRYPTION_KEY:{{nc}}"
     @openssl rand -base64 32
@@ -581,13 +621,13 @@ generate-secrets:
 # Verify environment configuration
 env-check:
     @echo -e "{{blue}}Checking .env...{{nc}}"
-    @test -f .env            || { echo -e "{{red}}✗ .env not found{{nc}}"; exit 1; }
-    @grep -q "DATABASE_URL"   .env || { echo -e "{{red}}✗ DATABASE_URL not set{{nc}}"; exit 1; }
-    @grep -q "REDIS_URL"      .env || { echo -e "{{red}}✗ REDIS_URL not set{{nc}}"; exit 1; }
-    @grep -q "JWT_PRIVATE_KEY" .env || { echo -e "{{red}}✗ JWT_PRIVATE_KEY not set{{nc}}"; exit 1; }
-    @grep -q "JWT_PUBLIC_KEY"  .env || { echo -e "{{red}}✗ JWT_PUBLIC_KEY not set{{nc}}"; exit 1; }
-    @grep -q "ENCRYPTION_KEY" .env || { echo -e "{{red}}✗ ENCRYPTION_KEY not set{{nc}}"; exit 1; }
-    @echo -e "{{green}}✓ Environment configuration is valid{{nc}}"
+    @test -f .env              || { echo -e "{{red}}✗ .env not found{{nc}}"; exit 1; }
+    @grep -q "^DATABASE_URL="   .env || { echo -e "{{red}}✗ DATABASE_URL not set{{nc}}"; exit 1; }
+    @grep -q "^REDIS_URL="      .env || { echo -e "{{red}}✗ REDIS_URL not set{{nc}}"; exit 1; }
+    @grep -q "^JWT_SECRET="     .env || { echo -e "{{red}}✗ JWT_SECRET not set{{nc}}"; exit 1; }
+    @grep -q "^ENCRYPTION_KEY=" .env || { echo -e "{{red}}✗ ENCRYPTION_KEY not set{{nc}}"; exit 1; }
+    @grep -q "^KEY_PROVIDER="   .env || { echo -e "{{red}}✗ KEY_PROVIDER not set{{nc}}"; exit 1; }
+    @echo -e "{{green}}✓ Environment configuration looks good{{nc}}"
 
 # Show project information
 info:

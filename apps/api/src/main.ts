@@ -1,3 +1,4 @@
+import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -20,6 +21,10 @@ async function bootstrap() {
       trustProxy: true, // Enable trust proxy for correct IP detection
     })
   );
+
+  // Cookie support — must be registered first so that req.cookies and
+  // reply.setCookie / reply.clearCookie are available to all handlers.
+  await app.register(cookie);
 
   // Security Headers with Helmet
   const helmetOptions = {

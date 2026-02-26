@@ -44,7 +44,7 @@ This extended setup requires **macOS or Linux** with:
 - Homebrew (macOS) or package manager (Linux)
 - Ability to install system certificates (mkcert)
 
-**For Windows users:** Use `just start-simple` instead.
+**For Windows users:** Use `just dev-start-simple` instead.
 
 ## Setup (One-Time)
 
@@ -53,7 +53,7 @@ This extended setup requires **macOS or Linux** with:
 First, run the standard setup:
 
 ```bash
-just setup
+just dev-setup
 ```
 
 ### Step 2: Add Extended Features
@@ -61,7 +61,7 @@ just setup
 Then add HTTPS and local domain:
 
 ```bash
-just setup
+just dev-setup
 ```
 
 This will:
@@ -92,7 +92,7 @@ ping qoomb.localhost
 ### Simple Development (localhost only)
 
 ```bash
-just start-simple
+just dev-start-simple
 ```
 
 Access your app at:
@@ -103,7 +103,7 @@ Access your app at:
 ### Full Development (HTTPS + local domain, recommended)
 
 ```bash
-just start
+just dev-start
 ```
 
 Access your app at:
@@ -129,11 +129,11 @@ just docker-down   # Stop Docker services
 
 ### Auto-Approve Mode
 
-Both `just start` and `just start-simple` run pre-flight checks that prompt before making changes (installing dependencies, starting Docker, running migrations, etc.). To skip all prompts and auto-approve everything:
+Both `just dev-start` and `just dev-start-simple` run pre-flight checks that prompt before making changes (installing dependencies, starting Docker, running migrations, etc.). To skip all prompts and auto-approve everything:
 
 ```bash
-AUTO=1 just start
-AUTO=1 just start-simple
+AUTO=1 just dev-start
+AUTO=1 just dev-start-simple
 ```
 
 This also works for destructive commands:
@@ -151,9 +151,9 @@ AUTO=1 just fresh       # Full rebuild without confirmation
 The pre-flight check detects whether seed data (the Doe Family test hive) is present. If not, you'll be prompted to install it. To pre-approve seeding without being asked:
 
 ```bash
-SEED=1 just start           # Prompt for infra, auto-seed
-SEED=1 just start-simple    # Same for localhost mode
-SEED=1 AUTO=1 just start    # Full auto including seed
+SEED=1 just dev-start           # Prompt for infra, auto-seed
+SEED=1 just dev-start-simple    # Same for localhost mode
+SEED=1 AUTO=1 just dev-start    # Full auto including seed
 ```
 
 The seed creates three test accounts (password: `Dev1234!`):
@@ -222,14 +222,20 @@ The local development setup uses `.env.local`, which is automatically loaded by 
 Key differences from `.env`:
 
 ```bash
-# .env - Standard development
+# .env - Standard development (just dev-start-simple)
 VITE_API_URL="http://localhost:3001"
 ALLOWED_ORIGINS="http://localhost:5173"
+WEBAUTHN_RP_ID=localhost
+WEBAUTHN_ORIGIN=http://localhost:5173
 
-# .env.local - qoomb.localhost development
+# .env.local - qoomb.localhost development (just dev-start)
 VITE_API_URL="https://qoomb.localhost:8443"
 ALLOWED_ORIGINS="https://qoomb.localhost:8443"
+WEBAUTHN_RP_ID=qoomb.localhost
+WEBAUTHN_ORIGIN=https://qoomb.localhost:8443
 ```
+
+> **PassKey users:** If `WEBAUTHN_ORIGIN` doesn't match the URL in your browser's address bar, registration and authentication will fail with an "Unexpected origin" error. Make sure `.env.local` is present and correct when using `just dev-start`.
 
 ## PWA Testing
 
@@ -380,21 +386,21 @@ To use a different domain (e.g., `myapp.local`):
 
 ## Comparison: Development Modes
 
-| Feature              | Simple (`just start-simple`) | Full (`just start`)                |
-| -------------------- | ---------------------------- | ---------------------------------- |
-| **Frontend URL**     | <http://localhost:5173>      | <https://qoomb.localhost:8443>     |
-| **Backend URL**      | <http://localhost:3001>      | <https://qoomb.localhost:8443/api> |
-| **HTTPS**            | ❌ No                        | ✅ Yes (mkcert)                    |
-| **CORS**             | ⚠️ Configured                | ✅ Not needed (same domain)        |
-| **Mobile Testing**   | ❌ Difficult                 | ✅ Easy                            |
-| **PWA Features**     | ⚠️ Limited                   | ✅ Full support                    |
-| **Platform Support** | ✅ All (Windows/macOS/Linux) | ⚠️ macOS/Linux only                |
-| **Setup Complexity** | Minimal                      | Moderate                           |
-| **Best for**         | Most development             | Mobile/PWA testing                 |
+| Feature              | Simple (`just dev-start-simple`) | Full (`just dev-start`)            |
+| -------------------- | -------------------------------- | ---------------------------------- |
+| **Frontend URL**     | <http://localhost:5173>          | <https://qoomb.localhost:8443>     |
+| **Backend URL**      | <http://localhost:3001>          | <https://qoomb.localhost:8443/api> |
+| **HTTPS**            | ❌ No                            | ✅ Yes (mkcert)                    |
+| **CORS**             | ⚠️ Configured                    | ✅ Not needed (same domain)        |
+| **Mobile Testing**   | ❌ Difficult                     | ✅ Easy                            |
+| **PWA Features**     | ⚠️ Limited                       | ✅ Full support                    |
+| **Platform Support** | ✅ All (Windows/macOS/Linux)     | ⚠️ macOS/Linux only                |
+| **Setup Complexity** | Minimal                          | Moderate                           |
+| **Best for**         | Most development                 | Mobile/PWA testing                 |
 
 ## When to Use What
 
-**Use `just start-simple` when:**
+**Use `just dev-start-simple` when:**
 
 - Doing regular development work
 - Developing backend features
@@ -403,7 +409,7 @@ To use a different domain (e.g., `myapp.local`):
 - Working on Windows
 - You don't need HTTPS/PWA features
 
-**Use `just start` (recommended) when:**
+**Use `just dev-start` (recommended) when:**
 
 - Testing PWA features
 - Testing on mobile devices
@@ -421,16 +427,16 @@ To use a different domain (e.g., `myapp.local`):
 
 ## Summary
 
-The full development setup with qoomb.localhost provides a production-like environment with HTTPS for mobile/PWA testing. Use `just start-simple` if you only need localhost without HTTPS.
+The full development setup with qoomb.localhost provides a production-like environment with HTTPS for mobile/PWA testing. Use `just dev-start-simple` if you only need localhost without HTTPS.
 
 **Simple Development (localhost only):**
 
 ```bash
 # One-time setup
-just setup-simple
+just dev-setup-simple
 
 # Daily development
-just start-simple
+just dev-start-simple
 
 # Access at http://localhost:5173
 ```
@@ -439,15 +445,15 @@ just start-simple
 
 ```bash
 # One-time setup (includes simple setup)
-just setup
+just dev-setup
 
 # Daily development
-just start
+just dev-start
 
 # Access at https://qoomb.localhost:8443 (also works on mobile devices)
 ```
 
 **Platform Support:**
 
-- Simple mode (`just start-simple`): ✅ Works on **all platforms** (Windows, macOS, Linux)
-- Full mode (`just start`): ⚠️ Requires **macOS or Linux** (uses Homebrew/mkcert)
+- Simple mode (`just dev-start-simple`): ✅ Works on **all platforms** (Windows, macOS, Linux)
+- Full mode (`just dev-start`): ⚠️ Requires **macOS or Linux** (uses Homebrew/mkcert)

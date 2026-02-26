@@ -210,6 +210,57 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters').optional(),
 
   /**
+   * WebAuthn / PassKey Configuration
+   *
+   * These must match the origin the browser uses to access the app.
+   * For simple dev (just dev-start-simple): use http://localhost:5173
+   * For full dev with Caddy (just dev-start): use https://qoomb.localhost:8443
+   * Multiple origins can be comma-separated: "https://qoomb.localhost:8443,http://localhost:5173"
+   *
+   * RP ID constraint: the RP ID must be a registrable domain suffix of ALL listed origins.
+   * Example: RP ID "localhost" is valid for both "http://localhost:5173" and
+   * "https://qoomb.localhost:8443" because "localhost" is a suffix of "qoomb.localhost".
+   */
+  WEBAUTHN_RP_ID: z
+    .string()
+    .default('localhost')
+    .refine(
+      (val) =>
+        val === 'localhost' ||
+        /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/.test(val),
+      {
+        message:
+          'WEBAUTHN_RP_ID must be a valid hostname (e.g. "localhost", "qoomb.localhost", "example.com")',
+      }
+    ),
+
+  WEBAUTHN_RP_NAME: z.string().default('Qoomb'),
+
+  WEBAUTHN_ORIGIN: z
+    .string()
+    .default('http://localhost:5173')
+    .refine(
+      (val) => {
+        const origins = val
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        return (
+          origins.length > 0 &&
+          origins.every((origin) => {
+            try {
+              const url = new URL(origin);
+              return url.protocol === 'https:' || url.protocol === 'http:';
+            } catch {
+              return false;
+            }
+          })
+        );
+      },
+      { message: 'WEBAUTHN_ORIGIN must be one or more valid http/https URLs, comma-separated' }
+    ),
+
+  /**
    * Email Configuration (for future use)
    */
   SMTP_HOST: z.string().optional(),

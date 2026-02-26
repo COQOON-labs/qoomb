@@ -6,10 +6,10 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 
 project_dir := justfile_directory()
 
-# Auto-approve all prompts (AUTO=1 just start)
+# Auto-approve all prompts (AUTO=1 just dev-start)
 export AUTO := env('AUTO', '0')
 
-# Auto-approve seed data (SEED=1 just start)
+# Auto-approve seed data (SEED=1 just dev-start)
 export SEED := env('SEED', '0')
 
 # Color codes (work with echo -e in bash)
@@ -86,9 +86,9 @@ install:
     pnpm install
     @echo -e "{{green}}✓ Dependencies installed{{nc}}"
 
-# Simple setup: first-time environment preparation (localhost only)
+# Dev setup (simple): first-time local dev environment preparation (localhost only)
 # Delegates all checks to _preflight, then shows next steps.
-setup-simple: _preflight check-ports
+dev-setup-simple: _preflight check-ports
     #!/usr/bin/env bash
     set -euo pipefail
     echo ""
@@ -99,25 +99,25 @@ setup-simple: _preflight check-ports
     echo -e "\033[0;36mNext steps:\033[0m"
     echo ""
     echo -e "  Option A — Simple (localhost only)"
-    echo -e "    \033[0;32mjust start-simple\033[0m   Start on localhost:5173 & :3001"
+    echo -e "    \033[0;32mjust dev-start-simple\033[0m   Start on localhost:5173 & :3001"
     echo ""
     echo -e "  Option B — Full (HTTPS + mobile)"
-    echo -e "    \033[0;32mjust setup\033[0m         One-time HTTPS & cert setup"
-    echo -e "    \033[0;32mjust start\033[0m         Start with HTTPS on :8443"
+    echo -e "    \033[0;32mjust dev-setup\033[0m           One-time HTTPS & cert setup"
+    echo -e "    \033[0;32mjust dev-start\033[0m           Start with HTTPS on :8443"
     echo ""
     echo -e "  Database:"
     echo -e "    \033[0;32mjust db-studio\033[0m      Open Prisma Studio (DB GUI)"
     echo -e "    \033[0;32mjust db-seed\033[0m        (Re-)load dev users"
     echo ""
 
-# Full setup: HTTPS + local domain via Caddy + mkcert (macOS/Linux)
-setup: setup-simple
+# Dev setup (full): HTTPS + local domain via Caddy + mkcert (macOS/Linux)
+dev-setup: dev-setup-simple
     @echo -e "{{blue}}Setting up HTTPS local domain...{{nc}}"
     @test -f scripts/setup-local-domain.sh || { echo -e "{{red}}✗ scripts/setup-local-domain.sh not found{{nc}}"; exit 1; }
     @bash scripts/setup-local-domain.sh
     @echo ""
     @echo -e "{{green}}✓ Full setup complete!{{nc}}"
-    @echo -e "{{yellow}}Next: just start{{nc}}"
+    @echo -e "{{yellow}}Next: just dev-start{{nc}}"
 
 # ─── Development ─────────────────────────────────────────────────────────────
 
@@ -192,12 +192,17 @@ _preflight:
     #     If a secret is missing or still at the .env.example placeholder,
     #     offer to auto-generate a cryptographically random value.
     SECRETS_MISSING=0
-    for SECRET_NAME in JWT_SECRET ENCRYPTION_KEY SESSION_SECRET; do
+    for SECRET_NAME in ENCRYPTION_KEY SESSION_SECRET; do
         CURRENT=$(grep "^${SECRET_NAME}=" .env 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)
         if [ -z "$CURRENT" ] || echo "$CURRENT" | grep -qi "change-me"; then
             SECRETS_MISSING=$((SECRETS_MISSING + 1))
         fi
     done
+    JWT_PRIV=$(grep "^JWT_PRIVATE_KEY=" .env 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)
+    JWT_PUB=$(grep "^JWT_PUBLIC_KEY=" .env 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)
+    if [ -z "$JWT_PRIV" ] || [ -z "$JWT_PUB" ]; then
+        SECRETS_MISSING=$((SECRETS_MISSING + 1))
+    fi
     if ! grep -q "^KEY_PROVIDER=" .env 2>/dev/null; then
         SECRETS_MISSING=$((SECRETS_MISSING + 1))
     fi
@@ -205,7 +210,7 @@ _preflight:
     if [ "$SECRETS_MISSING" -gt 0 ]; then
         echo -e "\033[1;33m  ⚠ $SECRETS_MISSING secret(s) missing or placeholder in .env\033[0m"
         if ask "Generate missing secrets automatically?" required; then
-            for SECRET_NAME in JWT_SECRET ENCRYPTION_KEY SESSION_SECRET; do
+            for SECRET_NAME in ENCRYPTION_KEY SESSION_SECRET; do
                 CURRENT=$(grep "^${SECRET_NAME}=" .env 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)
                 if [ -z "$CURRENT" ] || echo "$CURRENT" | grep -qi "change-me"; then
                     NEW_VALUE=$(openssl rand -base64 32)
@@ -217,6 +222,31 @@ _preflight:
                     echo -e "\033[0;32m    ✓ ${SECRET_NAME} generated\033[0m"
                 fi
             done
+            # Generate JWT RS256 asymmetric key pair (required by env.validation.ts)
+            JWT_PRIV=$(grep "^JWT_PRIVATE_KEY=" .env 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)
+            JWT_PUB=$(grep "^JWT_PUBLIC_KEY=" .env 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)
+            if [ -z "$JWT_PRIV" ] || [ -z "$JWT_PUB" ]; then
+                JWT_TMP=$(mktemp -d)
+                chmod 700 "$JWT_TMP"
+                trap "rm -rf '$JWT_TMP'" EXIT INT TERM
+                openssl genpkey -algorithm RSA -out "$JWT_TMP/private.pem" -pkeyopt rsa_keygen_bits:2048 2>/dev/null
+                openssl rsa -pubout -in "$JWT_TMP/private.pem" -out "$JWT_TMP/public.pem" 2>/dev/null
+                JWT_PRIV_B64=$(base64 < "$JWT_TMP/private.pem" | tr -d '\n')
+                JWT_PUB_B64=$(base64 < "$JWT_TMP/public.pem" | tr -d '\n')
+                rm -rf "$JWT_TMP"
+                trap - EXIT INT TERM
+                if grep -q "^JWT_PRIVATE_KEY=" .env 2>/dev/null; then
+                    sed -i '' "s|^JWT_PRIVATE_KEY=.*|JWT_PRIVATE_KEY=\"${JWT_PRIV_B64}\"|" .env
+                else
+                    echo "JWT_PRIVATE_KEY=\"${JWT_PRIV_B64}\"" >> .env
+                fi
+                if grep -q "^JWT_PUBLIC_KEY=" .env 2>/dev/null; then
+                    sed -i '' "s|^JWT_PUBLIC_KEY=.*|JWT_PUBLIC_KEY=\"${JWT_PUB_B64}\"|" .env
+                else
+                    echo "JWT_PUBLIC_KEY=\"${JWT_PUB_B64}\"" >> .env
+                fi
+                echo -e "\033[0;32m    ✓ JWT_PRIVATE_KEY + JWT_PUBLIC_KEY (RS256) generated\033[0m"
+            fi
             if ! grep -q "^KEY_PROVIDER=" .env 2>/dev/null; then
                 echo 'KEY_PROVIDER="environment"' >> .env
                 echo -e "\033[0;32m    ✓ KEY_PROVIDER set to 'environment'\033[0m"
@@ -336,8 +366,8 @@ _preflight:
 
     echo ""
 
-# Start development servers on localhost (no HTTPS)
-start-simple: _dev-stop _preflight
+# Start dev servers on localhost (no HTTPS)
+dev-start-simple: _dev-stop _preflight
     #!/usr/bin/env bash
     set -euo pipefail
     echo ""
@@ -357,8 +387,8 @@ start-simple: _dev-stop _preflight
     (sleep 5 && (open http://localhost:5173 2>/dev/null || xdg-open http://localhost:5173 2>/dev/null || true)) &
     pnpm dev
 
-# Start with HTTPS + local domain (runs setup interactively if needed)
-start: _dev-stop _preflight
+# Start dev servers with HTTPS + local domain (runs dev-setup interactively if needed)
+dev-start: _dev-stop _preflight
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -381,7 +411,7 @@ start: _dev-stop _preflight
         else
             read -r -p "$(echo -e '\033[1;33mHTTPS setup not complete. Run setup now? [Y/n] \033[0m')" ANSWER
             if [[ "${ANSWER:-y}" =~ ^[Nn]$ ]]; then
-                echo -e "\033[0;36m  → Use 'just start-simple' for localhost-only mode\033[0m"
+                echo -e "\033[0;36m  → Use 'just dev-start-simple' for localhost-only mode\033[0m"
                 exit 0
             fi
             bash scripts/setup-local-domain.sh
@@ -389,6 +419,24 @@ start: _dev-stop _preflight
         echo ""
     else
         echo -e "\033[0;32m  ✓ HTTPS (Caddy + certificates)\033[0m"
+    fi
+
+    # Ensure WEBAUTHN_ORIGIN includes the Caddy origin (required for PassKeys to work)
+    CADDY_ORIGIN="https://qoomb.localhost:8443"
+    CURRENT_WA_ORIGIN=$(grep "^WEBAUTHN_ORIGIN=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' || true)
+    if [ -z "$CURRENT_WA_ORIGIN" ] || ! echo "$CURRENT_WA_ORIGIN" | grep -qF "$CADDY_ORIGIN"; then
+        echo -e "\033[1;33m  ⚠ WEBAUTHN_ORIGIN doesn't include $CADDY_ORIGIN (PassKeys won't work)\033[0m"
+        if ask "Add $CADDY_ORIGIN to WEBAUTHN_ORIGIN in .env?"; then
+            if grep -q "^WEBAUTHN_ORIGIN=" .env 2>/dev/null; then
+                NEW_ORIGIN="${CURRENT_WA_ORIGIN:+${CURRENT_WA_ORIGIN},}${CADDY_ORIGIN}"
+                sed -i '' "s|^WEBAUTHN_ORIGIN=.*|WEBAUTHN_ORIGIN=${NEW_ORIGIN}|" .env
+            else
+                echo "WEBAUTHN_ORIGIN=${CADDY_ORIGIN}" >> .env
+            fi
+            echo -e "\033[0;32m  ✓ WEBAUTHN_ORIGIN updated\033[0m"
+        fi
+    else
+        echo -e "\033[0;32m  ✓ WEBAUTHN_ORIGIN (includes Caddy origin)\033[0m"
     fi
 
     echo -e "\033[0;34mStarting Caddy...\033[0m"
@@ -605,18 +653,28 @@ status:
 
 # Generate new secrets for .env
 generate-secrets:
-    @echo -e "{{blue}}Generating secrets...{{nc}}"
-    @echo ""
-    @echo -e "{{yellow}}JWT_SECRET:{{nc}}"
-    @openssl rand -base64 32
-    @echo ""
-    @echo -e "{{yellow}}ENCRYPTION_KEY:{{nc}}"
-    @openssl rand -base64 32
-    @echo ""
-    @echo -e "{{yellow}}SESSION_SECRET:{{nc}}"
-    @openssl rand -base64 32
-    @echo ""
-    @echo -e "{{blue}}Copy these values to your .env file{{nc}}"
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo -e "{{blue}}Generating secrets...{{nc}}"
+    echo ""
+    echo -e "{{yellow}}JWT RS256 key pair:{{nc}}"
+    JWT_TMP=$(mktemp -d)
+    chmod 700 "$JWT_TMP"
+    trap "rm -rf '$JWT_TMP'" EXIT INT TERM
+    openssl genpkey -algorithm RSA -out "$JWT_TMP/private.pem" -pkeyopt rsa_keygen_bits:2048 2>/dev/null
+    openssl rsa -pubout -in "$JWT_TMP/private.pem" -out "$JWT_TMP/public.pem" 2>/dev/null
+    echo "JWT_PRIVATE_KEY=\"$(base64 < "$JWT_TMP/private.pem" | tr -d '\n')\""
+    echo "JWT_PUBLIC_KEY=\"$(base64 < "$JWT_TMP/public.pem" | tr -d '\n')\""
+    rm -rf "$JWT_TMP"
+    trap - EXIT INT TERM
+    echo ""
+    echo -e "{{yellow}}ENCRYPTION_KEY:{{nc}}"
+    openssl rand -base64 32
+    echo ""
+    echo -e "{{yellow}}SESSION_SECRET:{{nc}}"
+    openssl rand -base64 32
+    echo ""
+    echo -e "{{blue}}Copy these values to your .env file{{nc}}"
 
 # Verify environment configuration
 env-check:
@@ -624,8 +682,9 @@ env-check:
     @test -f .env              || { echo -e "{{red}}✗ .env not found{{nc}}"; exit 1; }
     @grep -q "^DATABASE_URL="   .env || { echo -e "{{red}}✗ DATABASE_URL not set{{nc}}"; exit 1; }
     @grep -q "^REDIS_URL="      .env || { echo -e "{{red}}✗ REDIS_URL not set{{nc}}"; exit 1; }
-    @grep -q "^JWT_SECRET="     .env || { echo -e "{{red}}✗ JWT_SECRET not set{{nc}}"; exit 1; }
-    @grep -q "^ENCRYPTION_KEY=" .env || { echo -e "{{red}}✗ ENCRYPTION_KEY not set{{nc}}"; exit 1; }
+    @grep -q "^JWT_PRIVATE_KEY=" .env || { echo -e "{{red}}✗ JWT_PRIVATE_KEY not set{{nc}}"; exit 1; }
+    @grep -q "^JWT_PUBLIC_KEY="  .env || { echo -e "{{red}}✗ JWT_PUBLIC_KEY not set{{nc}}"; exit 1; }
+    @grep -q "^ENCRYPTION_KEY="  .env || { echo -e "{{red}}✗ ENCRYPTION_KEY not set{{nc}}"; exit 1; }
     @grep -q "^KEY_PROVIDER="   .env || { echo -e "{{red}}✗ KEY_PROVIDER not set{{nc}}"; exit 1; }
     @echo -e "{{green}}✓ Environment configuration looks good{{nc}}"
 
@@ -683,8 +742,8 @@ down: docker-down
 # Alias: status
 ps: status
 
-# Alias: setup
-first-run: setup
+# Alias: dev-setup
+first-run: dev-setup
 
 # ⚠️ DESTRUCTIVE: Complete fresh start (wipe everything + setup from scratch)
 fresh: _check-docker
@@ -699,4 +758,4 @@ fresh: _check-docker
     fi
     just clean
     docker-compose down -v
-    just setup
+    just dev-setup

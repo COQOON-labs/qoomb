@@ -15,6 +15,7 @@ import {
 } from '@simplewebauthn/server';
 
 import { RedisService } from '../../common/services/redis.service';
+import { getEnv } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EncryptionService } from '../encryption';
 
@@ -29,15 +30,15 @@ export class PassKeyService {
   private readonly logger = new Logger(PassKeyService.name);
 
   private get rpID(): string {
-    return process.env.WEBAUTHN_RP_ID ?? 'localhost';
+    return getEnv().WEBAUTHN_RP_ID;
   }
 
   private get rpName(): string {
-    return process.env.WEBAUTHN_RP_NAME ?? 'Qoomb';
+    return getEnv().WEBAUTHN_RP_NAME;
   }
 
   private get origin(): string | string[] {
-    const raw = process.env.WEBAUTHN_ORIGIN ?? 'http://localhost:5173';
+    const raw = getEnv().WEBAUTHN_ORIGIN;
     // Support comma-separated origins for multi-origin setups
     return raw.includes(',') ? raw.split(',').map((s) => s.trim()) : raw;
   }

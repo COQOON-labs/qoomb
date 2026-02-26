@@ -78,8 +78,23 @@
 
 /* ─────────────────────────────────────────────────────────────────
    Dark mode — .dark class (for JS toggle) + system preference fallback
+   Cannot combine class selectors with @media in a selector list (invalid CSS),
+   so these are two separate identical blocks.
    ───────────────────────────────────────────────────────────────── */
-.dark,
+.dark:root:not(.light) {
+  --background:         #0F0F0E;
+  --foreground:         #FAFAF9;
+  --muted:              #292523; /* slightly lighter than card for disabled states */
+  --muted-foreground:   #A8A29E; /* stone-400 */
+  --border:             #292524; /* stone-800 */
+  --card:               #1C1C1A;
+  --card-foreground:    #FAFAF9;
+
+  /* Disabled form fields */
+  --disabled:           #252422; /* clearly darker than card */
+  --disabled-foreground: #78756E; /* dim but readable */
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
     --background:         #0F0F0E;

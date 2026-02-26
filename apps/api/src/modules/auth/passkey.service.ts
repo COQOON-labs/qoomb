@@ -14,8 +14,8 @@ import {
   type AuthenticationResponseJSON,
 } from '@simplewebauthn/server';
 
-import { getEnv } from '../../config/env.validation';
 import { RedisService } from '../../common/services/redis.service';
+import { getEnv } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EncryptionService } from '../encryption';
 

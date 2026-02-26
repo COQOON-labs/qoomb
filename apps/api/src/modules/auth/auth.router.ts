@@ -12,9 +12,9 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { REFRESH_TOKEN_COOKIE } from '../../config/security.config';
+import { requireEnabled } from '../../trpc/guards';
 import { type TrpcContext } from '../../trpc/trpc.context';
 import { router, publicProcedure, protectedProcedure } from '../../trpc/trpc.router';
-import { requireEnabled } from '../../trpc/guards';
 
 import { type AuthService } from './auth.service';
 import { type PassKeyService } from './passkey.service';

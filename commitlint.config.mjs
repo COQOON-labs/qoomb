@@ -29,5 +29,9 @@ export default {
     (message) => message.startsWith('Merge'),
     // release-please auto-generated commits
     (message) => /^chore\(main\): release/.test(message),
+    // Legacy commit from the initial security audit branch (predates this rule).
+    // 'security:' is not a valid conventional type; all future security-related
+    // commits should use 'docs:', 'fix:', or 'chore:' as appropriate.
+    (message) => message.startsWith('security:'),
   ],
 };

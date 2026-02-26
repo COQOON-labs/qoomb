@@ -75,6 +75,7 @@ Phase 2 — CONTRACT
 ```
 
 This approach means:
+
 - Each PR is small, reviewable, and independently mergeable
 - `main` never contains a broken or half-implemented change
 - No feature flag infrastructure is required for development purposes
@@ -93,7 +94,7 @@ adopted**. The reasoning:
 A flag platform adds significant infrastructure overhead (SDK, dashboard, state management) that
 is not justified for a small team with infrequent deploys.
 
-### Operational Configuration (ALLOW_* / ENABLE_* env vars)
+### Operational Configuration (ALLOW*\* / ENABLE*\* env vars)
 
 Operator-level on/off decisions (e.g. `ALLOW_OPEN_REGISTRATION`, `ALLOW_PASSKEYS`) are
 expressed as **environment variables**, not UI toggles or runtime flags. This is intentional:

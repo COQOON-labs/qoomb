@@ -209,15 +209,15 @@ This project follows **Scaled Trunk-Based Development** — see [ADR-0003](../do
 
 Always use the standard prefixes — **never** use `claude/`, `ai/`, or other non-standard prefixes:
 
-| Prefix      | Use for                          |
-| ----------- | -------------------------------- |
-| `feat/`     | New features                     |
-| `fix/`      | Bug fixes                        |
-| `docs/`     | Documentation only               |
+| Prefix      | Use for                                 |
+| ----------- | --------------------------------------- |
+| `feat/`     | New features                            |
+| `fix/`      | Bug fixes                               |
+| `docs/`     | Documentation only                      |
 | `refactor/` | Code restructuring, no behaviour change |
-| `test/`     | Tests                            |
-| `chore/`    | Build, CI, tooling, deps         |
-| `perf/`     | Performance improvements         |
+| `test/`     | Tests                                   |
+| `chore/`    | Build, CI, tooling, deps                |
+| `perf/`     | Performance improvements                |
 
 Examples: `feat/event-recurrence`, `fix/csrf-token-missing`, `chore/upgrade-prisma`
 
@@ -230,6 +230,7 @@ Examples: `feat/event-recurrence`, `fix/csrf-token-missing`, `chore/upgrade-pris
 ### Splitting Large Changes
 
 When a task is too large for one PR, propose a sequence:
+
 1. **PR 1 — Foundation:** Types, schema, API surface (no breaking changes yet)
 2. **PR 2 — Feature:** Behaviour and UI wired up
 3. **PR 3 — Cleanup:** Remove deprecated paths

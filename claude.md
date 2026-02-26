@@ -14,6 +14,7 @@
 - Pre-commit hooks run both Prettier and JSON linting on staged files via lint-staged.
 
 ## Project Structure
+
 ```text
 qoomb/
 ├── apps/

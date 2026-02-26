@@ -28,7 +28,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     // The base class types this parameter as Record<string, unknown> (transport-agnostic).
     // The actual runtime value is always a FastifyRequest — the cast via unknown is the
     // minimum escape hatch required by the library's interface and exists only here.
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+
     const request = req as unknown as FastifyRequest & { user?: { id: string } };
     return Promise.resolve(CustomThrottlerGuard.resolveTracker(request));
   }

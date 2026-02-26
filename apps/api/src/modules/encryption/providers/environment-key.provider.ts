@@ -99,7 +99,8 @@ export class EnvironmentKeyProvider implements KeyProvider {
         'Failed to decode ENCRYPTION_KEY from base64.\n' +
           'Ensure the key is properly base64-encoded.\n' +
           'Generate a new key with: openssl rand -base64 32\n' +
-          `Error: ${errorMessage}`
+          `Error: ${errorMessage}`,
+        { cause: error }
       );
     }
   }

@@ -143,7 +143,6 @@ export class TasksService {
    * Supports nullish fields (null clears the column, undefined skips it).
    */
   @EncryptDecryptFields({ fields: ENC_FIELDS, hiveIdArg: 2 })
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- hiveId is used by @EncryptDecryptFields via args[2]
   async update(id: string, data: UpdateTaskData, hiveId: string): Promise<TaskRow> {
     // Use UncheckedUpdateInput to update scalar FK fields (assigneeId, eventId, groupId) directly.
     // Prisma.TaskUpdateInput only exposes relation-style fields (assignee: { connect/disconnect }).

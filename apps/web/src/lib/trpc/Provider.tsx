@@ -31,7 +31,6 @@ export function TrpcProvider({ children }: TrpcProviderProps) {
       : `${window.location.origin}/trpc`;
 
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
       console.warn('tRPC URL:', tRPCUrl);
     }
 

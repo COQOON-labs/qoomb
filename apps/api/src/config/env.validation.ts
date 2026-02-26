@@ -327,7 +327,7 @@ export function validateEnv(): Env {
 
       errorMessage += '💡 Tip: Copy .env.example to .env and fill in the required values.\n';
 
-      throw new Error(errorMessage);
+      throw new Error(errorMessage, { cause: error });
     }
 
     throw error;

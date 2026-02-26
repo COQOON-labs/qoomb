@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { REFRESH_TOKEN_COOKIE } from '../../config/security.config';
 import { type TrpcContext } from '../../trpc/trpc.context';
 import { router, publicProcedure, protectedProcedure } from '../../trpc/trpc.router';
+import { requireEnabled } from '../../trpc/guards';
 
 import { type AuthService } from './auth.service';
 import { type PassKeyService } from './passkey.service';
@@ -108,6 +109,11 @@ export const authRouter = (
      * Returns access token (15 min). Refresh token is set as HttpOnly cookie.
      */
     register: publicProcedure.input(registerSchema).mutation(async ({ input, ctx }) => {
+      requireEnabled(
+        systemConfigService.isOpenRegistrationAllowed(),
+        'Open registration is disabled on this instance.'
+      );
+
       try {
         // Extract IP and User-Agent for device tracking
         const ipAddress: string | undefined = ctx.req?.ip ?? undefined;
@@ -405,6 +411,10 @@ export const authRouter = (
     requestPasswordReset: publicProcedure
       .input(requestPasswordResetSchema)
       .mutation(async ({ input }) => {
+        requireEnabled(
+          systemConfigService.isForgotPasswordAllowed(),
+          'Password reset is disabled on this instance.'
+        );
         await authService.requestPasswordReset(input.email);
         return { success: true };
       }),
@@ -413,6 +423,10 @@ export const authRouter = (
      * Reset password using a token from email
      */
     resetPassword: publicProcedure.input(resetPasswordSchema).mutation(async ({ input }) => {
+      requireEnabled(
+        systemConfigService.isForgotPasswordAllowed(),
+        'Password reset is disabled on this instance.'
+      );
       try {
         await authService.resetPassword(input.token, input.newPassword);
         return { success: true };
@@ -506,6 +520,10 @@ export const authRouter = (
        * Generate options to register a new PassKey (must be logged in)
        */
       generateRegOptions: protectedProcedure.mutation(async ({ ctx }) => {
+        requireEnabled(
+          systemConfigService.isPasskeysAllowed(),
+          'PassKey authentication is disabled on this instance.'
+        );
         try {
           const { id, email, hiveName } = ctx.user;
           return await passKeyService.generateRegistrationOptions(
@@ -552,6 +570,10 @@ export const authRouter = (
       generateAuthOptions: publicProcedure
         .input(z.object({ email: z.string().email().optional() }))
         .mutation(async ({ input }) => {
+          requireEnabled(
+            systemConfigService.isPasskeysAllowed(),
+            'PassKey authentication is disabled on this instance.'
+          );
           try {
             return await passKeyService.generateAuthenticationOptions(input.email);
           } catch (error) {

@@ -13,7 +13,7 @@ export const passwordSchema = z
   .min(8, 'Password must be at least 8 characters')
   .max(100, 'Password is too long')
   .regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
     'Password must contain uppercase, lowercase, number, and special character'
   );
 

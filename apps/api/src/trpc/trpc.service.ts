@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AuthService } from '../modules/auth/auth.service';
 import { PassKeyService } from '../modules/auth/passkey.service';
@@ -38,7 +38,7 @@ export class TrpcService {
     );
   }
 
-  createContext(req?: FastifyRequest) {
-    return createTrpcContext(this.prisma, this.authService, req);
+  createContext(req?: FastifyRequest, res?: FastifyReply) {
+    return createTrpcContext(this.prisma, this.authService, req, res);
   }
 }

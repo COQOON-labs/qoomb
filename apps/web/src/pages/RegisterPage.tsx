@@ -52,8 +52,7 @@ export function RegisterPage() {
           isSystemAdmin: data.user.isSystemAdmin,
           locale: data.locale,
         },
-        data.accessToken,
-        data.refreshToken
+        data.accessToken
       );
       void navigate('/dashboard', { replace: true });
     },
@@ -71,8 +70,7 @@ export function RegisterPage() {
           hiveName: data.hive.name,
           locale: data.locale,
         },
-        data.accessToken,
-        data.refreshToken
+        data.accessToken
       );
       void navigate('/dashboard', { replace: true });
     },

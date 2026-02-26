@@ -45,6 +45,15 @@ interface UserWithMemberships extends User {
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
+  /**
+   * Pre-hashed bcrypt dummy value used when a login attempt targets a
+   * non-existent user.  Running bcrypt.compare against this dummy ensures
+   * the response time is indistinguishable from a real password check,
+   * preventing timing-based user enumeration (CWE-208).
+   */
+  private static readonly DUMMY_PASSWORD_HASH =
+    '$2b$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012';
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -196,8 +205,13 @@ export class AuthService {
    * @returns Access token (15 min) + Refresh token (7 days)
    */
   async login(email: string, password: string, ipAddress?: string, userAgent?: string) {
+    // Compute email hash once — used for both DB lookup and account-lockout
+    // Redis keys.  Passing the hash (not the plaintext email) to the lockout
+    // service prevents PII from leaking into Redis keys and log messages.
+    const emailHash = this.enc.hashEmail(email);
+
     // Check if account is locked
-    const lockStatus = await this.accountLockout.isLocked(email);
+    const lockStatus = await this.accountLockout.isLocked(emailHash);
     if (lockStatus.locked) {
       const minutes = Math.ceil((lockStatus.remainingSeconds ?? 0) / 60);
       throw new UnauthorizedException(
@@ -207,7 +221,7 @@ export class AuthService {
 
     // Find user with memberships (lookup via blind index)
     const user: UserWithMemberships | null = await this.prisma.user.findUnique({
-      where: { emailHash: this.enc.hashEmail(email) },
+      where: { emailHash },
       include: {
         memberships: {
           include: {
@@ -219,8 +233,10 @@ export class AuthService {
     });
 
     if (!user) {
-      // Record failed attempt even if user doesn't exist (prevents enumeration)
-      await this.accountLockout.recordFailedAttempt(email);
+      // Constant-time: always run bcrypt so response timing doesn't reveal
+      // whether the email is registered (CWE-208 timing side-channel).
+      await bcrypt.compare(password, AuthService.DUMMY_PASSWORD_HASH);
+      await this.accountLockout.recordFailedAttempt(emailHash);
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -229,7 +245,7 @@ export class AuthService {
 
     if (!isPasswordValid) {
       // Record failed attempt
-      const result = await this.accountLockout.recordFailedAttempt(email);
+      const result = await this.accountLockout.recordFailedAttempt(emailHash);
 
       if (result.isLocked) {
         const minutes = Math.ceil((result.remainingLockoutSeconds ?? 0) / 60);
@@ -242,7 +258,7 @@ export class AuthService {
     }
 
     // Successful login - reset failed attempts
-    await this.accountLockout.resetAttempts(email);
+    await this.accountLockout.resetAttempts(emailHash);
 
     // Check membership after password verification to avoid user enumeration
     if (user.memberships.length === 0) {

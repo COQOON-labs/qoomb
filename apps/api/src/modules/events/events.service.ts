@@ -160,7 +160,13 @@ export class EventsService {
     if ('recurrenceRule' in data)
       patch.recurrenceRule = (data.recurrenceRule as Prisma.InputJsonValue) ?? Prisma.JsonNull;
 
-    return this.prisma.event.update({ where: { id }, data: patch });
+    // Defense-in-depth: updateMany accepts non-unique WHERE, so we can filter
+    // by hiveId to prevent cross-tenant modification even if RLS fails.
+    const result = await this.prisma.event.updateMany({ where: { id, hiveId }, data: patch });
+    if (result.count === 0) {
+      throw new Error('Event not found in this hive');
+    }
+    return this.prisma.event.findUniqueOrThrow({ where: { id } });
   }
 
   /**

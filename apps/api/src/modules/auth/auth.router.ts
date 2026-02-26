@@ -11,11 +11,70 @@ import {
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { REFRESH_TOKEN_COOKIE } from '../../config/security.config';
+import { type TrpcContext } from '../../trpc/trpc.context';
 import { router, publicProcedure, protectedProcedure } from '../../trpc/trpc.router';
 
 import { type AuthService } from './auth.service';
 import { type PassKeyService } from './passkey.service';
 import { type SystemConfigService } from './system-config.service';
+
+// ── Cookie helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Minimal interface for the cookie methods added by @fastify/cookie.
+ * Using an explicit interface avoids requiring the web app (which imports
+ * the router type) to resolve @fastify/cookie types.
+ */
+interface CookieReply {
+  setCookie(name: string, value: string, opts: Record<string, unknown>): unknown;
+  clearCookie(name: string, opts: Record<string, unknown>): unknown;
+}
+
+/**
+ * Set the refresh token in an HttpOnly cookie on the response.
+ * The cookie is never accessible to client-side JavaScript (CWE-922).
+ *
+ * Accepts `unknown` to avoid leaking @fastify/cookie types into the
+ * app router type that the web frontend imports.
+ */
+function setRefreshCookie(res: unknown, token: string): void {
+  (res as CookieReply | undefined)?.setCookie(REFRESH_TOKEN_COOKIE.NAME, token, {
+    httpOnly: REFRESH_TOKEN_COOKIE.HTTP_ONLY,
+    secure: REFRESH_TOKEN_COOKIE.SECURE,
+    sameSite: REFRESH_TOKEN_COOKIE.SAME_SITE,
+    path: REFRESH_TOKEN_COOKIE.PATH,
+    maxAge: REFRESH_TOKEN_COOKIE.MAX_AGE_SECONDS,
+  });
+}
+
+/** Clear the refresh token cookie (e.g. on logout). */
+function clearRefreshCookie(res: unknown): void {
+  (res as CookieReply | undefined)?.clearCookie(REFRESH_TOKEN_COOKIE.NAME, {
+    httpOnly: REFRESH_TOKEN_COOKIE.HTTP_ONLY,
+    secure: REFRESH_TOKEN_COOKIE.SECURE,
+    sameSite: REFRESH_TOKEN_COOKIE.SAME_SITE,
+    path: REFRESH_TOKEN_COOKIE.PATH,
+  });
+}
+
+/** Read the refresh token from the request cookie. */
+function readRefreshCookie(ctx: TrpcContext): string | undefined {
+  return (ctx.req as unknown as { cookies?: Record<string, string> })?.cookies?.[
+    REFRESH_TOKEN_COOKIE.NAME
+  ];
+}
+
+/**
+ * Strip the refresh token from a service result before returning to the client.
+ * The refresh token is sent via HttpOnly cookie — never in the JSON body.
+ */
+function omitRefreshToken<T extends { refreshToken: string }>(result: T): Omit<T, 'refreshToken'> {
+  const { refreshToken: _rt, ...rest } = result;
+  return rest;
+}
+
+// ── Router ──────────────────────────────────────────────────────────────────
 
 /**
  * Authentication Router
@@ -46,7 +105,7 @@ export const authRouter = (
      * 3. Admin user account
      * 4. Admin person record in hive schema
      *
-     * Returns access token (15 min) + refresh token (7 days)
+     * Returns access token (15 min). Refresh token is set as HttpOnly cookie.
      */
     register: publicProcedure.input(registerSchema).mutation(async ({ input, ctx }) => {
       try {
@@ -72,7 +131,8 @@ export const authRouter = (
           userAgent
         );
 
-        return result;
+        setRefreshCookie(ctx.res, result.refreshToken);
+        return omitRefreshToken(result);
       } catch (error) {
         // Handle known errors
         if (error instanceof Error) {
@@ -93,7 +153,8 @@ export const authRouter = (
     /**
      * Login with email and password
      *
-     * Validates credentials and returns access token (15 min) + refresh token (7 days)
+     * Validates credentials and returns access token (15 min).
+     * Refresh token (7 days) is set as HttpOnly cookie.
      */
     login: publicProcedure.input(loginSchema).mutation(async ({ input, ctx }) => {
       try {
@@ -106,7 +167,8 @@ export const authRouter = (
 
         const result = await authService.login(email, password, ipAddress, userAgent);
 
-        return result;
+        setRefreshCookie(ctx.res, result.refreshToken);
+        return omitRefreshToken(result);
       } catch (_error) {
         // Don't leak information about whether email exists
         // Always return generic "Invalid credentials" message
@@ -118,42 +180,45 @@ export const authRouter = (
     }),
 
     /**
-     * Refresh access token using refresh token
+     * Refresh access token using refresh token from HttpOnly cookie.
      *
      * Implements token rotation:
      * - Old refresh token is revoked
-     * - New refresh token is issued
-     * - New access token is issued
-     *
-     * Returns new access token (15 min) + new refresh token (7 days)
+     * - New refresh token is issued (set as HttpOnly cookie)
+     * - New access token is issued (returned in JSON body)
      */
-    refresh: publicProcedure
-      .input(
-        z.object({
-          refreshToken: z.string().min(1, 'Refresh token is required'),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        try {
-          // Extract IP and User-Agent for device tracking
-          const ipAddress: string | undefined = ctx.req?.ip ?? undefined;
-          const userAgent: string | undefined = ctx.req?.headers?.['user-agent'] ?? undefined;
-
-          const result = await authService.refresh(input.refreshToken, ipAddress, userAgent);
-
-          return result;
-        } catch (_error) {
+    refresh: publicProcedure.mutation(async ({ ctx }) => {
+      try {
+        const refreshToken = readRefreshCookie(ctx);
+        if (!refreshToken) {
           throw new TRPCError({
             code: 'UNAUTHORIZED',
-            message: 'Invalid or expired refresh token',
+            message: 'No refresh token',
           });
         }
-      }),
+
+        // Extract IP and User-Agent for device tracking
+        const ipAddress: string | undefined = ctx.req?.ip ?? undefined;
+        const userAgent: string | undefined = ctx.req?.headers?.['user-agent'] ?? undefined;
+
+        const result = await authService.refresh(refreshToken, ipAddress, userAgent);
+
+        setRefreshCookie(ctx.res, result.refreshToken);
+        return omitRefreshToken(result);
+      } catch (_error) {
+        // Clear stale cookie on failure so the client doesn't retry in a loop
+        clearRefreshCookie(ctx.res);
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Invalid or expired refresh token',
+        });
+      }
+    }),
 
     /**
      * Logout - revoke current session
      *
-     * Revokes the refresh token and blacklists the access token.
+     * Revokes the refresh token (from HttpOnly cookie) and blacklists the access token.
      *
      * DESIGN NOTE: publicProcedure (not protectedProcedure) is intentional.
      * - Logout must work even when the access token has already expired.
@@ -165,14 +230,17 @@ export const authRouter = (
       .input(
         z.object({
           accessToken: z.string().min(1, 'Access token is required'),
-          refreshToken: z.string().min(1, 'Refresh token is required'),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
-          await authService.logout(input.accessToken, input.refreshToken);
+          const refreshToken = readRefreshCookie(ctx) ?? '';
+          await authService.logout(input.accessToken, refreshToken);
+          clearRefreshCookie(ctx.res);
           return { success: true, message: 'Logged out successfully' };
         } catch (_error) {
+          // Always clear the cookie on logout, even if server-side revocation fails
+          clearRefreshCookie(ctx.res);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Logout failed',
@@ -188,6 +256,7 @@ export const authRouter = (
     logoutAll: protectedProcedure.mutation(async ({ ctx }) => {
       try {
         await authService.logoutAll(ctx.user.id);
+        clearRefreshCookie(ctx.res);
         return {
           success: true,
           message: 'Logged out from all devices successfully',
@@ -418,7 +487,9 @@ export const authRouter = (
             ipAddress,
             userAgent
           );
-          return result;
+
+          setRefreshCookie(ctx.res, result.refreshToken);
+          return omitRefreshToken(result);
         } catch (error) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -514,7 +585,9 @@ export const authRouter = (
               ctx.req?.ip ?? undefined,
               ctx.req?.headers?.['user-agent'] ?? undefined
             );
-            return result;
+
+            setRefreshCookie(ctx.res, result.refreshToken);
+            return omitRefreshToken(result);
           } catch (error) {
             throw new TRPCError({
               code: 'UNAUTHORIZED',

@@ -1,11 +1,13 @@
 import { QRCodeSVG } from 'qrcode.react';
 
-import { trpc } from '../../../lib/trpc/client';
-
 export function MobileSetup() {
-  const { data } = trpc.health.useQuery(undefined, { refetchInterval: 10000 });
+  // Derive LAN IP from the current browser URL.
+  // When accessing the dev server from a LAN address (e.g. 192.168.x.x),
+  // this gives us the correct IP for QR codes without exposing it via the API.
+  const hostname = window.location.hostname;
+  const isLanIp = hostname !== 'localhost' && hostname !== '127.0.0.1';
+  const ip = isLanIp ? hostname : null;
 
-  const ip = data?.localIp ?? null;
   // Cert served by Vite static files (public/dev-cert/) over plain HTTP — no cert trust needed yet
   const certUrl = ip ? `http://${ip}:5173/dev-cert/mkcert-root-ca.mobileconfig` : '';
   // App served by Caddy over HTTPS (extended mode only)
@@ -19,7 +21,8 @@ export function MobileSetup() {
 
       {!ip && (
         <p className="text-white/40 text-xs mb-3">
-          Waiting for backend connection… run <code>just start</code> for full mobile support
+          Open the dev server via your LAN IP (e.g. <code>http://192.168.x.x:5173</code>) to see QR
+          codes for mobile setup.
         </p>
       )}
 

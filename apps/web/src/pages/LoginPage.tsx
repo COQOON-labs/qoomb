@@ -44,8 +44,7 @@ export function LoginPage() {
           hiveName: data.hive.name,
           locale: data.locale,
         },
-        data.accessToken,
-        data.refreshToken
+        data.accessToken
       );
       void navigate(from, { replace: true });
     },

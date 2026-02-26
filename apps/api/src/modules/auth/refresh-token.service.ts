@@ -32,6 +32,12 @@ export class RefreshTokenService {
   // Refresh token lifetime: 7 days
   private readonly REFRESH_TOKEN_LIFETIME_DAYS = 7;
 
+  /**
+   * Maximum concurrent active sessions per user.
+   * When exceeded, the oldest active session is revoked.
+   */
+  private readonly MAX_SESSIONS = 5;
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -47,6 +53,26 @@ export class RefreshTokenService {
     ipAddress?: string,
     userAgent?: string
   ): Promise<{ token: string; id: string; expiresAt: Date }> {
+    // Enforce maximum concurrent sessions per user.
+    // If at the limit, revoke the oldest active session.
+    const activeCount = await this.prisma.refreshToken.count({
+      where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+    });
+    if (activeCount >= this.MAX_SESSIONS) {
+      const oldest = await this.prisma.refreshToken.findFirst({
+        where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
+      });
+      if (oldest) {
+        await this.prisma.refreshToken.update({
+          where: { id: oldest.id },
+          data: { revokedAt: new Date() },
+        });
+        this.logger.log(`Evicted oldest session for user ${userId} (max ${this.MAX_SESSIONS})`);
+      }
+    }
+
     // Generate secure random token (32 bytes = 256 bits)
     const token = crypto.randomBytes(32).toString('base64url');
 

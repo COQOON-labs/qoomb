@@ -1,12 +1,16 @@
-import { type FastifyRequest } from 'fastify';
+import { type FastifyReply, type FastifyRequest } from 'fastify';
 
 import { type AuthService } from '../modules/auth/auth.service';
-import { type PrismaService } from '../prisma/prisma.service';
+import { type PrismaService, type TransactionClient } from '../prisma/prisma.service';
 
 export interface TrpcContext {
   prisma: PrismaService;
+  /** Transaction client with SET LOCAL hive context — defined inside hiveProcedure. */
+  tx?: TransactionClient;
   authService: AuthService;
   req?: FastifyRequest;
+  /** Fastify reply — used to set HttpOnly cookies (e.g. refresh token). */
+  res?: FastifyReply;
   user?: {
     id: string;
     hiveId: string;
@@ -46,20 +50,21 @@ function extractBearerToken(req?: FastifyRequest): string | null {
 export async function createTrpcContext(
   prisma: PrismaService,
   authService: AuthService,
-  req?: FastifyRequest
+  req?: FastifyRequest,
+  res?: FastifyReply
 ): Promise<TrpcContext> {
   const token = extractBearerToken(req);
 
   if (!token) {
-    return { prisma, authService, req };
+    return { prisma, authService, req, res };
   }
 
   try {
     const user = await authService.validateToken(token);
-    return { prisma, authService, req, user };
+    return { prisma, authService, req, res, user };
   } catch {
     // Token invalid/expired/blacklisted — treat as unauthenticated.
     // protectedProcedure will throw UNAUTHORIZED if user is required.
-    return { prisma, authService, req };
+    return { prisma, authService, req, res };
   }
 }

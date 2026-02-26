@@ -28,3 +28,6 @@ coverage
 
 # Documentation
 CHANGELOG.md
+
+# Local AI agent skills (gitignored, not part of the project)
+.claude

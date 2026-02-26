@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
+import { getEnv } from '../../config/env.validation';
 import { JWT_CONFIG } from '../../config/security.config';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
@@ -19,10 +20,9 @@ import { TokenCleanupTask } from './token-cleanup.task';
     EncryptionModule,
     JwtModule.registerAsync({
       useFactory: () => {
-        const privateKey = Buffer.from(process.env.JWT_PRIVATE_KEY ?? '', 'base64').toString(
-          'utf8'
-        );
-        const publicKey = Buffer.from(process.env.JWT_PUBLIC_KEY ?? '', 'base64').toString('utf8');
+        const env = getEnv();
+        const privateKey = Buffer.from(env.JWT_PRIVATE_KEY, 'base64').toString('utf8');
+        const publicKey = Buffer.from(env.JWT_PUBLIC_KEY, 'base64').toString('utf8');
         return {
           privateKey,
           publicKey,

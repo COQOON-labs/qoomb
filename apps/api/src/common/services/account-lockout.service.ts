@@ -6,9 +6,13 @@ import { RedisService } from './redis.service';
  * Account Lockout Service
  *
  * Protects against brute force attacks by:
- * - Tracking failed login attempts per email
+ * - Tracking failed login attempts per identifier (email hash)
  * - Locking accounts after too many failures
  * - Implementing exponential backoff
+ *
+ * SECURITY: All methods accept an opaque identifier (typically an HMAC hash
+ * of the email) — never a plaintext email address.  This prevents PII from
+ * leaking into Redis keys and log output.
  *
  * Security configuration:
  * - Max failed attempts: 5
@@ -31,24 +35,23 @@ export class AccountLockoutService {
   /**
    * Record a failed login attempt
    *
-   * @param email - User email
+   * @param identifier - Opaque account identifier (email hash)
    * @returns Object with isLocked status and remaining lockout time
    */
-  async recordFailedAttempt(email: string): Promise<{
+  async recordFailedAttempt(identifier: string): Promise<{
     isLocked: boolean;
     remainingLockoutSeconds?: number;
     attemptsRemaining?: number;
   }> {
-    const normalizedEmail = email.toLowerCase().trim();
-    const key = this.getKey(normalizedEmail);
-    const lockKey = this.getLockKey(normalizedEmail);
-    const lockCountKey = this.getLockCountKey(normalizedEmail);
+    const key = this.getKey(identifier);
+    const lockKey = this.getLockKey(identifier);
+    const lockCountKey = this.getLockCountKey(identifier);
 
     // Check if already locked
     const currentLockTime = await this.redisService.get(lockKey);
     if (currentLockTime) {
       const remainingTtl = await this.redisService.ttl(lockKey);
-      this.logger.warn(`Failed login attempt for locked account: ${normalizedEmail}`);
+      this.logger.warn(`Failed login attempt for locked account: ${identifier.slice(0, 8)}…`);
       return {
         isLocked: true,
         remainingLockoutSeconds: remainingTtl,
@@ -64,13 +67,13 @@ export class AccountLockoutService {
     }
 
     this.logger.warn(
-      `Failed login attempt ${attempts}/${this.MAX_ATTEMPTS} for: ${normalizedEmail}`
+      `Failed login attempt ${attempts}/${this.MAX_ATTEMPTS} for: ${identifier.slice(0, 8)}…`
     );
 
     // Check if account should be locked
     if (attempts >= this.MAX_ATTEMPTS) {
       // Get number of previous lockouts for exponential backoff
-      const lockCount = await this.getLockCount(normalizedEmail);
+      const lockCount = await this.getLockCount(identifier);
       const lockoutMinutes = this.calculateLockoutDuration(lockCount);
       const lockoutSeconds = lockoutMinutes * 60;
 
@@ -85,7 +88,7 @@ export class AccountLockoutService {
       await this.redisService.del(key);
 
       this.logger.error(
-        `Account locked (${lockCount + 1}x) for ${lockoutMinutes} minutes: ${normalizedEmail}`
+        `Account locked (${lockCount + 1}x) for ${lockoutMinutes} minutes: ${identifier.slice(0, 8)}…`
       );
 
       return {
@@ -103,15 +106,14 @@ export class AccountLockoutService {
   /**
    * Check if an account is currently locked
    *
-   * @param email - User email
+   * @param identifier - Opaque account identifier (email hash)
    * @returns Object with lock status and remaining time
    */
-  async isLocked(email: string): Promise<{
+  async isLocked(identifier: string): Promise<{
     locked: boolean;
     remainingSeconds?: number;
   }> {
-    const normalizedEmail = email.toLowerCase().trim();
-    const lockKey = this.getLockKey(normalizedEmail);
+    const lockKey = this.getLockKey(identifier);
 
     const lockTime = await this.redisService.get(lockKey);
     if (!lockTime) {
@@ -128,28 +130,24 @@ export class AccountLockoutService {
   /**
    * Reset failed attempts counter (call after successful login)
    *
-   * @param email - User email
+   * @param identifier - Opaque account identifier (email hash)
    */
-  async resetAttempts(email: string): Promise<void> {
-    const normalizedEmail = email.toLowerCase().trim();
-    const key = this.getKey(normalizedEmail);
-    const lockCountKey = this.getLockCountKey(normalizedEmail);
+  async resetAttempts(identifier: string): Promise<void> {
+    const key = this.getKey(identifier);
+    const lockCountKey = this.getLockCountKey(identifier);
 
     await this.redisService.del(key);
     await this.redisService.del(lockCountKey);
-
-    this.logger.log(`Reset failed attempts for: ${normalizedEmail}`);
   }
 
   /**
    * Get current number of failed attempts
    *
-   * @param email - User email
+   * @param identifier - Opaque account identifier (email hash)
    * @returns Number of failed attempts
    */
-  async getAttempts(email: string): Promise<number> {
-    const normalizedEmail = email.toLowerCase().trim();
-    const key = this.getKey(normalizedEmail);
+  async getAttempts(identifier: string): Promise<number> {
+    const key = this.getKey(identifier);
 
     const value = await this.redisService.get(key);
     return value ? parseInt(value, 10) : 0;
@@ -169,8 +167,8 @@ export class AccountLockoutService {
   /**
    * Get number of times this account has been locked
    */
-  private async getLockCount(email: string): Promise<number> {
-    const lockCountKey = this.getLockCountKey(email);
+  private async getLockCount(identifier: string): Promise<number> {
+    const lockCountKey = this.getLockCountKey(identifier);
     const value = await this.redisService.get(lockCountKey);
     return value ? parseInt(value, 10) : 0;
   }
@@ -178,21 +176,21 @@ export class AccountLockoutService {
   /**
    * Generate Redis key for failed attempts counter
    */
-  private getKey(email: string): string {
-    return `auth:failed:${email}`;
+  private getKey(identifier: string): string {
+    return `auth:failed:${identifier}`;
   }
 
   /**
    * Generate Redis key for account lock status
    */
-  private getLockKey(email: string): string {
-    return `auth:locked:${email}`;
+  private getLockKey(identifier: string): string {
+    return `auth:locked:${identifier}`;
   }
 
   /**
    * Generate Redis key for lock count (for exponential backoff)
    */
-  private getLockCountKey(email: string): string {
-    return `auth:lockcount:${email}`;
+  private getLockCountKey(identifier: string): string {
+    return `auth:lockcount:${identifier}`;
   }
 }

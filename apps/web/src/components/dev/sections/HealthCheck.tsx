@@ -50,14 +50,6 @@ export function HealthCheck() {
               {new Date(data.timestamp).toLocaleString()}
             </div>
           </div>
-          {data.localIp && (
-            <div>
-              <span className="text-white/40">Server IP:</span>
-              <div className="text-white/75 bg-dev-surface px-2 py-1 rounded mt-1">
-                {data.localIp}
-              </div>
-            </div>
-          )}
         </div>
       )}
 

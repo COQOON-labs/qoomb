@@ -102,7 +102,7 @@ export const PASSWORD_CONFIG = {
   /**
    * Password requirements regex
    */
-  REQUIREMENTS_REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+  REQUIREMENTS_REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
 } as const;
 
 /**
@@ -120,9 +120,10 @@ export const JWT_CONFIG = {
   REFRESH_TOKEN_EXPIRES_IN: '7d',
 
   /**
-   * JWT algorithm
+   * JWT algorithm — RS256 (asymmetric) allows distributing the public key
+   * for verification without exposing the private signing key.
    */
-  ALGORITHM: 'HS256' as const,
+  ALGORITHM: 'RS256' as const,
 
   /**
    * Access token expiration in seconds (for blacklist TTL)
@@ -206,7 +207,7 @@ export const CORS_CONFIG = {
     'Authorization',
     'X-Requested-With',
     'X-Request-ID',
-    'X-CSRF-Protection',
+    'X-CSRF-Token',
   ],
 
   /**
@@ -247,6 +248,25 @@ export const SECURITY_HEADERS = {
   },
 
   /**
+   * Relaxed CSP for development (M-3 audit finding).
+   * Uses 'unsafe-inline' and 'unsafe-eval' to support HMR / devtools,
+   * but still blocks object/frame embedding and off-origin resources.
+   */
+  contentSecurityPolicyDev: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'ws:', 'wss:'],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+
+  /**
    * HSTS (HTTP Strict Transport Security)
    */
   strictTransportSecurity: {
@@ -271,6 +291,40 @@ export const SECURITY_HEADERS = {
    * X-XSS-Protection
    */
   xssFilter: true,
+} as const;
+
+/**
+ * Refresh Token Cookie Configuration
+ *
+ * The refresh token is stored in an HttpOnly cookie instead of localStorage
+ * to prevent XSS-based token theft (CWE-922).
+ */
+export const REFRESH_TOKEN_COOKIE = {
+  NAME: 'qoomb_rt',
+  HTTP_ONLY: true,
+  SECURE: process.env.NODE_ENV === 'production',
+  SAME_SITE: 'strict' as const,
+  PATH: '/trpc',
+  MAX_AGE_SECONDS: 7 * 24 * 60 * 60, // 7 days — matches refresh token lifetime
+} as const;
+
+/**
+ * CSRF Double-Submit Cookie Configuration
+ *
+ * The server sets a random CSRF token as a non-HttpOnly cookie (readable by JS).
+ * For every state-changing request the client reads the cookie and sends the
+ * value as the X-CSRF-Token header.  The guard compares both values.
+ *
+ * Security properties:
+ * - SameSite=Strict prevents cross-origin cookie sending
+ * - Same-origin policy prevents cross-origin JS from reading the cookie
+ * - CORS prevents cross-origin responses (can't extract the token)
+ */
+export const CSRF_CONFIG = {
+  COOKIE_NAME: 'qoomb_csrf',
+  HEADER_NAME: 'x-csrf-token',
+  TOKEN_LENGTH: 32, // bytes → 43 base64url characters
+  COOKIE_MAX_AGE_SECONDS: 7 * 24 * 60 * 60, // 7 days
 } as const;
 
 /**

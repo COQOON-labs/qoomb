@@ -51,19 +51,46 @@ const envSchema = z.object({
     }),
 
   /**
-   * JWT Configuration
+   * JWT Configuration (RS256 asymmetric key pair)
+   *
+   * Keys must be base64-encoded PEM strings.
+   * Generate with:
+   *   openssl genpkey -algorithm RSA -out jwt-private.pem -pkeyopt rsa_keygen_bits:2048
+   *   openssl rsa -pubout -in jwt-private.pem -out jwt-public.pem
+   *   JWT_PRIVATE_KEY=$(base64 -w0 < jwt-private.pem)
+   *   JWT_PUBLIC_KEY=$(base64 -w0 < jwt-public.pem)
    */
-  JWT_SECRET: z
+  JWT_PRIVATE_KEY: z
     .string()
-    .min(32, 'JWT_SECRET must be at least 32 characters for security')
+    .min(1, 'JWT_PRIVATE_KEY is required (base64-encoded RSA private key PEM)')
     .refine(
-      (secret) => {
-        // Ensure JWT_SECRET has sufficient entropy
-        const uniqueChars = new Set(secret.split('')).size;
-        return uniqueChars >= 10;
+      (val) => {
+        try {
+          const pem = Buffer.from(val, 'base64').toString('utf8');
+          return pem.includes('PRIVATE KEY');
+        } catch {
+          return false;
+        }
       },
       {
-        message: 'JWT_SECRET must have sufficient entropy (variety of characters)',
+        message: 'JWT_PRIVATE_KEY must be a valid base64-encoded RSA private key in PEM format',
+      }
+    ),
+
+  JWT_PUBLIC_KEY: z
+    .string()
+    .min(1, 'JWT_PUBLIC_KEY is required (base64-encoded RSA public key PEM)')
+    .refine(
+      (val) => {
+        try {
+          const pem = Buffer.from(val, 'base64').toString('utf8');
+          return pem.includes('PUBLIC KEY');
+        } catch {
+          return false;
+        }
+      },
+      {
+        message: 'JWT_PUBLIC_KEY must be a valid base64-encoded RSA public key in PEM format',
       }
     ),
 
@@ -101,13 +128,43 @@ const envSchema = z.object({
     .transform((val) => (val ? val.split(',').map((s) => s.trim()) : [])),
 
   /**
-   * Feature Flags
+   * System Configuration
+   *
+   * These are operator-level decisions that require a deliberate deployment
+   * change — they cannot be toggled at runtime or via the UI.
    */
-  ENABLE_REGISTRATION: z
+
+  /**
+   * Allow anyone to self-register a new hive.
+   * false (default) = invite-only. Set to true only for open SaaS deployments.
+   */
+  ALLOW_OPEN_REGISTRATION: z
+    .string()
+    .default('false')
+    .transform((val) => val === 'true'),
+
+  /**
+   * Allow users to request a password reset via email.
+   * false (default) = disabled until email delivery is configured and verified.
+   */
+  ALLOW_FORGOT_PASSWORD: z
+    .string()
+    .default('false')
+    .transform((val) => val === 'true'),
+
+  /**
+   * Allow PassKey (WebAuthn) authentication.
+   * true (default) = enabled. Set to false to disable WebAuthn entirely.
+   */
+  ALLOW_PASSKEYS: z
     .string()
     .default('true')
     .transform((val) => val === 'true'),
 
+  /**
+   * Enable external calendar synchronisation (Google, Apple, Outlook).
+   * false (default) = disabled until Phase 5 is complete.
+   */
   ENABLE_EXTERNAL_CALENDAR_SYNC: z
     .string()
     .default('false')

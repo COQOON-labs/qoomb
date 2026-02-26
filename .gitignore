@@ -47,7 +47,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Prisma
-prisma/migrations
+# NOTE: prisma/migrations MUST be tracked in git (RLS policies, indexes, triggers).
+# Only local SQLite databases are ignored (see below).
 
 # SQLite (local development)
 *.db
@@ -55,3 +56,4 @@ prisma/migrations
 *.sqlite
 *.sqlite3
 apps/web/.env.local
+.env.backup

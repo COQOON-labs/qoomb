@@ -51,7 +51,7 @@ All changes reach `main` via pull requests. Release Please automates versioning 
 | ---------------------- | ----------------- | -------------------------------------------- |
 | Block force pushes     | Yes               | Protects history, required by Release Please |
 | Restrict deletions     | Yes               | Main branch must never be deleted            |
-| Require linear history | No                | Allows merge commits from PRs                |
+| Require linear history | Yes               | Enforces squash merges — clean linear trunk  |
 | Require signed commits | No (enable later) | Optional for team/enterprise                 |
 
 ---
@@ -75,7 +75,7 @@ gh api repos/COQOON-labs/qoomb/branches/main/protection \
   --field enforce_admins=true \
   --field required_pull_request_reviews='{"dismiss_stale_reviews":true,"require_code_owner_reviews":false,"required_approving_review_count":0}' \
   --field restrictions=null \
-  --field required_linear_history=false \
+  --field required_linear_history=true \
   --field allow_force_pushes=false \
   --field allow_deletions=false
 ```
@@ -98,7 +98,7 @@ gh api repos/COQOON-labs/qoomb/branches/main/protection \
 4. CI runs all checks automatically
    - Quality, tests, security scans, version validation
 
-5. Merge to main (squash or merge commit)
+5. Squash merge to main (one clean commit per PR)
 
 6. Release Please analyzes commits and creates release PR
    - Automatic version bump + changelog

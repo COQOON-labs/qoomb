@@ -3,9 +3,9 @@ import { createTRPCProxyClient, httpLink } from '@trpc/client';
 import { createContext, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react';
 import superjson from 'superjson';
 
+import { getCsrfToken } from '../csrf';
 import { useLocale } from '../locale/LocaleProvider';
 
-import { getRefreshToken, setRefreshToken, clearRefreshToken } from './authStorage';
 import { setAccessToken } from './tokenStore';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -29,8 +29,8 @@ export interface AuthState {
 
 type AuthAction =
   | { type: 'SET_LOADING'; loading: boolean }
-  | { type: 'LOGIN'; user: AuthUser; accessToken: string; refreshToken: string }
-  | { type: 'REFRESH'; user: AuthUser; accessToken: string; refreshToken: string }
+  | { type: 'LOGIN'; user: AuthUser; accessToken: string }
+  | { type: 'REFRESH'; user: AuthUser; accessToken: string }
   | {
       type: 'SWITCH_HIVE';
       hiveId: string;
@@ -43,9 +43,9 @@ type AuthAction =
 
 interface AuthContextValue {
   state: AuthState;
-  login: (user: AuthUser, accessToken: string, refreshToken: string) => void;
+  login: (user: AuthUser, accessToken: string) => void;
   logout: () => Promise<void>;
-  updateToken: (accessToken: string, refreshToken: string) => void;
+  updateToken: (accessToken: string) => void;
   switchHive: (
     hiveId: string,
     hiveName: string,
@@ -64,7 +64,6 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
     case 'LOGIN':
     case 'REFRESH':
       setAccessToken(action.accessToken);
-      setRefreshToken(action.refreshToken);
       return {
         user: action.user,
         accessToken: action.accessToken,
@@ -87,7 +86,6 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
       };
     case 'LOGOUT':
       setAccessToken(null);
-      clearRefreshToken();
       return { user: null, accessToken: null, isLoading: false };
     default:
       return state;
@@ -98,8 +96,8 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// Standalone tRPC client used only for the silent refresh call.
-// It doesn't need auth headers (uses the refresh token in the body).
+// Standalone tRPC client used only for the silent refresh and logout calls.
+// Sends credentials (cookies) so the HttpOnly refresh token cookie is included.
 function createRefreshClient() {
   const url = import.meta.env.VITE_API_URL
     ? `${import.meta.env.VITE_API_URL}/trpc`
@@ -111,8 +109,10 @@ function createRefreshClient() {
         url,
         transformer: superjson,
         headers: () => ({
-          'X-CSRF-Protection': '1',
+          'X-CSRF-Token': getCsrfToken(),
         }),
+        // Include credentials so the browser sends the HttpOnly refresh token cookie
+        fetch: (input, init) => globalThis.fetch(input, { ...init, credentials: 'include' }),
       }),
     ],
   });
@@ -151,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return refreshClientRef.current;
   }
 
-  function scheduleRefresh(accessToken: string, refreshToken: string) {
+  function scheduleRefresh(accessToken: string) {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
 
     const exp = parseJwtExp(accessToken);
@@ -161,13 +161,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const msUntilRefresh = Math.max(msUntilExpiry - 300_000, 0); // 5 min before expiry
 
     refreshTimerRef.current = setTimeout(() => {
-      void doRefresh(refreshToken);
+      void doRefresh();
     }, msUntilRefresh);
   }
 
-  async function doRefresh(refreshToken: string): Promise<boolean> {
+  async function doRefresh(): Promise<boolean> {
     try {
-      const result = await getRefreshClient().auth.refresh.mutate({ refreshToken });
+      // Refresh token is sent automatically via HttpOnly cookie
+      const result = await getRefreshClient().auth.refresh.mutate();
       const resolvedLocale = result.locale;
       dispatch({
         type: 'REFRESH',
@@ -180,10 +181,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           locale: resolvedLocale,
         },
         accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
       });
       if (resolvedLocale) setLocale(resolvedLocale);
-      scheduleRefresh(result.accessToken, result.refreshToken);
+      scheduleRefresh(result.accessToken);
       return true;
     } catch {
       dispatch({ type: 'LOGOUT' });
@@ -191,17 +191,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Silent refresh on mount
+  // Silent refresh on mount — the browser sends the HttpOnly cookie automatically.
+  // If no cookie exists (first visit), the server returns UNAUTHORIZED and we
+  // transition to the logged-out state.
   useEffect(() => {
-    const storedRefreshToken = getRefreshToken();
-    if (!storedRefreshToken) {
-      dispatch({ type: 'SET_LOADING', loading: false });
-      return;
-    }
-
     void (async () => {
       dispatch({ type: 'SET_LOADING', loading: true });
-      const refreshed = await doRefresh(storedRefreshToken);
+      const refreshed = await doRefresh();
       if (!refreshed) {
         dispatch({ type: 'SET_LOADING', loading: false });
       }
@@ -213,36 +209,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function login(user: AuthUser, accessToken: string, refreshToken: string) {
-    dispatch({ type: 'LOGIN', user, accessToken, refreshToken });
+  function login(user: AuthUser, accessToken: string) {
+    dispatch({ type: 'LOGIN', user, accessToken });
     if (user.locale) setLocale(user.locale);
-    scheduleRefresh(accessToken, refreshToken);
+    scheduleRefresh(accessToken);
   }
 
   async function logout() {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
 
     // Best-effort: revoke refresh token on the server.
-    // We must read tokens BEFORE dispatching LOGOUT (which clears them).
+    // We must read the access token BEFORE dispatching LOGOUT (which clears it).
     const accessToken = state.accessToken;
-    const refreshToken = getRefreshToken();
 
     // Clear local state immediately so the user sees the logout UI at once
     dispatch({ type: 'LOGOUT' });
 
-    if (accessToken && refreshToken) {
+    if (accessToken) {
       try {
-        await getRefreshClient().auth.logout.mutate({ accessToken, refreshToken });
+        // Refresh token is sent via HttpOnly cookie; only accessToken in body
+        await getRefreshClient().auth.logout.mutate({ accessToken });
       } catch {
         // Ignore — local state is already cleared; server tokens expire naturally
       }
     }
   }
 
-  function updateToken(accessToken: string, refreshToken: string) {
+  function updateToken(accessToken: string) {
     if (!state.user) return;
-    dispatch({ type: 'REFRESH', user: state.user, accessToken, refreshToken });
-    scheduleRefresh(accessToken, refreshToken);
+    dispatch({ type: 'REFRESH', user: state.user, accessToken });
+    scheduleRefresh(accessToken);
   }
 
   function switchHive(
@@ -252,11 +248,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     accessToken: string,
     locale?: string
   ) {
-    // Hive switch issues a new access token; refresh token is unchanged
-    const existingRefreshToken = getRefreshToken() ?? '';
+    // Hive switch issues a new access token; refresh token cookie is unchanged
     dispatch({ type: 'SWITCH_HIVE', hiveId, hiveName, personId, accessToken, locale });
     if (locale) setLocale(locale);
-    scheduleRefresh(accessToken, existingRefreshToken);
+    scheduleRefresh(accessToken);
   }
 
   return (

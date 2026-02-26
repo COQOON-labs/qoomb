@@ -37,8 +37,6 @@ check-deps:
     @echo -e "{{green}}✓ pnpm:{{nc}}     $(pnpm --version)"
     @command -v node >/dev/null 2>&1 || { echo -e "{{red}}✗ Node.js not installed{{nc}}"; exit 1; }
     @echo -e "{{green}}✓ Node.js:{{nc}}  $(node --version)"
-    @test -f .env || { echo -e "{{red}}✗ .env file not found — copy .env.example to .env{{nc}}"; exit 1; }
-    @echo -e "{{green}}✓ .env file exists{{nc}}"
 
 # Check if required ports are available
 check-ports: _check-docker
@@ -88,25 +86,15 @@ install:
     pnpm install
     @echo -e "{{green}}✓ Dependencies installed{{nc}}"
 
-# Simple setup: deps + Docker + DB + optional seed (localhost only)
-setup-simple: check-deps check-ports install docker-up db-generate db-migrate
+# Simple setup: first-time environment preparation (localhost only)
+# Delegates all checks to _preflight, then shows next steps.
+setup-simple: _preflight check-ports
     #!/usr/bin/env bash
     set -euo pipefail
     echo ""
     echo -e "\033[0;32m========================================\033[0m"
     echo -e "\033[0;32m✓ Setup complete!\033[0m"
     echo -e "\033[0;32m========================================\033[0m"
-    echo ""
-
-    if [ "${SEED:-0}" = "1" ] || [ "${AUTO:-0}" = "1" ]; then
-        just db-seed
-    else
-        read -r -p "Install dev seed data? (john@doe.dev, anna@doe.dev, tim@doe.dev) [y/N] " ANSWER
-        if [[ "${ANSWER:-n}" =~ ^[Yy]$ ]]; then
-            just db-seed
-        fi
-    fi
-
     echo ""
     echo -e "\033[0;36mNext steps:\033[0m"
     echo ""
@@ -124,7 +112,7 @@ setup-simple: check-deps check-ports install docker-up db-generate db-migrate
 
 # Full setup: HTTPS + local domain via Caddy + mkcert (macOS/Linux)
 setup: setup-simple
-    @echo -e "{{blue}}Setting up extended development environment...{{nc}}"
+    @echo -e "{{blue}}Setting up HTTPS local domain...{{nc}}"
     @test -f scripts/setup-local-domain.sh || { echo -e "{{red}}✗ scripts/setup-local-domain.sh not found{{nc}}"; exit 1; }
     @bash scripts/setup-local-domain.sh
     @echo ""
@@ -180,7 +168,13 @@ _preflight:
 
     echo -e "\033[0;34m🔍 Pre-flight checks...\033[0m"
 
-    # 1. .env file
+    # 1. Tool dependencies
+    for CMD in docker pnpm node openssl; do
+        command -v "$CMD" >/dev/null 2>&1 || { echo -e "\033[0;31m  ✗ $CMD not installed\033[0m"; exit 1; }
+    done
+    echo -e "\033[0;32m  ✓ Tools (docker, pnpm, node, openssl)\033[0m"
+
+    # 2. .env file
     if [ ! -f .env ]; then
         if [ -f .env.example ]; then
             echo -e "\033[1;33m  ⚠ .env not found — creating from .env.example\033[0m"
@@ -194,19 +188,54 @@ _preflight:
         echo -e "\033[0;32m  ✓ .env\033[0m"
     fi
 
+    # 1b. Required secrets in .env
+    #     If a secret is missing or still at the .env.example placeholder,
+    #     offer to auto-generate a cryptographically random value.
+    SECRETS_MISSING=0
+    for SECRET_NAME in JWT_SECRET ENCRYPTION_KEY SESSION_SECRET; do
+        CURRENT=$(grep "^${SECRET_NAME}=" .env 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)
+        if [ -z "$CURRENT" ] || echo "$CURRENT" | grep -qi "change-me"; then
+            SECRETS_MISSING=$((SECRETS_MISSING + 1))
+        fi
+    done
+    if ! grep -q "^KEY_PROVIDER=" .env 2>/dev/null; then
+        SECRETS_MISSING=$((SECRETS_MISSING + 1))
+    fi
+
+    if [ "$SECRETS_MISSING" -gt 0 ]; then
+        echo -e "\033[1;33m  ⚠ $SECRETS_MISSING secret(s) missing or placeholder in .env\033[0m"
+        if ask "Generate missing secrets automatically?" required; then
+            for SECRET_NAME in JWT_SECRET ENCRYPTION_KEY SESSION_SECRET; do
+                CURRENT=$(grep "^${SECRET_NAME}=" .env 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)
+                if [ -z "$CURRENT" ] || echo "$CURRENT" | grep -qi "change-me"; then
+                    NEW_VALUE=$(openssl rand -base64 32)
+                    if grep -q "^${SECRET_NAME}=" .env 2>/dev/null; then
+                        sed -i '' "s|^${SECRET_NAME}=.*|${SECRET_NAME}=\"${NEW_VALUE}\"|" .env
+                    else
+                        echo "${SECRET_NAME}=\"${NEW_VALUE}\"" >> .env
+                    fi
+                    echo -e "\033[0;32m    ✓ ${SECRET_NAME} generated\033[0m"
+                fi
+            done
+            if ! grep -q "^KEY_PROVIDER=" .env 2>/dev/null; then
+                echo 'KEY_PROVIDER="environment"' >> .env
+                echo -e "\033[0;32m    ✓ KEY_PROVIDER set to 'environment'\033[0m"
+            fi
+            echo -e "\033[0;32m  ✓ Secrets (review .env before production!)\033[0m"
+        fi
+    else
+        echo -e "\033[0;32m  ✓ Secrets\033[0m"
+    fi
+
     # 2. Dependencies (node_modules)
     if [ ! -d node_modules ]; then
-        echo -e "\033[1;33m  ⚠ node_modules missing\033[0m"
-        if ask "Run pnpm install?" required; then
-            pnpm install
-            echo -e "\033[0;32m  ✓ Dependencies installed\033[0m"
-        fi
+        echo -e "\033[1;33m  ⚠ node_modules missing — installing...\033[0m"
+        pnpm install
+        echo -e "\033[0;32m  ✓ Dependencies installed\033[0m"
     elif [ -f pnpm-lock.yaml ] && [ "pnpm-lock.yaml" -nt "node_modules" ]; then
-        echo -e "\033[1;33m  ⚠ Lock file changed since last install\033[0m"
-        if ask "Run pnpm install to update?"; then
-            pnpm install
-            echo -e "\033[0;32m  ✓ Dependencies updated\033[0m"
-        fi
+        echo -e "\033[1;33m  ⚠ Lock file changed since last install — updating...\033[0m"
+        pnpm install
+        echo -e "\033[0;32m  ✓ Dependencies updated\033[0m"
     else
         echo -e "\033[0;32m  ✓ Dependencies\033[0m"
     fi
@@ -592,12 +621,13 @@ generate-secrets:
 # Verify environment configuration
 env-check:
     @echo -e "{{blue}}Checking .env...{{nc}}"
-    @test -f .env            || { echo -e "{{red}}✗ .env not found{{nc}}"; exit 1; }
-    @grep -q "DATABASE_URL"   .env || { echo -e "{{red}}✗ DATABASE_URL not set{{nc}}"; exit 1; }
-    @grep -q "REDIS_URL"      .env || { echo -e "{{red}}✗ REDIS_URL not set{{nc}}"; exit 1; }
-    @grep -q "JWT_SECRET"     .env || { echo -e "{{red}}✗ JWT_SECRET not set{{nc}}"; exit 1; }
-    @grep -q "ENCRYPTION_KEY" .env || { echo -e "{{red}}✗ ENCRYPTION_KEY not set{{nc}}"; exit 1; }
-    @echo -e "{{green}}✓ Environment configuration is valid{{nc}}"
+    @test -f .env              || { echo -e "{{red}}✗ .env not found{{nc}}"; exit 1; }
+    @grep -q "^DATABASE_URL="   .env || { echo -e "{{red}}✗ DATABASE_URL not set{{nc}}"; exit 1; }
+    @grep -q "^REDIS_URL="      .env || { echo -e "{{red}}✗ REDIS_URL not set{{nc}}"; exit 1; }
+    @grep -q "^JWT_SECRET="     .env || { echo -e "{{red}}✗ JWT_SECRET not set{{nc}}"; exit 1; }
+    @grep -q "^ENCRYPTION_KEY=" .env || { echo -e "{{red}}✗ ENCRYPTION_KEY not set{{nc}}"; exit 1; }
+    @grep -q "^KEY_PROVIDER="   .env || { echo -e "{{red}}✗ KEY_PROVIDER not set{{nc}}"; exit 1; }
+    @echo -e "{{green}}✓ Environment configuration looks good{{nc}}"
 
 # Show project information
 info:

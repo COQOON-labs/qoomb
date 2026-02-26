@@ -33,60 +33,80 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
 
 // Middleware to set hive schema context with RLS enforcement,
 // and eagerly fetch hiveType + person.role for permission checks.
+//
+// SECURITY: Wraps the entire downstream handler in a Prisma interactive
+// transaction so that SET LOCAL app.hive_id is pinned to a single DB
+// connection for the whole request.  The transaction client is exposed as
+// ctx.tx — guards and routers should use ctx.tx for hive-scoped queries
+// to guarantee the correct RLS context.
 export const hiveProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   if (!ctx.user?.hiveId) {
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Missing hive context' });
   }
 
-  // Set RLS session variables
-  await ctx.prisma.setHiveSchema(ctx.user.hiveId, ctx.user.id);
+  const hiveId = ctx.user.hiveId;
+  const userId = ctx.user.id;
 
-  // Parallel-fetch hive type, person role, per-hive permission overrides, and group memberships.
-  // All hive overrides are loaded without a role filter so the query can run in parallel
-  // (role is unknown until the person query completes). In-memory role filtering follows.
-  // hive_role_permissions is a sparse RBAC config table — typically 0-20 rows per hive.
-  const [hive, person, allHiveOverrides, groupMemberships] = await Promise.all([
-    ctx.prisma.hive.findUnique({
-      where: { id: ctx.user.hiveId },
-      select: { type: true },
-    }),
-    ctx.user.personId
-      ? ctx.prisma.person.findUnique({
-          where: { id: ctx.user.personId },
-          select: { role: true },
-        })
-      : null,
-    ctx.prisma.hiveRolePermission.findMany({
-      where: { hiveId: ctx.user.hiveId },
-      select: { role: true, permission: true, granted: true },
-    }),
-    ctx.user.personId
-      ? ctx.prisma.hiveGroupMember.findMany({
-          where: { personId: ctx.user.personId, hiveId: ctx.user.hiveId },
-          select: { groupId: true },
-        })
-      : [],
-  ]);
+  // Validate UUIDs before entering the transaction (fail fast)
+  await ctx.prisma.setHiveSchemaValidation(hiveId, userId);
 
-  const personRole = person?.role ?? undefined;
+  // Open an interactive transaction that pins a single DB connection.
+  // SET LOCAL scopes the variable to this transaction — it's automatically
+  // reset when the transaction completes, so no pool contamination.
+  return ctx.prisma.$transaction(
+    async (tx) => {
+      await tx.$executeRawUnsafe(`SET LOCAL app.hive_id = '${hiveId}'`);
+      await tx.$executeRawUnsafe(`SET LOCAL app.user_id = '${userId}'`);
 
-  // Filter overrides to only those relevant for this person's role
-  const roleOverrides = allHiveOverrides
-    .filter((o) => o.role === personRole)
-    .map(({ permission, granted }) => ({ permission, granted }));
+      // Parallel-fetch hive type, person role, per-hive permission overrides,
+      // and group memberships — all on the same pinned connection.
+      const [hive, person, allHiveOverrides, groupMemberships] = await Promise.all([
+        tx.hive.findUnique({
+          where: { id: hiveId },
+          select: { type: true },
+        }),
+        ctx.user.personId
+          ? tx.person.findUnique({
+              where: { id: ctx.user.personId },
+              select: { role: true },
+            })
+          : null,
+        tx.hiveRolePermission.findMany({
+          where: { hiveId },
+          select: { role: true, permission: true, granted: true },
+        }),
+        ctx.user.personId
+          ? tx.hiveGroupMember.findMany({
+              where: { personId: ctx.user.personId, hiveId },
+              select: { groupId: true },
+            })
+          : [],
+      ]);
 
-  const groupIds = groupMemberships.map(({ groupId }) => groupId);
+      const personRole = person?.role ?? undefined;
 
-  return next({
-    ctx: {
-      ...ctx,
-      user: {
-        ...ctx.user,
-        hiveType: hive?.type,
-        role: personRole,
-        roleOverrides,
-        groupIds,
-      },
+      const roleOverrides = allHiveOverrides
+        .filter((o) => o.role === personRole)
+        .map(({ permission, granted }) => ({ permission, granted }));
+
+      const groupIds = groupMemberships.map(({ groupId }) => groupId);
+
+      // Pass both the transaction client (tx) and the enriched user context
+      // downstream.  Route handlers use ctx.tx for hive-scoped queries.
+      return next({
+        ctx: {
+          ...ctx,
+          tx,
+          user: {
+            ...ctx.user,
+            hiveType: hive?.type,
+            role: personRole,
+            roleOverrides,
+            groupIds,
+          },
+        },
+      });
     },
-  });
+    { timeout: 15_000 } // 15s — generous for API requests
+  );
 });

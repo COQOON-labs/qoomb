@@ -24,7 +24,7 @@ We adopt **MADR** (Markdown Architectural Decision Records) stored in `docs/adr/
 - Each ADR has: Status, Date, Context, Decision, Consequences
 - Status lifecycle: `Proposed → Accepted → [Deprecated | Superseded by ADR-NNNN]`
 - New ADRs are added to the index in `docs/adr/README.md`
-- Referenced from `claude.md` and `.github/copilot-instructions.md` so AI assistants find them
+- Referenced from `CLAUDE.md` and `.github/copilot-instructions.md` so AI assistants find them
 
 ## Consequences
 

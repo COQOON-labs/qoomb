@@ -8,6 +8,8 @@ import {
   verifyAuthenticationResponse,
   verifyRegistrationResponse,
   type AuthenticatorTransportFuture,
+  type PublicKeyCredentialCreationOptionsJSON,
+  type PublicKeyCredentialRequestOptionsJSON,
   type RegistrationResponseJSON,
   type AuthenticationResponseJSON,
 } from '@simplewebauthn/server';
@@ -52,7 +54,11 @@ export class PassKeyService {
    * Generate registration options for adding a new PassKey to an existing account.
    * Called while the user is authenticated.
    */
-  async generateRegistrationOptions(userId: string, userEmail: string, userName: string) {
+  async generateRegistrationOptions(
+    userId: string,
+    userEmail: string,
+    userName: string
+  ): Promise<PublicKeyCredentialCreationOptionsJSON> {
     const existingCredentials = await this.prisma.passKeyCredential.findMany({
       where: { userId },
       select: { credentialId: true, transports: true },
@@ -136,7 +142,7 @@ export class PassKeyService {
    * Returns `options` (for the browser) and `sessionId` (sent back with the response).
    */
   async generateAuthenticationOptions(email?: string): Promise<{
-    options: Awaited<ReturnType<typeof generateAuthenticationOptions>>;
+    options: PublicKeyCredentialRequestOptionsJSON;
     sessionId: string;
   }> {
     let userId: string | null = null;

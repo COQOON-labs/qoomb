@@ -57,7 +57,7 @@ export const tasksRouter = (tasksService: TasksService) =>
 
       // Pre-query share IDs (PersonShare/GroupShare are polymorphic — no Prisma relations)
       const sharedIds = await getSharedResourceIds(
-        ctx.prisma,
+        ctx.tx,
         'task',
         ctx.user.personId ?? '',
         ctx.user.groupIds ?? []
@@ -96,7 +96,7 @@ export const tasksRouter = (tasksService: TasksService) =>
       }
       await requireResourceAccess(
         ctx,
-        ctx.prisma,
+        ctx.tx,
         { type: 'task', ...task, groupId: task.groupId ?? undefined },
         'view',
         TASK_PERMISSIONS
@@ -151,7 +151,7 @@ export const tasksRouter = (tasksService: TasksService) =>
         }
         await requireResourceAccess(
           ctx,
-          ctx.prisma,
+          ctx.tx,
           { type: 'task', ...task, groupId: task.groupId ?? undefined },
           'edit',
           TASK_PERMISSIONS
@@ -201,7 +201,7 @@ export const tasksRouter = (tasksService: TasksService) =>
         }
         await requireResourceAccess(
           ctx,
-          ctx.prisma,
+          ctx.tx,
           { type: 'task', ...task, groupId: task.groupId ?? undefined },
           'edit',
           TASK_PERMISSIONS
@@ -231,7 +231,7 @@ export const tasksRouter = (tasksService: TasksService) =>
       }
       await requireResourceAccess(
         ctx,
-        ctx.prisma,
+        ctx.tx,
         { type: 'task', ...task, groupId: task.groupId ?? undefined },
         'delete',
         TASK_PERMISSIONS

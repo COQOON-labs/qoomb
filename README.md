@@ -105,7 +105,7 @@ qoomb/
 │   └── config/                 # Shared configurations
 ├── docker/                     # Docker configurations
 ├── docker-compose.yml          # Development services
-└── claude.md                   # Detailed architecture docs
+└── CLAUDE.md                   # Detailed architecture docs
 ```
 
 ## Development
@@ -169,7 +169,7 @@ When running in development mode (`pnpm dev`), a **Dev Tools panel** is availabl
 
 ## Architecture
 
-See [claude.md](claude.md) for detailed architecture documentation, including:
+See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation, including:
 
 - System overview and component diagram
 - Database schema design

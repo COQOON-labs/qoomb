@@ -4,9 +4,25 @@ import { z } from 'zod';
 // when the schema flows through AppRouter into the web client type chain.
 const resourceVisibilitySchema = z.enum(['hive', 'admins', 'group', 'private']);
 
-// Recurrence rule: freeform JSONB object (iCal RRULE fields as key/value pairs).
+// Recurrence rule: validated iCal RRULE fields (RFC 5545 subset).
 // Stored unencrypted — needed for server-side occurrence expansion (Phase 4).
-const recurrenceRuleSchema = z.record(z.string(), z.unknown());
+// Requires either `count` or `until` to prevent unbounded expansion (DoS / CWE-400).
+const recurrenceRuleSchema = z
+  .object({
+    frequency: z.enum(['yearly', 'monthly', 'weekly', 'daily']),
+    interval: z.number().int().min(1).max(400).optional(),
+    count: z.number().int().min(1).max(1000).optional(),
+    until: z.string().datetime().optional(),
+    byDay: z
+      .array(z.string().regex(/^(-?\d{0,2})?(MO|TU|WE|TH|FR|SA|SU)$/))
+      .max(7)
+      .optional(),
+    byMonth: z.array(z.number().int().min(1).max(12)).max(12).optional(),
+    byMonthDay: z.array(z.number().int().min(-31).max(31)).max(31).optional(),
+  })
+  .refine((r) => r.count !== undefined || r.until !== undefined, {
+    message: 'Recurrence rule must specify either count or until to prevent unbounded expansion',
+  });
 
 export const eventIdSchema = z.string().uuid();
 

@@ -1,117 +1,17 @@
-# Qoomb - Technical Context for Claude Code
+# Qoomb - Development Guidelines
 
-> **Purpose:** This document provides technical context for AI assistants (Claude Code) to understand and consistently develop the Qoomb project.
->
-> **For Human Developers:** See [README.md](README.md) and [docs/](docs/) directory.
+## JSON Files
 
----
+- **No comments in `.json` files.** JSON does not support comments (`//` or `/* */`). Do not add comments to any `.json` file, including `tsconfig.json`, `package.json`, and all other JSON configuration files. This is enforced by `eslint-plugin-jsonc` with the `jsonc/no-comments` rule.
+- If you need to explain a JSON setting, use a `README.md` next to it, a commit message, or inline documentation in code that references the config.
+- Run `pnpm lint:json` to check all JSON files for comments.
 
-## Project Essence
+## Linting
 
-**Qoomb** is a **privacy-first SaaS hive organization platform** with:
-
-- **Offline-first architecture** (Notion-style selective sync)
-- **Multi-tenant isolation** (shared schema + Row-Level Security)
-- **Hybrid encryption** (server-side + optional E2E)
-- **SaaS-first** (cloud-agnostic — works on AWS, GCP, Azure, or bare metal; self-hosting as a supported deployment option)
-
-**Core Philosophy:**
-
-- Privacy over convenience where it matters
-- SaaS-first, self-hosting as a supported option
-- Type-safety everywhere (TypeScript + tRPC + Prisma)
-- Security by design, not afterthought
-- Simple by default, powerful when needed
-
----
-
-## Architecture Decisions (Rationale)
-
-### Why Monorepo (Turborepo + pnpm)?
-
-- **Shared types** between frontend/backend (tRPC)
-- **Atomic changes** across packages
-- **Efficient caching** via Turborepo
-
-### Why NestJS (not Express)?
-
-- **Dependency Injection** (testable, modular)
-- **Professional structure** (scales with team)
-- **Type-safety** (first-class TypeScript)
-
-### Why tRPC (not REST/GraphQL)?
-
-- **End-to-end type safety** (no schema drift)
-- **No code generation** (types flow automatically)
-- **Simple** (just TypeScript functions)
-
-### Why Prisma (not raw SQL)?
-
-- **Type-safe queries** (catch bugs at compile-time)
-- **Migration management** (version-controlled)
-- **Multi-schema support** (critical for multi-tenancy)
-- **But:** Use raw SQL for complex queries (see docs/PRISMA_PATTERNS.md)
-
-### Why Shared Schema + Row-Level Security (not per-hive schemas)?
-
-- **SaaS-first** (many small tenants — per-hive schemas don't scale)
-- **Simple migrations** (one migration updates all tenants instantly)
-- **Connection pooling works** (PgBouncer/pgpool compatible)
-- **Easy analytics** (cross-tenant queries for billing, usage, monitoring)
-- **RLS enforced at DB level** — even if app logic fails, data stays isolated
-- **`app.hive_id` session variable** set by `hiveProcedure` before every handler
-
-### Why Decorator-Based Encryption?
-
-- **Can't forget** (compile-time safety)
-- **Implicit** (DRY principle)
-- **Explicit** (visible in code)
-- **Performance** (only when needed)
-
-### Why CommonJS for NestJS + Node16 for Packages?
-
-- **NestJS + CommonJS:** Mature, stable ecosystem with proven compatibility
-- **Packages + Node16:** Modern ESM output for shared libraries
-- **Base config + Bundler:** TypeScript 7.0 compatible module resolution
-- **Intentional choice:** Not using full ESM yet (NestJS ESM support is newer)
-- **Future-proof:** Can migrate to full ESM when ecosystem matures
-- **See:** `OPTION_A_IMPLEMENTATION_SUMMARY.md` for details
-
-### Why Fair Source License (not MIT/Apache)?
-
-- **Sustainable Open Source:** Free for individuals and small teams, commercial licensing for enterprises
-- **Prevents exploitation:** Large companies can't use it for free without contributing back
-- **Contributor Protection:** CLA ensures contributors grant necessary rights while protecting IP
-- **Dual Licensing Rights:** Enables offering commercial licenses while keeping code open
-- **10-Employee Threshold:** Applies to organizations only; families of any size are explicitly exempt for private non-commercial use
-- **See:** `LICENSE.md` and `COMMERCIAL-LICENSE.md` for details
-
----
-
-## Technology Stack
-
-| Component          | Choice                         | Why                           |
-| ------------------ | ------------------------------ | ----------------------------- |
-| **Monorepo**       | Turborepo + pnpm               | Shared types, atomic changes  |
-| **Backend**        | NestJS + TypeScript            | DI, professional structure    |
-| **API**            | tRPC + superjson               | End-to-end type safety        |
-| **Frontend**       | React 19 + Vite 7              | Fast HMR, large ecosystem     |
-| **Routing**        | React Router 7                 | File-based + type-safe routes |
-| **Styling**        | Tailwind CSS v4                | CSS-first, custom properties  |
-| **Mobile**         | Capacitor                      | Native iOS/Android wrapper    |
-| **PWA**            | vite-plugin-pwa + Workbox      | Offline-first, installable    |
-| **Database**       | PostgreSQL 18                  | pgvector, JSONB, RLS          |
-| **Cache/Queue**    | Redis 8                        | Session store, pub/sub        |
-| **ORM**            | Prisma                         | Type-safe, migrations         |
-| **Encryption**     | AES-256-GCM + libsodium        | Server-side + E2E             |
-| **Key Management** | Pluggable (Env/File/KMS/Vault) | Flexible, cloud-agnostic      |
-| **Code Quality**   | ESLint + Prettier              | Consistent style, type safety |
-| **Git Hooks**      | Husky + lint-staged            | Pre-commit/push quality gates |
-| **Commit Format**  | Commitlint + Conventional      | Structured commit messages    |
-| **CI/CD**          | GitHub Actions                 | Automated testing & security  |
-| **License**        | Fair Source v1.0 (10-user)     | Sustainable open source       |
-
----
+- TypeScript/TSX: `pnpm lint` (runs ESLint via turbo across all packages)
+- JSON: `pnpm lint:json` (runs `jsonc/no-comments` rule on all JSON files)
+- Formatting: `pnpm format` (Prettier on ts, tsx, md, json files)
+- Pre-commit hooks run both Prettier and JSON linting on staged files via lint-staged.
 
 ## Project Structure
 
@@ -180,6 +80,7 @@ qoomb/
 │   ├── adr/                        # Architecture Decision Records (MADR)
 │   │   ├── 0001-adr-process.md     # ADR process and format
 │   │   ├── 0002-shared-domain-utilities.md  # Domain-driven code structure (ADR-0002)
+│   │   ├── 0003-branching-and-release-strategy.md # Branching & release strategy (ADR-0003)
 │   │   ├── 0004-cloud-agnostic-architecture.md # Cloud-agnostic stack (ADR-0004)
 │   │   └── 0005-hybrid-encryption-architecture.md # Encryption architecture (ADR-0005)
 │   ├── CONTENT_ARCHITECTURE.md     # Content model, schema, encryption
@@ -212,7 +113,7 @@ qoomb/
 ├── docker-compose.yml          # PostgreSQL + Redis
 ├── LICENSE.md                  # Fair Source License v1.0 + CLA
 ├── COMMERCIAL-LICENSE.md       # Commercial licensing details
-├── claude.md                   # This file (for AI)
+├── CLAUDE.md                   # This file (for AI)
 └── README.md                   # For humans
 ```
 
@@ -923,6 +824,48 @@ async create(input: CreateEventInput) {
 }
 ```
 
+### Pattern: Operator Feature Flag Guard
+
+Operator-controlled toggles (`ALLOW_OPEN_REGISTRATION`, `ALLOW_FORGOT_PASSWORD`, `ALLOW_PASSKEYS`)
+are enforced at the tRPC boundary using a two-layer split:
+
+```
+Env var (validated by Zod at startup)
+    ↓
+SystemConfigService — pure boolean getters, zero framework imports
+    ↓
+requireEnabled() in apps/api/src/trpc/guards.ts — translates boolean → TRPCError
+    ↓
+Router handler — single-line guard call before business logic
+```
+
+```typescript
+// ✅ CORRECT: service returns boolean, guard throws
+import { requireEnabled } from '../../trpc/guards';
+
+someEndpoint: publicProcedure.mutation(async ({ input }) => {
+  requireEnabled(systemConfigService.isForgotPasswordAllowed(), 'Password reset is disabled.');
+  await authService.resetPassword(input.token, input.newPassword);
+  return { success: true };
+}),
+
+// ❌ WRONG: inline if/throw duplicated across endpoints
+if (!systemConfigService.isForgotPasswordAllowed()) {
+  throw new TRPCError({ code: 'FORBIDDEN', message: '...' });
+}
+
+// ❌ WRONG: service throws TRPCError (layer violation)
+class SystemConfigService {
+  requireForgotPassword() {
+    if (!this.isForgotPasswordAllowed())
+      throw new TRPCError(...)  // ← NestJS service must not import @trpc/server
+  }
+}
+```
+
+New guards (e.g. `requireSystemAdmin`, `requireNotRateLimited`) go in `apps/api/src/trpc/guards.ts`.
+Never add guard logic directly inside a router file.
+
 ---
 
 ## RBAC & Resource Permission Architecture
@@ -1247,11 +1190,12 @@ JWT_SECRET=<32+ chars>    # Generate: openssl rand -base64 32
 
 ```text
 README.md              → Human onboarding
-claude.md              → This file (AI context)
+CLAUDE.md              → This file (AI context)
 docs/
   ├── adr/                        → Architecture Decision Records (MADR)
   │   ├── 0001-adr-process.md     → ADR format and process
   │   ├── 0002-shared-domain-utilities.md → Domain-driven code structure
+  │   ├── 0003-branching-and-release-strategy.md → Branching & release strategy
   │   ├── 0004-cloud-agnostic-architecture.md → Cloud-agnostic stack
   │   └── 0005-hybrid-encryption-architecture.md → Encryption architecture
   ├── CONTENT_ARCHITECTURE.md → Content model, schema, encryption

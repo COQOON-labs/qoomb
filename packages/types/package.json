@@ -8,15 +8,15 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
-    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts",
-    "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts --fix",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "@qoomb/eslint-config": "workspace:^",
     "@qoomb/tsconfig": "workspace:*",
     "@types/node": "^25.3.0",
-    "eslint": "^9.39.3",
+    "eslint": "^10.0.0",
     "typescript": "^5.9.3"
   }
 }

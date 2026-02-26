@@ -102,14 +102,16 @@ export class FileKeyProvider implements KeyProvider {
       if (err.code === 'ENOENT') {
         throw new Error(
           `Key file not found: ${this.filePath}\n` +
-            `Generate a key file with: node scripts/generate-key-file.js --output ${this.filePath}`
+            `Generate a key file with: node scripts/generate-key-file.js --output ${this.filePath}`,
+          { cause: error }
         );
       }
 
       if (err.code === 'EACCES') {
         throw new Error(
           `Permission denied reading key file: ${this.filePath}\n` +
-            `Ensure the file is readable by the application.`
+            `Ensure the file is readable by the application.`,
+          { cause: error }
         );
       }
 
@@ -117,12 +119,14 @@ export class FileKeyProvider implements KeyProvider {
       if (errorMessage.includes('Unsupported state or unable to authenticate data')) {
         throw new Error(
           'Failed to decrypt key file. Wrong password?\n' +
-            'Ensure KEY_FILE_PASSWORD matches the password used to encrypt the file.'
+            'Ensure KEY_FILE_PASSWORD matches the password used to encrypt the file.',
+          { cause: error }
         );
       }
 
       throw new Error(
-        `Failed to load key from file: ${this.filePath}\n` + `Error: ${errorMessage}`
+        `Failed to load key from file: ${this.filePath}\n` + `Error: ${errorMessage}`,
+        { cause: error }
       );
     }
   }
@@ -149,7 +153,7 @@ export class FileKeyProvider implements KeyProvider {
       this.logger.log(`✅ Backup created: ${backupPath}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to create backup during rotation: ${errorMessage}`);
+      throw new Error(`Failed to create backup during rotation: ${errorMessage}`, { cause: error });
     }
 
     // Write new key (atomic write)

@@ -1,5 +1,0 @@
-{
-  "root": true,
-  "extends": ["@qoomb/eslint-config"],
-  "ignorePatterns": ["dist", "node_modules", "coverage", "*.config.js", "*.config.ts"]
-}

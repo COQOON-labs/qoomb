@@ -1,7 +1,0 @@
-{
-  "root": true,
-  "extends": ["@qoomb/eslint-config/react"],
-  "parserOptions": {
-    "project": "./tsconfig.json"
-  }
-}

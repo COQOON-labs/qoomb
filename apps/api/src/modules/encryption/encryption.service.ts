@@ -100,7 +100,8 @@ export class EncryptionService implements OnModuleInit {
           'service. Please fix the configuration and try again.\n' +
           '\n' +
           'See docs/SECURITY.md for setup instructions.\n' +
-          '═══════════════════════════════════════════════════════\n'
+          '═══════════════════════════════════════════════════════\n',
+        { cause: error }
       );
     }
   }
@@ -449,7 +450,8 @@ export class EncryptionService implements OnModuleInit {
           'Possible causes:\n' +
           '- Invalid encryption key\n' +
           '- Corrupted key provider implementation\n' +
-          '- Crypto library issues\n'
+          '- Crypto library issues\n',
+        { cause: error }
       );
     }
   }

@@ -1,6 +1,0 @@
-{
-  "extends": ["@qoomb/eslint-config/node"],
-  "parserOptions": {
-    "project": "./tsconfig.json"
-  }
-}

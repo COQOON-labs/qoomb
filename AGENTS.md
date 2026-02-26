@@ -1,5 +1,8 @@
 # Qoomb - Development Guidelines
 
+> This file is read by AI coding agents (Devin, Codex, Cursor, etc.).
+> For full context see also `CLAUDE.md` (Claude) and `.github/copilot-instructions.md` (Copilot).
+
 ## JSON Files
 
 - **No comments in `.json` files.** JSON does not support comments (`//` or `/* */`). Do not add comments to any `.json` file, including `tsconfig.json`, `package.json`, and all other JSON configuration files. This is enforced by `eslint-plugin-jsonc` with the `jsonc/no-comments` rule.
@@ -113,7 +116,8 @@ qoomb/
 ├── docker-compose.yml          # PostgreSQL + Redis
 ├── LICENSE.md                  # Fair Source License v1.0 + CLA
 ├── COMMERCIAL-LICENSE.md       # Commercial licensing details
-├── CLAUDE.md                   # This file (for AI)
+├── AGENTS.md                   # This file (for AI agents)
+├── CLAUDE.md                   # For Claude (same content)
 └── README.md                   # For humans
 ```
 
@@ -1211,7 +1215,8 @@ WEBAUTHN_ORIGIN=https://app.qoomb.com
 
 ```text
 README.md              → Human onboarding
-CLAUDE.md              → This file (AI context)
+AGENTS.md              → This file (AI agents: Devin, Codex, Cursor, etc.)
+CLAUDE.md              → AI context for Claude (identical content)
 docs/
   ├── adr/                        → Architecture Decision Records (MADR)
   │   ├── 0001-adr-process.md     → ADR format and process
@@ -1257,7 +1262,7 @@ apps/api/src/modules/encryption/
 - **All code MUST pass ESLint** with zero errors (warnings acceptable only with justification)
 - **All code MUST be formatted** with Prettier before commit
 - **All commits MUST follow** Conventional Commits format (feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert)
-- **NEVER add `Co-Authored-By:` trailers** to commit messages — not for Claude, not for any AI tool
+- **NEVER add `Co-Authored-By:` trailers** to commit messages — not for any AI tool
 - **Type safety is mandatory** - no implicit `any`, proper type annotations for all Prisma queries
 - **Pre-commit hooks will auto-fix** Prettier issues, but ESLint errors must be fixed manually
 - **Pre-push hooks will block** if type-check, tests, or build fails

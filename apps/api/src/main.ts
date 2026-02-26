@@ -1,12 +1,15 @@
+import * as crypto from 'crypto';
+
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 
 import { AppModule } from './app.module';
 import { validateEnv } from './config/env.validation';
-import { CORS_CONFIG, SECURITY_HEADERS } from './config/security.config';
+import { CORS_CONFIG, CSRF_CONFIG, SECURITY_HEADERS } from './config/security.config';
 
 async function bootstrap() {
   // Fail-fast: validate ALL required env vars before NestJS even starts.
@@ -25,6 +28,38 @@ async function bootstrap() {
   // Cookie support — must be registered first so that req.cookies and
   // reply.setCookie / reply.clearCookie are available to all handlers.
   await app.register(cookie);
+
+  // CSRF cookie seeding (Double-Submit Cookie Pattern)
+  //
+  // Sets a random, non-HttpOnly `qoomb_csrf` cookie on every response where
+  // the browser does not already carry one.  The SPA reads this cookie via
+  // document.cookie and reflects it as the X-CSRF-Token header on every
+  // mutation.  The CsrfGuard (apps/api/src/common/guards/csrf.guard.ts)
+  // validates that header === cookie using a constant-time comparison.
+  //
+  // Security properties:
+  //   - httpOnly: false  → JS-readable so the SPA can forward it as a header
+  //   - sameSite: strict → browser won't send the cookie on cross-origin requests
+  //   - secure           → HTTPS-only in production
+  (app.getHttpAdapter().getInstance() as unknown as FastifyInstance).addHook(
+    'onRequest',
+    (request: FastifyRequest, reply: FastifyReply, done: () => void) => {
+      if (!request.cookies?.[CSRF_CONFIG.COOKIE_NAME]) {
+        void reply.setCookie(
+          CSRF_CONFIG.COOKIE_NAME,
+          crypto.randomBytes(CSRF_CONFIG.TOKEN_LENGTH).toString('base64url'),
+          {
+            httpOnly: false,
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            path: '/',
+            maxAge: CSRF_CONFIG.COOKIE_MAX_AGE_SECONDS,
+          }
+        );
+      }
+      done();
+    }
+  );
 
   // Security Headers with Helmet
   const helmetOptions = {
@@ -62,6 +97,8 @@ async function bootstrap() {
 │   Security: ✓ Rate Limiting                            │
 │              ✓ Helmet Headers                          │
 │              ✓ CORS Protection                         │
+│              ✓ CSRF Protection                         │
+│              ✓ Cookie Support                          │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
   `);

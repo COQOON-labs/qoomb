@@ -26,9 +26,9 @@ export const SkipCsrf = () => SetMetadata(SKIP_CSRF_KEY, true);
  * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
  *
  * How it works:
- * 1. A Fastify onRequest hook (in main.ts) sets a random CSRF token as a
- *    non-HttpOnly cookie (`qoomb_csrf`) on every response that doesn't
- *    already carry one.
+ * 1. A Fastify onRequest hook registered in `main.ts` sets a random CSRF
+ *    token as a non-HttpOnly cookie (`qoomb_csrf`) on every request where
+ *    the browser does not already carry one.
  * 2. The SPA reads the cookie via `document.cookie` and sends the value
  *    as the `X-CSRF-Token` header on every state-changing request.
  * 3. This guard validates that the header matches the cookie using a
@@ -79,10 +79,12 @@ export class CsrfGuard implements CanActivate {
       CSRF_CONFIG.COOKIE_NAME
     ];
 
-    // If no CSRF cookie exists this is the first visit — the onRequest hook
-    // will set it on the response so subsequent requests are protected.
-    // Allow this request through; it is safe because cookie-authenticated
-    // endpoints (refresh, logout) are protected by SameSite=Strict.
+    // If no CSRF cookie exists the onRequest hook in main.ts either hasn't
+    // fired yet (race on the very first request) or was somehow skipped.
+    // Allow through: the hook seeds the cookie on this same response, so
+    // the next request will be protected.  This bootstrap window is safe
+    // because cookie-authenticated endpoints (refresh, logout) are guarded
+    // by SameSite=Strict on the HttpOnly refresh-token cookie.
     if (!csrfCookie) {
       return true;
     }

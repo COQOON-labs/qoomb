@@ -10,6 +10,7 @@
 import { screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import { AppShell } from '../layouts/AppShell';
 import {
   renderWithProviders,
   mockCurrentPerson,
@@ -17,7 +18,6 @@ import {
   makeLLStub,
   expectNoAxeViolations,
 } from '../test/test-utils';
-import { AppShell } from '../layouts/AppShell';
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 

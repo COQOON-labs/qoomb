@@ -11,11 +11,11 @@
  */
 
 import { screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ReactNode } from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { renderWithProviders, makeLLStub, expectNoAxeViolations } from '../test/test-utils';
 import { LoginPage } from '../pages/LoginPage';
+import { renderWithProviders, makeLLStub, expectNoAxeViolations } from '../test/test-utils';
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
@@ -147,7 +147,7 @@ describe('LoginPage', () => {
     expect(registerLink).toHaveAttribute('href', '/register');
   });
 
-  it('keyboard: Tab from email reaches password then submit', async () => {
+  it('keyboard: Tab from email reaches password then submit', () => {
     renderWithProviders(<LoginPage />, { initialEntries: ['/login'] });
 
     // Verify all three key elements are in the tab order (tabIndex !== -1)

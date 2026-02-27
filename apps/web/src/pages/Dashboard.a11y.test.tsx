@@ -10,16 +10,16 @@
  */
 
 import { screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ReactNode } from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import { Dashboard } from '../pages/Dashboard';
 import {
   renderWithProviders,
   mockCurrentPerson,
   makeLLStub,
   expectNoAxeViolations,
 } from '../test/test-utils';
-import { Dashboard } from '../pages/Dashboard';
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 

@@ -9,10 +9,10 @@
  */
 
 import { render, type RenderOptions, type RenderResult } from '@testing-library/react';
-import { axe } from 'vitest-axe';
-import { expect } from 'vitest';
 import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter, type MemoryRouterProps } from 'react-router-dom';
+import { expect } from 'vitest';
+import { axe } from 'vitest-axe';
 
 interface WrapperOptions extends RenderOptions {
   /** Initial URL path, defaults to '/' */

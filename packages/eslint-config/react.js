@@ -39,7 +39,10 @@ module.exports = [
       'jsx-a11y/aria-props': 'error',
       'jsx-a11y/aria-role': 'error',
       'jsx-a11y/interactive-supports-focus': 'error',
-      'jsx-a11y/label-has-associated-control': 'error',
+      // Disabled: jsx-a11y@6.10.2 crashes with ESLint 10 on this rule due to a
+      // minimatch API change in mayContainChildComponent.js. Re-enable once the
+      // plugin ships a fix (track: https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/issues/1003)
+      'jsx-a11y/label-has-associated-control': 'off',
       'jsx-a11y/no-autofocus': 'warn',
       'jsx-a11y/click-events-have-key-events': 'warn',
       'jsx-a11y/no-static-element-interactions': 'warn',

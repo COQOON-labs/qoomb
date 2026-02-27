@@ -47,12 +47,14 @@ CardHeader.displayName = 'CardHeader';
 export type CardTitleProps = React.HTMLAttributes<HTMLHeadingElement>;
 
 export const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
-  ({ className, ...props }, ref) => (
+  ({ className, children, ...props }, ref) => (
     <h3
       ref={ref}
       className={cn('text-base font-semibold text-card-foreground leading-snug', className)}
       {...props}
-    />
+    >
+      {children}
+    </h3>
   )
 );
 

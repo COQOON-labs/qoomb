@@ -2,7 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { AuthGuard } from './components/auth/AuthGuard';
 import { DevPanel } from './components/dev/DevPanel';
+import { flag } from './lib/flags';
 import { Dashboard } from './pages/Dashboard';
+import { DashboardSketch } from './pages/DashboardSketch';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
@@ -38,6 +40,13 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>
+
+        {/* Dev-only: Designskizzen (nicht in Production) */}
+        {flag('devSketches') && (
+          <Route element={<AuthGuard />}>
+            <Route path="/dev/sketch/dashboard" element={<DashboardSketch />} />
+          </Route>
+        )}
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

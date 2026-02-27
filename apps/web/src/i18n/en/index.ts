@@ -30,6 +30,8 @@ const en = {
     members: 'Members',
     pages: 'Pages',
     settings: 'Settings',
+    mainLabel: 'Main navigation',
+    mobileLabel: 'Mobile navigation',
   },
 
   // ── Domain entities ───────────────────────────────────────────────────────────────────
@@ -165,6 +167,8 @@ const en = {
     moreEvents: 'More events',
     progressText: '{done:number} of {total:number} completed',
     addTask: 'Add task',
+    emptyEvents: 'No events planned yet.',
+    emptyTasks: 'No tasks yet.',
     quickAdd: {
       title: 'Quick add',
       placeholder: "What's coming up next?",

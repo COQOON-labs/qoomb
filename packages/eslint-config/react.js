@@ -9,6 +9,7 @@
 
 const reactPlugin = require('eslint-plugin-react');
 const reactHooksPlugin = require('eslint-plugin-react-hooks');
+const jsxA11yPlugin = require('eslint-plugin-jsx-a11y');
 const globals = require('globals');
 const base = require('./index.js');
 
@@ -16,6 +17,7 @@ module.exports = [
   ...base,
   reactPlugin.configs.flat.recommended,
   reactPlugin.configs.flat['jsx-runtime'],
+  jsxA11yPlugin.flatConfigs.recommended,
   {
     plugins: { 'react-hooks': reactHooksPlugin },
     languageOptions: {
@@ -31,6 +33,17 @@ module.exports = [
       },
     },
     rules: {
+      // Accessibility (WCAG 2.1 AA — ADR-0006)
+      'jsx-a11y/alt-text': 'error',
+      'jsx-a11y/anchor-has-content': 'error',
+      'jsx-a11y/aria-props': 'error',
+      'jsx-a11y/aria-role': 'error',
+      'jsx-a11y/interactive-supports-focus': 'error',
+      'jsx-a11y/label-has-associated-control': 'error',
+      'jsx-a11y/no-autofocus': 'warn',
+      'jsx-a11y/click-events-have-key-events': 'warn',
+      'jsx-a11y/no-static-element-interactions': 'warn',
+
       // React specific
       'react/prop-types': 'off', // Using TypeScript for prop types
       'react/react-in-jsx-scope': 'off', // React 17+ JSX transform

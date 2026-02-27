@@ -30,6 +30,8 @@ const de = {
     members: 'Mitglieder',
     pages: 'Seiten',
     settings: 'Einstellungen',
+    mainLabel: 'Hauptnavigation',
+    mobileLabel: 'Mobile Navigation',
   },
 
   // ── Domain entities ───────────────────────────────────────────────────────────────────
@@ -166,6 +168,8 @@ const de = {
     moreEvents: 'Weitere Termine',
     progressText: '{done} von {total} erledigt',
     addTask: 'Aufgabe hinzufügen',
+    emptyEvents: 'Noch keine Termine geplant.',
+    emptyTasks: 'Noch keine Aufgaben vorhanden.',
     quickAdd: {
       title: 'Schnell hinzufügen',
       placeholder: 'Was steht als nächstes an?',

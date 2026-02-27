@@ -111,6 +111,14 @@ type RootTranslation = {
      * S​e​t​t​i​n​g​s
      */
     settings: string;
+    /**
+     * M​a​i​n​ ​n​a​v​i​g​a​t​i​o​n
+     */
+    mainLabel: string;
+    /**
+     * M​o​b​i​l​e​ ​n​a​v​i​g​a​t​i​o​n
+     */
+    mobileLabel: string;
   };
   entities: {
     /**
@@ -501,6 +509,14 @@ type RootTranslation = {
      * A​d​d​ ​t​a​s​k
      */
     addTask: string;
+    /**
+     * N​o​ ​e​v​e​n​t​s​ ​p​l​a​n​n​e​d​ ​y​e​t​.
+     */
+    emptyEvents: string;
+    /**
+     * N​o​ ​t​a​s​k​s​ ​y​e​t​.
+     */
+    emptyTasks: string;
     quickAdd: {
       /**
        * Q​u​i​c​k​ ​a​d​d
@@ -610,6 +626,14 @@ export type TranslationFunctions = {
      * Settings
      */
     settings: () => LocalizedString;
+    /**
+     * Main navigation
+     */
+    mainLabel: () => LocalizedString;
+    /**
+     * Mobile navigation
+     */
+    mobileLabel: () => LocalizedString;
   };
   entities: {
     /**
@@ -996,6 +1020,14 @@ export type TranslationFunctions = {
      * Add task
      */
     addTask: () => LocalizedString;
+    /**
+     * No events planned yet.
+     */
+    emptyEvents: () => LocalizedString;
+    /**
+     * No tasks yet.
+     */
+    emptyTasks: () => LocalizedString;
     quickAdd: {
       /**
        * Quick add

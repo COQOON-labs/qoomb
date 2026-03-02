@@ -41,7 +41,7 @@
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
     "@simplewebauthn/server": "^13.2.3",
-    "@trpc/server": "^11.10.0",
+    "@trpc/server": "^11.11.0",
     "bcrypt": "^6.0.0",
     "fastify": "^5.7.4",
     "handlebars": "^4.7.8",

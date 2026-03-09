@@ -27,7 +27,8 @@ async function bootstrap() {
 
   // Cookie support — must be registered first so that req.cookies and
   // reply.setCookie / reply.clearCookie are available to all handlers.
-  await app.register(cookie);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await app.register(cookie as any);
 
   // CSRF cookie seeding (Double-Submit Cookie Pattern)
   //
@@ -70,7 +71,8 @@ async function bootstrap() {
     noSniff: SECURITY_HEADERS.noSniff,
     xssFilter: SECURITY_HEADERS.xssFilter,
   };
-  await app.register(helmet, helmetOptions);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await app.register(helmet as any, helmetOptions);
 
   // Enable CORS with comprehensive configuration
   app.enableCors({

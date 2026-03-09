@@ -161,7 +161,20 @@ const de = {
   // ── Dashboard ─────────────────────────────────────────────────────────────
   dashboard: {
     memberCount: '{count} Mitglieder',
-    greeting: 'Guten Morgen, {name}! 👋',
+    greetings: {
+      morning0: 'Guten Morgen, {name}! ☀️',
+      morning1: 'Na, schon wach, {name}?',
+      morning2: 'Moin, {name}!',
+      afternoon0: 'Hey {name}, da bist du ja!',
+      afternoon1: 'Schön, dass du da bist, {name}!',
+      afternoon2: 'Schön zu sehen, {name}!',
+      evening0: 'Guten Abend, {name}! 🌆',
+      evening1: 'Der Abend gehört dir, {name}!',
+      evening2: 'Feierabend, {name}! 🌇',
+      night0: 'Noch wach, {name}?',
+      night1: 'Nachtschicht, {name}? 🌙',
+      night2: 'Die Nacht ist noch jung, {name}! 🌙',
+    },
     todayIntro: 'Heute: ',
     openLabel: 'offen',
     nextEvent: 'Nächster Termin',

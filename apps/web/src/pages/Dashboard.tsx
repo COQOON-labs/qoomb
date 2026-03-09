@@ -16,12 +16,42 @@ function useTodayLabel(): { dayNum: string; dateLabel: string } {
   return { dayNum, dateLabel };
 }
 
+// Picked once per page load (module-level), so reloads give variety
+// while re-renders within the same session stay stable.
+const sessionVariant = Math.floor(Math.random() * 3) as 0 | 1 | 2;
+
+function useGreeting(name: string): string {
+  const { LL } = useI18nContext();
+  const v = sessionVariant;
+  const h = new Date().getHours();
+  const g = LL.dashboard.greetings;
+  if (h >= 5 && h < 12) {
+    if (v === 0) return g.morning0({ name });
+    if (v === 1) return g.morning1({ name });
+    return g.morning2({ name });
+  }
+  if (h >= 12 && h < 18) {
+    if (v === 0) return g.afternoon0({ name });
+    if (v === 1) return g.afternoon1({ name });
+    return g.afternoon2({ name });
+  }
+  if (h >= 18 && h < 23) {
+    if (v === 0) return g.evening0({ name });
+    if (v === 1) return g.evening1({ name });
+    return g.evening2({ name });
+  }
+  if (v === 0) return g.night0({ name });
+  if (v === 1) return g.night1({ name });
+  return g.night2({ name });
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export function Dashboard() {
   const { LL } = useI18nContext();
   const { displayName } = useCurrentPerson();
   const { dayNum, dateLabel } = useTodayLabel();
+  const greeting = useGreeting(displayName);
 
   return (
     <AppShell>
@@ -39,7 +69,7 @@ export function Dashboard() {
               {dateLabel}
             </p>
             <h1 className="text-3xl font-black text-foreground tracking-tight leading-tight">
-              {LL.dashboard.greeting({ name: displayName })}
+              {greeting}
             </h1>
           </div>
         </div>

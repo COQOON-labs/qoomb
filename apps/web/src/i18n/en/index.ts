@@ -160,7 +160,20 @@ const en = {
   // ── Dashboard ─────────────────────────────────────────────────────────────
   dashboard: {
     memberCount: '{count:number} members',
-    greeting: 'Good morning, {name:string}! 👋',
+    greetings: {
+      morning0: 'Good morning, {name:string}! ☀️',
+      morning1: 'Rise and shine, {name:string}!',
+      morning2: 'Here we go, {name:string}! ☀️',
+      afternoon0: 'Hey {name:string}, there you are!',
+      afternoon1: "Glad you're here, {name:string}!",
+      afternoon2: 'Welcome back, {name:string}!',
+      evening0: 'Good evening, {name:string}! 🌆',
+      evening1: 'The evening is yours, {name:string}!',
+      evening2: 'Time to unwind, {name:string}! 🌆',
+      night0: 'Still up, {name:string}?',
+      night1: 'Burning the midnight oil, {name:string}? 🌙',
+      night2: 'Still going strong, {name:string}! 🌙',
+    },
     todayIntro: 'Today: ',
     openLabel: 'open',
     nextEvent: 'Next event',

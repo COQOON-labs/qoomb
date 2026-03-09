@@ -27,8 +27,6 @@ async function bootstrap() {
 
   // Cookie support — must be registered first so that req.cookies and
   // reply.setCookie / reply.clearCookie are available to all handlers.
-  // @ts-expect-error -- @fastify/cookie module augmentation creates a circular
-  // type incompatibility with fastify 5.8.x. Works correctly at runtime.
   await app.register(cookie);
 
   // CSRF cookie seeding (Double-Submit Cookie Pattern)
@@ -72,7 +70,6 @@ async function bootstrap() {
     noSniff: SECURITY_HEADERS.noSniff,
     xssFilter: SECURITY_HEADERS.xssFilter,
   };
-  // @ts-expect-error -- same as above: @fastify/helmet augmentation incompatible with fastify 5.8.x
   await app.register(helmet, helmetOptions);
 
   // Enable CORS with comprehensive configuration

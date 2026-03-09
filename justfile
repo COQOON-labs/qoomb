@@ -5,6 +5,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
 project_dir := justfile_directory()
+version     := `node -p "require('./package.json').version" 2>/dev/null || echo "0.0.0"`
 
 # Auto-approve all prompts (AUTO=1 just dev-start)
 export AUTO := env('AUTO', '0')
@@ -126,6 +127,10 @@ _dev-stop:
     @pkill -f "{{project_dir}}/apps/web" 2>/dev/null || true
     @pkill -f "{{project_dir}}/apps/api" 2>/dev/null || true
     @pkill -f "prisma studio" 2>/dev/null || true
+
+[private]
+_docker-volumes-remove:
+    docker-compose down -v
 
 [private]
 _check-docker:
@@ -287,8 +292,7 @@ _preflight:
     else
         echo -e "\033[1;33m  ⚠ Docker services not running (PostgreSQL + Redis)\033[0m"
         if ask "Start Docker services?" required; then
-            docker-compose up -d
-            sleep 3
+            just docker-up
             echo -e "\033[0;32m  ✓ Docker services started\033[0m"
         fi
     fi
@@ -462,7 +466,7 @@ dev-start: _dev-stop _preflight
     (sleep 5 && (open https://qoomb.localhost:8443 2>/dev/null || xdg-open https://qoomb.localhost:8443 2>/dev/null || true)) &
     pnpm dev
 
-# Stop Caddy proxy
+# Stop Caddy proxy (HTTPS mode only — does not stop API/web dev servers)
 stop:
     @caddy stop 2>/dev/null || echo -e "{{yellow}}Caddy was not running{{nc}}"
     @echo -e "{{green}}✓ Extended dev stopped{{nc}}"
@@ -525,7 +529,7 @@ docker-clean: _check-docker
             exit 0
         fi
     fi
-    docker-compose down -v
+    just _docker-volumes-remove
     echo -e "\033[0;32m✓ Docker services and volumes removed\033[0m"
 
 # ─── Database ────────────────────────────────────────────────────────────────
@@ -577,9 +581,8 @@ db-reset: _check-docker
             exit 0
         fi
     fi
-    docker-compose down -v
-    docker-compose up -d
-    sleep 3
+    just _docker-volumes-remove
+    just docker-up
     just db-generate
     just db-migrate
     echo ""
@@ -697,7 +700,7 @@ info:
     @echo -e "{{green}}     |_|                              {{nc}}"
     @echo ""
     @echo -e "{{blue}}Project:{{nc}}"
-    @echo "  Name:     qoomb v0.1.0"
+    @echo "  Name:     qoomb v{{version}}"
     @echo "  Node:     $(node --version 2>/dev/null || echo 'not installed')"
     @echo "  pnpm:     $(pnpm --version 2>/dev/null || echo 'not installed')"
     @echo "  Docker:   $(docker --version 2>/dev/null | cut -d' ' -f3 || echo 'not installed')"
@@ -725,7 +728,7 @@ clean-all: _check-docker
         fi
     fi
     just clean
-    docker-compose down -v
+    just _docker-volumes-remove
     echo -e "\033[0;32m✓ Full cleanup complete\033[0m"
 
 # ─── Aliases ─────────────────────────────────────────────────────────────────
@@ -757,5 +760,5 @@ fresh: _check-docker
         fi
     fi
     just clean
-    docker-compose down -v
+    just _docker-volumes-remove
     just dev-setup

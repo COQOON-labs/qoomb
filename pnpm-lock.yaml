@@ -347,8 +347,8 @@ importers:
         specifier: ^7.0.1
         version: 7.0.1(eslint@10.0.3(jiti@2.6.1))
       globals:
-        specifier: ^15.0.0
-        version: 15.15.0
+        specifier: ^17.4.0
+        version: 17.4.0
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -4258,6 +4258,10 @@ packages:
 
   globals@15.15.0:
     resolution: {integrity: sha512-7ACyT3wmyp3I61S4fG682L0VA2RGD9otkqGJIwNUMF1SWUombIIk+af1unuDYgMm082aHYwD+mzJvv9Iu8dsgg==}
+    engines: {node: '>=18'}
+
+  globals@17.4.0:
+    resolution: {integrity: sha512-hjrNztw/VajQwOLsMNT1cbJiH2muO3OROCHnbehc8eY5JyD2gqz4AcMHPqgaOR59DjgUjYAYLeH699g/eWi2jw==}
     engines: {node: '>=18'}
 
   globalthis@1.0.4:
@@ -11220,6 +11224,8 @@ snapshots:
       ini: 4.1.1
 
   globals@15.15.0: {}
+
+  globals@17.4.0: {}
 
   globalthis@1.0.4:
     dependencies:

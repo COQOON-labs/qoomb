@@ -187,8 +187,8 @@ importers:
         specifier: ^7.0.4
         version: 7.0.4(@capacitor/core@8.2.0)
       '@capacitor/push-notifications':
-        specifier: ^7.0.6
-        version: 7.0.6(@capacitor/core@8.2.0)
+        specifier: ^8.0.2
+        version: 8.0.2(@capacitor/core@7.5.0)
       '@capacitor/splash-screen':
         specifier: ^7.0.5
         version: 7.0.5(@capacitor/core@8.2.0)
@@ -1139,10 +1139,10 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
 
-  '@capacitor/push-notifications@7.0.6':
-    resolution: {integrity: sha512-zAhbHpdbc15ImuVGgoFwUZsKI+jjGxy/oO5mgfYKUx8Xl2OskndzhL79PYsCPjyGLbqUR9NRUZJthV9auVT3nw==}
+  '@capacitor/push-notifications@8.0.2':
+    resolution: {integrity: sha512-mej8Eh4EU4JXbaeyMX2l+4NNK6IdY5iRsEXpBOTHLD29fuCACBP7kOJTiJv6piw134zdlbFH0rR+sDKHIiFOFg==}
     peerDependencies:
-      '@capacitor/core': '>=7.0.0'
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor/splash-screen@8.0.1':
     resolution: {integrity: sha512-c/ew/Z3eA7z8l06WoRAtzVF16VwYYrExmHmfGq1Cg675pVzaC/yuucB8/1xG1vhEfnW4fZ1KhSf/kzR1RiVYgg==}
@@ -7745,7 +7745,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.2.0
 
-  '@capacitor/push-notifications@7.0.6(@capacitor/core@8.2.0)':
+  '@capacitor/push-notifications@8.0.2(@capacitor/core@7.5.0)':
     dependencies:
       '@capacitor/core': 8.2.0
 

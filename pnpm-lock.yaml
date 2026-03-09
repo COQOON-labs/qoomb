@@ -193,8 +193,8 @@ importers:
         specifier: ^7.0.5
         version: 7.0.5(@capacitor/core@7.5.0)
       '@capacitor/status-bar':
-        specifier: ^7.0.5
-        version: 7.0.5(@capacitor/core@7.5.0)
+        specifier: ^8.0.1
+        version: 8.0.1(@capacitor/core@7.5.0)
     devDependencies:
       '@capacitor/cli':
         specifier: ^7.5.0
@@ -1149,10 +1149,10 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
 
-  '@capacitor/status-bar@7.0.5':
-    resolution: {integrity: sha512-d0DI/Usy4RrNiV5xfnypXNRLmWYMixC2yAUAwe6sCQQ0HF7oskDf4RpCxcZqbxnpc4H4A0qqiOSltfJLFAYshg==}
+  '@capacitor/status-bar@8.0.1':
+    resolution: {integrity: sha512-OR59dlbwvmrV5dKsC9lvwv48QaGbqcbSTBpk+9/WXWxXYSdXXdzJZU9p8oyNPAkuJhCdnSa3XmU43fZRPBJJ5w==}
     peerDependencies:
-      '@capacitor/core': '>=7.0.0'
+      '@capacitor/core': '>=8.0.0'
 
   '@chevrotain/cst-dts-gen@10.5.0':
     resolution: {integrity: sha512-lhmC/FyqQ2o7pGK4Om+hzuDrm9rhFYIJ/AXoQBeongmn870Xeb0L6oGEiuR8nohFNL5sMaQEJWCxr1oIVIVXrw==}
@@ -7746,7 +7746,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.5.0
 
-  '@capacitor/status-bar@7.0.5(@capacitor/core@7.5.0)':
+  '@capacitor/status-bar@8.0.1(@capacitor/core@7.5.0)':
     dependencies:
       '@capacitor/core': 7.5.0
 
@@ -8037,6 +8037,8 @@ snapshots:
   '@eslint/js@10.0.1(eslint@10.0.3(jiti@2.6.1))':
     optionalDependencies:
       eslint: 10.0.3(jiti@2.6.1)
+
+  '@eslint/object-schema@3.0.2': {}
 
   '@eslint/object-schema@3.0.3': {}
 

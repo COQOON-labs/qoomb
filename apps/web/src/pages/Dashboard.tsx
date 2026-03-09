@@ -1,5 +1,4 @@
 import { Button, Card } from '@qoomb/ui';
-import { useRef } from 'react';
 
 import { CalendarIcon, CheckIcon, DocumentIcon, PlusIcon } from '../components/icons';
 import { useCurrentPerson } from '../hooks/useCurrentPerson';
@@ -17,19 +16,13 @@ function useTodayLabel(): { dayNum: string; dateLabel: string } {
   return { dayNum, dateLabel };
 }
 
+// Picked once per page load (module-level), so reloads give variety
+// while re-renders within the same session stay stable.
+const sessionVariant = Math.floor(Math.random() * 3) as 0 | 1 | 2;
+
 function useGreeting(name: string): string {
   const { LL } = useI18nContext();
-  // Stable variant per session: day-of-year mod 3 rotates naturally day-to-day
-  // but stays constant for the lifetime of the component.
-  const variantRef = useRef<0 | 1 | 2 | null>(null);
-  if (variantRef.current === null) {
-    const now = new Date();
-    const dayOfYear = Math.floor(
-      (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86_400_000
-    );
-    variantRef.current = (dayOfYear % 3) as 0 | 1 | 2;
-  }
-  const v = variantRef.current;
+  const v = sessionVariant;
   const h = new Date().getHours();
   const g = LL.dashboard.greetings;
   if (h >= 5 && h < 12) {

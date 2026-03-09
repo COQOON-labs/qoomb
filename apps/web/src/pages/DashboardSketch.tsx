@@ -242,7 +242,7 @@ export function DashboardSketch() {
               Donnerstag · Februar 2026
             </p>
             <h1 className="text-3xl font-black text-foreground tracking-tight leading-tight">
-              {LL.dashboard.greeting({ name: displayName })}
+              {LL.dashboard.greetings.morning0({ name: displayName })}
             </h1>
             <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
               {LL.dashboard.todayIntro()}

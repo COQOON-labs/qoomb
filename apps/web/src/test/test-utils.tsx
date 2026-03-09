@@ -98,7 +98,7 @@ export const mockUser = {
  *
  * Examples:
  *   LL.common.save()                           → 'common.save'
- *   LL.dashboard.greeting({ name: 'Alice' })   → 'dashboard.greeting:{"name":"Alice"}'
+ *   LL.dashboard.greetings.morning0({ name: 'Alice' })   → 'dashboard.greetings.morning0:{"name":"Alice"}'
  *   LL.dashboard.quickAdd.title()              → 'dashboard.quickAdd.title'
  */
 export function makeLLStub(): Record<string, unknown> {

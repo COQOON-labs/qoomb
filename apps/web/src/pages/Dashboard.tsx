@@ -1,4 +1,5 @@
 import { Button, Card } from '@qoomb/ui';
+import { useRef } from 'react';
 
 import { CalendarIcon, CheckIcon, DocumentIcon, PlusIcon } from '../components/icons';
 import { useCurrentPerson } from '../hooks/useCurrentPerson';
@@ -16,12 +17,48 @@ function useTodayLabel(): { dayNum: string; dateLabel: string } {
   return { dayNum, dateLabel };
 }
 
+function useGreeting(name: string): string {
+  const { LL } = useI18nContext();
+  // Stable variant per session: day-of-year mod 3 rotates naturally day-to-day
+  // but stays constant for the lifetime of the component.
+  const variantRef = useRef<0 | 1 | 2 | null>(null);
+  if (variantRef.current === null) {
+    const now = new Date();
+    const dayOfYear = Math.floor(
+      (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86_400_000
+    );
+    variantRef.current = (dayOfYear % 3) as 0 | 1 | 2;
+  }
+  const v = variantRef.current;
+  const h = new Date().getHours();
+  const g = LL.dashboard.greetings;
+  if (h >= 5 && h < 12) {
+    if (v === 0) return g.morning0({ name });
+    if (v === 1) return g.morning1({ name });
+    return g.morning2({ name });
+  }
+  if (h >= 12 && h < 18) {
+    if (v === 0) return g.afternoon0({ name });
+    if (v === 1) return g.afternoon1({ name });
+    return g.afternoon2({ name });
+  }
+  if (h >= 18 && h < 23) {
+    if (v === 0) return g.evening0({ name });
+    if (v === 1) return g.evening1({ name });
+    return g.evening2({ name });
+  }
+  if (v === 0) return g.night0({ name });
+  if (v === 1) return g.night1({ name });
+  return g.night2({ name });
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export function Dashboard() {
   const { LL } = useI18nContext();
   const { displayName } = useCurrentPerson();
   const { dayNum, dateLabel } = useTodayLabel();
+  const greeting = useGreeting(displayName);
 
   return (
     <AppShell>
@@ -39,7 +76,7 @@ export function Dashboard() {
               {dateLabel}
             </p>
             <h1 className="text-3xl font-black text-foreground tracking-tight leading-tight">
-              {LL.dashboard.greeting({ name: displayName })}
+              {greeting}
             </h1>
           </div>
         </div>

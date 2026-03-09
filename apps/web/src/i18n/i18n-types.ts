@@ -478,11 +478,20 @@ type RootTranslation = {
      * @param {number} count
      */
     memberCount: RequiredParams<'count'>;
-    /**
-     * G​o​o​d​ ​m​o​r​n​i​n​g​,​ ​{​n​a​m​e​}​!​ ​�​�
-     * @param {string} name
-     */
-    greeting: RequiredParams<'name'>;
+    greetings: {
+      morning0: RequiredParams<'name'>;
+      morning1: RequiredParams<'name'>;
+      morning2: RequiredParams<'name'>;
+      afternoon0: RequiredParams<'name'>;
+      afternoon1: RequiredParams<'name'>;
+      afternoon2: RequiredParams<'name'>;
+      evening0: RequiredParams<'name'>;
+      evening1: RequiredParams<'name'>;
+      evening2: RequiredParams<'name'>;
+      night0: RequiredParams<'name'>;
+      night1: RequiredParams<'name'>;
+      night2: RequiredParams<'name'>;
+    };
     /**
      * T​o​d​a​y​:​
      */
@@ -992,10 +1001,20 @@ export type TranslationFunctions = {
      * {count} members
      */
     memberCount: (arg: { count: number }) => LocalizedString;
-    /**
-     * Good morning, {name}! 👋
-     */
-    greeting: (arg: { name: string }) => LocalizedString;
+    greetings: {
+      morning0: (arg: { name: string }) => LocalizedString;
+      morning1: (arg: { name: string }) => LocalizedString;
+      morning2: (arg: { name: string }) => LocalizedString;
+      afternoon0: (arg: { name: string }) => LocalizedString;
+      afternoon1: (arg: { name: string }) => LocalizedString;
+      afternoon2: (arg: { name: string }) => LocalizedString;
+      evening0: (arg: { name: string }) => LocalizedString;
+      evening1: (arg: { name: string }) => LocalizedString;
+      evening2: (arg: { name: string }) => LocalizedString;
+      night0: (arg: { name: string }) => LocalizedString;
+      night1: (arg: { name: string }) => LocalizedString;
+      night2: (arg: { name: string }) => LocalizedString;
+    };
     /**
      * Today:
      */

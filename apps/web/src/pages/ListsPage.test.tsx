@@ -64,6 +64,10 @@ vi.mock('../lib/auth/useAuth', () => ({
   useAuth: () => ({ user: mockUser, login: vi.fn(), logout: vi.fn() }),
 }));
 
+// ── Per-test overrides for query data ──────────────────────────────────────────
+
+let listQueryOverride: { data: unknown; isLoading: boolean } | null = null;
+
 vi.mock('../lib/trpc/client', () => ({
   trpc: {
     useUtils: () => ({
@@ -73,7 +77,7 @@ vi.mock('../lib/trpc/client', () => ({
     }),
     lists: {
       list: {
-        useQuery: () => ({ data: mockLists, isLoading: false }),
+        useQuery: () => listQueryOverride ?? { data: mockLists, isLoading: false },
       },
       listTemplates: {
         useQuery: () => ({ data: mockTemplates, isLoading: false }),
@@ -102,6 +106,7 @@ vi.mock('../lib/trpc/client', () => ({
 describe('ListsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    listQueryOverride = null;
   });
 
   it('renders without crashing', () => {
@@ -195,5 +200,102 @@ describe('ListsPage', () => {
         btn.textContent?.trim();
       expect(name, `button "${btn.outerHTML}" has no accessible name`).toBeTruthy();
     });
+  });
+
+  // ── Loading state ───────────────────────────────────────────────────────
+
+  it('shows loading indicator while query is pending', () => {
+    listQueryOverride = { data: undefined, isLoading: true };
+
+    renderWithProviders(<ListsPage />, { initialEntries: ['/lists'] });
+    expect(screen.getByText(/common\.loading/)).toBeInTheDocument();
+  });
+
+  // ── Empty state ─────────────────────────────────────────────────────────
+
+  it('shows empty state when no lists exist', () => {
+    listQueryOverride = { data: [], isLoading: false };
+
+    renderWithProviders(<ListsPage />, { initialEntries: ['/lists'] });
+    expect(screen.getByText(/lists\.emptyState\b/)).toBeInTheDocument();
+    expect(screen.getByText(/lists\.emptyStateHint/)).toBeInTheDocument();
+  });
+
+  it('empty state has a create CTA that opens the create form', () => {
+    listQueryOverride = { data: [], isLoading: false };
+
+    renderWithProviders(<ListsPage />, { initialEntries: ['/lists'] });
+    // Empty state renders a "New list" CTA — click it
+    const buttons = screen.getAllByRole('button', { name: /lists\.newList/ });
+    fireEvent.click(buttons[0]);
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+  });
+
+  // ── Archived toggle ─────────────────────────────────────────────────────
+
+  it('shows archive toggle button', () => {
+    renderWithProviders(<ListsPage />, { initialEntries: ['/lists'] });
+    expect(
+      screen.getByRole('button', { name: /lists\.(showArchived|hideArchived)/ })
+    ).toBeInTheDocument();
+  });
+
+  it('shows archived badge for archived lists', () => {
+    const archivedList = [
+      {
+        id: 'list-archived',
+        name: 'Old List',
+        icon: null,
+        systemKey: null,
+        isArchived: true,
+        createdAt: '2025-01-01T00:00:00.000Z',
+      },
+    ];
+    listQueryOverride = { data: archivedList, isLoading: false };
+
+    renderWithProviders(<ListsPage />, { initialEntries: ['/lists'] });
+    expect(screen.getByText(/lists\.archivedBadge/)).toBeInTheDocument();
+  });
+
+  // ── Create form submission ──────────────────────────────────────────────
+
+  it('calls create mutation with entered name on submit', () => {
+    renderWithProviders(<ListsPage />, { initialEntries: ['/lists'] });
+
+    // Open form
+    fireEvent.click(screen.getByRole('button', { name: /lists\.newList/ }));
+
+    // Type a name
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'My New List' } });
+
+    // Submit
+    const submitBtn = screen.getByRole('button', { name: /lists\.createList/ });
+    fireEvent.click(submitBtn);
+
+    expect(mutateFn).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'My New List', visibility: 'hive' })
+    );
+  });
+
+  it('does not submit create form with empty name', () => {
+    renderWithProviders(<ListsPage />, { initialEntries: ['/lists'] });
+
+    fireEvent.click(screen.getByRole('button', { name: /lists\.newList/ }));
+
+    // Submit without entering a name
+    const submitBtn = screen.getByRole('button', { name: /lists\.createList/ });
+    fireEvent.click(submitBtn);
+
+    expect(mutateFn).not.toHaveBeenCalled();
+  });
+
+  // ── Navigation ──────────────────────────────────────────────────────────
+
+  it('lists are clickable to navigate to detail', () => {
+    renderWithProviders(<ListsPage />, { initialEntries: ['/lists'] });
+    // Each list card should render as a clickable element
+    const listName = screen.getByText('Shopping List');
+    expect(listName.closest('[class*="cursor-pointer"]')).toBeInTheDocument();
   });
 });

@@ -825,9 +825,8 @@ async list(hiveId: string): Promise<ListRow[]> {
 }
 ```
 
-**When to use manual encryption instead:** Conditional encryption (e.g. ListItemValue.valueText
-only for `text`/`url`/`person` field types) cannot be expressed declaratively — use explicit
-helper methods for these cases.
+**When to use manual encryption instead:** When values need serialization before encryption
+(e.g. ListItemValue stores all field types as encrypted strings) — use explicit helper methods.
 
 ````
 

@@ -377,17 +377,13 @@ model ListItem {
 }
 
 model ListItemValue {
-  // value_text: AES-256-GCM ciphertext (hive-scoped key) for TEXT and URL fields.
-  // value_number, value_date, value_boolean: unencrypted — needed for server-side filtering.
-  // value_ref: UUID pointing to another ListItem (REFERENCE field type).
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  itemId       String    @map("item_id") @db.Uuid
-  fieldId      String    @map("field_id") @db.Uuid
-  valueText    String?   @map("value_text") @db.Text
-  valueNumber  Float?    @map("value_number")
-  valueDate    DateTime? @map("value_date") @db.Timestamptz
-  valueBoolean Boolean?  @map("value_boolean")
-  valueRef     String?   @map("value_ref") @db.Uuid
+  // value: AES-256-GCM ciphertext (hive-scoped key). All field types are serialized
+  // to string, encrypted, and stored in this single column. Filtering/sorting happens
+  // client-side — the server never inspects decrypted values.
+  id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemId  String  @map("item_id") @db.Uuid
+  fieldId String  @map("field_id") @db.Uuid
+  value   String? @map("value") @db.Text
 
   item  ListItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
   field ListField @relation(fields: [fieldId], references: [id], onDelete: Cascade)

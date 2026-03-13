@@ -238,15 +238,10 @@ list_item_values:
   id              UUID PK
   item_id         UUID FK → list_items (CASCADE)
   field_id        UUID FK → list_fields (CASCADE)
-  value_text      TEXT? ENCRYPTED               -- für text, url, select
-  value_number    FLOAT?                        -- für number
-  value_date      TIMESTAMPTZ?                  -- für date
-  value_boolean   BOOLEAN?                      -- für checkbox
-  value_ref       UUID?                         -- für person (→ persons.id)
-                                                -- und reference (→ list_items.id)
+  value           TEXT? ENCRYPTED               -- alle Werte: serialisiert → verschlüsselt
 
 UNIQUE: (item_id, field_id)  -- ein Wert pro Feld pro Element
-INDEX: (field_id, value_ref) -- für Referenz-Lookups
+INDEX: (field_id)
 
 -- ── Templates ─────────────────────────────────────────────────────────────────
 
@@ -289,16 +284,16 @@ list_template_views:
 
 ### 4.3 Feldtypen (Scope 1)
 
-| Typ          | `field_type` | Gespeichert in                | Beschreibung                         |
-| ------------ | ------------ | ----------------------------- | ------------------------------------ |
-| **Text**     | `text`       | `value_text` (encrypted)      | Freitext, einzeilig oder mehrzeilig  |
-| **Zahl**     | `number`     | `value_number`                | Numerischer Wert (Betrag, Menge, …)  |
-| **Datum**    | `date`       | `value_date`                  | Datum/Zeitpunkt                      |
-| **Checkbox** | `checkbox`   | `value_boolean`               | Ja/Nein (zum Abhaken)                |
-| **Auswahl**  | `select`     | `value_text` (encrypted)      | Dropdown aus vordefinierten Optionen |
-| **Person**   | `person`     | `value_ref` (→ persons.id)    | Zuweisung an ein Hive-Mitglied       |
-| **Referenz** | `reference`  | `value_ref` (→ list_items.id) | Verweis auf Element in anderer Liste |
-| **URL**      | `url`        | `value_text` (encrypted)      | Link                                 |
+| Typ          | `field_type` | Gespeichert in                      | Beschreibung                         |
+| ------------ | ------------ | ----------------------------------- | ------------------------------------ |
+| **Text**     | `text`       | `value` (encrypted)                 | Freitext, einzeilig oder mehrzeilig  |
+| **Zahl**     | `number`     | `value` (encrypted, als String)     | Numerischer Wert (Betrag, Menge, …)  |
+| **Datum**    | `date`       | `value` (encrypted, ISO 8601)       | Datum/Zeitpunkt                      |
+| **Checkbox** | `checkbox`   | `value` (encrypted, "true"/"false") | Ja/Nein (zum Abhaken)                |
+| **Auswahl**  | `select`     | `value` (encrypted)                 | Dropdown aus vordefinierten Optionen |
+| **Person**   | `person`     | `value` (encrypted, UUID)           | Zuweisung an ein Hive-Mitglied       |
+| **Referenz** | `reference`  | `value` (encrypted, UUID)           | Verweis auf Element in anderer Liste |
+| **URL**      | `url`        | `value` (encrypted)                 | Link                                 |
 
 ### 4.4 Filter-Ausdrücke (FilterExpression)
 
@@ -364,18 +359,14 @@ im Inventar vorhanden sind:
 
 Folgt dem bestehenden Muster (siehe [ADR-0005](adr/0005-hybrid-encryption-architecture.md)):
 
-| Feld                             | Encrypted? | Begründung                                         |
-| -------------------------------- | ---------- | -------------------------------------------------- |
-| `lists.name`                     | ✅         | Vom Nutzer eingegebener Name                       |
-| `list_fields.name`               | ✅         | Vom Nutzer definierter Feldname                    |
-| `list_views.name`                | ✅         | Vom Nutzer benannter Ansichtsname                  |
-| `list_item_values.value_text`    | ✅         | Nutzerdaten (Titel, Beschreibung, URLs)            |
-| `list_item_values.value_number`  | ❌         | Operationell (Sortierung, Filter)                  |
-| `list_item_values.value_date`    | ❌         | Operationell (Sortierung, Filter)                  |
-| `list_item_values.value_boolean` | ❌         | Operationell (Filter, Checkbox-Status)             |
-| `list_item_values.value_ref`     | ❌         | UUID-Referenz, kein PII                            |
-| IDs, Timestamps, sort_order      | ❌         | Strukturell/operationell                           |
-| Template-Felder                  | ❌         | Templates enthalten kein PII (generische Vorlagen) |
+| Feld                        | Encrypted? | Begründung                                         |
+| --------------------------- | ---------- | -------------------------------------------------- |
+| `lists.name`                | ✅         | Vom Nutzer eingegebener Name                       |
+| `list_fields.name`          | ✅         | Vom Nutzer definierter Feldname                    |
+| `list_views.name`           | ✅         | Vom Nutzer benannter Ansichtsname                  |
+| `list_item_values.value`    | ✅         | Alle Nutzerdaten (serialisiert + verschlüsselt)    |
+| IDs, Timestamps, sort_order | ❌         | Strukturell/operationell                           |
+| Template-Felder             | ❌         | Templates enthalten kein PII (generische Vorlagen) |
 
 ### 4.7 Berechtigungen
 
@@ -454,7 +445,7 @@ Tasks-API bleibt vorerst bestehen, wird aber schrittweise migriert:
 - [ ] Inbox: System-Liste pro Person (auto-erstellt)
 - [ ] Quick-Add: Inline + Global (→ Inbox)
 - [ ] Sichtbarkeit: Hive / Admins / Gruppe / Privat
-- [ ] Encryption: value_text encrypted, Feldnamen encrypted
+- [ ] Encryption: value encrypted, Feldnamen encrypted
 - [ ] Regelbasierte Referenzierungen (lesend)
 - [ ] RBAC: LISTS\_\* Permissions
 - [ ] Vordefinierte System-Templates (Aufgabenliste, Einkaufsliste, Projekt, …)

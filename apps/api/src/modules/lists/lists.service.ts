@@ -44,8 +44,8 @@ export type ListViewRow = Omit<ListView, 'name'> & { name: string };
 /** ListItem row with decrypted values */
 export type ListItemRow = Omit<ListItem, 'values'> & { values: ListItemValueRow[] };
 
-/** Single EAV value with valueText decrypted */
-export type ListItemValueRow = Omit<ListItemValue, 'valueText'> & { valueText: string | null };
+/** Single EAV value with decrypted value */
+export type ListItemValueRow = Omit<ListItemValue, 'value'> & { value: string | null };
 
 /** ListTemplate row with decrypted name/description for hive-owned templates */
 export type ListTemplateRow = ListTemplate & {
@@ -122,14 +122,14 @@ export interface UpdateItemData {
  * - List.name → AES-256-GCM (hive-scoped key)
  * - ListField.name → AES-256-GCM (hive-scoped key)
  * - ListView.name → AES-256-GCM (hive-scoped key)
- * - ListItemValue.valueText → AES-256-GCM for TEXT, URL, and PERSON field types
- * - All other value columns (number, date, boolean, ref) → unencrypted (needed for filtering)
+ * - ListItemValue.value → AES-256-GCM for ALL field types (single encrypted column)
+ *   Values are serialized to string before encryption. Client parses back by field type.
  *
  * Encryption approach:
  * - @DecryptFields / @EncryptDecryptFields decorators with nested path syntax
  *   (e.g. 'fields.*.name') handle List, ListField, and ListView name fields.
- * - ListItemValue encryption remains manual (_buildValueUpserts / _decryptItemValues)
- *   because it is conditional on fieldType (only text/url/person are encrypted).
+ * - ListItemValue encryption is manual (_buildValueUpserts / _decryptItemValues)
+ *   because values need to be serialized to string before encryption.
  *
  * Callers are responsible for authorization (use requirePermission / requireResourceAccess in the router).
  */
@@ -373,7 +373,7 @@ export class ListsService {
       where: { id: item.id },
       include: { values: true },
     });
-    const [decrypted] = await this._decryptItemValues([updated], hiveId);
+    const [decrypted] = this._decryptItemValues([updated], hiveId);
     return decrypted;
   }
 
@@ -410,7 +410,7 @@ export class ListsService {
       where: { id },
       include: { values: true },
     });
-    const [decrypted] = await this._decryptItemValues([updated], hiveId);
+    const [decrypted] = this._decryptItemValues([updated], hiveId);
     return decrypted;
   }
 
@@ -457,8 +457,7 @@ export class ListsService {
 
   /**
    * Build ListItemValue upsert payloads for the given values map.
-   * Encrypts valueText for TEXT, URL, and PERSON field types.
-   * Other value types are stored unencrypted for server-side filtering.
+   * All values are serialized to string and encrypted (single `value` column).
    */
   private _buildValueUpserts(
     itemId: string,
@@ -473,76 +472,32 @@ export class ListsService {
       const field = fieldMap.get(fieldId);
       if (!field) continue;
 
-      const row: Prisma.ListItemValueUncheckedCreateInput = {
+      const serialized =
+        field.fieldType === 'person' && Array.isArray(value)
+          ? JSON.stringify(value)
+          : unknownToStr(value);
+
+      rows.push({
         itemId,
         fieldId,
-        valueText: null,
-        valueNumber: null,
-        valueDate: null,
-        valueBoolean: null,
-        valueRef: null,
-      };
-
-      switch (field.fieldType) {
-        case 'text':
-        case 'url':
-          row.valueText = this._encryptName(unknownToStr(value), hiveId);
-          break;
-        case 'number':
-          row.valueNumber = typeof value === 'number' ? value : parseFloat(unknownToStr(value));
-          break;
-        case 'date':
-          row.valueDate = value instanceof Date ? value : new Date(unknownToStr(value));
-          break;
-        case 'checkbox':
-          row.valueBoolean = Boolean(value);
-          break;
-        case 'reference':
-          row.valueRef = unknownToStr(value);
-          break;
-        case 'select':
-          // Select values are stored unencrypted (option labels are not sensitive, needed for filtering)
-          row.valueText = unknownToStr(value);
-          break;
-        case 'person':
-          // Person value: string UUID (single) or JSON array of UUIDs (multiple) — encrypted
-          row.valueText = this._encryptName(
-            Array.isArray(value) ? JSON.stringify(value) : unknownToStr(value),
-            hiveId
-          );
-          break;
-      }
-
-      rows.push(row);
+        value: this._encryptName(serialized, hiveId),
+      });
     }
 
     return rows;
   }
 
-  /** Decrypt valueText for TEXT, URL, and PERSON field types across all items. */
-  private async _decryptItemValues(
+  /** Decrypt value column for all items. */
+  private _decryptItemValues(
     items: (ListItem & { values: ListItemValue[] })[],
     hiveId: string
-  ): Promise<ListItemRow[]> {
-    const fieldIds = [...new Set(items.flatMap((i) => i.values.map((v) => v.fieldId)))];
-    if (fieldIds.length === 0) return items.map((i) => ({ ...i, values: [] }));
-
-    const fields = await this.prisma.listField.findMany({
-      where: { id: { in: fieldIds } },
-      select: { id: true, fieldType: true },
-    });
-    const fieldTypeMap = new Map(fields.map((f) => [f.id, f.fieldType]));
-
+  ): ListItemRow[] {
     return items.map((item) => ({
       ...item,
-      values: item.values.map((v) => {
-        const fieldType = fieldTypeMap.get(v.fieldId);
-        let valueText = v.valueText;
-        if (valueText && (fieldType === 'text' || fieldType === 'url' || fieldType === 'person')) {
-          valueText = this._decryptName(valueText, hiveId);
-        }
-        return { ...v, valueText };
-      }),
+      values: item.values.map((v) => ({
+        ...v,
+        value: v.value ? this._decryptName(v.value, hiveId) : null,
+      })),
     }));
   }
 }

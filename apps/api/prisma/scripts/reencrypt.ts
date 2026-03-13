@@ -486,14 +486,11 @@ async function migrateLists(enc: EncryptionService, fromVersion: number): Promis
     }
   }
 
-  // ── 4. ListItemValue.valueText (text / url / person fields only) ──────────
-  // Only these field types store encrypted valueText (number, date, checkbox, reference, select are unencrypted).
-  const encryptedFieldTypes = ['text', 'url', 'person'];
+  // ── 4. ListItemValue.value (all field types — single encrypted column) ──────
 
   const itemValues = await prisma.listItemValue.findMany({
     where: {
-      valueText: { startsWith: prefix },
-      field: { fieldType: { in: encryptedFieldTypes } },
+      value: { startsWith: prefix },
     },
     include: {
       item: { select: { hiveId: true } },
@@ -505,17 +502,15 @@ async function migrateLists(enc: EncryptionService, fromVersion: number): Promis
       const hiveId = iv.item.hiveId;
       const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), hiveId);
       const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, hiveId));
-      const newValueText = reencryptField(iv.valueText, fromVersion, dec, encFn);
+      const newValue = reencryptField(iv.value, fromVersion, dec, encFn);
 
-      if (newValueText === null) {
+      if (newValue === null) {
         stats.skipped++;
         continue;
       }
 
       if (!EXECUTE) {
-        console.log(
-          `  [DRY RUN] listItemValue ${iv.id}: valueText → v${enc.getCurrentKeyVersion()}`
-        );
+        console.log(`  [DRY RUN] listItemValue ${iv.id}: value → v${enc.getCurrentKeyVersion()}`);
         stats.migrated++;
         continue;
       }
@@ -523,7 +518,7 @@ async function migrateLists(enc: EncryptionService, fromVersion: number): Promis
       await prisma.$transaction(async (tx) => {
         await tx.listItemValue.update({
           where: { id: iv.id },
-          data: { valueText: newValueText },
+          data: { value: newValue },
         });
       });
 

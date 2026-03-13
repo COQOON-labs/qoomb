@@ -281,29 +281,14 @@ export function ListDetailPage() {
   /** Resolve item value for a given field */
   function getItemValue(item: (typeof items)[0], fieldId: string, fieldType: string): string {
     const val = item.values.find((v) => v.fieldId === fieldId);
-    if (!val) return '';
+    if (!val || val.value === null || val.value === undefined) return '';
     switch (fieldType) {
-      case 'text':
-      case 'url':
-      case 'person':
-      case 'select':
-        return val.valueText ?? '';
-      case 'number':
-        return val.valueNumber !== null && val.valueNumber !== undefined
-          ? String(val.valueNumber)
-          : '';
-      case 'date':
-        return val.valueDate ? new Date(val.valueDate).toLocaleDateString() : '';
       case 'checkbox':
-        return val.valueBoolean !== null && val.valueBoolean !== undefined
-          ? val.valueBoolean
-            ? '✓'
-            : '✗'
-          : '';
-      case 'reference':
-        return val.valueRef ?? '';
+        return val.value === 'true' ? '✓' : '✗';
+      case 'date':
+        return new Date(val.value).toLocaleDateString();
       default:
-        return '';
+        return val.value;
     }
   }
 

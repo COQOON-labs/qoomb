@@ -26,7 +26,7 @@ ORM, PostgreSQL with Row-Level Security, Redis, and `typesafe-i18n` for both bac
 - Use **`@EncryptFields({ fields: ['field'], hiveIdArg: N })`** to encrypt INPUT args before they are persisted
 - Use **`@DecryptFields({ fields: ['field'], hiveIdArg: N })`** to decrypt RETURN VALUES after they are loaded
 - For nested relations use dot-path syntax: `fields: ['name', 'fields.*.name', 'views.*.name']`
-- Only use manual encryption for conditional cases (e.g. ListItemValue.valueText varies by fieldType)
+- Only use manual encryption for conditional cases (e.g. ListItemValue serialization varies by context)
 
 ### Type Safety
 

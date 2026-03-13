@@ -40,7 +40,7 @@ and visibility. We need a migration path that doesn't break existing functionali
 
 - **Simplicity vs. flexibility** — must not overwhelm non-technical family users
 - **Performance** — EAV (Entity-Attribute-Value) pattern has known query complexity trade-offs
-- **Encryption** — EAV values need per-type storage columns to encrypt text but not booleans/dates
+- **Encryption** — All EAV values are encrypted uniformly in a single column
 - **Backward compatibility** — Tasks API consumers need a migration path
 - **Existing patterns** — must work with hiveProcedure, RLS, @EncryptFields, 5-stage access checks
 
@@ -51,16 +51,19 @@ content in Qoomb. The existing Tasks module will be gradually replaced.
 
 ### Core Design Choices
 
-#### 1. EAV with typed columns (not pure JSONB)
+#### 1. EAV with single encrypted value column
 
-List items store field values in a separate `list_item_values` table with **typed columns**:
-`value_text`, `value_number`, `value_date`, `value_boolean`, `value_ref`. This avoids the
-downsides of pure JSONB (no type safety, hard to index, can't encrypt selectively) while being
-more flexible than a fixed schema.
+List items store field values in a separate `list_item_values` table with a **single `value`
+column**. All values are serialized to string, encrypted with AES-256-GCM (hive-scoped key),
+and stored as ciphertext. The client parses values back by field type after decryption.
+This maximizes privacy (all data encrypted uniformly) while remaining flexible for any field type.
+
+**Rejected alternative: Typed columns (value_text, value_number, etc.)** — would leave
+non-text columns unencrypted, violating the privacy-first principle. Server-side filtering
+on decrypted values is not needed since the project uses client-side filtering.
 
 **Rejected alternative: JSONB blob per item** — would require encrypting the entire blob
-(preventing server-side filtering on dates/booleans) or leaving it unencrypted (violating
-privacy principles).
+or leaving it unencrypted (violating privacy principles).
 
 **Rejected alternative: Fixed schema per list type** — would require DDL changes for each new
 list type or custom field, not viable for user-created schemas.

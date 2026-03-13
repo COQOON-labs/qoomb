@@ -82,6 +82,66 @@ export type FieldCryptoOptions = HiveScopedCryptoOptions | UserScopedCryptoOptio
 const logger = new Logger('FieldEncryption');
 
 /**
+ * Check if a field path contains nested segments (e.g. 'fields.*.name').
+ */
+function isNestedPath(field: string): boolean {
+  return field.includes('.');
+}
+
+/**
+ * Apply a transform function at a dot-separated path within a nested object.
+ *
+ * Supports `*` as a wildcard for iterating over all elements of an array.
+ *
+ * Example paths:
+ *  - `'name'`            → `obj.name`
+ *  - `'fields.*.name'`   → `obj.fields[i].name` for each i
+ *  - `'a.b.*.c'`         → `obj.a.b[i].c` for each i
+ *
+ * Mutates `obj` in-place. Silently skips if a segment is missing, null, or
+ * the wrong type (array vs object).
+ */
+function applyAtPath(
+  obj: Record<string, unknown>,
+  segments: string[],
+  transform: (value: string) => string
+): void {
+  if (segments.length === 0) return;
+
+  const [head, ...rest] = segments;
+
+  if (head === '*') {
+    // Current context should be an array — iterate each element
+    if (!Array.isArray(obj)) return;
+    for (const item of obj) {
+      if (item && typeof item === 'object') {
+        applyAtPath(item as Record<string, unknown>, rest, transform);
+      }
+    }
+    return;
+  }
+
+  if (!(head in obj) || obj[head] === null || obj[head] === undefined) return;
+
+  if (rest.length === 0) {
+    // Leaf: apply transform to this field
+    if (typeof obj[head] === 'string') {
+      obj[head] = transform(obj[head]);
+    }
+    return;
+  }
+
+  // Recurse into the next level
+  const next = obj[head];
+  if (typeof next === 'object') {
+    // Works for both arrays and plain objects:
+    // - If rest starts with '*' and next is an array → '*' handler iterates
+    // - If next is a plain object → recurse into it
+    applyAtPath(next as Record<string, unknown>, rest, transform);
+  }
+}
+
+/**
  * Get EncryptionService from the service instance.
  *
  * Convention: all services inject EncryptionService as
@@ -124,19 +184,22 @@ function resolveKeyScope(
 /**
  * Encrypt specified fields in the input arguments BEFORE the method executes.
  *
- * Iterates the method's argument list and encrypts matching top-level fields
- * found in object arguments. String values are encrypted directly; non-string
- * values use the optional `transforms.serialize` callback or `JSON.stringify`.
+ * Iterates the method's argument list and encrypts matching fields found in
+ * object arguments. Supports both flat fields (`'title'`) and nested paths
+ * (`'fields.*.name'`) where `*` iterates over array elements.
+ *
+ * String values are encrypted directly; non-string values use the optional
+ * `transforms.serialize` callback or `JSON.stringify`.
  *
  * The method receives and stores already-encrypted data.
  *
  * @example
  * ```typescript
+ * // Flat fields:
  * @EncryptFields({ fields: ['title', 'description'], hiveIdArg: 1 })
- * async create(data: CreateEventInput, hiveId: string) {
- *   return this.prisma.event.create({ data });
- *   // data.title and data.description are already encrypted
- * }
+ *
+ * // Nested paths (arrays):
+ * @EncryptFields({ fields: ['name', 'fields.*.name', 'views.*.name'], hiveIdArg: 1 })
  * ```
  */
 export function EncryptFields(options: FieldCryptoOptions): MethodDecorator {
@@ -148,11 +211,23 @@ export function EncryptFields(options: FieldCryptoOptions): MethodDecorator {
       const enc = getEnc(this);
       const { keyId, userScoped } = resolveKeyScope(options, args);
 
+      const encryptValue = (value: string): string =>
+        userScoped
+          ? enc.encryptForUser(value, keyId)
+          : enc.serializeToStorage(enc.encrypt(value, keyId));
+
       for (const arg of args) {
         if (!arg || typeof arg !== 'object' || Array.isArray(arg)) continue;
         const obj = arg as Record<string, unknown>;
 
         for (const field of options.fields) {
+          if (isNestedPath(field)) {
+            // Nested path: mutate in-place via applyAtPath
+            applyAtPath(obj, field.split('.'), encryptValue);
+            continue;
+          }
+
+          // Flat field (existing behaviour)
           if (!(field in obj) || obj[field] === null || obj[field] === undefined) continue;
 
           let valueStr: string;
@@ -165,9 +240,7 @@ export function EncryptFields(options: FieldCryptoOptions): MethodDecorator {
             valueStr = JSON.stringify(obj[field]);
           }
 
-          obj[field] = userScoped
-            ? enc.encryptForUser(valueStr, keyId)
-            : enc.serializeToStorage(enc.encrypt(valueStr, keyId));
+          obj[field] = encryptValue(valueStr);
         }
       }
 
@@ -187,18 +260,20 @@ export function EncryptFields(options: FieldCryptoOptions): MethodDecorator {
  * Decrypt specified fields in the RETURN VALUE after the method executes.
  *
  * Handles single objects and arrays (each element is decrypted individually).
- * Null fields and missing fields are skipped.
+ * Supports both flat fields (`'title'`) and nested paths (`'fields.*.name'`)
+ * where `*` iterates over array elements.
  *
- * If decryption fails for a field (e.g. plaintext migration window), the
- * original value is preserved and a warning is logged.
+ * Null fields and missing fields are skipped. If decryption fails for a field
+ * (e.g. plaintext migration window), the original value is preserved and a
+ * warning is logged.
  *
  * @example
  * ```typescript
+ * // Flat fields:
  * @DecryptFields({ fields: ['title', 'description'], hiveIdArg: 1 })
- * async getById(id: string, hiveId: string) {
- *   return this.prisma.event.findUnique({ where: { id } });
- *   // returned title and description are automatically decrypted
- * }
+ *
+ * // Nested paths (arrays):
+ * @DecryptFields({ fields: ['name', 'fields.*.name', 'views.*.name'], hiveIdArg: 0 })
  * ```
  */
 export function DecryptFields(options: FieldCryptoOptions): MethodDecorator {
@@ -268,17 +343,48 @@ function decryptData(
   if (typeof data === 'object') {
     const obj = { ...(data as Record<string, unknown>) };
 
+    // Deep-clone nested arrays/objects so we don't mutate the original Prisma result
     for (const field of fields) {
+      if (isNestedPath(field)) {
+        const rootKey = field.split('.')[0];
+        if (rootKey in obj && obj[rootKey] !== null && Array.isArray(obj[rootKey])) {
+          obj[rootKey] = (obj[rootKey] as unknown[]).map((item) =>
+            item && typeof item === 'object' ? { ...item } : item
+          );
+        }
+      }
+    }
+
+    const decryptValue = (value: string): string => {
+      if (userScoped) {
+        return enc.decryptForUser(value, keyId);
+      }
+      const encrypted = enc.parseFromStorage(value);
+      return enc.decrypt(encrypted, keyId);
+    };
+
+    for (const field of fields) {
+      if (isNestedPath(field)) {
+        // Nested path: decrypt in-place via applyAtPath (on shallow-cloned arrays)
+        applyAtPath(obj, field.split('.'), (value) => {
+          try {
+            return decryptValue(value);
+          } catch {
+            const scope = userScoped ? `user ${keyId}` : `hive ${keyId}`;
+            logger.warn(
+              `Plaintext fallback for ${scope} — nested field '${field}' not yet encrypted`
+            );
+            return value;
+          }
+        });
+        continue;
+      }
+
+      // Flat field (existing behaviour)
       if (!(field in obj) || obj[field] === null) continue;
 
       try {
-        let plain: string;
-        if (userScoped) {
-          plain = enc.decryptForUser(obj[field] as string, keyId);
-        } else {
-          const encrypted = enc.parseFromStorage(obj[field] as string);
-          plain = enc.decrypt(encrypted, keyId);
-        }
+        const plain = decryptValue(obj[field] as string);
         const deserialize = transforms?.[field]?.deserialize;
         obj[field] = deserialize ? deserialize(plain) : plain;
       } catch {

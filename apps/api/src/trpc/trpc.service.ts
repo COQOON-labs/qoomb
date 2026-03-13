@@ -6,6 +6,7 @@ import { PassKeyService } from '../modules/auth/passkey.service';
 import { SystemConfigService } from '../modules/auth/system-config.service';
 import { EventsService } from '../modules/events/events.service';
 import { GroupsService } from '../modules/groups/groups.service';
+import { ListsService } from '../modules/lists/lists.service';
 import { PersonsService } from '../modules/persons/persons.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -21,7 +22,8 @@ export class TrpcService {
     private readonly passKeyService: PassKeyService,
     private readonly personsService: PersonsService,
     private readonly eventsService: EventsService,
-    private readonly groupsService: GroupsService
+    private readonly groupsService: GroupsService,
+    private readonly listsService: ListsService
   ) {}
 
   get router() {
@@ -31,7 +33,8 @@ export class TrpcService {
       this.passKeyService,
       this.personsService,
       this.eventsService,
-      this.groupsService
+      this.groupsService,
+      this.listsService
     );
   }
 

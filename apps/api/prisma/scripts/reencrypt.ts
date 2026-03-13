@@ -447,7 +447,7 @@ async function main() {
   if (totalFailed > 0) {
     console.error(`❌ ${totalFailed} record(s) failed verification — check errors above.`);
     console.error('   The failed records were NOT written. Re-run after fixing the issue.');
-    process.exit(1);
+    throw new Error(`Re-encryption failed: ${totalFailed} record(s) could not be migrated.`);
   }
 
   if (totalMigrated === 0 && totalFailed === 0) {
@@ -473,10 +473,10 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
   .finally(() => {
     void prisma.$disconnect();
+  })
+  .catch((e: unknown) => {
+    console.error(e);
+    throw e;
   });

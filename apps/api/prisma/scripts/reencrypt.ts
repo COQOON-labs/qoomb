@@ -376,6 +376,168 @@ async function migrateGroups(enc: EncryptionService, fromVersion: number): Promi
   return stats;
 }
 
+async function migrateLists(enc: EncryptionService, fromVersion: number): Promise<ReencryptStats> {
+  const stats: ReencryptStats = { migrated: 0, skipped: 0, failed: 0 };
+  const prefix = `v${fromVersion}:`;
+
+  // ── 1. List.name ──────────────────────────────────────────────────────────
+  const lists = await prisma.list.findMany({
+    where: { name: { startsWith: prefix } },
+  });
+
+  for (const list of lists) {
+    try {
+      const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), list.hiveId);
+      const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, list.hiveId));
+      const newName = reencryptField(list.name, fromVersion, dec, encFn);
+
+      if (newName === null) {
+        stats.skipped++;
+        continue;
+      }
+
+      if (!EXECUTE) {
+        console.log(`  [DRY RUN] list ${list.id}: name → v${enc.getCurrentKeyVersion()}`);
+        stats.migrated++;
+        continue;
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.list.update({ where: { id: list.id }, data: { name: newName } });
+      });
+
+      stats.migrated++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`  ❌ list ${list.id}: ${msg}`);
+      stats.failed++;
+    }
+  }
+
+  // ── 2. ListField.name ────────────────────────────────────────────────────
+  const fields = await prisma.listField.findMany({
+    where: { name: { startsWith: prefix } },
+    include: { list: { select: { hiveId: true } } },
+  });
+
+  for (const field of fields) {
+    try {
+      const hiveId = field.list.hiveId;
+      const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), hiveId);
+      const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, hiveId));
+      const newName = reencryptField(field.name, fromVersion, dec, encFn);
+
+      if (newName === null) {
+        stats.skipped++;
+        continue;
+      }
+
+      if (!EXECUTE) {
+        console.log(`  [DRY RUN] listField ${field.id}: name → v${enc.getCurrentKeyVersion()}`);
+        stats.migrated++;
+        continue;
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.listField.update({ where: { id: field.id }, data: { name: newName } });
+      });
+
+      stats.migrated++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`  ❌ listField ${field.id}: ${msg}`);
+      stats.failed++;
+    }
+  }
+
+  // ── 3. ListView.name ─────────────────────────────────────────────────────
+  const views = await prisma.listView.findMany({
+    where: { name: { startsWith: prefix } },
+    include: { list: { select: { hiveId: true } } },
+  });
+
+  for (const view of views) {
+    try {
+      const hiveId = view.list.hiveId;
+      const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), hiveId);
+      const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, hiveId));
+      const newName = reencryptField(view.name, fromVersion, dec, encFn);
+
+      if (newName === null) {
+        stats.skipped++;
+        continue;
+      }
+
+      if (!EXECUTE) {
+        console.log(`  [DRY RUN] listView ${view.id}: name → v${enc.getCurrentKeyVersion()}`);
+        stats.migrated++;
+        continue;
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.listView.update({ where: { id: view.id }, data: { name: newName } });
+      });
+
+      stats.migrated++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`  ❌ listView ${view.id}: ${msg}`);
+      stats.failed++;
+    }
+  }
+
+  // ── 4. ListItemValue.valueText (text / url / person fields only) ──────────
+  // Only these field types store encrypted valueText (number, date, checkbox, reference, select are unencrypted).
+  const encryptedFieldTypes = ['text', 'url', 'person'];
+
+  const itemValues = await prisma.listItemValue.findMany({
+    where: {
+      valueText: { startsWith: prefix },
+      field: { fieldType: { in: encryptedFieldTypes } },
+    },
+    include: {
+      item: { select: { hiveId: true } },
+    },
+  });
+
+  for (const iv of itemValues) {
+    try {
+      const hiveId = iv.item.hiveId;
+      const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), hiveId);
+      const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, hiveId));
+      const newValueText = reencryptField(iv.valueText, fromVersion, dec, encFn);
+
+      if (newValueText === null) {
+        stats.skipped++;
+        continue;
+      }
+
+      if (!EXECUTE) {
+        console.log(
+          `  [DRY RUN] listItemValue ${iv.id}: valueText → v${enc.getCurrentKeyVersion()}`
+        );
+        stats.migrated++;
+        continue;
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.listItemValue.update({
+          where: { id: iv.id },
+          data: { valueText: newValueText },
+        });
+      });
+
+      stats.migrated++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`  ❌ listItemValue ${iv.id}: ${msg}`);
+      stats.failed++;
+    }
+  }
+
+  return stats;
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -422,6 +584,9 @@ async function main() {
 
   console.log('── groups ──────────────────────────────────────────────────');
   results.groups = await migrateGroups(enc, fromVersion);
+
+  console.log('── lists ───────────────────────────────────────────────────');
+  results.lists = await migrateLists(enc, fromVersion);
 
   console.log();
   console.log('── Summary ─────────────────────────────────────────────────');

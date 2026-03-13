@@ -783,6 +783,28 @@ export class EventsService {
 }
 ```
 
+**Nested path syntax** — for models with encrypted fields inside relations (arrays), use
+`'relation.*.field'` where `*` iterates over each array element:
+
+```typescript
+// Lists have encrypted name + nested fields[].name + views[].name
+const LIST_ENC_FIELDS = ['name', 'fields.*.name', 'views.*.name'];
+
+@DecryptFields({ fields: LIST_ENC_FIELDS, hiveIdArg: 0 })
+async list(hiveId: string): Promise<ListRow[]> {
+  return this.prisma.list.findMany({
+    include: { fields: true, views: true },
+  });
+  // name, fields[].name, views[].name are all decrypted automatically
+}
+```
+
+**When to use manual encryption instead:** Conditional encryption (e.g. ListItemValue.valueText
+only for `text`/`url`/`person` field types) cannot be expressed declaratively — use explicit
+helper methods for these cases.
+
+````
+
 ### Pattern: Schema-Safe Raw SQL
 
 ```typescript
@@ -800,7 +822,7 @@ async complexQuery(hiveId: string) {
 
   return result;
 }
-```
+````
 
 ### Pattern: Validation & Sanitization
 

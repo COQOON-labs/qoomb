@@ -6,6 +6,7 @@ import { flag } from './lib/flags';
 import { Dashboard } from './pages/Dashboard';
 import { DashboardSketch } from './pages/DashboardSketch';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ListsPage } from './pages/ListsPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -37,6 +38,7 @@ function App() {
         {/* Protected routes */}
         <Route element={<AuthGuard />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/lists" element={<ListsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>

@@ -96,7 +96,7 @@ type RootTranslation = {
      */
     calendar: string;
     /**
-     * T​a​s​k​s
+     * L​i​s​t​s
      */
     lists: string;
     /**
@@ -126,7 +126,7 @@ type RootTranslation = {
      */
     event: string;
     /**
-     * T​a​s​k
+     * L​i​s​t
      */
     list: string;
     /**
@@ -479,17 +479,65 @@ type RootTranslation = {
      */
     memberCount: RequiredParams<'count'>;
     greetings: {
+      /**
+       * G​o​o​d​ ​m​o​r​n​i​n​g​,​ ​{​n​a​m​e​}​!​ ​☀​️
+       * @param {string} name
+       */
       morning0: RequiredParams<'name'>;
+      /**
+       * R​i​s​e​ ​a​n​d​ ​s​h​i​n​e​,​ ​{​n​a​m​e​}​!
+       * @param {string} name
+       */
       morning1: RequiredParams<'name'>;
+      /**
+       * M​o​r​n​i​n​g​,​ ​{​n​a​m​e​}​!​ ​☀​️
+       * @param {string} name
+       */
       morning2: RequiredParams<'name'>;
+      /**
+       * H​e​y​ ​{​n​a​m​e​}​,​ ​t​h​e​r​e​ ​y​o​u​ ​a​r​e​!
+       * @param {string} name
+       */
       afternoon0: RequiredParams<'name'>;
+      /**
+       * G​l​a​d​ ​y​o​u​'​r​e​ ​h​e​r​e​,​ ​{​n​a​m​e​}​!
+       * @param {string} name
+       */
       afternoon1: RequiredParams<'name'>;
+      /**
+       * W​e​l​c​o​m​e​ ​b​a​c​k​,​ ​{​n​a​m​e​}​!
+       * @param {string} name
+       */
       afternoon2: RequiredParams<'name'>;
+      /**
+       * G​o​o​d​ ​e​v​e​n​i​n​g​,​ ​{​n​a​m​e​}​!​ ​�​�
+       * @param {string} name
+       */
       evening0: RequiredParams<'name'>;
+      /**
+       * G​o​o​d​ ​t​o​ ​s​e​e​ ​y​o​u​,​ ​{​n​a​m​e​}​!​ ​�​�
+       * @param {string} name
+       */
       evening1: RequiredParams<'name'>;
+      /**
+       * T​i​m​e​ ​t​o​ ​u​n​w​i​n​d​,​ ​{​n​a​m​e​}​!​ ​�​�
+       * @param {string} name
+       */
       evening2: RequiredParams<'name'>;
+      /**
+       * S​t​i​l​l​ ​u​p​,​ ​{​n​a​m​e​}​?
+       * @param {string} name
+       */
       night0: RequiredParams<'name'>;
+      /**
+       * B​u​r​n​i​n​g​ ​t​h​e​ ​m​i​d​n​i​g​h​t​ ​o​i​l​,​ ​{​n​a​m​e​}​?​ ​�​�
+       * @param {string} name
+       */
       night1: RequiredParams<'name'>;
+      /**
+       * S​t​i​l​l​ ​g​o​i​n​g​ ​s​t​r​o​n​g​,​ ​{​n​a​m​e​}​!​ ​�​�
+       * @param {string} name
+       */
       night2: RequiredParams<'name'>;
     };
     /**
@@ -515,7 +563,7 @@ type RootTranslation = {
      */
     progressText: RequiredParams<'done' | 'total'>;
     /**
-     * A​d​d​ ​t​a​s​k
+     * A​d​d​ ​i​t​e​m
      */
     addListItem: string;
     /**
@@ -523,7 +571,7 @@ type RootTranslation = {
      */
     emptyEvents: string;
     /**
-     * N​o​ ​t​a​s​k​s​ ​y​e​t​.
+     * T​h​i​s​ ​l​i​s​t​ ​i​s​ ​e​m​p​t​y​.
      */
     emptyList: string;
     quickAdd: {
@@ -536,6 +584,69 @@ type RootTranslation = {
        */
       placeholder: string;
     };
+  };
+  lists: {
+    /**
+     * L​i​s​t​s
+     */
+    title: string;
+    /**
+     * N​e​w​ ​l​i​s​t
+     */
+    newList: string;
+    /**
+     * C​r​e​a​t​e​ ​l​i​s​t
+     */
+    createList: string;
+    /**
+     * N​a​m​e
+     */
+    listNameLabel: string;
+    /**
+     * e​.​g​.​ ​S​h​o​p​p​i​n​g​ ​l​i​s​t
+     */
+    listNamePlaceholder: string;
+    /**
+     * L​i​s​t​ ​c​r​e​a​t​e​d
+     */
+    createSuccess: string;
+    /**
+     * D​e​l​e​t​e​ ​l​i​s​t
+     */
+    deleteList: string;
+    /**
+     * T​h​i​s​ ​l​i​s​t​ ​a​n​d​ ​a​l​l​ ​i​t​s​ ​i​t​e​m​s​ ​w​i​l​l​ ​b​e​ ​p​e​r​m​a​n​e​n​t​l​y​ ​d​e​l​e​t​e​d​.
+     */
+    deleteConfirm: string;
+    /**
+     * N​o​ ​l​i​s​t​s​ ​y​e​t​.
+     */
+    emptyState: string;
+    /**
+     * C​r​e​a​t​e​ ​a​ ​l​i​s​t​ ​t​o​ ​g​e​t​ ​s​t​a​r​t​e​d​.
+     */
+    emptyStateHint: string;
+    /**
+     * A​r​c​h​i​v​e​d
+     */
+    archivedBadge: string;
+    /**
+     * {​c​o​u​n​t​}​ ​i​t​e​m​s
+     * @param {number} count
+     */
+    itemCount: RequiredParams<'count'>;
+    /**
+     * A​d​d​ ​i​t​e​m
+     */
+    addItem: string;
+    /**
+     * T​h​i​s​ ​l​i​s​t​ ​i​s​ ​e​m​p​t​y​.
+     */
+    emptyItems: string;
+    /**
+     * N​e​w​ ​i​t​e​m​…
+     */
+    itemNamePlaceholder: string;
   };
 };
 
@@ -620,7 +731,7 @@ export type TranslationFunctions = {
      */
     calendar: () => LocalizedString;
     /**
-     * Tasks
+     * Lists
      */
     lists: () => LocalizedString;
     /**
@@ -650,7 +761,7 @@ export type TranslationFunctions = {
      */
     event: () => LocalizedString;
     /**
-     * Task
+     * List
      */
     list: () => LocalizedString;
     /**
@@ -1002,17 +1113,53 @@ export type TranslationFunctions = {
      */
     memberCount: (arg: { count: number }) => LocalizedString;
     greetings: {
+      /**
+       * Good morning, {name}! ☀️
+       */
       morning0: (arg: { name: string }) => LocalizedString;
+      /**
+       * Rise and shine, {name}!
+       */
       morning1: (arg: { name: string }) => LocalizedString;
+      /**
+       * Morning, {name}! ☀️
+       */
       morning2: (arg: { name: string }) => LocalizedString;
+      /**
+       * Hey {name}, there you are!
+       */
       afternoon0: (arg: { name: string }) => LocalizedString;
+      /**
+       * Glad you're here, {name}!
+       */
       afternoon1: (arg: { name: string }) => LocalizedString;
+      /**
+       * Welcome back, {name}!
+       */
       afternoon2: (arg: { name: string }) => LocalizedString;
+      /**
+       * Good evening, {name}! 🌆
+       */
       evening0: (arg: { name: string }) => LocalizedString;
+      /**
+       * Good to see you, {name}! 🌆
+       */
       evening1: (arg: { name: string }) => LocalizedString;
+      /**
+       * Time to unwind, {name}! 🌆
+       */
       evening2: (arg: { name: string }) => LocalizedString;
+      /**
+       * Still up, {name}?
+       */
       night0: (arg: { name: string }) => LocalizedString;
+      /**
+       * Burning the midnight oil, {name}? 🌙
+       */
       night1: (arg: { name: string }) => LocalizedString;
+      /**
+       * Still going strong, {name}! 🌙
+       */
       night2: (arg: { name: string }) => LocalizedString;
     };
     /**
@@ -1036,7 +1183,7 @@ export type TranslationFunctions = {
      */
     progressText: (arg: { done: number; total: number }) => LocalizedString;
     /**
-     * Add task
+     * Add item
      */
     addListItem: () => LocalizedString;
     /**
@@ -1044,7 +1191,7 @@ export type TranslationFunctions = {
      */
     emptyEvents: () => LocalizedString;
     /**
-     * No tasks yet.
+     * This list is empty.
      */
     emptyList: () => LocalizedString;
     quickAdd: {
@@ -1057,6 +1204,68 @@ export type TranslationFunctions = {
        */
       placeholder: () => LocalizedString;
     };
+  };
+  lists: {
+    /**
+     * Lists
+     */
+    title: () => LocalizedString;
+    /**
+     * New list
+     */
+    newList: () => LocalizedString;
+    /**
+     * Create list
+     */
+    createList: () => LocalizedString;
+    /**
+     * Name
+     */
+    listNameLabel: () => LocalizedString;
+    /**
+     * e.g. Shopping list
+     */
+    listNamePlaceholder: () => LocalizedString;
+    /**
+     * List created
+     */
+    createSuccess: () => LocalizedString;
+    /**
+     * Delete list
+     */
+    deleteList: () => LocalizedString;
+    /**
+     * This list and all its items will be permanently deleted.
+     */
+    deleteConfirm: () => LocalizedString;
+    /**
+     * No lists yet.
+     */
+    emptyState: () => LocalizedString;
+    /**
+     * Create a list to get started.
+     */
+    emptyStateHint: () => LocalizedString;
+    /**
+     * Archived
+     */
+    archivedBadge: () => LocalizedString;
+    /**
+     * {count} items
+     */
+    itemCount: (arg: { count: number }) => LocalizedString;
+    /**
+     * Add item
+     */
+    addItem: () => LocalizedString;
+    /**
+     * This list is empty.
+     */
+    emptyItems: () => LocalizedString;
+    /**
+     * New item…
+     */
+    itemNamePlaceholder: () => LocalizedString;
   };
 };
 

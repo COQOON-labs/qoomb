@@ -21,5 +21,6 @@ export { LogOutIcon } from './LogOutIcon';
 export { MenuIcon } from './MenuIcon';
 export { PlusIcon } from './PlusIcon';
 export { SettingsIcon } from './SettingsIcon';
+export { TrashIcon } from './TrashIcon';
 export { UserIcon } from './UserIcon';
 export { UsersIcon } from './UsersIcon';

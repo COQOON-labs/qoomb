@@ -187,6 +187,25 @@ const en = {
       placeholder: "What's coming up next?",
     },
   },
+
+  // ── Lists ──────────────────────────────────────────────────────────────────
+  lists: {
+    title: 'Lists',
+    newList: 'New list',
+    createList: 'Create list',
+    listNameLabel: 'Name',
+    listNamePlaceholder: 'e.g. Shopping list',
+    createSuccess: 'List created',
+    deleteList: 'Delete list',
+    deleteConfirm: 'This list and all its items will be permanently deleted.',
+    emptyState: 'No lists yet.',
+    emptyStateHint: 'Create a list to get started.',
+    archivedBadge: 'Archived',
+    itemCount: '{count:number} items',
+    addItem: 'Add item',
+    emptyItems: 'This list is empty.',
+    itemNamePlaceholder: 'New item…',
+  },
 } satisfies BaseTranslation;
 
 export default en;

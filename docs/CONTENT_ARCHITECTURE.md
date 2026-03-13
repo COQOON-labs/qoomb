@@ -420,6 +420,11 @@ Admins gain group resource access by joining the group — no silent bypass.
 
 ## 11. Implementation Phases
 
+### Phase 1 — Foundation ✅
+
+Infrastructure, Auth (JWT + PassKeys), PWA, Design System, CI/CD, Encryption,
+Email (3 transports), i18n, Shared UI Library, Mobile wrapper.
+
 ### Phase 2 — Core Content (current focus)
 
 - [x] RBAC guard system (`requirePermission`, `requireResourceAccess`, `buildVisibilityFilter`)
@@ -428,22 +433,42 @@ Admins gain group resource access by joining the group — no silent bypass.
 - [x] Persons module (hive member management)
 - [x] Events module (CRUD + recurrence expansion)
 - [x] Lists foundation: Prisma schema, TypeScript types, Zod validators, permissions
-- [ ] Lists module: backend service + tRPC router (`apps/api/src/modules/lists/`)
-- [ ] Lists migration: Prisma migration applied to DB
+- [x] Lists module: backend service + tRPC router (`apps/api/src/modules/lists/`)
+- [x] Lists migration: Prisma migration applied to DB
+- [x] Lists frontend: ListsPage + ListDetailPage with inline editing
+- [ ] ListItemValue simplification: single encrypted `value` column (all client-side filtering)
 
-### Phase 3 — Pages + Files
+### Phase 3 — Hive Management & Communication
+
+- [ ] Hive CRUD: update name/locale/settings, delete hive (with cascade)
+- [ ] Hive settings page (frontend)
+- [ ] Invitation management UI: list pending, resend, revoke
+- [ ] In-app notifications: bell icon, notification model, read/unread state
+- [ ] Notification emails: event reminders, task assignments, member joined/left
+- [ ] Email preferences: per-user notification opt-in/out, unsubscribe
+- [ ] Email queue with retry (replace inline-send)
+- [ ] In-app messaging: direct messages between hive members (encrypted)
+- [ ] Activity log (change feed / "what changed since last login")
+
+### Phase 4 — Sync & Real-Time
+
+- [ ] Client-side SQLite cache (wa-sqlite + OPFS in browser, native on mobile)
+- [ ] Web Worker isolation for local DB (XSS protection)
+- [ ] SSE change feed (Redis Pub/Sub → per-hive event stream)
+- [ ] Optimistic mutations with server confirmation
+- [ ] Offline queue with reconnect-merge
+- [ ] Field-level LWW conflict resolution
+- [ ] Full local search (all non-file content synced to client)
+- [ ] pgvector semantic search (server-side complement)
+- [ ] E2E encryption option (libsodium — opt-in for ultra-sensitive content)
+
+### Phase 5 — Pages & Files
 
 - [ ] Pages module (Tiptap editor, tree hierarchy, version history)
+- [ ] Real-time collaborative editing (Yjs CRDT)
 - [ ] Documents module (file upload + envelope encryption)
-- [ ] Activity log
 
-### Phase 4 — Offline + Search
-
-- [ ] Client-side SQLite sync (vector clock conflict resolution)
-- [ ] Full local search
-- [ ] pgvector semantic search (server-side complement)
-
-### Phase 5 — Calendar Integration
+### Phase 6 — Calendar Integration
 
 - [ ] Google Calendar (OAuth + webhook)
 - [ ] Apple Calendar (CalDAV)
@@ -452,4 +477,14 @@ Admins gain group resource access by joining the group — no silent bypass.
 
 ---
 
-**Last Updated:** 2026-02-14
+**Data Paradigm (cross-phase):**
+
+All business-data values are AES-256-GCM encrypted at rest (per-hive keys).
+The server decrypts on read and sends plaintext over TLS. Filtering, sorting,
+and searching happen **client-side** (local SQLite in Phase 4, in-memory before
+that). The server never filters on decrypted values — it fetches all records
+within a scope (e.g. all items of a list) and returns them in bulk.
+
+---
+
+**Last Updated:** 2026-03-14

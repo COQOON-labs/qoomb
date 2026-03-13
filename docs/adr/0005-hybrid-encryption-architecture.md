@@ -177,7 +177,7 @@ User email addresses are never stored in plaintext. Instead:
 This enables O(1) lookups (login, duplicate check, invitation matching) via a UNIQUE index
 on `email_hash` without ever storing or querying plaintext email.
 
-### Layer 2: Envelope Encryption for Files (Planned — Phase 3)
+### Layer 2: Envelope Encryption for Files (Planned — Phase 5)
 
 Uploaded documents use **envelope encryption**: a per-file AES-256-GCM key is generated,
 the file is encrypted with that key, and the file key itself is encrypted with the hive key

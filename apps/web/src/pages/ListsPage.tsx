@@ -22,14 +22,20 @@ export function ListsPage() {
     { enabled: !!user }
   );
 
+  const { data: templates = [] } = trpc.lists.listTemplates.useQuery(undefined, {
+    enabled: !!user,
+  });
+
   // ── Create form state ──────────────────────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
   const createList = trpc.lists.create.useMutation({
     onSuccess: () => {
       void utils.lists.list.invalidate();
       setNewName('');
+      setSelectedTemplateId('');
       setShowCreate(false);
     },
   });
@@ -39,13 +45,18 @@ export function ListsPage() {
       e.preventDefault();
       const name = newName.trim();
       if (!name) return;
-      createList.mutate({ name, visibility: 'hive' });
+      createList.mutate({
+        name,
+        visibility: 'hive',
+        ...(selectedTemplateId ? { templateId: selectedTemplateId } : {}),
+      });
     },
-    [newName, createList]
+    [newName, selectedTemplateId, createList]
   );
 
   const handleCancelCreate = useCallback(() => {
     setNewName('');
+    setSelectedTemplateId('');
     setShowCreate(false);
   }, []);
 
@@ -101,16 +112,38 @@ export function ListsPage() {
         {/* ── Inline create form ───────────────────────────────────────── */}
         {showCreate && (
           <Card padding="md" className="mb-4">
-            <form onSubmit={handleCreateSubmit} className="flex gap-2 items-end">
-              <div className="flex-1">
-                <Input
-                  label={LL.lists.listNameLabel()}
-                  placeholder={LL.lists.listNamePlaceholder()}
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                />
+            <form onSubmit={handleCreateSubmit} className="flex flex-col gap-3">
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Input
+                    label={LL.lists.listNameLabel()}
+                    placeholder={LL.lists.listNamePlaceholder()}
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                  />
+                </div>
+                {templates.length > 0 && (
+                  <div className="w-48">
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">
+                      {LL.lists.chooseTemplate()}
+                    </label>
+                    <select
+                      value={selectedTemplateId}
+                      onChange={(e) => setSelectedTemplateId(e.target.value)}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    >
+                      <option value="">{LL.lists.blankList()}</option>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.icon ? `${t.icon} ` : ''}
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
-              <div className="flex gap-2 pb-0.5">
+              <div className="flex gap-2">
                 <Button
                   type="submit"
                   variant="primary"

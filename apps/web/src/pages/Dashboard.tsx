@@ -1,9 +1,13 @@
 import { Button, Card } from '@qoomb/ui';
+import { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { CheckIcon, PlusIcon } from '../components/icons';
 import { useCurrentPerson } from '../hooks/useCurrentPerson';
 import { useI18nContext } from '../i18n/i18n-react';
 import { AppShell } from '../layouts/AppShell';
+import { useAuth } from '../lib/auth/useAuth';
+import { trpc } from '../lib/trpc/client';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -50,8 +54,34 @@ function useGreeting(name: string): string {
 export function Dashboard() {
   const { LL } = useI18nContext();
   const { displayName } = useCurrentPerson();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const { dayNum, dateLabel } = useTodayLabel();
   const greeting = useGreeting(displayName);
+
+  const { data: lists = [] } = trpc.lists.list.useQuery(
+    { includeArchived: false },
+    { enabled: !!user }
+  );
+
+  // Show max 5 lists on dashboard
+  const recentLists = lists.slice(0, 5);
+
+  const handleNavigateToLists = useCallback(() => {
+    void navigate('/lists');
+  }, [navigate]);
+
+  const handleNavigateToList = useCallback(
+    (id: string) => {
+      void navigate(`/lists/${id}`);
+    },
+    [navigate]
+  );
+
+  const handleNavigateToNewList = useCallback(() => {
+    void navigate('/lists');
+    // The ListsPage will open with create form if navigated to with intent
+  }, [navigate]);
 
   return (
     <AppShell>
@@ -88,19 +118,45 @@ export function Dashboard() {
                   variant="ghost"
                   size="sm"
                   className="text-muted-foreground hover:text-foreground"
+                  onClick={handleNavigateToLists}
                 >
                   {LL.common.showAll()}
                 </Button>
               </div>
 
-              <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
-                <CheckIcon className="w-8 h-8 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">{LL.dashboard.emptyList()}</p>
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <PlusIcon className="w-3.5 h-3.5" />
-                  {LL.entities.list()}
-                </Button>
-              </div>
+              {recentLists.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
+                  <CheckIcon className="w-8 h-8 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground">{LL.dashboard.emptyList()}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={handleNavigateToNewList}
+                  >
+                    <PlusIcon className="w-3.5 h-3.5" />
+                    {LL.entities.list()}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col divide-y divide-border">
+                  {recentLists.map((list) => (
+                    <button
+                      key={list.id}
+                      type="button"
+                      onClick={() => handleNavigateToList(list.id)}
+                      className="flex items-center gap-3 px-1 py-2.5 hover:bg-muted/20 transition-colors text-left rounded"
+                    >
+                      <span className="text-lg leading-none w-6 text-center shrink-0">
+                        {list.icon ?? '📋'}
+                      </span>
+                      <span className="text-sm font-medium text-foreground truncate">
+                        {list.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </Card>
         </div>
@@ -111,7 +167,12 @@ export function Dashboard() {
             {LL.dashboard.quickAdd.title()}
           </h2>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={handleNavigateToNewList}
+            >
               <CheckIcon className="w-3.5 h-3.5" />
               {LL.entities.list()}
             </Button>

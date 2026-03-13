@@ -717,6 +717,34 @@ type RootTranslation = {
        */
       reference: string;
     };
+    /**
+     * R​e​n​a​m​e​ ​l​i​s​t
+     */
+    editName: string;
+    /**
+     * C​h​a​n​g​e​ ​i​c​o​n
+     */
+    editIcon: string;
+    /**
+     * R​e​m​o​v​e​ ​f​i​e​l​d
+     */
+    removeField: string;
+    /**
+     * R​e​m​o​v​e​ ​t​h​i​s​ ​f​i​e​l​d​ ​a​n​d​ ​a​l​l​ ​i​t​s​ ​d​a​t​a​?
+     */
+    removeFieldConfirm: string;
+    /**
+     * F​r​o​m​ ​t​e​m​p​l​a​t​e
+     */
+    fromTemplate: string;
+    /**
+     * B​l​a​n​k​ ​l​i​s​t
+     */
+    blankList: string;
+    /**
+     * C​h​o​o​s​e​ ​a​ ​t​e​m​p​l​a​t​e
+     */
+    chooseTemplate: string;
   };
 };
 
@@ -1406,6 +1434,34 @@ export type TranslationFunctions = {
        */
       reference: () => LocalizedString;
     };
+    /**
+     * Rename list
+     */
+    editName: () => LocalizedString;
+    /**
+     * Change icon
+     */
+    editIcon: () => LocalizedString;
+    /**
+     * Remove field
+     */
+    removeField: () => LocalizedString;
+    /**
+     * Remove this field and all its data?
+     */
+    removeFieldConfirm: () => LocalizedString;
+    /**
+     * From template
+     */
+    fromTemplate: () => LocalizedString;
+    /**
+     * Blank list
+     */
+    blankList: () => LocalizedString;
+    /**
+     * Choose a template
+     */
+    chooseTemplate: () => LocalizedString;
   };
 };
 

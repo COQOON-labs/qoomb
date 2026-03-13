@@ -225,6 +225,13 @@ const de = {
       person: 'Person',
       reference: 'Referenz',
     },
+    editName: 'Liste umbenennen',
+    editIcon: 'Symbol ändern',
+    removeField: 'Feld entfernen',
+    removeFieldConfirm: 'Dieses Feld und alle zugehörigen Daten entfernen?',
+    fromTemplate: 'Aus Vorlage',
+    blankList: 'Leere Liste',
+    chooseTemplate: 'Vorlage auswählen',
   },
 } satisfies Translation;
 

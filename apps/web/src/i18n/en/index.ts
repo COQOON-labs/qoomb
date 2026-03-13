@@ -224,6 +224,13 @@ const en = {
       person: 'Person',
       reference: 'Reference',
     },
+    editName: 'Rename list',
+    editIcon: 'Change icon',
+    removeField: 'Remove field',
+    removeFieldConfirm: 'Remove this field and all its data?',
+    fromTemplate: 'From template',
+    blankList: 'Blank list',
+    chooseTemplate: 'Choose a template',
   },
 } satisfies BaseTranslation;
 

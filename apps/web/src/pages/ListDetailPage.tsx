@@ -1,8 +1,8 @@
 import { Button, Card, Input } from '@qoomb/ui';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { ArrowLeftIcon, PlusIcon, TrashIcon } from '../components/icons';
+import { ArrowLeftIcon, PencilIcon, PlusIcon, TrashIcon } from '../components/icons';
 import { useI18nContext } from '../i18n/i18n-react';
 import { AppShell } from '../layouts/AppShell';
 import { useAuth } from '../lib/auth/useAuth';
@@ -123,6 +123,120 @@ export function ListDetailPage() {
     [LL, deleteItem]
   );
 
+  // ── Rename list (click-to-edit) ──────────────────────────────────────────
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  const updateList = trpc.lists.update.useMutation({
+    onSuccess: () => {
+      void utils.lists.get.invalidate(id);
+      void utils.lists.list.invalidate();
+      setEditingName(false);
+    },
+  });
+
+  const handleStartEditName = useCallback(() => {
+    if (!list || list.systemKey) return;
+    setDraftName(list.name);
+    setEditingName(true);
+    // Focus input after React renders it
+    setTimeout(() => nameInputRef.current?.focus(), 0);
+  }, [list]);
+
+  const handleSaveName = useCallback(() => {
+    const trimmed = draftName.trim();
+    if (!trimmed || !id || trimmed === list?.name) {
+      setEditingName(false);
+      return;
+    }
+    updateList.mutate({ id, data: { name: trimmed } });
+  }, [draftName, id, list?.name, updateList]);
+
+  const handleNameKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') handleSaveName();
+      if (e.key === 'Escape') setEditingName(false);
+    },
+    [handleSaveName]
+  );
+
+  // ── Remove field ─────────────────────────────────────────────────────────
+  const deleteField = trpc.lists.deleteField.useMutation({
+    onSuccess: () => {
+      void utils.lists.get.invalidate(id);
+      void utils.lists.listItems.invalidate({ listId: id! });
+    },
+  });
+
+  const handleDeleteField = useCallback(
+    (fieldId: string) => {
+      if (!id || !window.confirm(LL.lists.removeFieldConfirm())) return;
+      deleteField.mutate({ id: fieldId, listId: id });
+    },
+    [id, LL, deleteField]
+  );
+
+  // ── Inline cell editing ──────────────────────────────────────────────────
+  const [editingCell, setEditingCell] = useState<{ itemId: string; fieldId: string } | null>(null);
+  const [cellDraft, setCellDraft] = useState('');
+  const cellInputRef = useRef<HTMLInputElement>(null);
+
+  const updateItem = trpc.lists.updateItem.useMutation({
+    onSuccess: () => {
+      void utils.lists.listItems.invalidate({ listId: id! });
+      setEditingCell(null);
+    },
+  });
+
+  const handleCellClick = useCallback(
+    (itemId: string, fieldId: string, fieldType: string, currentValue: string) => {
+      // Checkboxes toggle immediately instead of opening an editor
+      if (fieldType === 'checkbox') {
+        const newVal = currentValue !== '✓';
+        updateItem.mutate({ id: itemId, data: { values: { [fieldId]: newVal } } });
+        return;
+      }
+      setEditingCell({ itemId, fieldId });
+      setCellDraft(currentValue);
+      setTimeout(() => cellInputRef.current?.focus(), 0);
+    },
+    [updateItem]
+  );
+
+  const handleCellSave = useCallback(() => {
+    if (!editingCell) return;
+    const { itemId, fieldId } = editingCell;
+    const field = fieldMap.get(fieldId);
+    if (!field) {
+      setEditingCell(null);
+      return;
+    }
+
+    let value: string | number | boolean | null;
+    const raw = cellDraft.trim();
+    switch (field.fieldType) {
+      case 'number':
+        value = raw === '' ? null : parseFloat(raw) || 0;
+        break;
+      case 'checkbox':
+        value = raw === 'true';
+        break;
+      default:
+        value = raw === '' ? null : raw;
+    }
+
+    updateItem.mutate({ id: itemId, data: { values: { [fieldId]: value } } });
+  }, [editingCell, cellDraft, fieldMap, updateItem]);
+
+  const handleCellKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') handleCellSave();
+      if (e.key === 'Escape') setEditingCell(null);
+    },
+    [handleCellSave]
+  );
+
   // ── Render helpers ───────────────────────────────────────────────────────
   const handleBack = useCallback(() => {
     void navigate('/lists');
@@ -182,7 +296,30 @@ export function ListDetailPage() {
             {/* ── List name ──────────────────────────────────────────────── */}
             <div className="flex items-center gap-3 mb-6">
               <span className="text-2xl leading-none">{list.icon ?? '📋'}</span>
-              <h1 className="text-2xl font-black text-foreground tracking-tight">{list.name}</h1>
+              {editingName ? (
+                <input
+                  ref={nameInputRef}
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  onBlur={handleSaveName}
+                  onKeyDown={handleNameKeyDown}
+                  className="text-2xl font-black text-foreground tracking-tight bg-transparent border-b-2 border-primary outline-none"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleStartEditName}
+                  className="flex items-center gap-2 group"
+                  disabled={!!list.systemKey}
+                >
+                  <h1 className="text-2xl font-black text-foreground tracking-tight">
+                    {list.name}
+                  </h1>
+                  {!list.systemKey && (
+                    <PencilIcon className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </button>
+              )}
             </div>
 
             {/* ── No fields state ────────────────────────────────────────── */}
@@ -209,9 +346,19 @@ export function ListDetailPage() {
                         {list.fields.map((field) => (
                           <th
                             key={field.id}
-                            className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap"
+                            className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap group/th"
                           >
-                            {field.name}
+                            <div className="flex items-center gap-1">
+                              <span>{field.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteField(field.id)}
+                                className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive transition-all"
+                                aria-label={LL.lists.removeField()}
+                              >
+                                <TrashIcon className="w-3 h-3" />
+                              </button>
+                            </div>
                           </th>
                         ))}
                         <th className="w-10" />
@@ -223,11 +370,42 @@ export function ListDetailPage() {
                           key={item.id}
                           className="border-b border-border last:border-0 hover:bg-muted/20 group"
                         >
-                          {list.fields.map((field) => (
-                            <td key={field.id} className="px-3 py-2.5 text-foreground">
-                              {getItemValue(item, field.id, field.fieldType)}
-                            </td>
-                          ))}
+                          {list.fields.map((field) => {
+                            const cellValue = getItemValue(item, field.id, field.fieldType);
+                            const isEditing =
+                              editingCell?.itemId === item.id && editingCell?.fieldId === field.id;
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-3 py-2.5 text-foreground cursor-pointer"
+                                onClick={() => {
+                                  if (!isEditing) {
+                                    handleCellClick(item.id, field.id, field.fieldType, cellValue);
+                                  }
+                                }}
+                              >
+                                {isEditing ? (
+                                  <input
+                                    ref={cellInputRef}
+                                    type={
+                                      field.fieldType === 'number'
+                                        ? 'number'
+                                        : field.fieldType === 'date'
+                                          ? 'date'
+                                          : 'text'
+                                    }
+                                    value={cellDraft}
+                                    onChange={(e) => setCellDraft(e.target.value)}
+                                    onBlur={handleCellSave}
+                                    onKeyDown={handleCellKeyDown}
+                                    className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
+                                  />
+                                ) : (
+                                  cellValue || <span className="text-muted-foreground/30">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
                           <td className="px-2 py-2.5">
                             <button
                               type="button"

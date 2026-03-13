@@ -19,6 +19,7 @@ export { DocumentIcon } from './DocumentIcon';
 export { HomeIcon } from './HomeIcon';
 export { LogOutIcon } from './LogOutIcon';
 export { MenuIcon } from './MenuIcon';
+export { PencilIcon } from './PencilIcon';
 export { PlusIcon } from './PlusIcon';
 export { SettingsIcon } from './SettingsIcon';
 export { TrashIcon } from './TrashIcon';

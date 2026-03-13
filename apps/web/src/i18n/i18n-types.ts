@@ -647,6 +647,76 @@ type RootTranslation = {
      * N​e​w​ ​i​t​e​m​…
      */
     itemNamePlaceholder: string;
+    /**
+     * B​a​c​k​ ​t​o​ ​l​i​s​t​s
+     */
+    backToLists: string;
+    /**
+     * L​i​s​t​ ​n​o​t​ ​f​o​u​n​d​.
+     */
+    notFound: string;
+    /**
+     * D​e​l​e​t​e​ ​i​t​e​m
+     */
+    deleteItem: string;
+    /**
+     * D​e​l​e​t​e​ ​t​h​i​s​ ​i​t​e​m​?
+     */
+    deleteItemConfirm: string;
+    /**
+     * A​d​d​ ​a​ ​f​i​e​l​d​ ​t​o​ ​s​t​a​r​t​ ​t​r​a​c​k​i​n​g​ ​d​a​t​a​.
+     */
+    noFields: string;
+    /**
+     * A​d​d​ ​f​i​e​l​d
+     */
+    addField: string;
+    /**
+     * F​i​e​l​d​ ​n​a​m​e
+     */
+    fieldNameLabel: string;
+    /**
+     * e​.​g​.​ ​S​t​a​t​u​s
+     */
+    fieldNamePlaceholder: string;
+    /**
+     * T​y​p​e
+     */
+    fieldTypeLabel: string;
+    fieldTypes: {
+      /**
+       * T​e​x​t
+       */
+      text: string;
+      /**
+       * N​u​m​b​e​r
+       */
+      number: string;
+      /**
+       * D​a​t​e
+       */
+      date: string;
+      /**
+       * C​h​e​c​k​b​o​x
+       */
+      checkbox: string;
+      /**
+       * S​e​l​e​c​t
+       */
+      select: string;
+      /**
+       * U​R​L
+       */
+      url: string;
+      /**
+       * P​e​r​s​o​n
+       */
+      person: string;
+      /**
+       * R​e​f​e​r​e​n​c​e
+       */
+      reference: string;
+    };
   };
 };
 
@@ -1266,6 +1336,76 @@ export type TranslationFunctions = {
      * New item…
      */
     itemNamePlaceholder: () => LocalizedString;
+    /**
+     * Back to lists
+     */
+    backToLists: () => LocalizedString;
+    /**
+     * List not found.
+     */
+    notFound: () => LocalizedString;
+    /**
+     * Delete item
+     */
+    deleteItem: () => LocalizedString;
+    /**
+     * Delete this item?
+     */
+    deleteItemConfirm: () => LocalizedString;
+    /**
+     * Add a field to start tracking data.
+     */
+    noFields: () => LocalizedString;
+    /**
+     * Add field
+     */
+    addField: () => LocalizedString;
+    /**
+     * Field name
+     */
+    fieldNameLabel: () => LocalizedString;
+    /**
+     * e.g. Status
+     */
+    fieldNamePlaceholder: () => LocalizedString;
+    /**
+     * Type
+     */
+    fieldTypeLabel: () => LocalizedString;
+    fieldTypes: {
+      /**
+       * Text
+       */
+      text: () => LocalizedString;
+      /**
+       * Number
+       */
+      number: () => LocalizedString;
+      /**
+       * Date
+       */
+      date: () => LocalizedString;
+      /**
+       * Checkbox
+       */
+      checkbox: () => LocalizedString;
+      /**
+       * Select
+       */
+      select: () => LocalizedString;
+      /**
+       * URL
+       */
+      url: () => LocalizedString;
+      /**
+       * Person
+       */
+      person: () => LocalizedString;
+      /**
+       * Reference
+       */
+      reference: () => LocalizedString;
+    };
   };
 };
 

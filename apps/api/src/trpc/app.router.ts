@@ -8,9 +8,6 @@ import { groupsRouter } from '../modules/groups/groups.router';
 import { type GroupsService } from '../modules/groups/groups.service';
 import { personsRouter } from '../modules/persons/persons.router';
 import { type PersonsService } from '../modules/persons/persons.service';
-import { tasksRouter } from '../modules/tasks/tasks.router';
-import { type TasksService } from '../modules/tasks/tasks.service';
-
 import { router, publicProcedure } from './trpc.router';
 
 /**
@@ -25,7 +22,6 @@ export const createAppRouter = (
   passKeyService: PassKeyService,
   personsServiceInstance: PersonsService,
   eventsServiceInstance: EventsService,
-  tasksServiceInstance: TasksService,
   groupsServiceInstance: GroupsService
 ) =>
   router({
@@ -43,9 +39,6 @@ export const createAppRouter = (
 
     // Events router (Phase 2)
     events: eventsRouter(eventsServiceInstance),
-
-    // Tasks router (Phase 2)
-    tasks: tasksRouter(tasksServiceInstance),
 
     // Groups router (Phase 2)
     groups: groupsRouter(groupsServiceInstance),

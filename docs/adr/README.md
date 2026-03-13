@@ -5,13 +5,15 @@ We use [MADR](https://adr.github.io/madr/) (Markdown Architectural Decision Reco
 
 ## Index
 
-| ADR                                                | Title                                        | Status   | Date       |
-| -------------------------------------------------- | -------------------------------------------- | -------- | ---------- |
-| [ADR-0001](0001-adr-process.md)                    | Use MADR for architecture decisions          | Accepted | 2026-02-20 |
-| [ADR-0002](0002-shared-domain-utilities.md)        | Domain-driven code structure                 | Accepted | 2026-02-20 |
-| [ADR-0003](0003-branching-and-release-strategy.md) | Branching & release strategy                 | Accepted | 2026-02-26 |
-| [ADR-0004](0004-cloud-agnostic-architecture.md)    | Cloud-agnostic architecture & portable stack | Accepted | 2026-02-20 |
-| [ADR-0005](0005-hybrid-encryption-architecture.md) | Hybrid encryption architecture               | Accepted | 2026-02-20 |
+| ADR                                                | Title                                          | Status   | Date       |
+| -------------------------------------------------- | ---------------------------------------------- | -------- | ---------- |
+| [ADR-0001](0001-adr-process.md)                    | Use MADR for architecture decisions            | Accepted | 2026-02-20 |
+| [ADR-0002](0002-shared-domain-utilities.md)        | Domain-driven code structure                   | Accepted | 2026-02-20 |
+| [ADR-0003](0003-branching-and-release-strategy.md) | Branching & release strategy                   | Accepted | 2026-02-26 |
+| [ADR-0004](0004-cloud-agnostic-architecture.md)    | Cloud-agnostic architecture & portable stack   | Accepted | 2026-02-20 |
+| [ADR-0005](0005-hybrid-encryption-architecture.md) | Hybrid encryption architecture                 | Accepted | 2026-02-20 |
+| [ADR-0006](0006-accessibility-standards.md)        | Frontend accessibility standards (WCAG 2.1 AA) | Accepted | 2026-02-20 |
+| [ADR-0007](0007-flexible-lists-architecture.md)    | Flexible Lists as universal content model      | Proposed | 2026-03-13 |
 
 ## Format
 

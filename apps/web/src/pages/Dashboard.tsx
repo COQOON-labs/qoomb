@@ -1,6 +1,6 @@
 import { Button, Card } from '@qoomb/ui';
 
-import { CalendarIcon, CheckIcon, DocumentIcon, PlusIcon } from '../components/icons';
+import { CheckIcon, PlusIcon } from '../components/icons';
 import { useCurrentPerson } from '../hooks/useCurrentPerson';
 import { useI18nContext } from '../i18n/i18n-react';
 import { AppShell } from '../layouts/AppShell';
@@ -76,41 +76,13 @@ export function Dashboard() {
       </div>
 
       <div className="px-4 md:px-8 pb-10 space-y-5 max-w-5xl">
-        {/* ── Events + Tasks grid ──────────────────────────────────────── */}
-        <div className="grid md:grid-cols-2 gap-5">
-          {/* Events */}
-          <Card padding="none">
-            <div className="px-5 pt-5 pb-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-black text-foreground uppercase tracking-wide text-sm">
-                  {LL.nav.calendar()}
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  {LL.common.showAll()}
-                </Button>
-              </div>
-
-              <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
-                <CalendarIcon className="w-8 h-8 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">{LL.dashboard.emptyEvents()}</p>
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <PlusIcon className="w-3.5 h-3.5" />
-                  {LL.entities.event()}
-                </Button>
-              </div>
-            </div>
-          </Card>
-
-          {/* Tasks */}
+        {/* ── Lists ────────────────────────────────────────────── */}
+        <div className="max-w-md">
           <Card padding="none">
             <div className="px-5 pt-5 pb-4">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-black text-foreground uppercase tracking-wide text-sm">
-                  {LL.nav.tasks()}
+                  {LL.nav.lists()}
                 </h2>
                 <Button
                   variant="ghost"
@@ -123,33 +95,25 @@ export function Dashboard() {
 
               <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
                 <CheckIcon className="w-8 h-8 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">{LL.dashboard.emptyTasks()}</p>
+                <p className="text-sm text-muted-foreground">{LL.dashboard.emptyList()}</p>
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <PlusIcon className="w-3.5 h-3.5" />
-                  {LL.entities.task()}
+                  {LL.entities.list()}
                 </Button>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* ── Quick create ─────────────────────────────────────────────── */}
+        {/* ── Quick create ────────────────────────────────────────────── */}
         <div>
           <h2 className="font-black text-foreground uppercase tracking-wide text-sm mb-3">
             {LL.dashboard.quickAdd.title()}
           </h2>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" className="gap-1.5">
-              <CalendarIcon className="w-3.5 h-3.5" />
-              {LL.entities.event()}
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5">
               <CheckIcon className="w-3.5 h-3.5" />
-              {LL.entities.task()}
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <DocumentIcon className="w-3.5 h-3.5" />
-              {LL.entities.page()}
+              {LL.entities.list()}
             </Button>
           </div>
         </div>

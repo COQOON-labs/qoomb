@@ -98,7 +98,7 @@ type RootTranslation = {
     /**
      * T​a​s​k​s
      */
-    tasks: string;
+    lists: string;
     /**
      * M​e​m​b​e​r​s
      */
@@ -128,7 +128,7 @@ type RootTranslation = {
     /**
      * T​a​s​k
      */
-    task: string;
+    list: string;
     /**
      * P​a​g​e
      */
@@ -517,7 +517,7 @@ type RootTranslation = {
     /**
      * A​d​d​ ​t​a​s​k
      */
-    addTask: string;
+    addListItem: string;
     /**
      * N​o​ ​e​v​e​n​t​s​ ​p​l​a​n​n​e​d​ ​y​e​t​.
      */
@@ -525,7 +525,7 @@ type RootTranslation = {
     /**
      * N​o​ ​t​a​s​k​s​ ​y​e​t​.
      */
-    emptyTasks: string;
+    emptyList: string;
     quickAdd: {
       /**
        * Q​u​i​c​k​ ​a​d​d
@@ -622,7 +622,7 @@ export type TranslationFunctions = {
     /**
      * Tasks
      */
-    tasks: () => LocalizedString;
+    lists: () => LocalizedString;
     /**
      * Members
      */
@@ -652,7 +652,7 @@ export type TranslationFunctions = {
     /**
      * Task
      */
-    task: () => LocalizedString;
+    list: () => LocalizedString;
     /**
      * Page
      */
@@ -1038,7 +1038,7 @@ export type TranslationFunctions = {
     /**
      * Add task
      */
-    addTask: () => LocalizedString;
+    addListItem: () => LocalizedString;
     /**
      * No events planned yet.
      */
@@ -1046,7 +1046,7 @@ export type TranslationFunctions = {
     /**
      * No tasks yet.
      */
-    emptyTasks: () => LocalizedString;
+    emptyList: () => LocalizedString;
     quickAdd: {
       /**
        * Quick add

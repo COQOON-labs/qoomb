@@ -15,12 +15,13 @@ Row-Level Security + schema isolation.
 
 ```text
 Hive
+├── Lists          (flexible, schema-configurable collections — see LISTS_CONCEPT.md)
+│   └── List Items (structured elements with custom fields)
 ├── Pages          (navigable, editable pages — tree structure)
 │   └── Sub-Pages  (parentId → Page, unlimited depth)
 ├── Events         (calendar entries — standalone or linked to a Page)
-├── Tasks          (actionable items — standalone or linked to a Page or Event)
 ├── Documents      (uploaded files — standalone or attached to a Page)
-└── (future) Collections
+└── Inbox          (per-person system list for quick capture)
 ```
 
 ---
@@ -112,56 +113,7 @@ INDEX: (hive_id, creator_id)
 INDEX: (hive_id, group_id)
 ```
 
-### 2.3 Task
-
-An actionable item. Can be linked to a Page, spawned from an Event, or
-standalone. Tasks cannot contain nested Tasks (flat list model — sub-tasks
-can be modelled as a separate Task with a parent_task_id if needed later).
-
-**Key properties:**
-
-- Optional `page_id` FK
-- Optional `event_id` FK ("spawned from" relationship)
-- Optional `assignee_id` → Person
-- Status: `todo | in_progress | done | cancelled`
-- Priority: integer (0 = none, 1 = low, 2 = medium, 3 = high)
-- Documents can be referenced from a Task (see §2.4)
-
-**Schema (planned):**
-
-```sql
-tasks:
-  id              UUID PK
-  hive_id         UUID FK → hives
-  creator_id      UUID FK → persons
-  page_id         UUID? FK → pages
-  event_id        UUID? FK → events
-  assignee_id     UUID? FK → persons
-  group_id        UUID? FK → hive_groups   -- required when visibility = 'group'
-  title           TEXT  ENCRYPTED
-  description     TEXT? ENCRYPTED
-  due_at          TIMESTAMPTZ?
-  completed_at    TIMESTAMPTZ?
-  status          VARCHAR(20) DEFAULT 'todo'   -- unencrypted (needed for filtering)
-  priority        SMALLINT DEFAULT 0           -- unencrypted
-  visibility      VARCHAR(20) DEFAULT 'hive'
-    -- CHECK (visibility IN ('hive', 'admins', 'group', 'private'))
-  created_at      TIMESTAMPTZ
-  updated_at      TIMESTAMPTZ
-
-INDEX: (hive_id, status)
-INDEX: (hive_id, assignee_id)
-INDEX: (hive_id, group_id)
-```
-
-**Relationship rules:**
-
-- Task → Document: A task's `description` (Tiptap content) can include
-  `{type: 'document-ref', attrs: {documentId}}` reference blocks.
-- Document → Task: Documents cannot contain tasks (Documents are files, not
-  editable content).
-
-### 2.4 Document (File Upload)
+### 2.3 Document (File Upload)
 
 An uploaded file (PDF, image, Office document, etc.). Stored in object storage;
 metadata lives in the DB. Can be attached to a Page or stand alone.
@@ -197,9 +149,8 @@ Content types link to Pages via an **optional FK on the content entity**, not
 via blocks stored in the Page's content blob. This is intentional:
 
 ```text
-events.page_id  ──→  pages.id   (nullable)
-tasks.page_id   ──→  pages.id   (nullable)
-documents.page_id → pages.id   (nullable)
+events.page_id    ──→  pages.id   (nullable)
+documents.page_id ──→  pages.id   (nullable)
 ```
 
 **Why Option A (not block-based):**
@@ -213,7 +164,7 @@ The Page's Tiptap content can embed a reference widget:
 
 ```json
 { "type": "event-ref", "attrs": { "eventId": "<uuid>" } }
-{ "type": "task-ref",  "attrs": { "taskId":  "<uuid>" } }
+{ "type": "list-item-ref", "attrs": { "itemId": "<uuid>" } }
 { "type": "doc-ref",   "attrs": { "docId":   "<uuid>" } }
 ```
 
@@ -293,7 +244,7 @@ Encrypted blobs in PostgreSQL  ←── full sync (non-file content)
                                Fuzzy / full-text search in-process
 ```
 
-**Sync scope:** All non-file content (pages, events, tasks, document metadata).
+**Sync scope:** All non-file content (pages, events, list items, document metadata).
 File binaries are fetched on demand.
 
 **Phase 2 (before local sync):** Server-side filtered queries. Client sends
@@ -325,7 +276,7 @@ or 90 days, whichever is less). Older versions are pruned by a background job.
 **Restore:** `pages.PATCH` with `versionId` copies the snapshot back as the
 current content (creates a new version marking the restore).
 
-Version history is **not** applied to Events, Tasks, or Documents in Phase 2.
+Version history is **not** applied to Events, Lists, or Documents in Phase 2.
 It is Page-specific.
 
 ---
@@ -343,7 +294,7 @@ activity_logs:
   hive_id         UUID FK → hives
   actor_id        UUID? FK → persons   -- null for system actions
   action          VARCHAR(20)          -- created|updated|deleted|shared|restored
-  resource_type   VARCHAR(50)          -- page|event|task|document
+  resource_type   VARCHAR(50)          -- page|event|list_item|document
   resource_id     UUID                 -- no FK (polymorphic)
   metadata        JSONB?               -- e.g. {fields_changed:['title']} — no values
   created_at      TIMESTAMPTZ
@@ -474,9 +425,11 @@ Admins gain group resource access by joining the group — no silent bypass.
 - [x] RBAC guard system (`requirePermission`, `requireResourceAccess`, `buildVisibilityFilter`)
 - [x] Groups infrastructure (`HiveGroup`, `HiveGroupMember`, RLS)
 - [x] Share system (`PersonShare`, `GroupShare` with ordinal `accessLevel`, RLS)
-- [ ] Persons module (hive member management)
-- [ ] Events module (CRUD + recurrence expansion)
-- [ ] Tasks module (CRUD + assignees + event→task spawning)
+- [x] Persons module (hive member management)
+- [x] Events module (CRUD + recurrence expansion)
+- [x] Lists foundation: Prisma schema, TypeScript types, Zod validators, permissions
+- [ ] Lists module: backend service + tRPC router (`apps/api/src/modules/lists/`)
+- [ ] Lists migration: Prisma migration applied to DB
 
 ### Phase 3 — Pages + Files
 

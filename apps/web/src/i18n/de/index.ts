@@ -26,7 +26,7 @@ const de = {
   nav: {
     overview: 'Übersicht',
     calendar: 'Kalender',
-    tasks: 'Aufgaben',
+    lists: 'Listen',
     members: 'Mitglieder',
     pages: 'Seiten',
     settings: 'Einstellungen',
@@ -37,7 +37,7 @@ const de = {
   // ── Domain entities ───────────────────────────────────────────────────────────────────
   entities: {
     event: 'Termin',
-    task: 'Aufgabe',
+    list: 'Liste',
     page: 'Seite',
   },
 
@@ -180,9 +180,9 @@ const de = {
     nextEvent: 'Nächster Termin',
     moreEvents: 'Weitere Termine',
     progressText: '{done} von {total} erledigt',
-    addTask: 'Aufgabe hinzufügen',
+    addListItem: 'Eintrag hinzufügen',
     emptyEvents: 'Noch keine Termine geplant.',
-    emptyTasks: 'Noch keine Aufgaben vorhanden.',
+    emptyList: 'Diese Liste ist noch leer.',
     quickAdd: {
       title: 'Schnell hinzufügen',
       placeholder: 'Was steht als nächstes an?',

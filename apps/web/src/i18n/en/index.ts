@@ -26,7 +26,7 @@ const en = {
   nav: {
     overview: 'Overview',
     calendar: 'Calendar',
-    tasks: 'Tasks',
+    lists: 'Lists',
     members: 'Members',
     pages: 'Pages',
     settings: 'Settings',
@@ -37,7 +37,7 @@ const en = {
   // ── Domain entities ───────────────────────────────────────────────────────────────────
   entities: {
     event: 'Event',
-    task: 'Task',
+    list: 'List',
     page: 'Page',
   },
 
@@ -179,9 +179,9 @@ const en = {
     nextEvent: 'Next event',
     moreEvents: 'More events',
     progressText: '{done:number} of {total:number} completed',
-    addTask: 'Add task',
+    addListItem: 'Add item',
     emptyEvents: 'No events planned yet.',
-    emptyTasks: 'No tasks yet.',
+    emptyList: 'This list is empty.',
     quickAdd: {
       title: 'Quick add',
       placeholder: "What's coming up next?",

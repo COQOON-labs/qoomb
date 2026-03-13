@@ -326,56 +326,6 @@ async function migrateEvents(enc: EncryptionService, fromVersion: number): Promi
   return stats;
 }
 
-async function migrateTasks(enc: EncryptionService, fromVersion: number): Promise<ReencryptStats> {
-  const stats: ReencryptStats = { migrated: 0, skipped: 0, failed: 0 };
-  const prefix = `v${fromVersion}:`;
-
-  const tasks = await prisma.task.findMany({
-    where: {
-      OR: [{ title: { startsWith: prefix } }, { description: { startsWith: prefix } }],
-    },
-  });
-
-  for (const task of tasks) {
-    try {
-      const decT = (s: string) => enc.decrypt(enc.parseFromStorage(s), task.hiveId);
-      const encT = (s: string) => enc.serializeToStorage(enc.encrypt(s, task.hiveId));
-
-      const newTitle = reencryptField(task.title, fromVersion, decT, encT);
-      const newDescription = reencryptField(task.description, fromVersion, decT, encT);
-
-      if (newTitle === null && newDescription === null) {
-        stats.skipped++;
-        continue;
-      }
-
-      if (!EXECUTE) {
-        console.log(`  [DRY RUN] task ${task.id}: fields → v${enc.getCurrentKeyVersion()}`);
-        stats.migrated++;
-        continue;
-      }
-
-      await prisma.$transaction(async (tx) => {
-        await tx.task.update({
-          where: { id: task.id },
-          data: {
-            ...(newTitle !== null && { title: newTitle }),
-            ...(newDescription !== null && { description: newDescription }),
-          },
-        });
-      });
-
-      stats.migrated++;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`  ❌ task ${task.id}: ${msg}`);
-      stats.failed++;
-    }
-  }
-
-  return stats;
-}
-
 async function migrateGroups(enc: EncryptionService, fromVersion: number): Promise<ReencryptStats> {
   const stats: ReencryptStats = { migrated: 0, skipped: 0, failed: 0 };
   const prefix = `v${fromVersion}:`;
@@ -469,9 +419,6 @@ async function main() {
 
   console.log('── events ──────────────────────────────────────────────────');
   results.events = await migrateEvents(enc, fromVersion);
-
-  console.log('── tasks ───────────────────────────────────────────────────');
-  results.tasks = await migrateTasks(enc, fromVersion);
 
   console.log('── groups ──────────────────────────────────────────────────');
   results.groups = await migrateGroups(enc, fromVersion);

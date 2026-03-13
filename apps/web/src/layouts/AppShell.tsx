@@ -28,7 +28,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', route: '/dashboard', icon: HomeIcon },
-  { id: 'tasks', route: '/tasks', icon: CheckIcon },
+  { id: 'lists', route: '/lists', icon: CheckIcon },
 ];
 
 // ── App Shell ─────────────────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ export function AppShell({ children }: AppShellProps) {
 
   const navLabels: Record<string, string> = {
     dashboard: LL.nav.overview(),
-    tasks: LL.nav.tasks(),
+    lists: LL.nav.lists(),
   };
 
   function handleNav(route: string) {

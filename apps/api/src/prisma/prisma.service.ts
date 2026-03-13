@@ -99,10 +99,6 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.event;
   }
 
-  get task() {
-    return this.client.task;
-  }
-
   // Expose Prisma methods
   async $connect() {
     return await this.client.$connect();

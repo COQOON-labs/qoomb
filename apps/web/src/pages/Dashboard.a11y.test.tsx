@@ -17,6 +17,7 @@ import { Dashboard } from '../pages/Dashboard';
 import {
   renderWithProviders,
   mockCurrentPerson,
+  mockUser,
   makeLLStub,
   expectNoAxeViolations,
 } from '../test/test-utils';
@@ -36,6 +37,20 @@ vi.mock('../i18n/i18n-react', () => ({
 
 vi.mock('../hooks/useCurrentPerson', () => ({
   useCurrentPerson: () => mockCurrentPerson,
+}));
+
+vi.mock('../lib/auth/useAuth', () => ({
+  useAuth: () => ({ user: mockUser, login: vi.fn(), logout: vi.fn() }),
+}));
+
+vi.mock('../lib/trpc/client', () => ({
+  trpc: {
+    lists: {
+      list: {
+        useQuery: () => ({ data: [], isLoading: false }),
+      },
+    },
+  },
 }));
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

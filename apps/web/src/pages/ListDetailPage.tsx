@@ -161,6 +161,42 @@ export function ListDetailPage() {
     [handleSaveName]
   );
 
+  // ── Icon picker ──────────────────────────────────────────────────────────
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const ICON_OPTIONS = [
+    '📋',
+    '✅',
+    '🛒',
+    '📝',
+    '📅',
+    '🎯',
+    '💡',
+    '📚',
+    '🏠',
+    '💰',
+    '🍽️',
+    '🏋️',
+    '🎵',
+    '✈️',
+    '🎁',
+    '⭐',
+  ];
+
+  const handleIconSelect = useCallback(
+    (icon: string) => {
+      if (!id) return;
+      updateList.mutate({ id, data: { icon } });
+      setShowIconPicker(false);
+    },
+    [id, updateList]
+  );
+
+  // ── Archive toggle ───────────────────────────────────────────────────────
+  const handleToggleArchive = useCallback(() => {
+    if (!id || !list) return;
+    updateList.mutate({ id, data: { isArchived: !list.isArchived } });
+  }, [id, list, updateList]);
+
   // ── Remove field ─────────────────────────────────────────────────────────
   const deleteField = trpc.lists.deleteField.useMutation({
     onSuccess: () => {
@@ -294,8 +330,34 @@ export function ListDetailPage() {
         ) : (
           <>
             {/* ── List name ──────────────────────────────────────────────── */}
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-2xl leading-none">{list.icon ?? '📋'}</span>
+            <div className="flex items-center gap-3 mb-4">
+              {/* Icon — click to change */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowIconPicker((p) => !p)}
+                  className="text-2xl leading-none hover:scale-110 transition-transform"
+                  aria-label={LL.lists.editIcon()}
+                >
+                  {list.icon ?? '📋'}
+                </button>
+                {showIconPicker && (
+                  <div className="absolute top-full left-0 mt-1 z-10 bg-background border border-border rounded-lg shadow-lg p-2 grid grid-cols-8 gap-1">
+                    {ICON_OPTIONS.map((icon) => (
+                      <button
+                        key={icon}
+                        type="button"
+                        onClick={() => handleIconSelect(icon)}
+                        className="w-8 h-8 flex items-center justify-center rounded hover:bg-muted transition-colors text-lg"
+                      >
+                        {icon}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Name — click to edit */}
               {editingName ? (
                 <input
                   ref={nameInputRef}
@@ -320,7 +382,26 @@ export function ListDetailPage() {
                   )}
                 </button>
               )}
+
+              {/* Archive toggle */}
+              {!list.systemKey && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto text-muted-foreground"
+                  onClick={handleToggleArchive}
+                >
+                  {list.isArchived ? LL.lists.unarchive() : LL.lists.archive()}
+                </Button>
+              )}
             </div>
+
+            {/* Archived notice */}
+            {list.isArchived && (
+              <div className="mb-4 px-3 py-2 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+                {LL.lists.archivedNotice()}
+              </div>
+            )}
 
             {/* ── No fields state ────────────────────────────────────────── */}
             {list.fields.length === 0 && !showAddField ? (
@@ -361,7 +442,9 @@ export function ListDetailPage() {
                             </div>
                           </th>
                         ))}
-                        <th className="w-10" />
+                        <th className="w-10">
+                          <span className="sr-only">{LL.common.remove()}</span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -433,6 +516,7 @@ export function ListDetailPage() {
                                     [field.id]: String(e.target.checked),
                                   }))
                                 }
+                                aria-label={field.name}
                                 className="h-4 w-4 rounded border-border"
                               />
                             ) : (

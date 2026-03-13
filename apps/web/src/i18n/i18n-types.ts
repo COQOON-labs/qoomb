@@ -745,6 +745,26 @@ type RootTranslation = {
      * C​h​o​o​s​e​ ​a​ ​t​e​m​p​l​a​t​e
      */
     chooseTemplate: string;
+    /**
+     * A​r​c​h​i​v​e​ ​l​i​s​t
+     */
+    archive: string;
+    /**
+     * U​n​a​r​c​h​i​v​e​ ​l​i​s​t
+     */
+    unarchive: string;
+    /**
+     * T​h​i​s​ ​l​i​s​t​ ​i​s​ ​a​r​c​h​i​v​e​d​.
+     */
+    archivedNotice: string;
+    /**
+     * S​h​o​w​ ​a​r​c​h​i​v​e​d
+     */
+    showArchived: string;
+    /**
+     * H​i​d​e​ ​a​r​c​h​i​v​e​d
+     */
+    hideArchived: string;
   };
 };
 
@@ -1462,6 +1482,26 @@ export type TranslationFunctions = {
      * Choose a template
      */
     chooseTemplate: () => LocalizedString;
+    /**
+     * Archive list
+     */
+    archive: () => LocalizedString;
+    /**
+     * Unarchive list
+     */
+    unarchive: () => LocalizedString;
+    /**
+     * This list is archived.
+     */
+    archivedNotice: () => LocalizedString;
+    /**
+     * Show archived
+     */
+    showArchived: () => LocalizedString;
+    /**
+     * Hide archived
+     */
+    hideArchived: () => LocalizedString;
   };
 };
 

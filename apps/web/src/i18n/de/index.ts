@@ -232,6 +232,11 @@ const de = {
     fromTemplate: 'Aus Vorlage',
     blankList: 'Leere Liste',
     chooseTemplate: 'Vorlage auswählen',
+    archive: 'Liste archivieren',
+    unarchive: 'Liste wiederherstellen',
+    archivedNotice: 'Diese Liste ist archiviert.',
+    showArchived: 'Archivierte anzeigen',
+    hideArchived: 'Archivierte ausblenden',
   },
 } satisfies Translation;
 

@@ -17,8 +17,10 @@ export function ListsPage() {
 
   const utils = trpc.useUtils();
 
+  const [showArchived, setShowArchived] = useState(false);
+
   const { data: lists = [], isLoading } = trpc.lists.list.useQuery(
-    { includeArchived: false },
+    { includeArchived: showArchived },
     { enabled: !!user }
   );
 
@@ -96,17 +98,27 @@ export function ListsPage() {
         {/* ── Header ───────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-black text-foreground tracking-tight">{LL.lists.title()}</h1>
-          {!showCreate && (
+          <div className="flex items-center gap-2">
             <Button
-              variant="primary"
+              variant="ghost"
               size="sm"
-              className="gap-1.5"
-              onClick={() => setShowCreate(true)}
+              className="text-muted-foreground"
+              onClick={() => setShowArchived((p) => !p)}
             >
-              <PlusIcon className="w-4 h-4" />
-              {LL.lists.newList()}
+              {showArchived ? LL.lists.hideArchived() : LL.lists.showArchived()}
             </Button>
-          )}
+            {!showCreate && (
+              <Button
+                variant="primary"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setShowCreate(true)}
+              >
+                <PlusIcon className="w-4 h-4" />
+                {LL.lists.newList()}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* ── Inline create form ───────────────────────────────────────── */}

@@ -231,6 +231,11 @@ const en = {
     fromTemplate: 'From template',
     blankList: 'Blank list',
     chooseTemplate: 'Choose a template',
+    archive: 'Archive list',
+    unarchive: 'Unarchive list',
+    archivedNotice: 'This list is archived.',
+    showArchived: 'Show archived',
+    hideArchived: 'Hide archived',
   },
 } satisfies BaseTranslation;
 

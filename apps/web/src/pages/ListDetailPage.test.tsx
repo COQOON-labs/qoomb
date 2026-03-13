@@ -1,0 +1,312 @@
+/**
+ * Tests for ListDetailPage
+ *
+ * Verifies that the list detail page renders fields, items,
+ * inline editing, and field management correctly.
+ *
+ * See docs/adr/0006-accessibility-standards.md
+ */
+
+import { screen, fireEvent } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import {
+  renderWithProviders,
+  mockUser,
+  makeLLStub,
+  expectNoAxeViolations,
+} from '../test/test-utils';
+
+import { ListDetailPage } from './ListDetailPage';
+
+// ── Mock data ─────────────────────────────────────────────────────────────────
+
+const mockList = {
+  id: 'list-001',
+  name: 'Shopping List',
+  icon: '🛒',
+  systemKey: null,
+  isArchived: false,
+  fields: [
+    { id: 'field-001', name: 'Item', fieldType: 'text', sortOrder: 0 },
+    { id: 'field-002', name: 'Quantity', fieldType: 'number', sortOrder: 1 },
+    { id: 'field-003', name: 'Done', fieldType: 'checkbox', sortOrder: 2 },
+  ],
+  views: [],
+};
+
+const mockItems = [
+  {
+    id: 'item-001',
+    listId: 'list-001',
+    creatorId: 'person-001',
+    values: [
+      {
+        fieldId: 'field-001',
+        valueText: 'Milk',
+        valueNumber: null,
+        valueDate: null,
+        valueBoolean: null,
+        valueRef: null,
+      },
+      {
+        fieldId: 'field-002',
+        valueText: null,
+        valueNumber: 2,
+        valueDate: null,
+        valueBoolean: null,
+        valueRef: null,
+      },
+      {
+        fieldId: 'field-003',
+        valueText: null,
+        valueNumber: null,
+        valueDate: null,
+        valueBoolean: false,
+        valueRef: null,
+      },
+    ],
+  },
+  {
+    id: 'item-002',
+    listId: 'list-001',
+    creatorId: 'person-001',
+    values: [
+      {
+        fieldId: 'field-001',
+        valueText: 'Bread',
+        valueNumber: null,
+        valueDate: null,
+        valueBoolean: null,
+        valueRef: null,
+      },
+      {
+        fieldId: 'field-002',
+        valueText: null,
+        valueNumber: 1,
+        valueDate: null,
+        valueBoolean: null,
+        valueRef: null,
+      },
+      {
+        fieldId: 'field-003',
+        valueText: null,
+        valueNumber: null,
+        valueDate: null,
+        valueBoolean: true,
+        valueRef: null,
+      },
+    ],
+  },
+];
+
+const mutateFn = vi.fn();
+
+// ── Module mocks ──────────────────────────────────────────────────────────────
+
+vi.mock('../layouts/AppShell', () => ({
+  AppShell: ({ children }: { children: ReactNode }) => (
+    <div data-testid="app-shell">{children}</div>
+  ),
+}));
+
+vi.mock('../i18n/i18n-react', () => ({
+  useI18nContext: () => ({ LL: makeLLStub() }),
+}));
+
+vi.mock('../lib/auth/useAuth', () => ({
+  useAuth: () => ({ user: mockUser, login: vi.fn(), logout: vi.fn() }),
+}));
+
+// Mock useParams to return list-001
+vi.mock('react-router-dom', async () => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  return {
+    ...actual,
+    useParams: () => ({ id: 'list-001' }),
+    useNavigate: () => vi.fn(),
+  };
+});
+
+vi.mock('../lib/trpc/client', () => ({
+  trpc: {
+    useUtils: () => ({
+      lists: {
+        get: { invalidate: vi.fn() },
+        list: { invalidate: vi.fn() },
+        listItems: { invalidate: vi.fn() },
+      },
+    }),
+    lists: {
+      get: {
+        useQuery: () => ({ data: mockList, isLoading: false }),
+      },
+      listItems: {
+        useQuery: () => ({ data: mockItems, isLoading: false }),
+      },
+      createField: {
+        useMutation: (opts?: { onSuccess?: () => void }) => ({
+          mutate: (...args: unknown[]) => {
+            mutateFn(...args);
+            opts?.onSuccess?.();
+          },
+          isPending: false,
+        }),
+      },
+      deleteField: {
+        useMutation: () => ({
+          mutate: mutateFn,
+          isPending: false,
+        }),
+      },
+      createItem: {
+        useMutation: (opts?: { onSuccess?: () => void }) => ({
+          mutate: (...args: unknown[]) => {
+            mutateFn(...args);
+            opts?.onSuccess?.();
+          },
+          isPending: false,
+        }),
+      },
+      deleteItem: {
+        useMutation: () => ({
+          mutate: mutateFn,
+          isPending: false,
+        }),
+      },
+      update: {
+        useMutation: (opts?: { onSuccess?: () => void }) => ({
+          mutate: (...args: unknown[]) => {
+            mutateFn(...args);
+            opts?.onSuccess?.();
+          },
+          isPending: false,
+        }),
+      },
+      updateItem: {
+        useMutation: (opts?: { onSuccess?: () => void }) => ({
+          mutate: (...args: unknown[]) => {
+            mutateFn(...args);
+            opts?.onSuccess?.();
+          },
+          isPending: false,
+        }),
+      },
+    },
+  },
+}));
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe('ListDetailPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders without crashing', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+    expect(screen.getByTestId('app-shell')).toBeInTheDocument();
+  });
+
+  it('has no axe violations', async () => {
+    const { container } = renderWithProviders(<ListDetailPage />, {
+      initialEntries: ['/lists/list-001'],
+    });
+    await expectNoAxeViolations(container);
+  });
+
+  it('displays the list name and icon', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+    expect(screen.getByText('Shopping List')).toBeInTheDocument();
+    expect(screen.getByText('🛒')).toBeInTheDocument();
+  });
+
+  it('renders field column headers', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+    expect(screen.getByText('Item')).toBeInTheDocument();
+    expect(screen.getByText('Quantity')).toBeInTheDocument();
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  it('renders item values in the table', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+    expect(screen.getByText('Milk')).toBeInTheDocument();
+    expect(screen.getByText('Bread')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
+  });
+
+  it('renders checkbox values as check marks', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+    // Bread has Done=true → ✓, Milk has Done=false → ✗
+    expect(screen.getByText('✓')).toBeInTheDocument();
+    expect(screen.getByText('✗')).toBeInTheDocument();
+  });
+
+  it('shows back-to-lists button', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+    expect(screen.getByText(/lists\.backToLists/)).toBeInTheDocument();
+  });
+
+  it('shows delete buttons for items on hover', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+    const deleteButtons = screen.getAllByRole('button', { name: /lists\.deleteItem/ });
+    // One delete button per item
+    expect(deleteButtons).toHaveLength(2);
+  });
+
+  it('shows remove-field buttons in column headers', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+    const removeButtons = screen.getAllByRole('button', { name: /lists\.removeField/ });
+    // One per field
+    expect(removeButtons).toHaveLength(3);
+  });
+
+  it('shows add-field button', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+    const addFieldBtn = screen.getByRole('button', { name: /lists\.addField/ });
+    expect(addFieldBtn).toBeInTheDocument();
+  });
+
+  it('opens add field form', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+
+    fireEvent.click(screen.getByRole('button', { name: /lists\.addField/ }));
+
+    // Should show field name input and type selector
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('shows add-item row', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+    const addItemBtn = screen.getByRole('button', { name: /lists\.addItem/ });
+    expect(addItemBtn).toBeInTheDocument();
+  });
+
+  it('name is click-to-edit for non-system lists', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+
+    // Click on the list name button to start editing
+    const nameButton = screen.getByRole('button', { name: /Shopping List/ });
+    fireEvent.click(nameButton);
+
+    // Should now show an input field with the current name
+    const input = screen.getByDisplayValue('Shopping List');
+    expect(input).toBeInTheDocument();
+  });
+
+  it('all buttons have accessible names', () => {
+    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
+
+    const buttons = screen.getAllByRole('button');
+    buttons.forEach((btn) => {
+      const name =
+        btn.getAttribute('aria-label') ??
+        btn.getAttribute('aria-labelledby') ??
+        btn.textContent?.trim();
+      expect(name, `button "${btn.outerHTML}" has no accessible name`).toBeTruthy();
+    });
+  });
+});

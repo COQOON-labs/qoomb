@@ -104,6 +104,10 @@ type RootTranslation = {
      */
     members: string;
     /**
+     * G​r​o​u​p​s
+     */
+    groups: string;
+    /**
      * P​a​g​e​s
      */
     pages: string;
@@ -585,6 +589,142 @@ type RootTranslation = {
       placeholder: string;
     };
   };
+  members: {
+    /**
+     * M​e​m​b​e​r​s
+     */
+    title: string;
+    /**
+     * I​n​v​i​t​e​ ​m​e​m​b​e​r
+     */
+    invite: string;
+    /**
+     * E​m​a​i​l​ ​a​d​d​r​e​s​s
+     */
+    inviteEmailLabel: string;
+    /**
+     * n​a​m​e​@​e​x​a​m​p​l​e​.​c​o​m
+     */
+    inviteEmailPlaceholder: string;
+    /**
+     * S​e​n​d​ ​i​n​v​i​t​a​t​i​o​n
+     */
+    inviteSend: string;
+    /**
+     * I​n​v​i​t​a​t​i​o​n​ ​s​e​n​t​!
+     */
+    inviteSuccess: string;
+    /**
+     * C​h​a​n​g​e​ ​r​o​l​e
+     */
+    changeRole: string;
+    /**
+     * C​h​a​n​g​e​ ​{​n​a​m​e​}​'​s​ ​r​o​l​e​?
+     * @param {string} name
+     */
+    changeRoleConfirm: RequiredParams<'name'>;
+    /**
+     * R​e​m​o​v​e​ ​m​e​m​b​e​r
+     */
+    removeMember: string;
+    /**
+     * R​e​m​o​v​e​ ​{​n​a​m​e​}​ ​f​r​o​m​ ​t​h​e​ ​h​i​v​e​?
+     * @param {string} name
+     */
+    removeConfirm: RequiredParams<'name'>;
+    /**
+     * N​o​ ​m​e​m​b​e​r​s​ ​y​e​t​.
+     */
+    emptyState: string;
+    /**
+     * (​Y​o​u​)
+     */
+    you: string;
+    /**
+     * J​o​i​n​e​d
+     */
+    joined: string;
+  };
+  groups: {
+    /**
+     * G​r​o​u​p​s
+     */
+    title: string;
+    /**
+     * N​e​w​ ​g​r​o​u​p
+     */
+    newGroup: string;
+    /**
+     * C​r​e​a​t​e​ ​g​r​o​u​p
+     */
+    createGroup: string;
+    /**
+     * G​r​o​u​p​ ​n​a​m​e
+     */
+    groupNameLabel: string;
+    /**
+     * e​.​g​.​ ​P​r​o​j​e​c​t​ ​t​e​a​m
+     */
+    groupNamePlaceholder: string;
+    /**
+     * D​e​s​c​r​i​p​t​i​o​n
+     */
+    descriptionLabel: string;
+    /**
+     * W​h​a​t​ ​i​s​ ​t​h​i​s​ ​g​r​o​u​p​ ​f​o​r​?
+     */
+    descriptionPlaceholder: string;
+    /**
+     * D​e​l​e​t​e​ ​g​r​o​u​p
+     */
+    deleteGroup: string;
+    /**
+     * T​h​i​s​ ​g​r​o​u​p​ ​a​n​d​ ​a​l​l​ ​a​s​s​i​g​n​m​e​n​t​s​ ​w​i​l​l​ ​b​e​ ​d​e​l​e​t​e​d​.
+     */
+    deleteConfirm: string;
+    /**
+     * N​o​ ​g​r​o​u​p​s​ ​y​e​t​.
+     */
+    emptyState: string;
+    /**
+     * C​r​e​a​t​e​ ​a​ ​g​r​o​u​p​ ​t​o​ ​o​r​g​a​n​i​s​e​ ​m​e​m​b​e​r​s​.
+     */
+    emptyStateHint: string;
+    /**
+     * {​c​o​u​n​t​}​ ​m​e​m​b​e​r​s
+     * @param {number} count
+     */
+    memberCount: RequiredParams<'count'>;
+    /**
+     * A​d​d​ ​m​e​m​b​e​r
+     */
+    addMember: string;
+    /**
+     * R​e​m​o​v​e​ ​f​r​o​m​ ​g​r​o​u​p
+     */
+    removeMember: string;
+    /**
+     * R​e​m​o​v​e​ ​{​n​a​m​e​}​ ​f​r​o​m​ ​t​h​i​s​ ​g​r​o​u​p​?
+     * @param {string} name
+     */
+    removeMemberConfirm: RequiredParams<'name'>;
+    /**
+     * N​o​ ​m​e​m​b​e​r​s​ ​i​n​ ​t​h​i​s​ ​g​r​o​u​p​ ​y​e​t​.
+     */
+    noMembers: string;
+    /**
+     * S​e​l​e​c​t​ ​m​e​m​b​e​r
+     */
+    selectMember: string;
+    /**
+     * B​a​c​k​ ​t​o​ ​g​r​o​u​p​s
+     */
+    backToGroups: string;
+    /**
+     * G​r​o​u​p​ ​n​o​t​ ​f​o​u​n​d​.
+     */
+    notFound: string;
+  };
   lists: {
     /**
      * L​i​s​t​s
@@ -856,6 +996,10 @@ export type TranslationFunctions = {
      * Members
      */
     members: () => LocalizedString;
+    /**
+     * Groups
+     */
+    groups: () => LocalizedString;
     /**
      * Pages
      */
@@ -1322,6 +1466,138 @@ export type TranslationFunctions = {
        */
       placeholder: () => LocalizedString;
     };
+  };
+  members: {
+    /**
+     * Members
+     */
+    title: () => LocalizedString;
+    /**
+     * Invite member
+     */
+    invite: () => LocalizedString;
+    /**
+     * Email address
+     */
+    inviteEmailLabel: () => LocalizedString;
+    /**
+     * name@example.com
+     */
+    inviteEmailPlaceholder: () => LocalizedString;
+    /**
+     * Send invitation
+     */
+    inviteSend: () => LocalizedString;
+    /**
+     * Invitation sent!
+     */
+    inviteSuccess: () => LocalizedString;
+    /**
+     * Change role
+     */
+    changeRole: () => LocalizedString;
+    /**
+     * Change {name}'s role?
+     */
+    changeRoleConfirm: (arg: { name: string }) => LocalizedString;
+    /**
+     * Remove member
+     */
+    removeMember: () => LocalizedString;
+    /**
+     * Remove {name} from the hive?
+     */
+    removeConfirm: (arg: { name: string }) => LocalizedString;
+    /**
+     * No members yet.
+     */
+    emptyState: () => LocalizedString;
+    /**
+     * (You)
+     */
+    you: () => LocalizedString;
+    /**
+     * Joined
+     */
+    joined: () => LocalizedString;
+  };
+  groups: {
+    /**
+     * Groups
+     */
+    title: () => LocalizedString;
+    /**
+     * New group
+     */
+    newGroup: () => LocalizedString;
+    /**
+     * Create group
+     */
+    createGroup: () => LocalizedString;
+    /**
+     * Group name
+     */
+    groupNameLabel: () => LocalizedString;
+    /**
+     * e.g. Project team
+     */
+    groupNamePlaceholder: () => LocalizedString;
+    /**
+     * Description
+     */
+    descriptionLabel: () => LocalizedString;
+    /**
+     * What is this group for?
+     */
+    descriptionPlaceholder: () => LocalizedString;
+    /**
+     * Delete group
+     */
+    deleteGroup: () => LocalizedString;
+    /**
+     * This group and all assignments will be deleted.
+     */
+    deleteConfirm: () => LocalizedString;
+    /**
+     * No groups yet.
+     */
+    emptyState: () => LocalizedString;
+    /**
+     * Create a group to organise members.
+     */
+    emptyStateHint: () => LocalizedString;
+    /**
+     * {count} members
+     */
+    memberCount: (arg: { count: number }) => LocalizedString;
+    /**
+     * Add member
+     */
+    addMember: () => LocalizedString;
+    /**
+     * Remove from group
+     */
+    removeMember: () => LocalizedString;
+    /**
+     * Remove {name} from this group?
+     */
+    removeMemberConfirm: (arg: { name: string }) => LocalizedString;
+    /**
+     * No members in this group yet.
+     */
+    noMembers: () => LocalizedString;
+    /**
+     * Select member
+     */
+    selectMember: () => LocalizedString;
+    /**
+     * Back to groups
+     */
+    backToGroups: () => LocalizedString;
+    /**
+     * Group not found.
+     */
+    notFound: () => LocalizedString;
   };
   lists: {
     /**

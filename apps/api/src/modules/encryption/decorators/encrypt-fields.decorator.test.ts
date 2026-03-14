@@ -40,19 +40,13 @@ function buildTestService(enc: EncryptionService) {
     }
 
     @DecryptFields({ fields: ['name', 'description'], hiveIdArg: 1 })
-    async getHive(
-      data: Record<string, unknown>,
-      _hiveId: string
-    ): Promise<Record<string, unknown>> {
-      return { ...data };
+    getHive(data: Record<string, unknown>, _hiveId: string): Promise<Record<string, unknown>> {
+      return Promise.resolve({ ...data });
     }
 
     @EncryptDecryptFields({ fields: ['title'], hiveIdArg: 1 })
-    async updateEvent(
-      data: Record<string, unknown>,
-      _hiveId: string
-    ): Promise<Record<string, unknown>> {
-      return { ...data };
+    updateEvent(data: Record<string, unknown>, _hiveId: string): Promise<Record<string, unknown>> {
+      return Promise.resolve({ ...data });
     }
 
     @EncryptFields({ fields: ['name', 'fields.*.label'], hiveIdArg: 1 })
@@ -61,11 +55,8 @@ function buildTestService(enc: EncryptionService) {
     }
 
     @DecryptFields({ fields: ['name', 'fields.*.label'], hiveIdArg: 1 })
-    async getList(
-      data: Record<string, unknown>,
-      _hiveId: string
-    ): Promise<Record<string, unknown>> {
-      return { ...data };
+    getList(data: Record<string, unknown>, _hiveId: string): Promise<Record<string, unknown>> {
+      return Promise.resolve({ ...data });
     }
 
     @EncryptFields({ fields: ['email'], userIdArg: 1 })
@@ -74,11 +65,8 @@ function buildTestService(enc: EncryptionService) {
     }
 
     @DecryptFields({ fields: ['email'], userIdArg: 1 })
-    async getUser(
-      data: Record<string, unknown>,
-      _userId: string
-    ): Promise<Record<string, unknown>> {
-      return { ...data };
+    getUser(data: Record<string, unknown>, _userId: string): Promise<Record<string, unknown>> {
+      return Promise.resolve({ ...data });
     }
   }
 

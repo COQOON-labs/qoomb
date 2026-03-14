@@ -200,13 +200,28 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qoomb_test
           REDIS_URL: redis://localhost:6379
-          ENCRYPTION_KEY: dGVzdC1lbmNyeXB0aW9uLWtleS1mb3ItY2ktb25seQ==
+          ENCRYPTION_KEY: dGVzdC1lbmNyeXB0aW9uLWtleS1mb3ItY2ktb25seQ== # gitleaks:allow
           KEY_PROVIDER: environment
           NODE_ENV: test
+
+      - name: Enforce coverage thresholds (API)
+        run: pnpm --filter @qoomb/api test:cov
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qoomb_test
+          REDIS_URL: redis://localhost:6379
+          ENCRYPTION_KEY: dGVzdC1lbmNyeXB0aW9uLWtleS1mb3ItY2ktb25seQ== # gitleaks:allow
+          KEY_PROVIDER: environment
+          NODE_ENV: test
+
+      - name: Enforce coverage thresholds (validators)
+        run: pnpm --filter @qoomb/validators test:coverage
 
       - name: Upload coverage
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         if: always()
         with:
-          files: ./coverage/lcov.info
+          files: |
+            apps/api/coverage/lcov.info
+            packages/validators/coverage/lcov.info
+            apps/web/coverage/lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}

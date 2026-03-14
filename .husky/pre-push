@@ -16,9 +16,13 @@ pnpm run format:check
 echo "📝 Type checking..."
 pnpm turbo run type-check
 
-# Run tests
+# Run tests + enforce coverage thresholds (80% on tested modules)
 echo "🧪 Running tests..."
 pnpm turbo run test --filter='!@qoomb/web'
+
+echo "📊 Checking coverage thresholds..."
+pnpm --filter @qoomb/api test:cov --silent
+pnpm --filter @qoomb/validators test:coverage --silent
 
 # Build check (full build to catch Vite import resolution errors)
 echo "🏗️  Build check..."

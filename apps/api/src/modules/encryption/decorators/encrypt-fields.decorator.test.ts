@@ -164,28 +164,28 @@ describe('@DecryptFields (hive-scoped, flat fields)', () => {
     svc = buildTestService(enc);
   });
 
-  it('decrypts specified fields in the return value', () => {
+  it('decrypts specified fields in the return value', async () => {
     const encName = enc.serializeToStorage(enc.encrypt('Hive Alpha', hiveId));
     const encDesc = enc.serializeToStorage(enc.encrypt('Top secret', hiveId));
-    const result = svc.getHive({ name: encName, description: encDesc }, hiveId);
+    const result = await svc.getHive({ name: encName, description: encDesc }, hiveId);
     expect(result['name']).toBe('Hive Alpha');
     expect(result['description']).toBe('Top secret');
   });
 
-  it('falls back gracefully to plaintext when field is not encrypted (migration window)', () => {
+  it('falls back gracefully to plaintext when field is not encrypted (migration window)', async () => {
     // During a migration window old records may not yet be encrypted
-    const result = svc.getHive({ name: 'plain-text-not-yet-encrypted' }, hiveId);
+    const result = await svc.getHive({ name: 'plain-text-not-yet-encrypted' }, hiveId);
     expect(result['name']).toBe('plain-text-not-yet-encrypted');
   });
 
-  it('skips null fields without throwing', () => {
-    const result = svc.getHive({ name: null }, hiveId);
+  it('skips null fields without throwing', async () => {
+    const result = await svc.getHive({ name: null }, hiveId);
     expect(result['name']).toBeNull();
   });
 
-  it('leaves non-listed fields unchanged', () => {
+  it('leaves non-listed fields unchanged', async () => {
     const encName = enc.serializeToStorage(enc.encrypt('Test', hiveId));
-    const result = svc.getHive({ name: encName, extra: 'unchanged' }, hiveId);
+    const result = await svc.getHive({ name: encName, extra: 'unchanged' }, hiveId);
     expect(result['extra']).toBe('unchanged');
   });
 });
@@ -204,7 +204,7 @@ describe('@DecryptFields (nested wildcard path: fields.*.label)', () => {
     svc = buildTestService(enc);
   });
 
-  it('decrypts each element of a nested array path', () => {
+  it('decrypts each element of a nested array path', async () => {
     const stored = {
       name: enc.serializeToStorage(enc.encrypt('My List', hiveId)),
       fields: [
@@ -212,7 +212,7 @@ describe('@DecryptFields (nested wildcard path: fields.*.label)', () => {
         { label: enc.serializeToStorage(enc.encrypt('Col B', hiveId)) },
       ],
     };
-    const result = svc.getList(stored, hiveId);
+    const result = await svc.getList(stored, hiveId);
     const fields = result['fields'] as Array<{ label: string }>;
     expect(fields[0].label).toBe('Col A');
     expect(fields[1].label).toBe('Col B');
@@ -232,14 +232,14 @@ describe('@EncryptDecryptFields', () => {
     svc = buildTestService(enc);
   });
 
-  it('encrypts input and decrypts output — caller sees original plaintext', () => {
-    const result = svc.updateEvent({ title: 'Encrypted Meeting' }, hiveId);
+  it('encrypts input and decrypts output — caller sees original plaintext', async () => {
+    const result = await svc.updateEvent({ title: 'Encrypted Meeting' }, hiveId);
     // Output must be decrypted back to plaintext
     expect(result['title']).toBe('Encrypted Meeting');
   });
 
-  it('leaves non-listed fields unchanged through the round-trip', () => {
-    const result = svc.updateEvent({ title: 'Meeting', extra: 'meta' }, hiveId);
+  it('leaves non-listed fields unchanged through the round-trip', async () => {
+    const result = await svc.updateEvent({ title: 'Meeting', extra: 'meta' }, hiveId);
     expect(result['extra']).toBe('meta');
   });
 });
@@ -265,9 +265,9 @@ describe('User-scoped encryption (userIdArg)', () => {
     expect(result['email'] as string).toMatch(/^v\d+:/);
   });
 
-  it('@DecryptFields with userIdArg decrypts field using the user key', () => {
+  it('@DecryptFields with userIdArg decrypts field using the user key', async () => {
     const stored = enc.encryptForUser('user@example.com', userId);
-    const result = svc.getUser({ email: stored }, userId);
+    const result = await svc.getUser({ email: stored }, userId);
     expect(result['email']).toBe('user@example.com');
   });
 

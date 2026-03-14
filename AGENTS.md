@@ -295,12 +295,16 @@ qoomb/
   - `recurrenceRule` stored as opaque JSON — no server-side expansion; client handles display
   - Full 5-stage RBAC guard on `get` / `update` / `delete`
   - `list` uses `buildVisibilityFilter()` for share-aware visibility (role + personal/group shares)
-- Tasks module: `list`, `get`, `create`, `update`, `complete`, `delete`
-  - AES-256-GCM field encryption: `title`, `description`
-  - Tasks can be linked to events via `eventId` — `tasks.create` + `tasks.list` with `eventId`
-    enables a to-do list per event (e.g. "what needs to be done before this event starts")
-  - Full 5-stage RBAC guard on `get` / `update` / `complete` / `delete`
-  - `list` uses `buildVisibilityFilter()` for share-aware visibility (role + personal/group shares)
+- Lists module (replaced Tasks): `list`, `get`, `create`, `update`, `archive`, `delete`
+  - Generic EAV model: `List → ListField → ListItem → ListItemValue`
+  - AES-256-GCM field encryption: `name` (list + fields + views), item values
+  - System lists (e.g. "tasks" per user) auto-created on first access
+  - Templates system (`ListTemplate`, `ListTemplateField`, `ListTemplateView`)
+  - Items: `createItem`, `updateItem`, `deleteItem`, `listItems`
+  - Fields: `createField`, `updateField`, `removeField`
+  - Full 5-stage RBAC guard on all operations
+  - Frontend: ListsPage (overview) + ListDetailPage (inline editing, icon picker, archive)
+  - **Location:** `apps/api/src/modules/lists/`, `apps/web/src/pages/ListsPage.tsx`, `ListDetailPage.tsx`
 - Groups module: `list`, `get`, `create`, `update`, `delete`, `addMember`, `removeMember`
   - AES-256-GCM field encryption: `name`, `description`
   - MEMBERS_VIEW for read, MEMBERS_MANAGE for write
@@ -311,29 +315,51 @@ qoomb/
   - `requirePermissionOrOwnership` — ANY vs OWN logic
   - `requireResourceAccess` — 5-stage check: shares → private → group → admins → hive/role
   - `buildVisibilityFilter` — Prisma WHERE clause for list queries (avoids N+1)
-- **Location:** `apps/api/src/modules/persons/`, `events/`, `tasks/`, `groups/`
+- **Location:** `apps/api/src/modules/persons/`, `events/`, `lists/`, `groups/`
 
 ### 🚧 TODO (Next)
 
-**Phase 3 (Pages + Files):**
+**Phase 3 (Hive Management & Communication):**
 
-- [ ] Pages module (Tiptap editor, tree hierarchy, version history)
-- [ ] Documents module (file upload + envelope encryption)
+- [ ] Hive CRUD: update name/locale/settings, delete hive (with cascade)
+- [ ] Hive settings page (frontend)
+- [ ] Invitation management UI: list pending, resend, revoke
+- [ ] In-app notifications: bell icon, notification model, read/unread state
+- [ ] Notification emails: event reminders, task assignments, member joined/left
+- [ ] Email preferences: per-user notification opt-in/out, unsubscribe
+- [ ] Email queue with retry (replace inline-send)
+- [ ] In-app messaging: direct messages between hive members (encrypted)
 - [ ] Activity log (change feed / "what changed since last login")
 
-**Phase 4 (Offline + Search):**
+**Phase 4 (Sync & Real-Time):**
 
-- [ ] Client-side SQLite sync (vector clock conflict resolution)
+- [ ] Client-side SQLite cache (wa-sqlite + OPFS in browser, native on mobile)
+- [ ] Web Worker isolation for local DB (XSS protection)
+- [ ] SSE change feed (Redis Pub/Sub → per-hive event stream)
+- [ ] Optimistic mutations with server confirmation
+- [ ] Offline queue with reconnect-merge
+- [ ] Field-level LWW conflict resolution
 - [ ] Full local search (all non-file content synced to client)
-- [ ] E2E encryption option (libsodium)
 - [ ] pgvector semantic search (server-side complement)
+- [ ] E2E encryption option (libsodium — opt-in for ultra-sensitive content)
 
-**Phase 5 (Calendar Integration):**
+**Phase 5 (Pages & Files):**
+
+- [ ] Pages module (Tiptap editor, tree hierarchy, version history)
+- [ ] Real-time collaborative editing (Yjs CRDT)
+- [ ] Documents module (file upload + envelope encryption)
+
+**Phase 6 (Calendar Integration):**
 
 - [ ] Google Calendar (OAuth + webhook)
 - [ ] Apple Calendar (CalDAV)
 - [ ] Microsoft Outlook (Graph API)
 - [ ] Bidirectional sync + conflict resolution UI
+
+**Data Paradigm:** All business-data values are AES-256-GCM encrypted at rest. The server
+decrypts on read and sends plaintext over TLS. Filtering, sorting, and searching happen
+**client-side** (local SQLite from Phase 4, in-memory before that). The server never filters
+on decrypted values — it fetches all records within a scope and returns them in bulk.
 
 **See:** `docs/CONTENT_ARCHITECTURE.md` for the complete content model, schema sketches, encryption strategy, and phase details.
 
@@ -787,6 +813,27 @@ export class EventsService {
 }
 ```
 
+**Nested path syntax** — for models with encrypted fields inside relations (arrays), use
+`'relation.*.field'` where `*` iterates over each array element:
+
+```typescript
+// Lists have encrypted name + nested fields[].name + views[].name
+const LIST_ENC_FIELDS = ['name', 'fields.*.name', 'views.*.name'];
+
+@DecryptFields({ fields: LIST_ENC_FIELDS, hiveIdArg: 0 })
+async list(hiveId: string): Promise<ListRow[]> {
+  return this.prisma.list.findMany({
+    include: { fields: true, views: true },
+  });
+  // name, fields[].name, views[].name are all decrypted automatically
+}
+```
+
+**When to use manual encryption instead:** When values need serialization before encryption
+(e.g. ListItemValue stores all field types as encrypted strings) — use explicit helper methods.
+
+````
+
 ### Pattern: Schema-Safe Raw SQL
 
 ```typescript
@@ -804,7 +851,7 @@ async complexQuery(hiveId: string) {
 
   return result;
 }
-```
+````
 
 ### Pattern: Validation & Sanitization
 
@@ -1285,8 +1332,9 @@ apps/api/src/modules/encryption/
 
 **When to bump versions:**
 
-- **0.1.0 → 0.2.0:** Phase 2 complete (Auth, Events, Tasks, Persons production-ready)
-- **0.2.0 → 0.3.0:** Phase 3 complete (Offline sync, E2E encryption, semantic search)
+- **0.1.0 → 0.2.0:** Phase 2 complete (Core Content: Events, Lists, Persons, Groups)
+- **0.2.0 → 0.3.0:** Phase 3 complete (Hive Management & Communication)
+- **0.3.0 → 0.4.0:** Phase 4 complete (Sync & Real-Time, Offline, Search)
 - **0.x.0 → 1.0.0:** First production release (all core features stable)
 - **PATCH (0.1.x):** Critical bugfixes only, no new features
 
@@ -1319,8 +1367,8 @@ apps/api/src/modules/encryption/
 
 ---
 
-**Last Updated:** 2026-02-19
-**Version:** 0.1.0 (Phase 1 - Foundation with PWA, Mobile, Dev Tools)
+**Last Updated:** 2026-03-14
+**Version:** 0.2.1 (Phase 2 - Core Content: Events, Lists, Persons, Groups)
 
 <!-- gitnexus:start -->
 

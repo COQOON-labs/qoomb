@@ -96,13 +96,17 @@ type RootTranslation = {
      */
     calendar: string;
     /**
-     * T​a​s​k​s
+     * L​i​s​t​s
      */
-    tasks: string;
+    lists: string;
     /**
      * M​e​m​b​e​r​s
      */
     members: string;
+    /**
+     * G​r​o​u​p​s
+     */
+    groups: string;
     /**
      * P​a​g​e​s
      */
@@ -126,9 +130,9 @@ type RootTranslation = {
      */
     event: string;
     /**
-     * T​a​s​k
+     * L​i​s​t
      */
-    task: string;
+    list: string;
     /**
      * P​a​g​e
      */
@@ -479,17 +483,65 @@ type RootTranslation = {
      */
     memberCount: RequiredParams<'count'>;
     greetings: {
+      /**
+       * G​o​o​d​ ​m​o​r​n​i​n​g​,​ ​{​n​a​m​e​}​!​ ​☀​️
+       * @param {string} name
+       */
       morning0: RequiredParams<'name'>;
+      /**
+       * R​i​s​e​ ​a​n​d​ ​s​h​i​n​e​,​ ​{​n​a​m​e​}​!
+       * @param {string} name
+       */
       morning1: RequiredParams<'name'>;
+      /**
+       * M​o​r​n​i​n​g​,​ ​{​n​a​m​e​}​!​ ​☀​️
+       * @param {string} name
+       */
       morning2: RequiredParams<'name'>;
+      /**
+       * H​e​y​ ​{​n​a​m​e​}​,​ ​t​h​e​r​e​ ​y​o​u​ ​a​r​e​!
+       * @param {string} name
+       */
       afternoon0: RequiredParams<'name'>;
+      /**
+       * G​l​a​d​ ​y​o​u​'​r​e​ ​h​e​r​e​,​ ​{​n​a​m​e​}​!
+       * @param {string} name
+       */
       afternoon1: RequiredParams<'name'>;
+      /**
+       * W​e​l​c​o​m​e​ ​b​a​c​k​,​ ​{​n​a​m​e​}​!
+       * @param {string} name
+       */
       afternoon2: RequiredParams<'name'>;
+      /**
+       * G​o​o​d​ ​e​v​e​n​i​n​g​,​ ​{​n​a​m​e​}​!​ ​�​�
+       * @param {string} name
+       */
       evening0: RequiredParams<'name'>;
+      /**
+       * G​o​o​d​ ​t​o​ ​s​e​e​ ​y​o​u​,​ ​{​n​a​m​e​}​!​ ​�​�
+       * @param {string} name
+       */
       evening1: RequiredParams<'name'>;
+      /**
+       * T​i​m​e​ ​t​o​ ​u​n​w​i​n​d​,​ ​{​n​a​m​e​}​!​ ​�​�
+       * @param {string} name
+       */
       evening2: RequiredParams<'name'>;
+      /**
+       * S​t​i​l​l​ ​u​p​,​ ​{​n​a​m​e​}​?
+       * @param {string} name
+       */
       night0: RequiredParams<'name'>;
+      /**
+       * B​u​r​n​i​n​g​ ​t​h​e​ ​m​i​d​n​i​g​h​t​ ​o​i​l​,​ ​{​n​a​m​e​}​?​ ​�​�
+       * @param {string} name
+       */
       night1: RequiredParams<'name'>;
+      /**
+       * S​t​i​l​l​ ​g​o​i​n​g​ ​s​t​r​o​n​g​,​ ​{​n​a​m​e​}​!​ ​�​�
+       * @param {string} name
+       */
       night2: RequiredParams<'name'>;
     };
     /**
@@ -515,17 +567,17 @@ type RootTranslation = {
      */
     progressText: RequiredParams<'done' | 'total'>;
     /**
-     * A​d​d​ ​t​a​s​k
+     * A​d​d​ ​i​t​e​m
      */
-    addTask: string;
+    addListItem: string;
     /**
      * N​o​ ​e​v​e​n​t​s​ ​p​l​a​n​n​e​d​ ​y​e​t​.
      */
     emptyEvents: string;
     /**
-     * N​o​ ​t​a​s​k​s​ ​y​e​t​.
+     * T​h​i​s​ ​l​i​s​t​ ​i​s​ ​e​m​p​t​y​.
      */
-    emptyTasks: string;
+    emptyList: string;
     quickAdd: {
       /**
        * Q​u​i​c​k​ ​a​d​d
@@ -536,6 +588,323 @@ type RootTranslation = {
        */
       placeholder: string;
     };
+  };
+  members: {
+    /**
+     * M​e​m​b​e​r​s
+     */
+    title: string;
+    /**
+     * I​n​v​i​t​e​ ​m​e​m​b​e​r
+     */
+    invite: string;
+    /**
+     * E​m​a​i​l​ ​a​d​d​r​e​s​s
+     */
+    inviteEmailLabel: string;
+    /**
+     * n​a​m​e​@​e​x​a​m​p​l​e​.​c​o​m
+     */
+    inviteEmailPlaceholder: string;
+    /**
+     * S​e​n​d​ ​i​n​v​i​t​a​t​i​o​n
+     */
+    inviteSend: string;
+    /**
+     * I​n​v​i​t​a​t​i​o​n​ ​s​e​n​t​!
+     */
+    inviteSuccess: string;
+    /**
+     * C​h​a​n​g​e​ ​r​o​l​e
+     */
+    changeRole: string;
+    /**
+     * C​h​a​n​g​e​ ​{​n​a​m​e​}​'​s​ ​r​o​l​e​?
+     * @param {string} name
+     */
+    changeRoleConfirm: RequiredParams<'name'>;
+    /**
+     * R​e​m​o​v​e​ ​m​e​m​b​e​r
+     */
+    removeMember: string;
+    /**
+     * R​e​m​o​v​e​ ​{​n​a​m​e​}​ ​f​r​o​m​ ​t​h​e​ ​h​i​v​e​?
+     * @param {string} name
+     */
+    removeConfirm: RequiredParams<'name'>;
+    /**
+     * N​o​ ​m​e​m​b​e​r​s​ ​y​e​t​.
+     */
+    emptyState: string;
+    /**
+     * (​Y​o​u​)
+     */
+    you: string;
+    /**
+     * J​o​i​n​e​d
+     */
+    joined: string;
+  };
+  groups: {
+    /**
+     * G​r​o​u​p​s
+     */
+    title: string;
+    /**
+     * N​e​w​ ​g​r​o​u​p
+     */
+    newGroup: string;
+    /**
+     * C​r​e​a​t​e​ ​g​r​o​u​p
+     */
+    createGroup: string;
+    /**
+     * G​r​o​u​p​ ​n​a​m​e
+     */
+    groupNameLabel: string;
+    /**
+     * e​.​g​.​ ​P​r​o​j​e​c​t​ ​t​e​a​m
+     */
+    groupNamePlaceholder: string;
+    /**
+     * D​e​s​c​r​i​p​t​i​o​n
+     */
+    descriptionLabel: string;
+    /**
+     * W​h​a​t​ ​i​s​ ​t​h​i​s​ ​g​r​o​u​p​ ​f​o​r​?
+     */
+    descriptionPlaceholder: string;
+    /**
+     * D​e​l​e​t​e​ ​g​r​o​u​p
+     */
+    deleteGroup: string;
+    /**
+     * T​h​i​s​ ​g​r​o​u​p​ ​a​n​d​ ​a​l​l​ ​a​s​s​i​g​n​m​e​n​t​s​ ​w​i​l​l​ ​b​e​ ​d​e​l​e​t​e​d​.
+     */
+    deleteConfirm: string;
+    /**
+     * N​o​ ​g​r​o​u​p​s​ ​y​e​t​.
+     */
+    emptyState: string;
+    /**
+     * C​r​e​a​t​e​ ​a​ ​g​r​o​u​p​ ​t​o​ ​o​r​g​a​n​i​s​e​ ​m​e​m​b​e​r​s​.
+     */
+    emptyStateHint: string;
+    /**
+     * {​c​o​u​n​t​}​ ​m​e​m​b​e​r​s
+     * @param {number} count
+     */
+    memberCount: RequiredParams<'count'>;
+    /**
+     * A​d​d​ ​m​e​m​b​e​r
+     */
+    addMember: string;
+    /**
+     * R​e​m​o​v​e​ ​f​r​o​m​ ​g​r​o​u​p
+     */
+    removeMember: string;
+    /**
+     * R​e​m​o​v​e​ ​{​n​a​m​e​}​ ​f​r​o​m​ ​t​h​i​s​ ​g​r​o​u​p​?
+     * @param {string} name
+     */
+    removeMemberConfirm: RequiredParams<'name'>;
+    /**
+     * N​o​ ​m​e​m​b​e​r​s​ ​i​n​ ​t​h​i​s​ ​g​r​o​u​p​ ​y​e​t​.
+     */
+    noMembers: string;
+    /**
+     * S​e​l​e​c​t​ ​m​e​m​b​e​r
+     */
+    selectMember: string;
+    /**
+     * B​a​c​k​ ​t​o​ ​g​r​o​u​p​s
+     */
+    backToGroups: string;
+    /**
+     * G​r​o​u​p​ ​n​o​t​ ​f​o​u​n​d​.
+     */
+    notFound: string;
+  };
+  lists: {
+    /**
+     * L​i​s​t​s
+     */
+    title: string;
+    /**
+     * N​e​w​ ​l​i​s​t
+     */
+    newList: string;
+    /**
+     * C​r​e​a​t​e​ ​l​i​s​t
+     */
+    createList: string;
+    /**
+     * N​a​m​e
+     */
+    listNameLabel: string;
+    /**
+     * e​.​g​.​ ​S​h​o​p​p​i​n​g​ ​l​i​s​t
+     */
+    listNamePlaceholder: string;
+    /**
+     * L​i​s​t​ ​c​r​e​a​t​e​d
+     */
+    createSuccess: string;
+    /**
+     * D​e​l​e​t​e​ ​l​i​s​t
+     */
+    deleteList: string;
+    /**
+     * T​h​i​s​ ​l​i​s​t​ ​a​n​d​ ​a​l​l​ ​i​t​s​ ​i​t​e​m​s​ ​w​i​l​l​ ​b​e​ ​p​e​r​m​a​n​e​n​t​l​y​ ​d​e​l​e​t​e​d​.
+     */
+    deleteConfirm: string;
+    /**
+     * N​o​ ​l​i​s​t​s​ ​y​e​t​.
+     */
+    emptyState: string;
+    /**
+     * C​r​e​a​t​e​ ​a​ ​l​i​s​t​ ​t​o​ ​g​e​t​ ​s​t​a​r​t​e​d​.
+     */
+    emptyStateHint: string;
+    /**
+     * A​r​c​h​i​v​e​d
+     */
+    archivedBadge: string;
+    /**
+     * {​c​o​u​n​t​}​ ​i​t​e​m​s
+     * @param {number} count
+     */
+    itemCount: RequiredParams<'count'>;
+    /**
+     * A​d​d​ ​i​t​e​m
+     */
+    addItem: string;
+    /**
+     * T​h​i​s​ ​l​i​s​t​ ​i​s​ ​e​m​p​t​y​.
+     */
+    emptyItems: string;
+    /**
+     * N​e​w​ ​i​t​e​m​…
+     */
+    itemNamePlaceholder: string;
+    /**
+     * B​a​c​k​ ​t​o​ ​l​i​s​t​s
+     */
+    backToLists: string;
+    /**
+     * L​i​s​t​ ​n​o​t​ ​f​o​u​n​d​.
+     */
+    notFound: string;
+    /**
+     * D​e​l​e​t​e​ ​i​t​e​m
+     */
+    deleteItem: string;
+    /**
+     * D​e​l​e​t​e​ ​t​h​i​s​ ​i​t​e​m​?
+     */
+    deleteItemConfirm: string;
+    /**
+     * A​d​d​ ​a​ ​f​i​e​l​d​ ​t​o​ ​s​t​a​r​t​ ​t​r​a​c​k​i​n​g​ ​d​a​t​a​.
+     */
+    noFields: string;
+    /**
+     * A​d​d​ ​f​i​e​l​d
+     */
+    addField: string;
+    /**
+     * F​i​e​l​d​ ​n​a​m​e
+     */
+    fieldNameLabel: string;
+    /**
+     * e​.​g​.​ ​S​t​a​t​u​s
+     */
+    fieldNamePlaceholder: string;
+    /**
+     * T​y​p​e
+     */
+    fieldTypeLabel: string;
+    fieldTypes: {
+      /**
+       * T​e​x​t
+       */
+      text: string;
+      /**
+       * N​u​m​b​e​r
+       */
+      number: string;
+      /**
+       * D​a​t​e
+       */
+      date: string;
+      /**
+       * C​h​e​c​k​b​o​x
+       */
+      checkbox: string;
+      /**
+       * S​e​l​e​c​t
+       */
+      select: string;
+      /**
+       * U​R​L
+       */
+      url: string;
+      /**
+       * P​e​r​s​o​n
+       */
+      person: string;
+      /**
+       * R​e​f​e​r​e​n​c​e
+       */
+      reference: string;
+    };
+    /**
+     * R​e​n​a​m​e​ ​l​i​s​t
+     */
+    editName: string;
+    /**
+     * C​h​a​n​g​e​ ​i​c​o​n
+     */
+    editIcon: string;
+    /**
+     * R​e​m​o​v​e​ ​f​i​e​l​d
+     */
+    removeField: string;
+    /**
+     * R​e​m​o​v​e​ ​t​h​i​s​ ​f​i​e​l​d​ ​a​n​d​ ​a​l​l​ ​i​t​s​ ​d​a​t​a​?
+     */
+    removeFieldConfirm: string;
+    /**
+     * F​r​o​m​ ​t​e​m​p​l​a​t​e
+     */
+    fromTemplate: string;
+    /**
+     * B​l​a​n​k​ ​l​i​s​t
+     */
+    blankList: string;
+    /**
+     * C​h​o​o​s​e​ ​a​ ​t​e​m​p​l​a​t​e
+     */
+    chooseTemplate: string;
+    /**
+     * A​r​c​h​i​v​e​ ​l​i​s​t
+     */
+    archive: string;
+    /**
+     * U​n​a​r​c​h​i​v​e​ ​l​i​s​t
+     */
+    unarchive: string;
+    /**
+     * T​h​i​s​ ​l​i​s​t​ ​i​s​ ​a​r​c​h​i​v​e​d​.
+     */
+    archivedNotice: string;
+    /**
+     * S​h​o​w​ ​a​r​c​h​i​v​e​d
+     */
+    showArchived: string;
+    /**
+     * H​i​d​e​ ​a​r​c​h​i​v​e​d
+     */
+    hideArchived: string;
   };
 };
 
@@ -620,13 +989,17 @@ export type TranslationFunctions = {
      */
     calendar: () => LocalizedString;
     /**
-     * Tasks
+     * Lists
      */
-    tasks: () => LocalizedString;
+    lists: () => LocalizedString;
     /**
      * Members
      */
     members: () => LocalizedString;
+    /**
+     * Groups
+     */
+    groups: () => LocalizedString;
     /**
      * Pages
      */
@@ -650,9 +1023,9 @@ export type TranslationFunctions = {
      */
     event: () => LocalizedString;
     /**
-     * Task
+     * List
      */
-    task: () => LocalizedString;
+    list: () => LocalizedString;
     /**
      * Page
      */
@@ -1002,17 +1375,53 @@ export type TranslationFunctions = {
      */
     memberCount: (arg: { count: number }) => LocalizedString;
     greetings: {
+      /**
+       * Good morning, {name}! ☀️
+       */
       morning0: (arg: { name: string }) => LocalizedString;
+      /**
+       * Rise and shine, {name}!
+       */
       morning1: (arg: { name: string }) => LocalizedString;
+      /**
+       * Morning, {name}! ☀️
+       */
       morning2: (arg: { name: string }) => LocalizedString;
+      /**
+       * Hey {name}, there you are!
+       */
       afternoon0: (arg: { name: string }) => LocalizedString;
+      /**
+       * Glad you're here, {name}!
+       */
       afternoon1: (arg: { name: string }) => LocalizedString;
+      /**
+       * Welcome back, {name}!
+       */
       afternoon2: (arg: { name: string }) => LocalizedString;
+      /**
+       * Good evening, {name}! 🌆
+       */
       evening0: (arg: { name: string }) => LocalizedString;
+      /**
+       * Good to see you, {name}! 🌆
+       */
       evening1: (arg: { name: string }) => LocalizedString;
+      /**
+       * Time to unwind, {name}! 🌆
+       */
       evening2: (arg: { name: string }) => LocalizedString;
+      /**
+       * Still up, {name}?
+       */
       night0: (arg: { name: string }) => LocalizedString;
+      /**
+       * Burning the midnight oil, {name}? 🌙
+       */
       night1: (arg: { name: string }) => LocalizedString;
+      /**
+       * Still going strong, {name}! 🌙
+       */
       night2: (arg: { name: string }) => LocalizedString;
     };
     /**
@@ -1036,17 +1445,17 @@ export type TranslationFunctions = {
      */
     progressText: (arg: { done: number; total: number }) => LocalizedString;
     /**
-     * Add task
+     * Add item
      */
-    addTask: () => LocalizedString;
+    addListItem: () => LocalizedString;
     /**
      * No events planned yet.
      */
     emptyEvents: () => LocalizedString;
     /**
-     * No tasks yet.
+     * This list is empty.
      */
-    emptyTasks: () => LocalizedString;
+    emptyList: () => LocalizedString;
     quickAdd: {
       /**
        * Quick add
@@ -1057,6 +1466,318 @@ export type TranslationFunctions = {
        */
       placeholder: () => LocalizedString;
     };
+  };
+  members: {
+    /**
+     * Members
+     */
+    title: () => LocalizedString;
+    /**
+     * Invite member
+     */
+    invite: () => LocalizedString;
+    /**
+     * Email address
+     */
+    inviteEmailLabel: () => LocalizedString;
+    /**
+     * name@example.com
+     */
+    inviteEmailPlaceholder: () => LocalizedString;
+    /**
+     * Send invitation
+     */
+    inviteSend: () => LocalizedString;
+    /**
+     * Invitation sent!
+     */
+    inviteSuccess: () => LocalizedString;
+    /**
+     * Change role
+     */
+    changeRole: () => LocalizedString;
+    /**
+     * Change {name}'s role?
+     */
+    changeRoleConfirm: (arg: { name: string }) => LocalizedString;
+    /**
+     * Remove member
+     */
+    removeMember: () => LocalizedString;
+    /**
+     * Remove {name} from the hive?
+     */
+    removeConfirm: (arg: { name: string }) => LocalizedString;
+    /**
+     * No members yet.
+     */
+    emptyState: () => LocalizedString;
+    /**
+     * (You)
+     */
+    you: () => LocalizedString;
+    /**
+     * Joined
+     */
+    joined: () => LocalizedString;
+  };
+  groups: {
+    /**
+     * Groups
+     */
+    title: () => LocalizedString;
+    /**
+     * New group
+     */
+    newGroup: () => LocalizedString;
+    /**
+     * Create group
+     */
+    createGroup: () => LocalizedString;
+    /**
+     * Group name
+     */
+    groupNameLabel: () => LocalizedString;
+    /**
+     * e.g. Project team
+     */
+    groupNamePlaceholder: () => LocalizedString;
+    /**
+     * Description
+     */
+    descriptionLabel: () => LocalizedString;
+    /**
+     * What is this group for?
+     */
+    descriptionPlaceholder: () => LocalizedString;
+    /**
+     * Delete group
+     */
+    deleteGroup: () => LocalizedString;
+    /**
+     * This group and all assignments will be deleted.
+     */
+    deleteConfirm: () => LocalizedString;
+    /**
+     * No groups yet.
+     */
+    emptyState: () => LocalizedString;
+    /**
+     * Create a group to organise members.
+     */
+    emptyStateHint: () => LocalizedString;
+    /**
+     * {count} members
+     */
+    memberCount: (arg: { count: number }) => LocalizedString;
+    /**
+     * Add member
+     */
+    addMember: () => LocalizedString;
+    /**
+     * Remove from group
+     */
+    removeMember: () => LocalizedString;
+    /**
+     * Remove {name} from this group?
+     */
+    removeMemberConfirm: (arg: { name: string }) => LocalizedString;
+    /**
+     * No members in this group yet.
+     */
+    noMembers: () => LocalizedString;
+    /**
+     * Select member
+     */
+    selectMember: () => LocalizedString;
+    /**
+     * Back to groups
+     */
+    backToGroups: () => LocalizedString;
+    /**
+     * Group not found.
+     */
+    notFound: () => LocalizedString;
+  };
+  lists: {
+    /**
+     * Lists
+     */
+    title: () => LocalizedString;
+    /**
+     * New list
+     */
+    newList: () => LocalizedString;
+    /**
+     * Create list
+     */
+    createList: () => LocalizedString;
+    /**
+     * Name
+     */
+    listNameLabel: () => LocalizedString;
+    /**
+     * e.g. Shopping list
+     */
+    listNamePlaceholder: () => LocalizedString;
+    /**
+     * List created
+     */
+    createSuccess: () => LocalizedString;
+    /**
+     * Delete list
+     */
+    deleteList: () => LocalizedString;
+    /**
+     * This list and all its items will be permanently deleted.
+     */
+    deleteConfirm: () => LocalizedString;
+    /**
+     * No lists yet.
+     */
+    emptyState: () => LocalizedString;
+    /**
+     * Create a list to get started.
+     */
+    emptyStateHint: () => LocalizedString;
+    /**
+     * Archived
+     */
+    archivedBadge: () => LocalizedString;
+    /**
+     * {count} items
+     */
+    itemCount: (arg: { count: number }) => LocalizedString;
+    /**
+     * Add item
+     */
+    addItem: () => LocalizedString;
+    /**
+     * This list is empty.
+     */
+    emptyItems: () => LocalizedString;
+    /**
+     * New item…
+     */
+    itemNamePlaceholder: () => LocalizedString;
+    /**
+     * Back to lists
+     */
+    backToLists: () => LocalizedString;
+    /**
+     * List not found.
+     */
+    notFound: () => LocalizedString;
+    /**
+     * Delete item
+     */
+    deleteItem: () => LocalizedString;
+    /**
+     * Delete this item?
+     */
+    deleteItemConfirm: () => LocalizedString;
+    /**
+     * Add a field to start tracking data.
+     */
+    noFields: () => LocalizedString;
+    /**
+     * Add field
+     */
+    addField: () => LocalizedString;
+    /**
+     * Field name
+     */
+    fieldNameLabel: () => LocalizedString;
+    /**
+     * e.g. Status
+     */
+    fieldNamePlaceholder: () => LocalizedString;
+    /**
+     * Type
+     */
+    fieldTypeLabel: () => LocalizedString;
+    fieldTypes: {
+      /**
+       * Text
+       */
+      text: () => LocalizedString;
+      /**
+       * Number
+       */
+      number: () => LocalizedString;
+      /**
+       * Date
+       */
+      date: () => LocalizedString;
+      /**
+       * Checkbox
+       */
+      checkbox: () => LocalizedString;
+      /**
+       * Select
+       */
+      select: () => LocalizedString;
+      /**
+       * URL
+       */
+      url: () => LocalizedString;
+      /**
+       * Person
+       */
+      person: () => LocalizedString;
+      /**
+       * Reference
+       */
+      reference: () => LocalizedString;
+    };
+    /**
+     * Rename list
+     */
+    editName: () => LocalizedString;
+    /**
+     * Change icon
+     */
+    editIcon: () => LocalizedString;
+    /**
+     * Remove field
+     */
+    removeField: () => LocalizedString;
+    /**
+     * Remove this field and all its data?
+     */
+    removeFieldConfirm: () => LocalizedString;
+    /**
+     * From template
+     */
+    fromTemplate: () => LocalizedString;
+    /**
+     * Blank list
+     */
+    blankList: () => LocalizedString;
+    /**
+     * Choose a template
+     */
+    chooseTemplate: () => LocalizedString;
+    /**
+     * Archive list
+     */
+    archive: () => LocalizedString;
+    /**
+     * Unarchive list
+     */
+    unarchive: () => LocalizedString;
+    /**
+     * This list is archived.
+     */
+    archivedNotice: () => LocalizedString;
+    /**
+     * Show archived
+     */
+    showArchived: () => LocalizedString;
+    /**
+     * Hide archived
+     */
+    hideArchived: () => LocalizedString;
   };
 };
 

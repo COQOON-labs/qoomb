@@ -1,0 +1,503 @@
+import { Injectable } from '@nestjs/common';
+import {
+  type ListField,
+  type ListItem,
+  type ListItemValue,
+  type ListView,
+  type ListTemplate,
+  type ListTemplateField,
+  type ListTemplateView,
+  Prisma,
+} from '@prisma/client';
+
+import { PrismaService } from '../../prisma/prisma.service';
+import { DecryptFields, EncryptDecryptFields, EncryptionService } from '../encryption';
+
+// ============================================
+// TYPES
+// ============================================
+
+/** List row including decrypted name and nested fields + views */
+export type ListRow = {
+  id: string;
+  hiveId: string;
+  creatorId: string;
+  groupId: string | null;
+  name: string; // decrypted
+  icon: string | null;
+  systemKey: string | null;
+  visibility: string;
+  sortOrder: number;
+  isArchived: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  fields: ListFieldRow[];
+  views: ListViewRow[];
+};
+
+/** ListField row with decrypted name */
+export type ListFieldRow = Omit<ListField, 'name'> & { name: string };
+
+/** ListView row with decrypted name */
+export type ListViewRow = Omit<ListView, 'name'> & { name: string };
+
+/** ListItem row with decrypted values */
+export type ListItemRow = Omit<ListItem, 'values'> & { values: ListItemValueRow[] };
+
+/** Single EAV value with decrypted value */
+export type ListItemValueRow = Omit<ListItemValue, 'value'> & { value: string | null };
+
+/** ListTemplate row with decrypted name/description for hive-owned templates */
+export type ListTemplateRow = ListTemplate & {
+  fields: ListTemplateField[];
+  views: ListTemplateView[];
+};
+
+// ── Input interfaces ──────────────────────────────────────────────────────────
+
+export interface CreateListData {
+  name: string;
+  icon?: string;
+  visibility: string;
+  groupId?: string;
+}
+
+export interface UpdateListData {
+  name?: string;
+  icon?: string | null;
+  visibility?: string;
+  groupId?: string | null;
+  isArchived?: boolean;
+  sortOrder?: number;
+}
+
+export interface CreateFieldData {
+  fieldType: string;
+  name: string;
+  config?: Record<string, unknown>;
+  isRequired?: boolean;
+  isTitle?: boolean;
+}
+
+export interface UpdateFieldData {
+  name?: string;
+  config?: Record<string, unknown>;
+  isRequired?: boolean;
+  sortOrder?: number;
+}
+
+export interface CreateViewData {
+  name: string;
+  viewType: string;
+  config?: Record<string, unknown>;
+  filter?: Record<string, unknown>;
+  sortBy?: Array<{ fieldId: string; direction: string }>;
+  isDefault?: boolean;
+}
+
+export interface UpdateViewData {
+  name?: string;
+  config?: Record<string, unknown>;
+  filter?: Record<string, unknown> | null;
+  sortBy?: Array<{ fieldId: string; direction: string }> | null;
+  isDefault?: boolean;
+}
+
+export interface UpdateItemData {
+  assigneeId?: string | null;
+  values?: Record<string, unknown>;
+  sortOrder?: number;
+}
+
+// ============================================
+// SERVICE
+// ============================================
+
+/**
+ * ListsService
+ *
+ * Handles all DB operations for lists, list items, fields, and views.
+ *
+ * Encryption (ADR-0005):
+ * - List.name → AES-256-GCM (hive-scoped key)
+ * - ListField.name → AES-256-GCM (hive-scoped key)
+ * - ListView.name → AES-256-GCM (hive-scoped key)
+ * - ListItemValue.value → AES-256-GCM for ALL field types (single encrypted column)
+ *   Values are serialized to string before encryption. Client parses back by field type.
+ *
+ * Encryption approach:
+ * - @DecryptFields / @EncryptDecryptFields decorators with nested path syntax
+ *   (e.g. 'fields.*.name') handle List, ListField, and ListView name fields.
+ * - ListItemValue encryption is manual (_buildValueUpserts / _decryptItemValues)
+ *   because values need to be serialized to string before encryption.
+ *
+ * Callers are responsible for authorization (use requirePermission / requireResourceAccess in the router).
+ */
+
+/** Encrypted field paths for a List with included fields + views */
+const LIST_ENC_FIELDS = ['name', 'fields.*.name', 'views.*.name'];
+
+/** Encrypted field for a single ListField row */
+const FIELD_ENC_FIELDS = ['name'];
+
+/** Encrypted field for a single ListView row */
+const VIEW_ENC_FIELDS = ['name'];
+
+/** Safely converts an unknown field value to string without falling back to [object Object]. */
+function unknownToStr(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (value instanceof Date) return value.toISOString();
+  return JSON.stringify(value) ?? '';
+}
+
+@Injectable()
+export class ListsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly enc: EncryptionService
+  ) {}
+
+  // ── List CRUD ─────────────────────────────────────────────────────────────
+
+  @DecryptFields({ fields: LIST_ENC_FIELDS, hiveIdArg: 0 })
+  // eslint-disable-next-line @typescript-eslint/require-await -- await handled by @DecryptFields wrapper
+  async list(
+    hiveId: string,
+    visibilityFilter: Prisma.ListWhereInput,
+    includeArchived = false
+  ): Promise<ListRow[]> {
+    const where: Prisma.ListWhereInput = { hiveId, ...visibilityFilter };
+    if (!includeArchived) where.isArchived = false;
+
+    return this.prisma.list.findMany({
+      where,
+      include: { fields: { orderBy: { sortOrder: 'asc' } }, views: true },
+      orderBy: { sortOrder: 'asc' },
+    }) as unknown as ListRow[];
+  }
+
+  @DecryptFields({ fields: LIST_ENC_FIELDS, hiveIdArg: 1 })
+  // eslint-disable-next-line @typescript-eslint/require-await -- await handled by @DecryptFields wrapper
+  async getById(id: string, hiveId: string): Promise<ListRow | null> {
+    return this.prisma.list.findFirst({
+      where: { id, hiveId },
+      include: { fields: { orderBy: { sortOrder: 'asc' } }, views: true },
+    }) as unknown as ListRow | null;
+  }
+
+  @EncryptDecryptFields({ fields: LIST_ENC_FIELDS, hiveIdArg: 1 })
+  // eslint-disable-next-line @typescript-eslint/require-await -- await handled by @EncryptDecryptFields wrapper
+  async create(data: CreateListData, hiveId: string, creatorId: string): Promise<ListRow> {
+    return this.prisma.list.create({
+      data: {
+        hiveId,
+        creatorId,
+        name: data.name,
+        icon: data.icon ?? null,
+        visibility: data.visibility,
+        groupId: data.groupId ?? null,
+        systemKey: null,
+      },
+      include: { fields: true, views: true },
+    }) as unknown as ListRow;
+  }
+
+  @DecryptFields({ fields: LIST_ENC_FIELDS, hiveIdArg: 2 })
+  async update(id: string, data: UpdateListData, hiveId: string): Promise<ListRow> {
+    const patch: Prisma.ListUncheckedUpdateInput = {};
+    if (data.name !== undefined) patch.name = this._encryptName(data.name, hiveId);
+    if ('icon' in data) patch.icon = data.icon ?? null;
+    if (data.visibility !== undefined) patch.visibility = data.visibility;
+    if ('groupId' in data) patch.groupId = data.groupId ?? null;
+    if (data.isArchived !== undefined) patch.isArchived = data.isArchived;
+    if (data.sortOrder !== undefined) patch.sortOrder = data.sortOrder;
+
+    const result = await this.prisma.list.updateMany({ where: { id, hiveId }, data: patch });
+    if (result.count === 0) throw new Error('List not found in this hive');
+
+    return this.prisma.list.findUniqueOrThrow({
+      where: { id },
+      include: { fields: { orderBy: { sortOrder: 'asc' } }, views: true },
+    }) as unknown as ListRow;
+  }
+
+  async remove(id: string, hiveId: string): Promise<boolean> {
+    const result = await this.prisma.list.deleteMany({ where: { id, hiveId } });
+    return result.count > 0;
+  }
+
+  // ── Field CRUD ────────────────────────────────────────────────────────────
+
+  @EncryptDecryptFields({ fields: FIELD_ENC_FIELDS, hiveIdArg: 1 })
+  async createField(listId: string, hiveId: string, data: CreateFieldData): Promise<ListFieldRow> {
+    const maxOrder = await this.prisma.listField.aggregate({
+      where: { listId },
+      _max: { sortOrder: true },
+    });
+    return this.prisma.listField.create({
+      data: {
+        listId,
+        name: data.name,
+        fieldType: data.fieldType,
+        config: (data.config ?? {}) as Prisma.InputJsonValue,
+        isRequired: data.isRequired ?? false,
+        isTitle: data.isTitle ?? false,
+        sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
+      },
+    }) as unknown as ListFieldRow;
+  }
+
+  @DecryptFields({ fields: FIELD_ENC_FIELDS, hiveIdArg: 2 })
+  async updateField(
+    id: string,
+    listId: string,
+    hiveId: string,
+    data: UpdateFieldData
+  ): Promise<ListFieldRow> {
+    const patch: Prisma.ListFieldUncheckedUpdateInput = {};
+    if (data.name !== undefined) patch.name = this._encryptName(data.name, hiveId);
+    if (data.config !== undefined) patch.config = data.config as Prisma.InputJsonValue;
+    if (data.isRequired !== undefined) patch.isRequired = data.isRequired;
+    if (data.sortOrder !== undefined) patch.sortOrder = data.sortOrder;
+
+    const result = await this.prisma.listField.updateMany({ where: { id, listId }, data: patch });
+    if (result.count === 0) throw new Error('Field not found in this list');
+
+    return this.prisma.listField.findUniqueOrThrow({ where: { id } }) as unknown as ListFieldRow;
+  }
+
+  async removeField(id: string, listId: string): Promise<boolean> {
+    const result = await this.prisma.listField.deleteMany({ where: { id, listId } });
+    return result.count > 0;
+  }
+
+  // ── View CRUD ─────────────────────────────────────────────────────────────
+
+  @EncryptDecryptFields({ fields: VIEW_ENC_FIELDS, hiveIdArg: 1 })
+  async createView(listId: string, hiveId: string, data: CreateViewData): Promise<ListViewRow> {
+    if (data.isDefault) {
+      await this.prisma.listView.updateMany({
+        where: { listId, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
+    return this.prisma.listView.create({
+      data: {
+        listId,
+        name: data.name,
+        viewType: data.viewType,
+        config: (data.config ?? {}) as Prisma.InputJsonValue,
+        filter: data.filter ? (data.filter as Prisma.InputJsonValue) : Prisma.JsonNull,
+        sortBy: data.sortBy ? (data.sortBy as Prisma.InputJsonValue) : Prisma.JsonNull,
+        isDefault: data.isDefault ?? false,
+      },
+    }) as unknown as ListViewRow;
+  }
+
+  @DecryptFields({ fields: VIEW_ENC_FIELDS, hiveIdArg: 2 })
+  async updateView(
+    id: string,
+    listId: string,
+    hiveId: string,
+    data: UpdateViewData
+  ): Promise<ListViewRow> {
+    const patch: Prisma.ListViewUncheckedUpdateInput = {};
+    if (data.name !== undefined) patch.name = this._encryptName(data.name, hiveId);
+    if (data.config !== undefined) patch.config = data.config as Prisma.InputJsonValue;
+    if ('filter' in data)
+      patch.filter = data.filter ? (data.filter as Prisma.InputJsonValue) : Prisma.JsonNull;
+    if ('sortBy' in data)
+      patch.sortBy = data.sortBy ? (data.sortBy as Prisma.InputJsonValue) : Prisma.JsonNull;
+
+    if (data.isDefault !== undefined) {
+      if (data.isDefault) {
+        await this.prisma.listView.updateMany({
+          where: { listId, isDefault: true },
+          data: { isDefault: false },
+        });
+      }
+      patch.isDefault = data.isDefault;
+    }
+
+    const result = await this.prisma.listView.updateMany({ where: { id, listId }, data: patch });
+    if (result.count === 0) throw new Error('View not found in this list');
+
+    return this.prisma.listView.findUniqueOrThrow({ where: { id } }) as unknown as ListViewRow;
+  }
+
+  async removeView(id: string, listId: string): Promise<boolean> {
+    const result = await this.prisma.listView.deleteMany({ where: { id, listId } });
+    return result.count > 0;
+  }
+
+  // ── Item CRUD ─────────────────────────────────────────────────────────────
+
+  async listItems(listId: string, hiveId: string): Promise<ListItemRow[]> {
+    const items = await this.prisma.listItem.findMany({
+      where: { listId, hiveId },
+      include: { values: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+    return this._decryptItemValues(items, hiveId);
+  }
+
+  async createItem(
+    listId: string,
+    hiveId: string,
+    creatorId: string,
+    assigneeId: string | undefined,
+    values: Record<string, unknown>
+  ): Promise<ListItemRow> {
+    const fields = await this.prisma.listField.findMany({ where: { listId } });
+    const fieldMap = new Map(fields.map((f) => [f.id, f]));
+
+    const item = await this.prisma.listItem.create({
+      data: { listId, hiveId, creatorId, assigneeId: assigneeId ?? null },
+    });
+
+    const upserts = this._buildValueUpserts(item.id, fieldMap, values, hiveId);
+    if (upserts.length > 0) {
+      await Promise.all(
+        upserts.map((v) =>
+          this.prisma.listItemValue.upsert({
+            where: { itemId_fieldId: { itemId: item.id, fieldId: v.fieldId } },
+            create: v,
+            update: v,
+          })
+        )
+      );
+    }
+
+    const updated = await this.prisma.listItem.findUniqueOrThrow({
+      where: { id: item.id },
+      include: { values: true },
+    });
+    const [decrypted] = this._decryptItemValues([updated], hiveId);
+    return decrypted;
+  }
+
+  async updateItem(id: string, hiveId: string, data: UpdateItemData): Promise<ListItemRow> {
+    const item = await this.prisma.listItem.findFirst({ where: { id, hiveId } });
+    if (!item) throw new Error('ListItem not found in this hive');
+
+    const patch: Prisma.ListItemUncheckedUpdateInput = {};
+    if ('assigneeId' in data) patch.assigneeId = data.assigneeId ?? null;
+    if (data.sortOrder !== undefined) patch.sortOrder = data.sortOrder;
+
+    if (Object.keys(patch).length > 0) {
+      await this.prisma.listItem.update({ where: { id }, data: patch });
+    }
+
+    if (data.values && Object.keys(data.values).length > 0) {
+      const fields = await this.prisma.listField.findMany({ where: { listId: item.listId } });
+      const fieldMap = new Map(fields.map((f) => [f.id, f]));
+      const upserts = this._buildValueUpserts(id, fieldMap, data.values, hiveId);
+      if (upserts.length > 0) {
+        await Promise.all(
+          upserts.map((v) =>
+            this.prisma.listItemValue.upsert({
+              where: { itemId_fieldId: { itemId: id, fieldId: v.fieldId } },
+              create: v,
+              update: v,
+            })
+          )
+        );
+      }
+    }
+
+    const updated = await this.prisma.listItem.findUniqueOrThrow({
+      where: { id },
+      include: { values: true },
+    });
+    const [decrypted] = this._decryptItemValues([updated], hiveId);
+    return decrypted;
+  }
+
+  async removeItem(id: string, hiveId: string): Promise<boolean> {
+    const result = await this.prisma.listItem.deleteMany({ where: { id, hiveId } });
+    return result.count > 0;
+  }
+
+  // ── Templates ─────────────────────────────────────────────────────────────
+
+  /**
+   * Returns system templates + hive-specific templates.
+   * System templates (isSystem=true, hiveId=null) are stored as plaintext.
+   * Hive templates have encrypted name/description and are decrypted before returning.
+   */
+  async listTemplates(hiveId: string): Promise<ListTemplateRow[]> {
+    const rows = await this.prisma.listTemplate.findMany({
+      where: { OR: [{ isSystem: true }, { hiveId }] },
+      include: { fields: { orderBy: { sortOrder: 'asc' } }, views: true },
+    });
+    return rows.map((t) => {
+      if (t.hiveId === null) return t; // system template — plaintext, no key available
+      return {
+        ...t,
+        name: this._decryptName(t.name, hiveId),
+        description: t.description ? this._decryptName(t.description, hiveId) : null,
+      };
+    });
+  }
+
+  // ── Private helpers ───────────────────────────────────────────────────────
+
+  private _encryptName(name: string, hiveId: string): string {
+    return this.enc.serializeToStorage(this.enc.encrypt(name, hiveId));
+  }
+
+  private _decryptName(ciphertext: string, hiveId: string): string {
+    try {
+      return this.enc.decrypt(this.enc.parseFromStorage(ciphertext), hiveId);
+    } catch {
+      return ciphertext; // Fallback: return ciphertext (e.g. during plaintext migration)
+    }
+  }
+
+  /**
+   * Build ListItemValue upsert payloads for the given values map.
+   * All values are serialized to string and encrypted (single `value` column).
+   */
+  private _buildValueUpserts(
+    itemId: string,
+    fieldMap: Map<string, ListField>,
+    values: Record<string, unknown>,
+    hiveId: string
+  ): Prisma.ListItemValueUncheckedCreateInput[] {
+    const rows: Prisma.ListItemValueUncheckedCreateInput[] = [];
+
+    for (const [fieldId, value] of Object.entries(values)) {
+      if (value === null || value === undefined) continue;
+      const field = fieldMap.get(fieldId);
+      if (!field) continue;
+
+      const serialized =
+        field.fieldType === 'person' && Array.isArray(value)
+          ? JSON.stringify(value)
+          : unknownToStr(value);
+
+      rows.push({
+        itemId,
+        fieldId,
+        value: this._encryptName(serialized, hiveId),
+      });
+    }
+
+    return rows;
+  }
+
+  /** Decrypt value column for all items. */
+  private _decryptItemValues(
+    items: (ListItem & { values: ListItemValue[] })[],
+    hiveId: string
+  ): ListItemRow[] {
+    return items.map((item) => ({
+      ...item,
+      values: item.values.map((v) => ({
+        ...v,
+        value: v.value ? this._decryptName(v.value, hiveId) : null,
+      })),
+    }));
+  }
+}

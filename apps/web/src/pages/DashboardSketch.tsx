@@ -250,7 +250,7 @@ export function DashboardSketch() {
               {nextEvent && ` um ${nextEvent.time}`}
               {' · '}
               <span className="text-foreground font-medium">
-                {tasks.filter((t) => !t.done).length} {LL.nav.tasks()}
+                {tasks.filter((t) => !t.done).length} {LL.nav.lists()}
               </span>{' '}
               {LL.dashboard.openLabel()}
             </p>
@@ -354,7 +354,7 @@ export function DashboardSketch() {
             <div className="px-5 pt-5 pb-4">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-black text-foreground uppercase tracking-wide text-sm">
-                  {LL.nav.tasks()}
+                  {LL.nav.lists()}
                 </h2>
                 <Button
                   variant="ghost"
@@ -424,7 +424,7 @@ export function DashboardSketch() {
                   className="justify-start text-muted-foreground hover:text-foreground"
                 >
                   <PlusIcon className="w-4 h-4 mr-1.5" />
-                  {LL.dashboard.addTask()}
+                  {LL.dashboard.addListItem()}
                 </Button>
               </div>
             </div>
@@ -456,7 +456,7 @@ export function DashboardSketch() {
             </Button>
             <Button variant="outline" size="sm" className="gap-1.5">
               <CheckIcon className="w-3.5 h-3.5" />
-              {LL.entities.task()}
+              {LL.entities.list()}
             </Button>
             <Button variant="outline" size="sm" className="gap-1.5">
               <DocumentIcon className="w-3.5 h-3.5" />

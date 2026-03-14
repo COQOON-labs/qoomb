@@ -1,7 +1,7 @@
 /**
  * Accessibility tests for Dashboard page
  *
- * Verifies that the dashboard content (greeting, events card, tasks card,
+ * Verifies that the dashboard content (greeting, tasks card,
  * quick-create section) has no axe violations and correct heading structure.
  *
  * AppShell is stubbed here — it has its own test in AppShell.a11y.test.tsx.
@@ -17,6 +17,7 @@ import { Dashboard } from '../pages/Dashboard';
 import {
   renderWithProviders,
   mockCurrentPerson,
+  mockUser,
   makeLLStub,
   expectNoAxeViolations,
 } from '../test/test-utils';
@@ -36,6 +37,20 @@ vi.mock('../i18n/i18n-react', () => ({
 
 vi.mock('../hooks/useCurrentPerson', () => ({
   useCurrentPerson: () => mockCurrentPerson,
+}));
+
+vi.mock('../lib/auth/useAuth', () => ({
+  useAuth: () => ({ user: mockUser, login: vi.fn(), logout: vi.fn() }),
+}));
+
+vi.mock('../lib/trpc/client', () => ({
+  trpc: {
+    lists: {
+      list: {
+        useQuery: () => ({ data: [], isLoading: false }),
+      },
+    },
+  },
 }));
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -64,10 +79,10 @@ describe('Dashboard', () => {
     expect(h1).toBeInTheDocument();
   });
 
-  it('renders h2 section headings for events and tasks', () => {
+  it('renders h2 section headings for tasks and quick-add', () => {
     renderWithProviders(<Dashboard />, { initialEntries: ['/dashboard'] });
     const headings = screen.getAllByRole('heading', { level: 2 });
-    // Expect at least: events card title, tasks card title, quick-add title
+    // Expect at least: tasks card title, quick-add title
     expect(headings.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -79,7 +94,7 @@ describe('Dashboard', () => {
 
     // Dashboard must have exactly one h1
     expect(h1).toHaveLength(1);
-    // And at least two h2 section headings
+    // And at least two h2 section headings (tasks + quick-add)
     expect(h2.length).toBeGreaterThanOrEqual(2);
   });
 

@@ -326,56 +326,6 @@ async function migrateEvents(enc: EncryptionService, fromVersion: number): Promi
   return stats;
 }
 
-async function migrateTasks(enc: EncryptionService, fromVersion: number): Promise<ReencryptStats> {
-  const stats: ReencryptStats = { migrated: 0, skipped: 0, failed: 0 };
-  const prefix = `v${fromVersion}:`;
-
-  const tasks = await prisma.task.findMany({
-    where: {
-      OR: [{ title: { startsWith: prefix } }, { description: { startsWith: prefix } }],
-    },
-  });
-
-  for (const task of tasks) {
-    try {
-      const decT = (s: string) => enc.decrypt(enc.parseFromStorage(s), task.hiveId);
-      const encT = (s: string) => enc.serializeToStorage(enc.encrypt(s, task.hiveId));
-
-      const newTitle = reencryptField(task.title, fromVersion, decT, encT);
-      const newDescription = reencryptField(task.description, fromVersion, decT, encT);
-
-      if (newTitle === null && newDescription === null) {
-        stats.skipped++;
-        continue;
-      }
-
-      if (!EXECUTE) {
-        console.log(`  [DRY RUN] task ${task.id}: fields → v${enc.getCurrentKeyVersion()}`);
-        stats.migrated++;
-        continue;
-      }
-
-      await prisma.$transaction(async (tx) => {
-        await tx.task.update({
-          where: { id: task.id },
-          data: {
-            ...(newTitle !== null && { title: newTitle }),
-            ...(newDescription !== null && { description: newDescription }),
-          },
-        });
-      });
-
-      stats.migrated++;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`  ❌ task ${task.id}: ${msg}`);
-      stats.failed++;
-    }
-  }
-
-  return stats;
-}
-
 async function migrateGroups(enc: EncryptionService, fromVersion: number): Promise<ReencryptStats> {
   const stats: ReencryptStats = { migrated: 0, skipped: 0, failed: 0 };
   const prefix = `v${fromVersion}:`;
@@ -419,6 +369,163 @@ async function migrateGroups(enc: EncryptionService, fromVersion: number): Promi
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`  ❌ group ${group.id}: ${msg}`);
+      stats.failed++;
+    }
+  }
+
+  return stats;
+}
+
+async function migrateLists(enc: EncryptionService, fromVersion: number): Promise<ReencryptStats> {
+  const stats: ReencryptStats = { migrated: 0, skipped: 0, failed: 0 };
+  const prefix = `v${fromVersion}:`;
+
+  // ── 1. List.name ──────────────────────────────────────────────────────────
+  const lists = await prisma.list.findMany({
+    where: { name: { startsWith: prefix } },
+  });
+
+  for (const list of lists) {
+    try {
+      const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), list.hiveId);
+      const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, list.hiveId));
+      const newName = reencryptField(list.name, fromVersion, dec, encFn);
+
+      if (newName === null) {
+        stats.skipped++;
+        continue;
+      }
+
+      if (!EXECUTE) {
+        console.log(`  [DRY RUN] list ${list.id}: name → v${enc.getCurrentKeyVersion()}`);
+        stats.migrated++;
+        continue;
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.list.update({ where: { id: list.id }, data: { name: newName } });
+      });
+
+      stats.migrated++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`  ❌ list ${list.id}: ${msg}`);
+      stats.failed++;
+    }
+  }
+
+  // ── 2. ListField.name ────────────────────────────────────────────────────
+  const fields = await prisma.listField.findMany({
+    where: { name: { startsWith: prefix } },
+    include: { list: { select: { hiveId: true } } },
+  });
+
+  for (const field of fields) {
+    try {
+      const hiveId = field.list.hiveId;
+      const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), hiveId);
+      const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, hiveId));
+      const newName = reencryptField(field.name, fromVersion, dec, encFn);
+
+      if (newName === null) {
+        stats.skipped++;
+        continue;
+      }
+
+      if (!EXECUTE) {
+        console.log(`  [DRY RUN] listField ${field.id}: name → v${enc.getCurrentKeyVersion()}`);
+        stats.migrated++;
+        continue;
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.listField.update({ where: { id: field.id }, data: { name: newName } });
+      });
+
+      stats.migrated++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`  ❌ listField ${field.id}: ${msg}`);
+      stats.failed++;
+    }
+  }
+
+  // ── 3. ListView.name ─────────────────────────────────────────────────────
+  const views = await prisma.listView.findMany({
+    where: { name: { startsWith: prefix } },
+    include: { list: { select: { hiveId: true } } },
+  });
+
+  for (const view of views) {
+    try {
+      const hiveId = view.list.hiveId;
+      const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), hiveId);
+      const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, hiveId));
+      const newName = reencryptField(view.name, fromVersion, dec, encFn);
+
+      if (newName === null) {
+        stats.skipped++;
+        continue;
+      }
+
+      if (!EXECUTE) {
+        console.log(`  [DRY RUN] listView ${view.id}: name → v${enc.getCurrentKeyVersion()}`);
+        stats.migrated++;
+        continue;
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.listView.update({ where: { id: view.id }, data: { name: newName } });
+      });
+
+      stats.migrated++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`  ❌ listView ${view.id}: ${msg}`);
+      stats.failed++;
+    }
+  }
+
+  // ── 4. ListItemValue.value (all field types — single encrypted column) ──────
+
+  const itemValues = await prisma.listItemValue.findMany({
+    where: {
+      value: { startsWith: prefix },
+    },
+    include: {
+      item: { select: { hiveId: true } },
+    },
+  });
+
+  for (const iv of itemValues) {
+    try {
+      const hiveId = iv.item.hiveId;
+      const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), hiveId);
+      const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, hiveId));
+      const newValue = reencryptField(iv.value, fromVersion, dec, encFn);
+
+      if (newValue === null) {
+        stats.skipped++;
+        continue;
+      }
+
+      if (!EXECUTE) {
+        console.log(`  [DRY RUN] listItemValue ${iv.id}: value → v${enc.getCurrentKeyVersion()}`);
+        stats.migrated++;
+        continue;
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.listItemValue.update({
+          where: { id: iv.id },
+          data: { value: newValue },
+        });
+      });
+
+      stats.migrated++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`  ❌ listItemValue ${iv.id}: ${msg}`);
       stats.failed++;
     }
   }
@@ -470,11 +577,11 @@ async function main() {
   console.log('── events ──────────────────────────────────────────────────');
   results.events = await migrateEvents(enc, fromVersion);
 
-  console.log('── tasks ───────────────────────────────────────────────────');
-  results.tasks = await migrateTasks(enc, fromVersion);
-
   console.log('── groups ──────────────────────────────────────────────────');
   results.groups = await migrateGroups(enc, fromVersion);
+
+  console.log('── lists ───────────────────────────────────────────────────');
+  results.lists = await migrateLists(enc, fromVersion);
 
   console.log();
   console.log('── Summary ─────────────────────────────────────────────────');
@@ -500,7 +607,7 @@ async function main() {
   if (totalFailed > 0) {
     console.error(`❌ ${totalFailed} record(s) failed verification — check errors above.`);
     console.error('   The failed records were NOT written. Re-run after fixing the issue.');
-    process.exit(1);
+    throw new Error(`Re-encryption failed: ${totalFailed} record(s) could not be migrated.`);
   }
 
   if (totalMigrated === 0 && totalFailed === 0) {
@@ -526,10 +633,10 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
   .finally(() => {
     void prisma.$disconnect();
+  })
+  .catch((e: unknown) => {
+    console.error(e);
+    throw e;
   });

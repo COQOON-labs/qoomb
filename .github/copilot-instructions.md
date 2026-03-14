@@ -25,7 +25,8 @@ ORM, PostgreSQL with Row-Level Security, Redis, and `typesafe-i18n` for both bac
 
 - Use **`@EncryptFields({ fields: ['field'], hiveIdArg: N })`** to encrypt INPUT args before they are persisted
 - Use **`@DecryptFields({ fields: ['field'], hiveIdArg: N })`** to decrypt RETURN VALUES after they are loaded
-- Never encrypt manually — the decorator approach is DRY and prevents accidental plaintext storage
+- For nested relations use dot-path syntax: `fields: ['name', 'fields.*.name', 'views.*.name']`
+- Only use manual encryption for conditional cases (e.g. ListItemValue serialization varies by context)
 
 ### Type Safety
 
@@ -64,6 +65,7 @@ ORM, PostgreSQL with Row-Level Security, Redis, and `typesafe-i18n` for both bac
 
 - Use **`@EncryptFields({ fields: ['field'], hiveIdArg: N })`** to encrypt INPUT args before they are persisted
 - Use **`@DecryptFields({ fields: ['field'], hiveIdArg: N })`** to decrypt RETURN VALUES after they are loaded
+- Nested path syntax: `'relation.*.field'` iterates over array elements (e.g. `'fields.*.name'`)
 - Per-hive keys via HKDF — compromise of one hive does not affect others
 - Per-user keys for global PII (email, full name) — independent from hive context
 - Pluggable key providers: Environment, File, Cloud KMS, Vault — **no default** (fail-safe)

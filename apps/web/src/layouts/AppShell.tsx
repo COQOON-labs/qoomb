@@ -3,7 +3,7 @@ import { cn } from '@qoomb/ui';
 import { useMemo, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { CheckIcon, ChevronUpDownIcon, HomeIcon } from '../components/icons';
+import { CheckIcon, ChevronUpDownIcon, HomeIcon, UserIcon, UsersIcon } from '../components/icons';
 import { EmailVerificationBanner } from '../components/layout/EmailVerificationBanner';
 import { UserMenu } from '../components/layout/UserMenu';
 import { useCurrentPerson } from '../hooks/useCurrentPerson';
@@ -28,7 +28,9 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', route: '/dashboard', icon: HomeIcon },
-  { id: 'tasks', route: '/tasks', icon: CheckIcon },
+  { id: 'lists', route: '/lists', icon: CheckIcon },
+  { id: 'members', route: '/members', icon: UserIcon },
+  { id: 'groups', route: '/groups', icon: UsersIcon },
 ];
 
 // ── App Shell ─────────────────────────────────────────────────────────────────
@@ -52,7 +54,9 @@ export function AppShell({ children }: AppShellProps) {
 
   const navLabels: Record<string, string> = {
     dashboard: LL.nav.overview(),
-    tasks: LL.nav.tasks(),
+    lists: LL.nav.lists(),
+    members: LL.nav.members(),
+    groups: LL.nav.groups(),
   };
 
   function handleNav(route: string) {

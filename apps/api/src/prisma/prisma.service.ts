@@ -99,8 +99,36 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.event;
   }
 
-  get task() {
-    return this.client.task;
+  get list() {
+    return this.client.list;
+  }
+
+  get listField() {
+    return this.client.listField;
+  }
+
+  get listView() {
+    return this.client.listView;
+  }
+
+  get listItem() {
+    return this.client.listItem;
+  }
+
+  get listItemValue() {
+    return this.client.listItemValue;
+  }
+
+  get listTemplate() {
+    return this.client.listTemplate;
+  }
+
+  get listTemplateField() {
+    return this.client.listTemplateField;
+  }
+
+  get listTemplateView() {
+    return this.client.listTemplateView;
   }
 
   // Expose Prisma methods

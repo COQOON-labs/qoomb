@@ -12,8 +12,8 @@ import { RATE_LIMITS } from './config/security.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { EmailModule } from './modules/email/email.module';
 import { EventsModule } from './modules/events/events.module';
+import { ListsModule } from './modules/lists/lists.module';
 import { PersonsModule } from './modules/persons/persons.module';
-import { TasksModule } from './modules/tasks/tasks.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TrpcModule } from './trpc/trpc.module';
 
@@ -44,7 +44,7 @@ import { TrpcModule } from './trpc/trpc.module';
     TrpcModule,
     AuthModule,
     EventsModule,
-    TasksModule,
+    ListsModule,
     PersonsModule,
   ],
   providers: [

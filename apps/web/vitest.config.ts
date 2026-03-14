@@ -28,12 +28,21 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: [
-        'src/test/**',
-        'src/i18n/**', // Generated files
-        'src/vite-env.d.ts',
-        'src/main.tsx',
-      ],
+      exclude: ['src/test/**', 'src/i18n/**', 'src/vite-env.d.ts', 'src/main.tsx'],
+      thresholds: {
+        'src/pages/': {
+          branches: 60,
+          functions: 70,
+          lines: 70,
+          statements: 70,
+        },
+        'src/components/': {
+          branches: 60,
+          functions: 70,
+          lines: 70,
+          statements: 70,
+        },
+      },
     },
   },
   // Define __APP_VERSION__ so components that reference it don't error in tests

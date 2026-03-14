@@ -20,7 +20,8 @@
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "sanitize-html": "^2.17.1",
@@ -32,6 +33,7 @@
     "@qoomb/types": "workspace:*",
     "@types/node": "^25.3.5",
     "@types/sanitize-html": "^2.16.1",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^10.0.3",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",

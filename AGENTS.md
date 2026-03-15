@@ -241,7 +241,8 @@ qoomb/
 - AES-256-GCM authenticated encryption with key versioning
 - HMAC-SHA256 email blind index (`hashEmail`) for lookups without storing plaintext
 - 7-point self-test at startup (basic crypto, hive isolation, serialization, user encryption, multi-version, email hash)
-- **Location:** `apps/api/src/modules/encryption/`
+- **Key rotation** via `db:reencrypt --execute` (see ADR-0008); backups written before every write; 30-day retention (`REENCRYPT_BACKUP_RETENTION_DAYS`)
+- **Location:** `apps/api/src/modules/encryption/`, `apps/api/prisma/scripts/reencrypt.ts`
 
 **Email:**
 
@@ -290,6 +291,9 @@ qoomb/
   - Self-role-change prevention; last-admin removal blocked by DB trigger `enforce_minimum_admin`
   - `invite` sends hive-level invitation email (requires `MEMBERS_INVITE` permission)
   - Reuses `AuthService.inviteMemberToHive()` — checks existing membership, sends token email
+  - Invitations expire after 7 days; plaintext `email` column stored for key-rotation support (migration `20260314000005`)
+  - `InvitationCleanupTask` (scheduled cron `EVERY_DAY_AT_3AM`) hard-deletes all rows where `expiresAt < now()`, used or not — data-minimization compliance
+  - `AuthService.cleanupExpiredInvitations()` — returns delete count; tested in `invitation-cleanup.test.ts`
 - Events module: `list`, `get`, `create`, `update`, `delete`
   - AES-256-GCM field encryption: `title`, `description`, `location`, `url`, `category`
   - `recurrenceRule` stored as opaque JSON — no server-side expansion; client handles display
@@ -301,7 +305,9 @@ qoomb/
   - System lists (e.g. "tasks" per user) auto-created on first access
   - Templates system (`ListTemplate`, `ListTemplateField`, `ListTemplateView`)
   - Items: `createItem`, `updateItem`, `deleteItem`, `listItems`
-  - Fields: `createField`, `updateField`, `removeField`
+  - Fields: `createField`, `updateField`, `removeField`, `getSelectOptions`
+  - `getSelectOptions(fieldId, listId)` → `string[]` — returns configured options for a select-type field (Notion-style dropdown); requires `view` access; returns `[]` for non-select fields
+  - `ListField.config` JSONB intentionally unencrypted (structural metadata, not personal data) — see ADR-0007 Risks
   - Full 5-stage RBAC guard on all operations
   - Frontend: ListsPage (overview) + ListDetailPage (inline editing, icon picker, archive)
   - **Location:** `apps/api/src/modules/lists/`, `apps/web/src/pages/ListsPage.tsx`, `ListDetailPage.tsx`
@@ -1303,6 +1309,7 @@ apps/api/src/modules/encryption/
 9. **Prefer Prisma** for CRUD, **raw SQL** for complex queries
 10. **Follow existing patterns** (see Key Code Patterns section)
 11. **Document architectural decisions** in this file
+12. **When adding a new encrypted field or table** you MUST simultaneously: (a) add it to the [ADR-0008 inventory](docs/adr/0008-secure-reencryption-process.md), (b) add a migration function in `apps/api/prisma/scripts/reencrypt.ts`, (c) add unit tests in `apps/api/prisma/scripts/reencrypt.test.ts`
 
 ### Code Quality Standards
 
@@ -1363,6 +1370,7 @@ apps/api/src/modules/encryption/
 - Create tRPC router with `hiveProcedure`
 - Add Zod schemas in `packages/validators`
 - Use `@EncryptFields` for sensitive data
+- **If the feature stores encrypted fields:** add them to the [ADR-0008 inventory](docs/adr/0008-secure-reencryption-process.md), extend `reencrypt.ts`, extend `reencrypt.test.ts`
 - Add to Implementation Status section in this file
 
 ---

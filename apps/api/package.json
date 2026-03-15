@@ -26,7 +26,9 @@
     "db:push": "dotenv -e ../../.env -- prisma db push",
     "db:seed": "dotenv -e ../../.env -- prisma db seed",
     "db:studio": "dotenv -e ../../.env -- prisma studio --port 5555 --browser none",
-    "db:reencrypt": "dotenv -e ../../.env -- ts-node --project tsconfig.seed.json prisma/scripts/reencrypt.ts"
+    "db:reencrypt": "dotenv -e ../../.env -- ts-node --project tsconfig.seed.json prisma/scripts/reencrypt.ts",
+    "db:reencrypt-rollback": "dotenv -e ../../.env -- ts-node --project tsconfig.seed.json prisma/scripts/reencrypt-rollback.ts",
+    "db:reencrypt-cleanup": "dotenv -e ../../.env -- ts-node --project tsconfig.seed.json prisma/scripts/reencrypt-cleanup.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

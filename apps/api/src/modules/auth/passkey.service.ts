@@ -150,8 +150,8 @@ export class PassKeyService {
     let allowCredentials: { id: string; transports: AuthenticatorTransportFuture[] }[] | undefined;
 
     if (email) {
-      const user = await this.prisma.user.findUnique({
-        where: { emailHash: this.encryptionService.hashEmail(email) },
+      const user = await this.prisma.user.findFirst({
+        where: { emailHash: { in: this.encryptionService.hashEmailAllVersions(email) } },
         select: { id: true },
       });
 

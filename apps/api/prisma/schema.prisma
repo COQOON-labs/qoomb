@@ -502,9 +502,13 @@ model PasswordResetToken {
 
 model Invitation {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  // emailHash: HMAC-SHA256 blind index (same key as User.emailHash).
-  // Never store the plaintext email — the inviter already knows it and it is
-  // sent only via the invitation email; no need to retrieve it from the DB.
+  // email: normalized plaintext email address (lowercase, trimmed).
+  // Stored so that emailHash can be recomputed during key rotation without
+  // losing pending invitations. Acceptable trade-off: invitations are
+  // short-lived (7 days) and the email is already known to the inviter.
+  // See ADR-0008 and migration 20260314000005_invitation_email.
+  email           String    @db.Text
+  // emailHash: HMAC-SHA256 blind index for O(1) lookup on registration.
   emailHash       String    @map("email_hash") @db.VarChar(64)
   token           String    @unique @db.Text
   invitedByUserId String    @map("invited_by_user_id") @db.Uuid
@@ -520,4 +524,38 @@ model Invitation {
   @@index([invitedByUserId])
   @@index([expiresAt])
   @@map("invitations")
+}
+
+// ============================================
+// RE-ENCRYPTION AUDIT / BACKUP TABLE
+// ============================================
+
+/// Stores old ciphertexts before they are overwritten during key rotation.
+/// Written atomically within the same DB transaction as the UPDATE that
+/// replaces the ciphertext, so either both succeed or neither does.
+///
+/// Retention: rows expire after REENCRYPT_BACKUP_RETENTION_DAYS days (default 30).
+/// Run `db:reencrypt-cleanup` to delete expired rows after confirmed stability.
+model ReencryptBackup {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Name of the table that was updated, e.g. "users" or "events".
+  tableName      String   @map("table_name") @db.Text
+  /// UUID of the affected row in that table.
+  recordId       String   @map("record_id") @db.Uuid
+  /// Column name that was re-encrypted, e.g. "email" or "title".
+  fieldName      String   @map("field_name") @db.Text
+  /// The verbatim ciphertext that was in the DB before the migration.
+  oldCiphertext  String   @map("old_ciphertext") @db.Text
+  /// Key version the old ciphertext was encrypted with.
+  fromVersion    Int      @map("from_version")
+  /// Key version the new ciphertext is encrypted with.
+  toVersion      Int      @map("to_version")
+  /// Timestamp of the migration run that produced this row.
+  migratedAt     DateTime @default(now()) @map("migrated_at") @db.Timestamptz
+  /// When this backup row may be deleted (migratedAt + REENCRYPT_BACKUP_RETENTION_DAYS).
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz
+
+  @@index([expiresAt], name: "reencrypt_backups_expires_idx")
+  @@index([tableName, recordId], name: "reencrypt_backups_record_idx")
+  @@map("reencrypt_backups")
 }

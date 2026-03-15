@@ -272,6 +272,26 @@ export class ListsService {
     return result.count > 0;
   }
 
+  /**
+   * Return the options array for a select-type field.
+   *
+   * Options labels are stored as plaintext in the JSONB `config` column —
+   * they describe the hive's data schema (e.g. "Open", "Done") but not
+   * personal data. Encryption is intentionally omitted here; see ADR-0007.
+   *
+   * Returns [] for non-select fields or fields with no configured options.
+   */
+  async getSelectOptions(fieldId: string, listId: string): Promise<string[]> {
+    const field = await this.prisma.listField.findFirst({
+      where: { id: fieldId, listId },
+      select: { fieldType: true, config: true },
+    });
+    if (!field || field.fieldType !== 'select') return [];
+    const cfg = field.config as { options?: unknown };
+    if (!Array.isArray(cfg.options)) return [];
+    return cfg.options.filter((o): o is string => typeof o === 'string');
+  }
+
   // ── View CRUD ─────────────────────────────────────────────────────────────
 
   @EncryptDecryptFields({ fields: VIEW_ENC_FIELDS, hiveIdArg: 1 })

@@ -27,6 +27,10 @@ ORM, PostgreSQL with Row-Level Security, Redis, and `typesafe-i18n` for both bac
 - Use **`@DecryptFields({ fields: ['field'], hiveIdArg: N })`** to decrypt RETURN VALUES after they are loaded
 - For nested relations use dot-path syntax: `fields: ['name', 'fields.*.name', 'views.*.name']`
 - Only use manual encryption for conditional cases (e.g. ListItemValue serialization varies by context)
+- **When adding a new encrypted field or table**, you MUST simultaneously:
+  1. Add it to the [ADR-0008 inventory](../docs/adr/0008-secure-reencryption-process.md)
+  2. Add a migration function in `apps/api/prisma/scripts/reencrypt.ts`
+  3. Add unit test coverage to `apps/api/prisma/scripts/reencrypt.test.ts`
 
 ### Type Safety
 
@@ -61,15 +65,19 @@ ORM, PostgreSQL with Row-Level Security, Redis, and `typesafe-i18n` for both bac
 - `docker-compose up` must be sufficient for full local development — no cloud credentials required
 - Deployment differences are expressed through **environment variables**, not code branches
 
-### Hybrid Encryption (ADR-0005)
+### Hybrid Encryption (ADR-0005 + ADR-0008)
 
 - Use **`@EncryptFields({ fields: ['field'], hiveIdArg: N })`** to encrypt INPUT args before they are persisted
 - Use **`@DecryptFields({ fields: ['field'], hiveIdArg: N })`** to decrypt RETURN VALUES after they are loaded
 - Nested path syntax: `'relation.*.field'` iterates over array elements (e.g. `'fields.*.name'`)
 - Per-hive keys via HKDF — compromise of one hive does not affect others
-- Per-user keys for global PII (email, full name) — independent from hive context
+- Per-user keys for global PII (email, full name, locale) — independent from hive context
 - Pluggable key providers: Environment, File, Cloud KMS, Vault — **no default** (fail-safe)
 - Email stored as encrypted ciphertext + HMAC-SHA256 blind index — **zero plaintext email in DB**
+- **Key rotation requires a full re-encryption pass** (`db:reencrypt --execute`) before old keys can be retired
+- **Re-encryption writes backups first** (`reencrypt_backups` table) — old ciphertext is never discarded before the new ciphertext is verified
+- **Retention period**: `REENCRYPT_BACKUP_RETENTION_DAYS` (default 30) — cleanup only after confirmed stability
+- See [ADR-0008](../docs/adr/0008-secure-reencryption-process.md) for the complete rotation playbook
 
 ### Operator Feature Flags
 

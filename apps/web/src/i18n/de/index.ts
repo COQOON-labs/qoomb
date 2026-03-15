@@ -205,6 +205,66 @@ const de = {
     emptyState: 'Noch keine Mitglieder.',
     you: '(Du)',
     joined: 'Beigetreten',
+    pendingInvitations: 'Ausstehende Einladungen',
+    noPendingInvitations: 'Keine ausstehenden Einladungen.',
+    invitedAt: 'Eingeladen',
+    expiresAt: 'Läuft ab',
+    resendInvitation: 'Erneut senden',
+    revokeInvitation: 'Widerrufen',
+    revokeConfirm: 'Diese Einladung wirklich widerrufen?',
+    resendSuccess: 'Einladung erneut gesendet!',
+    revokeSuccess: 'Einladung widerrufen.',
+  },
+
+  // ── Hive Settings ─────────────────────────────────────────────────────────
+  hiveSettings: {
+    title: 'Hive-Einstellungen',
+    generalSection: 'Allgemein',
+    nameLabel: 'Hive-Name',
+    namePlaceholder: 'z.B. Familie Müller',
+    localeLabel: 'Sprache des Hive',
+    saveSuccess: 'Einstellungen gespeichert!',
+    saveError: 'Fehler beim Speichern. Bitte erneut versuchen.',
+    dangerZone: 'Gefahrenzone',
+    deleteHive: 'Hive löschen',
+    deleteDescription: 'Alle Daten, Mitglieder und Inhalte werden unwiderruflich gelöscht.',
+    deleteConfirmLabel: 'Gib DELETE ein, um zu bestätigen',
+    deleteConfirmPlaceholder: 'DELETE',
+    deleteButton: 'Hive endgültig löschen',
+    deleteSuccess: 'Hive wurde gelöscht.',
+  },
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+  notifications: {
+    title: 'Benachrichtigungen',
+    markAllRead: 'Alle als gelesen markieren',
+    noNotifications: 'Keine Benachrichtigungen.',
+    onlyUnread: 'Nur ungelesene',
+    allNotifications: 'Alle',
+    markRead: 'Als gelesen markieren',
+    preferences: 'Benachrichtigungseinstellungen',
+    preferencesInApp: 'In-App',
+    preferencesEmail: 'E-Mail',
+    preferencesSaved: 'Einstellungen gespeichert!',
+  },
+
+  // ── Messaging ─────────────────────────────────────────────────────────────
+  messaging: {
+    title: 'Nachrichten',
+    newMessage: 'Neue Nachricht',
+    messagePlaceholder: 'Nachricht eingeben…',
+    send: 'Senden',
+    noConversations: 'Noch keine Unterhaltungen.',
+    noMessages: 'Noch keine Nachrichten. Schreib als Erster!',
+    selectConversation: 'Unterhaltung auswählen',
+    unread: '{count} ungelesen',
+  },
+
+  // ── Activity ──────────────────────────────────────────────────────────────
+  activity: {
+    title: 'Aktivität',
+    noActivity: 'Noch keine Aktivitäten.',
+    loadMore: 'Mehr laden',
   },
 
   // ── Groups ────────────────────────────────────────────────────────────────

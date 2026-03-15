@@ -6,6 +6,7 @@ import {
   sanitizeHtml,
   updatePersonProfileSchema,
   updatePersonRoleSchema,
+  uuidSchema,
 } from '@qoomb/validators';
 import { TRPCError } from '@trpc/server';
 
@@ -214,6 +215,77 @@ export const personsRouter = (personsService: PersonsService, authService: AuthS
         throw new TRPCError({ code: 'BAD_REQUEST', message });
       }
     }),
+
+    /**
+     * List all pending (not used, not expired) invitations for this hive.
+     * Returns email, createdAt, expiresAt — no tokens exposed.
+     * Requires: members:invite
+     */
+    listInvitations: hiveProcedure.query(async ({ ctx }) => {
+      requirePermission(ctx, HivePermission.MEMBERS_INVITE);
+      return authService.listPendingInvitations(ctx.user.hiveId);
+    }),
+
+    /**
+     * Resend an invitation by revoking the existing one and sending a fresh token.
+     * Uses the atomic invalidate+create logic in inviteMemberToHive().
+     * Requires: members:invite
+     */
+    resendInvitation: hiveProcedure
+      .input(uuidSchema)
+      .mutation(async ({ ctx, input: invitationId }) => {
+        requirePermission(ctx, HivePermission.MEMBERS_INVITE);
+
+        // Load the invitation to get the email address
+        const invitations = await authService.listPendingInvitations(ctx.user.hiveId);
+        const target = invitations.find((inv) => inv.id === invitationId);
+        if (!target) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Invitation not found or already used',
+          });
+        }
+
+        const inviterPerson = ctx.user.personId
+          ? await personsService.getById(ctx.user.personId, ctx.user.hiveId)
+          : null;
+        const inviterName = inviterPerson?.displayName ?? ctx.user.email ?? 'A hive member';
+
+        try {
+          // inviteMemberToHive atomically invalidates existing + creates fresh token
+          await authService.inviteMemberToHive(
+            ctx.user.id,
+            inviterName,
+            target.email,
+            ctx.user.hiveId
+          );
+          return { success: true as const };
+        } catch (e) {
+          if (e instanceof TRPCError) throw e;
+          const message = e instanceof Error ? e.message : 'Failed to resend invitation';
+          throw new TRPCError({ code: 'BAD_REQUEST', message });
+        }
+      }),
+
+    /**
+     * Revoke (invalidate) a pending invitation.
+     * Marks it as used so the token can no longer be redeemed.
+     * Requires: members:invite
+     */
+    revokeInvitation: hiveProcedure
+      .input(uuidSchema)
+      .mutation(async ({ ctx, input: invitationId }) => {
+        requirePermission(ctx, HivePermission.MEMBERS_INVITE);
+
+        const revoked = await authService.revokeInvitation(invitationId, ctx.user.hiveId);
+        if (!revoked) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Invitation not found or already used',
+          });
+        }
+        return { success: true as const };
+      }),
   });
 
 export type PersonsRouter = ReturnType<typeof personsRouter>;

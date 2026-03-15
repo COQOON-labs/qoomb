@@ -319,19 +319,21 @@ qoomb/
   - `buildVisibilityFilter` — Prisma WHERE clause for list queries (avoids N+1)
 - **Location:** `apps/api/src/modules/persons/`, `events/`, `lists/`, `groups/`
 
+**Phase 3 (Hive Management & Communication) — IN PROGRESS:**
+
+- [x] Hive CRUD: update name/locale/settings, delete hive (with cascade) — `apps/api/src/modules/hive/`
+- [x] Hive settings page (frontend) — `apps/web/src/pages/HiveSettingsPage.tsx`
+- [x] Invitation management UI: list pending, resend, revoke — `persons.listInvitations`, `persons.resendInvitation`, `persons.revokeInvitation` in persons router + MembersPage
+- [x] In-app notifications: bell icon, notification model, read/unread state — `apps/api/src/modules/notifications/`, `apps/web/src/pages/NotificationsPage.tsx`, `NotificationsBell`
+- [x] Notification preferences: per-user opt-in/out (inApp + email per type) — `notifications.getPreferences`, `notifications.updatePreferences`
+- [x] In-app messaging: encrypted direct messages — `apps/api/src/modules/messaging/`, `apps/web/src/pages/MessagingPage.tsx`
+- [x] Activity log (change feed) — `apps/api/src/modules/activity/`, `apps/web/src/pages/ActivityPage.tsx`
+- [ ] Notification emails: event reminders, task assignments, member joined/left — email templates + trigger calls from mutations
+- [ ] Email queue with retry (BullMQ) — replace inline-send with async queue
+- [ ] Email preferences unsubscribe endpoint
+- [ ] Hive settings: invitation management admin panel (revoke via /settings)
+
 ### 🚧 TODO (Next)
-
-**Phase 3 (Hive Management & Communication):**
-
-- [ ] Hive CRUD: update name/locale/settings, delete hive (with cascade)
-- [ ] Hive settings page (frontend)
-- [ ] Invitation management UI: list pending, resend, revoke
-- [ ] In-app notifications: bell icon, notification model, read/unread state
-- [ ] Notification emails: event reminders, task assignments, member joined/left
-- [ ] Email preferences: per-user notification opt-in/out, unsubscribe
-- [ ] Email queue with retry (replace inline-send)
-- [ ] In-app messaging: direct messages between hive members (encrypted)
-- [ ] Activity log (change feed / "what changed since last login")
 
 **Phase 4 (Sync & Real-Time):**
 
@@ -1370,8 +1372,8 @@ apps/api/src/modules/encryption/
 
 ---
 
-**Last Updated:** 2026-03-14
-**Version:** 0.2.1 (Phase 2 - Core Content: Events, Lists, Persons, Groups)
+**Last Updated:** 2026-03-15
+**Version:** 0.3.0 (Phase 3 - Hive Management, Notifications, Messaging, Activity Log)
 
 <!-- gitnexus:start -->
 

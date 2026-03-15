@@ -9,10 +9,15 @@ import { CsrfGuard } from './common/guards/csrf.guard';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 import { RATE_LIMITS } from './config/security.config';
+import { ActivityModule } from './modules/activity/activity.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EmailModule } from './modules/email/email.module';
 import { EventsModule } from './modules/events/events.module';
+import { GroupsModule } from './modules/groups/groups.module';
+import { HiveModule } from './modules/hive/hive.module';
 import { ListsModule } from './modules/lists/lists.module';
+import { MessagingModule } from './modules/messaging/messaging.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PersonsModule } from './modules/persons/persons.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TrpcModule } from './trpc/trpc.module';
@@ -44,8 +49,13 @@ import { TrpcModule } from './trpc/trpc.module';
     TrpcModule,
     AuthModule,
     EventsModule,
+    GroupsModule,
     ListsModule,
     PersonsModule,
+    HiveModule,
+    NotificationsModule,
+    MessagingModule,
+    ActivityModule,
   ],
   providers: [
     // Apply CSRF protection globally (must run before throttler)

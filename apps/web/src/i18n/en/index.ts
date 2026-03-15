@@ -204,6 +204,66 @@ const en = {
     emptyState: 'No members yet.',
     you: '(You)',
     joined: 'Joined',
+    pendingInvitations: 'Pending invitations',
+    noPendingInvitations: 'No pending invitations.',
+    invitedAt: 'Invited',
+    expiresAt: 'Expires',
+    resendInvitation: 'Resend',
+    revokeInvitation: 'Revoke',
+    revokeConfirm: 'Really revoke this invitation?',
+    resendSuccess: 'Invitation resent!',
+    revokeSuccess: 'Invitation revoked.',
+  },
+
+  // ── Hive Settings ─────────────────────────────────────────────────────────
+  hiveSettings: {
+    title: 'Hive settings',
+    generalSection: 'General',
+    nameLabel: 'Hive name',
+    namePlaceholder: 'e.g. Doe Family',
+    localeLabel: 'Hive language',
+    saveSuccess: 'Settings saved!',
+    saveError: 'Failed to save. Please try again.',
+    dangerZone: 'Danger zone',
+    deleteHive: 'Delete hive',
+    deleteDescription: 'All data, members and content will be permanently deleted.',
+    deleteConfirmLabel: 'Type DELETE to confirm',
+    deleteConfirmPlaceholder: 'DELETE',
+    deleteButton: 'Delete hive permanently',
+    deleteSuccess: 'Hive has been deleted.',
+  },
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+  notifications: {
+    title: 'Notifications',
+    markAllRead: 'Mark all as read',
+    noNotifications: 'No notifications.',
+    onlyUnread: 'Unread only',
+    allNotifications: 'All',
+    markRead: 'Mark as read',
+    preferences: 'Notification settings',
+    preferencesInApp: 'In-app',
+    preferencesEmail: 'Email',
+    preferencesSaved: 'Settings saved!',
+  },
+
+  // ── Messaging ─────────────────────────────────────────────────────────────
+  messaging: {
+    title: 'Messages',
+    newMessage: 'New message',
+    messagePlaceholder: 'Type a message…',
+    send: 'Send',
+    noConversations: 'No conversations yet.',
+    noMessages: 'No messages yet. Say hello!',
+    selectConversation: 'Select a conversation',
+    unread: '{count:number} unread',
+  },
+
+  // ── Activity ──────────────────────────────────────────────────────────────
+  activity: {
+    title: 'Activity',
+    noActivity: 'No activity yet.',
+    loadMore: 'Load more',
   },
 
   // ── Groups ────────────────────────────────────────────────────────────────

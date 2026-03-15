@@ -1122,4 +1122,42 @@ export class AuthService {
       locale: resolveLocale(locale, hiveLocale, getEnv().DEFAULT_LOCALE),
     };
   }
+
+  // ── Invitation Management (Phase 3) ────────────────────────────────────────
+
+  /**
+   * List all pending (not used, not expired) invitations for a hive.
+   * The plaintext email is returned — it is stored in the Invitation row
+   * specifically for this use case (see ADR-0008, migration 20260314000005).
+   */
+  async listPendingInvitations(hiveId: string) {
+    return this.prisma.invitation.findMany({
+      where: {
+        hiveId,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        email: true,
+        createdAt: true,
+        expiresAt: true,
+        invitedByUserId: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Revoke a pending invitation.
+   * Marks it as used (soft delete) so the token becomes invalid.
+   * Returns false if not found or not belonging to this hive.
+   */
+  async revokeInvitation(invitationId: string, hiveId: string): Promise<boolean> {
+    const result = await this.prisma.invitation.updateMany({
+      where: { id: invitationId, hiveId, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    return result.count > 0;
+  }
 }

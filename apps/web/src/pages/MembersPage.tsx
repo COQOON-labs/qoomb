@@ -8,6 +8,12 @@ import { AppShell } from '../layouts/AppShell';
 import { useAuth } from '../lib/auth/useAuth';
 import { trpc } from '../lib/trpc/client';
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatDate(date: Date | string): string {
+  return new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 // ── MembersPage ───────────────────────────────────────────────────────────────
 
 export function MembersPage() {
@@ -77,6 +83,30 @@ export function MembersPage() {
       removeMember.mutate(personId);
     },
     [LL, removeMember]
+  );
+
+  // ── Pending invitations ───────────────────────────────────────────────────
+  const { data: invitations = [], refetch: refetchInvitations } =
+    trpc.persons.listInvitations.useQuery(undefined, { enabled: !!user });
+
+  const resendInvitation = trpc.persons.resendInvitation.useMutation({
+    onSuccess: () => void refetchInvitations(),
+  });
+  const revokeInvitation = trpc.persons.revokeInvitation.useMutation({
+    onSuccess: () => void refetchInvitations(),
+  });
+
+  const handleResend = useCallback(
+    (invitationId: string) => resendInvitation.mutate(invitationId),
+    [resendInvitation]
+  );
+
+  const handleRevoke = useCallback(
+    (invitationId: string) => {
+      if (!window.confirm(LL.members.revokeConfirm())) return;
+      revokeInvitation.mutate(invitationId);
+    },
+    [LL, revokeInvitation]
   );
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -201,6 +231,47 @@ export function MembersPage() {
                 </div>
               </Card>
             ))}
+          </div>
+        )}
+        {/* ── Pending Invitations ───────────────────────────────────── */}
+        {invitations.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-base font-bold text-foreground mb-3">
+              {LL.members.pendingInvitations()}
+            </h2>
+            <div className="flex flex-col gap-2">
+              {invitations.map((inv) => (
+                <Card key={inv.id} padding="none" className="group">
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground truncate text-sm">{inv.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {LL.members.invitedAt()}: {formatDate(inv.createdAt)} &middot;{' '}
+                        {LL.members.expiresAt()}: {formatDate(inv.expiresAt)}
+                      </p>
+                    </div>
+                    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => handleResend(inv.id)}
+                        disabled={resendInvitation.isPending}
+                        className="text-xs px-2 py-1 rounded-md border border-border text-foreground hover:bg-muted transition-colors"
+                      >
+                        {LL.members.resendInvitation()}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRevoke(inv.id)}
+                        disabled={revokeInvitation.isPending}
+                        className="text-xs px-2 py-1 rounded-md text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        {LL.members.revokeInvitation()}
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
         )}
       </div>

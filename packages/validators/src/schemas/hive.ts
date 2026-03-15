@@ -17,7 +17,7 @@ export const updateHiveSchema = z
   .object({
     name: z.string().trim().min(1, 'Name cannot be empty').max(200).optional(),
     locale: localeSchema,
-    settings: z.record(z.unknown()).optional(),
+    settings: z.record(z.string(), z.unknown()).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided',

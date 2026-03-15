@@ -148,6 +148,16 @@ Quick-Add, Rule-based references, RBAC, Encryption
 - **Notion comparison** — power users will compare Qoomb Lists to Notion databases. We must
   set expectations that Scope 1 is deliberately simpler. Features like formulas, rollups, and
   relations are roadmap items, not launch features.
+- **`ListField.config` stored as plaintext JSONB** — The `config` column (which holds select
+  option labels, number ranges, reference rules, etc.) is intentionally **not** encrypted.
+  Rationale: `config` is structural metadata that describes the hive's data schema, not
+  personal or sensitive user data. Option labels like "Open" / "Done" leak hive vocabulary
+  but not individual user actions or personal details. Encrypting a `Json` column would
+  require a schema change to `Text` and custom serialize/deserialize paths on every read/write,
+  adding significant complexity for marginal privacy benefit.
+  **If a future use case introduces sensitive option labels** (e.g. medical status values),
+  this decision should be revisited: change `config` to `Text @db.Text`, serialise to JSON
+  before encryption, and add `config` to the ADR-0008 re-encryption inventory.
 
 ## References
 

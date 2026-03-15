@@ -291,12 +291,9 @@ export class EncryptionService implements OnModuleInit {
   /**
    * Compute a deterministic HMAC-SHA256 blind index for an email address.
    *
-   * The HMAC key is derived from the master key with a fixed info string, so
-   * the hash is only reproducible by someone who knows the master key.
-   * The input is normalised (lowercase + trimmed) before hashing.
-   *
-   * Result is a 64-character hex string suitable for a VARCHAR(64) column
-   * with a UNIQUE index (used for O(1) lookups without storing plaintext).
+   * Uses the *current* key version — correct for all writes (INSERT/UPDATE).
+   * For reads during key rotation use `hashEmailAllVersions()` so that rows
+   * whose hash has not yet been re-encrypted to the new version are still found.
    *
    * @param email - Raw email address (any case, optional whitespace)
    * @returns 64-character lowercase hex string
@@ -313,6 +310,32 @@ export class EncryptionService implements OnModuleInit {
       crypto.hkdfSync('sha256', masterKey, Buffer.alloc(0), Buffer.from('qoomb-email-hash'), 32)
     );
     return crypto.createHmac('sha256', hmacKey).update(email.toLowerCase().trim()).digest('hex');
+  }
+
+  /**
+   * Return email hashes for ALL loaded key versions.
+   *
+   * During key rotation the DB may contain rows whose `emailHash` was computed
+   * with the old key (V_from) and rows already migrated to the new key (V_to).
+   * Using this method in WHERE-IN clauses lets the app find users regardless of
+   * which hash version is stored — no restart disruption window.
+   *
+   * In single-key mode this returns an array of one element (identical to
+   * `hashEmail()`), so callers work correctly in both modes.
+   *
+   * @param email - Raw email address (any case, optional whitespace)
+   * @returns Array of unique hex hashes, one per loaded key version
+   */
+  hashEmailAllVersions(email: string): string[] {
+    const normalised = email.toLowerCase().trim();
+    const hashes = new Set<string>();
+    for (const [, masterKey] of this.keyVersions) {
+      const hmacKey = Buffer.from(
+        crypto.hkdfSync('sha256', masterKey, Buffer.alloc(0), Buffer.from('qoomb-email-hash'), 32)
+      );
+      hashes.add(crypto.createHmac('sha256', hmacKey).update(normalised).digest('hex'));
+    }
+    return [...hashes];
   }
 
   /**

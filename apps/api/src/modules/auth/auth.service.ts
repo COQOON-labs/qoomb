@@ -79,9 +79,11 @@ export class AuthService {
       throw new ForbiddenException('Open registration is disabled. Please use an invitation link.');
     }
 
-    // Check if email already exists (lookup via blind index)
-    const existingUser: User | null = await this.prisma.user.findUnique({
-      where: { emailHash: this.enc.hashEmail(input.adminEmail) },
+    // Check if email already exists (lookup via blind index).
+    // findFirst + IN covers both old and new HMAC hash during key rotation
+    // so registration correctly rejects duplicates without restart disruption.
+    const existingUser: User | null = await this.prisma.user.findFirst({
+      where: { emailHash: { in: this.enc.hashEmailAllVersions(input.adminEmail) } },
     });
 
     if (existingUser) {
@@ -205,13 +207,13 @@ export class AuthService {
    * @returns Access token (15 min) + Refresh token (7 days)
    */
   async login(email: string, password: string, ipAddress?: string, userAgent?: string) {
-    // Compute email hash once — used for both DB lookup and account-lockout
-    // Redis keys.  Passing the hash (not the plaintext email) to the lockout
-    // service prevents PII from leaking into Redis keys and log messages.
-    const emailHash = this.enc.hashEmail(email);
+    // For account-lockout we use the current-version hash as the Redis key —
+    // this is consistent for the lifetime of the login session and is not used
+    // for DB lookups, so it doesn't need multi-version support.
+    const emailHashCurrent = this.enc.hashEmail(email);
 
     // Check if account is locked
-    const lockStatus = await this.accountLockout.isLocked(emailHash);
+    const lockStatus = await this.accountLockout.isLocked(emailHashCurrent);
     if (lockStatus.locked) {
       const minutes = Math.ceil((lockStatus.remainingSeconds ?? 0) / 60);
       throw new UnauthorizedException(
@@ -219,9 +221,10 @@ export class AuthService {
       );
     }
 
-    // Find user with memberships (lookup via blind index)
-    const user: UserWithMemberships | null = await this.prisma.user.findUnique({
-      where: { emailHash },
+    // Find user with memberships. Use hashEmailAllVersions so that login works
+    // during key rotation even before the emailHash column has been re-encrypted.
+    const user: UserWithMemberships | null = await this.prisma.user.findFirst({
+      where: { emailHash: { in: this.enc.hashEmailAllVersions(email) } },
       include: {
         memberships: {
           include: {
@@ -236,7 +239,7 @@ export class AuthService {
       // Constant-time: always run bcrypt so response timing doesn't reveal
       // whether the email is registered (CWE-208 timing side-channel).
       await bcrypt.compare(password, AuthService.DUMMY_PASSWORD_HASH);
-      await this.accountLockout.recordFailedAttempt(emailHash);
+      await this.accountLockout.recordFailedAttempt(emailHashCurrent);
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -245,7 +248,7 @@ export class AuthService {
 
     if (!isPasswordValid) {
       // Record failed attempt
-      const result = await this.accountLockout.recordFailedAttempt(emailHash);
+      const result = await this.accountLockout.recordFailedAttempt(emailHashCurrent);
 
       if (result.isLocked) {
         const minutes = Math.ceil((result.remainingLockoutSeconds ?? 0) / 60);
@@ -258,7 +261,7 @@ export class AuthService {
     }
 
     // Successful login - reset failed attempts
-    await this.accountLockout.resetAttempts(emailHash);
+    await this.accountLockout.resetAttempts(emailHashCurrent);
 
     // Check membership after password verification to avoid user enumeration
     if (user.memberships.length === 0) {
@@ -690,8 +693,8 @@ export class AuthService {
       throw new ForbiddenException('Password reset is disabled.');
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { emailHash: this.enc.hashEmail(email) },
+    const user = await this.prisma.user.findFirst({
+      where: { emailHash: { in: this.enc.hashEmailAllVersions(email) } },
     });
 
     // SECURITY: Always return success regardless of whether email exists
@@ -783,8 +786,8 @@ export class AuthService {
     hiveId: string
   ): Promise<void> {
     // Check if the email is already a member of this hive (lookup via blind index)
-    const existingUser = await this.prisma.user.findUnique({
-      where: { emailHash: this.enc.hashEmail(email) },
+    const existingUser = await this.prisma.user.findFirst({
+      where: { emailHash: { in: this.enc.hashEmailAllVersions(email) } },
       select: { id: true },
     });
     if (existingUser) {
@@ -803,8 +806,9 @@ export class AuthService {
    * Internal helper: create an Invitation record and send the email.
    * Shared by sendInvitation() (SystemAdmin) and inviteMemberToHive() (hive-level).
    *
-   * The plaintext email is never persisted — only its HMAC-SHA256 blind index
-   * (same key derivation as User.emailHash) is stored for O(1) lookup.
+   * The normalized plaintext email is persisted alongside the HMAC blind index
+   * so that the emailHash can be recomputed during key rotation without losing
+   * pending invitations (see ADR-0008 and migration 20260314000005_invitation_email).
    *
    * The invalidation + creation are wrapped in a single transaction to prevent
    * a race condition where two concurrent requests could both create a valid
@@ -816,7 +820,8 @@ export class AuthService {
     email: string,
     hiveId: string | null
   ): Promise<void> {
-    const invitationEmailHash = this.enc.hashEmail(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    const invitationEmailHash = this.enc.hashEmail(normalizedEmail);
     const { plainToken, tokenHash } = this.generateSecureToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
@@ -830,6 +835,7 @@ export class AuthService {
       });
       await tx.invitation.create({
         data: {
+          email: normalizedEmail,
           emailHash: invitationEmailHash,
           token: tokenHash,
           invitedByUserId: inviterUserId,
@@ -863,19 +869,22 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired invitation link.');
     }
 
-    // Email must match the invitation — compare HMAC hashes in constant time
-    // to avoid leaking information about the stored hash via timing differences.
-    const expectedHash = this.enc.hashEmail(input.adminEmail);
-    const isEmailMatch = crypto.timingSafeEqual(
-      Buffer.from(invitation.emailHash, 'hex'),
-      Buffer.from(expectedHash, 'hex')
+    // Email must match the invitation. During key rotation the invitation may
+    // store either a V1 or V2 hash — check against all versions.
+    const expectedHashes = this.enc.hashEmailAllVersions(input.adminEmail);
+    // Evaluate ALL comparisons before checking the result to prevent .some()
+    // from short-circuiting and leaking a timing signal about which key version
+    // matched first (the difference is tiny but this is the correct pattern).
+    const hashComparisons = expectedHashes.map((h) =>
+      crypto.timingSafeEqual(Buffer.from(invitation.emailHash, 'hex'), Buffer.from(h, 'hex'))
     );
+    const isEmailMatch = hashComparisons.includes(true);
     if (!isEmailMatch) {
       throw new BadRequestException('This invitation was sent to a different email address.');
     }
 
-    const existingUser = await this.prisma.user.findUnique({
-      where: { emailHash: this.enc.hashEmail(input.adminEmail) },
+    const existingUser = await this.prisma.user.findFirst({
+      where: { emailHash: { in: expectedHashes } },
     });
     if (existingUser) {
       throw new BadRequestException('An account with this email already exists.');
@@ -1023,6 +1032,31 @@ export class AuthService {
 
   private hashToken(plainToken: string): string {
     return crypto.createHash('sha256').update(plainToken).digest('hex');
+  }
+
+  /**
+   * Delete all expired invitation rows from the database.
+   *
+   * Each invitation carries an `expiresAt` timestamp set to 7 days from
+   * creation. This method hard-deletes rows where `expiresAt < now` AND
+   * either the invitation has been used (`usedAt IS NOT NULL`) or it has
+   * simply expired without being claimed.
+   *
+   * Designed to be called by InvitationCleanupTask (daily cron) and
+   * directly in tests.
+   *
+   * @returns Count of deleted rows.
+   */
+  async cleanupExpiredInvitations(): Promise<number> {
+    const result = await this.prisma.invitation.deleteMany({
+      where: {
+        // All rows where the 7-day window has passed, used or not.
+        // Retaining expired invitations provides no operational value and
+        // would persist the recipient's email address beyond its purpose.
+        expiresAt: { lt: new Date() },
+      },
+    });
+    return result.count;
   }
 
   /**

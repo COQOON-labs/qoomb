@@ -269,6 +269,28 @@ export const listsRouter = (listsService: ListsService) =>
         return { success: true as const };
       }),
 
+    /**
+     * Return configured options for a select-type field.
+     * Used by the frontend to populate dropdown suggestions (Notion-style).
+     * Requires view access on the parent list.
+     */
+    getSelectOptions: hiveProcedure
+      .input(z.object({ fieldId: z.uuid(), listId: z.uuid() }))
+      .query(async ({ ctx, input }) => {
+        const list = await listsService.getById(input.listId, ctx.user.hiveId);
+        if (!list) throw new TRPCError({ code: 'NOT_FOUND', message: 'List not found' });
+
+        await requireResourceAccess(
+          ctx,
+          ctx.tx,
+          { type: 'list', ...list, groupId: list.groupId ?? undefined },
+          'view',
+          LIST_PERMISSIONS
+        );
+
+        return listsService.getSelectOptions(input.fieldId, input.listId);
+      }),
+
     // ── View management ────────────────────────────────────────────────────
 
     /**

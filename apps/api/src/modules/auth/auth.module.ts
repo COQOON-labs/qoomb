@@ -8,6 +8,7 @@ import { EmailModule } from '../email/email.module';
 import { EncryptionModule } from '../encryption';
 
 import { AuthService } from './auth.service';
+import { InvitationCleanupTask } from './invitation-cleanup.task';
 import { PassKeyService } from './passkey.service';
 import { RefreshTokenService } from './refresh-token.service';
 import { SystemConfigService } from './system-config.service';
@@ -43,6 +44,7 @@ import { TokenCleanupTask } from './token-cleanup.task';
     SystemConfigService,
     PassKeyService,
     TokenCleanupTask,
+    InvitationCleanupTask,
   ],
   exports: [AuthService, RefreshTokenService, SystemConfigService, PassKeyService],
 })

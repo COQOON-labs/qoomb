@@ -1,13 +1,15 @@
 /** @type {import('jest').Config} */
 module.exports = {
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    // tsconfig.seed.json extends tsconfig.json but sets rootDir to '.' so files
+    // outside src/ (e.g. prisma/scripts) are included in compilation.
+    '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.seed.json' }],
   },
   testRegex: '\\.(test|spec)\\.ts$',
   moduleFileExtensions: ['ts', 'js', 'json'],
   testEnvironment: 'node',
   rootDir: '.',
-  roots: ['<rootDir>/src'],
+  roots: ['<rootDir>/src', '<rootDir>/prisma/scripts'],
   coverageProvider: 'v8',
   // Only measure coverage on files that have companion tests.
   // Adding tests for a module → add its source file here.

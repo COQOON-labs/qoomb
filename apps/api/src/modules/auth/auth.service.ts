@@ -17,7 +17,7 @@ import { TokenBlacklistService } from '../../common/services/token-blacklist.ser
 import { getEnv } from '../../config/env.validation';
 import { PASSWORD_CONFIG, JWT_CONFIG } from '../../config/security.config';
 import { PrismaService, TransactionClient } from '../../prisma/prisma.service';
-import { EmailService } from '../email/email.service';
+import { EmailQueueService } from '../email/email-queue.service';
 import { EncryptionService } from '../encryption';
 
 import { RefreshTokenService } from './refresh-token.service';
@@ -60,7 +60,7 @@ export class AuthService {
     private readonly accountLockout: AccountLockoutService,
     private readonly tokenBlacklistService: TokenBlacklistService,
     private readonly refreshTokenService: RefreshTokenService,
-    private readonly emailService: EmailService,
+    private readonly emailQueue: EmailQueueService,
     private readonly systemConfig: SystemConfigService,
     private readonly enc: EncryptionService
   ) {}
@@ -657,7 +657,7 @@ export class AuthService {
       data: { token: tokenHash, userId, expiresAt },
     });
 
-    await this.emailService.sendEmailVerification(
+    await this.emailQueue.enqueueVerification(
       this.enc.decryptForUser(user.email, user.id),
       plainToken
     );
@@ -713,7 +713,7 @@ export class AuthService {
       data: { token: tokenHash, userId: user.id, expiresAt },
     });
 
-    await this.emailService.sendPasswordReset(
+    await this.emailQueue.enqueuePasswordReset(
       this.enc.decryptForUser(user.email, user.id),
       plainToken
     );
@@ -847,7 +847,7 @@ export class AuthService {
 
     // Send email OUTSIDE the transaction: don't hold a DB connection open
     // while waiting for SMTP. The token is already persisted at this point.
-    await this.emailService.sendInvitation(email, inviterName, plainToken);
+    await this.emailQueue.enqueueInvitation(email, inviterName, plainToken);
   }
 
   /**

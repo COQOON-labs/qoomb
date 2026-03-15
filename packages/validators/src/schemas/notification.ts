@@ -11,6 +11,7 @@ export const listNotificationsSchema = paginationSchema.extend({
 export const markNotificationReadSchema = uuidSchema;
 
 export const updateNotificationPreferencesSchema = z.record(
+  z.string(),
   z.object({
     inApp: z.boolean(),
     email: z.boolean(),

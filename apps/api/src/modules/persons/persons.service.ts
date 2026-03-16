@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { isAdminRole } from '@qoomb/types';
+import { isAdminRole, PersonRole } from '@qoomb/types';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -214,9 +214,9 @@ export class PersonsService {
       where: {
         hiveId,
         // We don't have hiveType here, so we use the union of all admin roles.
-        // isAdminRole covers 'parent' (family) and 'org_admin' (organization).
+        // isAdminRole covers PersonRole.PARENT (family) and PersonRole.ORG_ADMIN (organization).
         role: {
-          in: ['parent', 'org_admin'].filter(
+          in: [PersonRole.PARENT, PersonRole.ORG_ADMIN].filter(
             (r) => isAdminRole('family', r) || isAdminRole('organization', r)
           ),
         },

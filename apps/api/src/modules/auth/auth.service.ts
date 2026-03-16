@@ -9,7 +9,12 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Hive, Person, User, UserHiveMembership } from '@prisma/client';
-import { type CreateHiveInput, resolveLocale } from '@qoomb/types';
+import {
+  type CreateHiveInput,
+  getAdminRoleForHiveType,
+  PersonRole,
+  resolveLocale,
+} from '@qoomb/types';
 import * as bcrypt from 'bcrypt';
 
 import { AccountLockoutService } from '../../common/services/account-lockout.service';
@@ -118,7 +123,7 @@ export class AuthService {
       });
 
       // 2. Create admin person — role depends on hive type
-      const adminRole = input.type === 'family' ? 'parent' : 'org_admin';
+      const adminRole = getAdminRoleForHiveType(input.type);
       const person = await tx.person.create({
         data: {
           hiveId: hive.id,
@@ -921,7 +926,7 @@ export class AuthService {
       if (invitation.hiveId) {
         // Join existing hive
         hive = await tx.hive.findUniqueOrThrow({ where: { id: invitation.hiveId } });
-        const defaultRole = hive.type === 'family' ? 'parent' : 'member';
+        const defaultRole = hive.type === 'family' ? PersonRole.PARENT : PersonRole.MEMBER;
         const person = await tx.person.create({
           data: { hiveId: hive.id, role: defaultRole },
         });
@@ -954,7 +959,7 @@ export class AuthService {
             type: input.type,
           },
         });
-        const adminRole = input.type === 'family' ? 'parent' : 'org_admin';
+        const adminRole = getAdminRoleForHiveType(input.type);
         const person = await tx.person.create({ data: { hiveId: hive.id, role: adminRole } });
         personId = person.id;
 

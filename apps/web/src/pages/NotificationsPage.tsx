@@ -35,10 +35,7 @@ export function NotificationsPage() {
     },
   });
 
-  const handleMarkRead = useCallback(
-    (id: string) => markRead.mutate(id),
-    [markRead]
-  );
+  const handleMarkRead = useCallback((id: string) => markRead.mutate(id), [markRead]);
 
   const handleMarkAllRead = useCallback(() => {
     markAllRead.mutate();
@@ -52,7 +49,12 @@ export function NotificationsPage() {
           <h1 className="text-2xl font-black text-foreground tracking-tight">
             {LL.notifications.title()}
           </h1>
-          <Button variant="ghost" size="sm" onClick={handleMarkAllRead} disabled={markAllRead.isPending}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleMarkAllRead}
+            disabled={markAllRead.isPending}
+          >
             {LL.notifications.markAllRead()}
           </Button>
         </div>
@@ -87,16 +89,14 @@ export function NotificationsPage() {
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
             <BellIcon className="w-10 h-10 text-muted-foreground/30" />
-            <p className="text-sm font-medium text-foreground">{LL.notifications.noNotifications()}</p>
+            <p className="text-sm font-medium text-foreground">
+              {LL.notifications.noNotifications()}
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
             {notifications.map((notif) => (
-              <Card
-                key={notif.id}
-                padding="md"
-                className={notif.isRead ? 'opacity-60' : ''}
-              >
+              <Card key={notif.id} padding="md" className={notif.isRead ? 'opacity-60' : ''}>
                 <div className="flex items-start gap-3">
                   {!notif.isRead && (
                     <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />

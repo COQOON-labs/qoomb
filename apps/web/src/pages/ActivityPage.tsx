@@ -41,9 +41,7 @@ export function ActivityPage() {
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 rounded-full bg-muted-foreground/40 mt-1.5 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      {event.summary && (
-                        <p className="text-sm text-foreground">{event.summary}</p>
-                      )}
+                      {event.summary && <p className="text-sm text-foreground">{event.summary}</p>}
                       <p className="text-xs text-muted-foreground mt-0.5">
                         <span className="font-mono text-primary/80 mr-2">{event.action}</span>
                         {event.resourceType} · {new Date(event.createdAt).toLocaleString()}

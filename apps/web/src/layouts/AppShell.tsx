@@ -3,7 +3,14 @@ import { cn } from '@qoomb/ui';
 import { useMemo, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { CheckIcon, ChevronUpDownIcon, HomeIcon, SettingsIcon, UserIcon, UsersIcon } from '../components/icons';
+import {
+  CheckIcon,
+  ChevronUpDownIcon,
+  HomeIcon,
+  SettingsIcon,
+  UserIcon,
+  UsersIcon,
+} from '../components/icons';
 import { EmailVerificationBanner } from '../components/layout/EmailVerificationBanner';
 import { NotificationsBell } from '../components/layout/NotificationsBell';
 import { UserMenu } from '../components/layout/UserMenu';

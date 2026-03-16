@@ -25,6 +25,8 @@ import * as crypto from 'crypto';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import * as simplewebauthn from '@simplewebauthn/server';
 
+import { getEnv } from '../../config/env.validation';
+
 import { PassKeyService } from './passkey.service';
 
 // ── Mock external deps ────────────────────────────────────────────────────────
@@ -46,7 +48,6 @@ const mockGenerateRegOpts = simplewebauthn.generateRegistrationOptions as jest.M
 
 // Mock getEnv (called by rpID / rpName / origin getters)
 jest.mock('../../config/env.validation');
-import { getEnv } from '../../config/env.validation';
 const mockGetEnv = getEnv as jest.MockedFunction<typeof getEnv>;
 
 const mockPrisma = {

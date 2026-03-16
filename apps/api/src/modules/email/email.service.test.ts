@@ -15,9 +15,8 @@
  * - CTA URL construction:  uses configured APP_URL env var (no hardcoded localhost)
  */
 
-import { EMAIL_TRANSPORT } from './interfaces/email-transport.interface';
-import { type IEmailTransport } from './interfaces/email-transport.interface';
 import { DEFAULT_LOCALE, EmailService } from './email.service';
+import { type IEmailTransport } from './interfaces/email-transport.interface';
 
 // ── Mock i18n ─────────────────────────────────────────────────────────────────
 
@@ -149,7 +148,7 @@ describe('EmailService', () => {
       await svc.sendEmailVerification(TO, TOKEN);
 
       // i18nObject should be called with the default locale
-      const { i18nObject } = jest.requireMock('../../i18n/i18n-util') as {
+      const { i18nObject } = jest.requireMock('../../i18n/i18n-util') as unknown as {
         i18nObject: jest.Mock;
       };
       expect(i18nObject).toHaveBeenCalledWith(DEFAULT_LOCALE);

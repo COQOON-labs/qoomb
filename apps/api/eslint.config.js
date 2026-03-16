@@ -54,11 +54,27 @@ module.exports = [
     rules: { 'no-restricted-syntax': 'off' },
   },
   {
-    // Test files set process.env directly for test fixture setup (e.g. KEY_PROVIDER,
-    // ENCRYPTION_KEY) before modules are imported. This is unavoidable in Jest because
-    // process.env must be set before the module registry resolves.
+    // Test files: relax strict type-safety rules that cannot practically be satisfied
+    // when using Jest mock APIs. Specifically:
+    //
+    // - no-unsafe-assignment / no-unsafe-member-access: jest.fn().mock.calls is typed
+    //   as any[][], so extracting call arguments always produces `any`. Requiring type
+    //   assertions on every args access would add boilerplate with no safety benefit
+    //   inside tests that are already proving behaviour via toEqual/toBe.
+    //
+    // - no-floating-promises: expect(fn()).rejects.toThrow() is idiomatic Jest; ESLint
+    //   cannot know that the promise is consumed by the test runner.
+    //
+    // - no-restricted-syntax: test files must set process.env before module resolution
+    //   (Jest does not provide DI for env vars), so the process.env guard is relaxed.
     files: ['**/*.test.ts', '**/*.spec.ts'],
-    rules: { 'no-restricted-syntax': 'off' },
+    rules: {
+      'no-restricted-syntax': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+    },
   },
 ];
 

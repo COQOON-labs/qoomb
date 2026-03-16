@@ -13,13 +13,13 @@
  * - Each flag is independent — one being true does not influence others
  */
 
+import { getEnv } from '../../config/env.validation';
+
 import { SystemConfigService } from './system-config.service';
 
 // ── Mock getEnv ───────────────────────────────────────────────────────────────
 
 jest.mock('../../config/env.validation');
-
-import { getEnv } from '../../config/env.validation';
 
 const mockGetEnv = getEnv as jest.MockedFunction<typeof getEnv>;
 

@@ -1,5 +1,5 @@
-import { Button, Card, Input } from '@qoomb/ui';
-import { useCallback, useState } from 'react';
+import { Button, Input } from '@qoomb/ui';
+import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { useI18nContext } from '../i18n/i18n-react';
@@ -70,8 +70,15 @@ export function MessagingPage() {
   // Sorted messages: oldest first for chat display
   const sortedMessages = [...messages].reverse();
 
-  const getDisplayName = (personId: string) =>
-    members.find((m) => m.id === personId)?.displayName ?? personId.slice(0, 8);
+  // Build a lookup map once whenever the members list changes (O(n) vs O(n²))
+  const memberNameMap = useMemo(
+    () => new Map(members.map((m) => [m.id, m.displayName])),
+    [members]
+  );
+  const getDisplayName = useCallback(
+    (personId: string) => memberNameMap.get(personId) ?? personId.slice(0, 8),
+    [memberNameMap]
+  );
 
   return (
     <AppShell>

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { type DirectMessage, Prisma } from '@prisma/client';
+import { type DirectMessage } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { DecryptFields, EncryptDecryptFields, EncryptionService } from '../encryption';

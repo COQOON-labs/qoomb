@@ -1,5 +1,10 @@
 import { HivePermission } from '@qoomb/types';
-import { sendMessageSchema, listMessagesSchema, listConversationsSchema, sanitizeHtml } from '@qoomb/validators';
+import {
+  sendMessageSchema,
+  listMessagesSchema,
+  listConversationsSchema,
+  sanitizeHtml,
+} from '@qoomb/validators';
 import { TRPCError } from '@trpc/server';
 
 import { requirePermission } from '../../common/guards';
@@ -80,6 +85,17 @@ export const messagingRouter = (messagingService: MessagingService) =>
           code: 'BAD_REQUEST',
           message: 'Cannot send a message to yourself',
         });
+      }
+
+      // S-003: Verify that the recipient belongs to the same hive.
+      // Without this check, a caller who knows a personId from a different hive
+      // could store a cross-hive message under the current hive context.
+      const recipient = await ctx.prisma.person.findFirst({
+        where: { id: input.recipientPersonId, hiveId: ctx.user.hiveId },
+        select: { id: true },
+      });
+      if (!recipient) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient not found in this hive' });
       }
 
       return messagingService.send(

@@ -1,5 +1,5 @@
 import { getInitials, ROLE_I18N_KEYS, type PersonRole, type RoleI18nKey } from '@qoomb/types';
-import { Button, Card, Input } from '@qoomb/ui';
+import { Button, Card, ConfirmDialog, Input } from '@qoomb/ui';
 import { useCallback, useState } from 'react';
 
 import { PlusIcon, TrashIcon, UserIcon } from '../components/icons';
@@ -11,7 +11,11 @@ import { trpc } from '../lib/trpc/client';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(date: Date | string): string {
-  return new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(date).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 // ── MembersPage ───────────────────────────────────────────────────────────────
@@ -76,14 +80,20 @@ export function MembersPage() {
     },
   });
 
-  const handleRemove = useCallback(
-    (personId: string, name: string | null) => {
-      const display = name ?? '?';
-      if (!window.confirm(LL.members.removeConfirm({ name: display }))) return;
-      removeMember.mutate(personId);
-    },
-    [LL, removeMember]
+  // F-002: confirmation state replacing window.confirm
+  const [confirmRemove, setConfirmRemove] = useState<{ personId: string; name: string } | null>(
+    null
   );
+  const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
+
+  const handleRemove = useCallback((personId: string, name: string | null) => {
+    setConfirmRemove({ personId, name: name ?? '?' });
+  }, []);
+
+  const handleRemoveConfirmed = useCallback(() => {
+    if (confirmRemove) removeMember.mutate(confirmRemove.personId);
+    setConfirmRemove(null);
+  }, [confirmRemove, removeMember]);
 
   // ── Pending invitations ───────────────────────────────────────────────────
   const { data: invitations = [], refetch: refetchInvitations } =
@@ -101,13 +111,14 @@ export function MembersPage() {
     [resendInvitation]
   );
 
-  const handleRevoke = useCallback(
-    (invitationId: string) => {
-      if (!window.confirm(LL.members.revokeConfirm())) return;
-      revokeInvitation.mutate(invitationId);
-    },
-    [LL, revokeInvitation]
-  );
+  const handleRevoke = useCallback((invitationId: string) => {
+    setConfirmRevoke(invitationId);
+  }, []);
+
+  const handleRevokeConfirmed = useCallback(() => {
+    if (confirmRevoke) revokeInvitation.mutate(confirmRevoke);
+    setConfirmRevoke(null);
+  }, [confirmRevoke, revokeInvitation]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   function getRoleLabel(role: string): string {
@@ -275,6 +286,26 @@ export function MembersPage() {
           </div>
         )}
       </div>
+
+      {/* F-002: ConfirmDialog replaces window.confirm for remove member */}
+      <ConfirmDialog
+        open={!!confirmRemove}
+        title={LL.members.removeConfirm({ name: confirmRemove?.name ?? '' })}
+        confirmLabel={LL.members.removeMember()}
+        cancelLabel={LL.common.cancel()}
+        onConfirm={handleRemoveConfirmed}
+        onCancel={() => setConfirmRemove(null)}
+      />
+
+      {/* F-002: ConfirmDialog for revoke invitation */}
+      <ConfirmDialog
+        open={!!confirmRevoke}
+        title={LL.members.revokeConfirm()}
+        confirmLabel={LL.members.revokeInvitation()}
+        cancelLabel={LL.common.cancel()}
+        onConfirm={handleRevokeConfirmed}
+        onCancel={() => setConfirmRevoke(null)}
+      />
     </AppShell>
   );
 }

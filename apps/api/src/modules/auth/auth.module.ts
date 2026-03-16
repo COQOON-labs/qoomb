@@ -6,6 +6,7 @@ import { JWT_CONFIG } from '../../config/security.config';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
 import { EncryptionModule } from '../encryption';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 import { AuthService } from './auth.service';
 import { InvitationCleanupTask } from './invitation-cleanup.task';
@@ -19,6 +20,7 @@ import { TokenCleanupTask } from './token-cleanup.task';
     PrismaModule,
     EmailModule,
     EncryptionModule,
+    NotificationsModule,
     JwtModule.registerAsync({
       useFactory: () => {
         const env = getEnv();

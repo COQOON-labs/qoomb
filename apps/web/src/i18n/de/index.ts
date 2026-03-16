@@ -206,65 +206,11 @@ const de = {
     you: '(Du)',
     joined: 'Beigetreten',
     pendingInvitations: 'Ausstehende Einladungen',
-    noPendingInvitations: 'Keine ausstehenden Einladungen.',
     invitedAt: 'Eingeladen',
     expiresAt: 'Läuft ab',
     resendInvitation: 'Erneut senden',
-    revokeInvitation: 'Widerrufen',
-    revokeConfirm: 'Diese Einladung wirklich widerrufen?',
-    resendSuccess: 'Einladung erneut gesendet!',
-    revokeSuccess: 'Einladung widerrufen.',
-  },
-
-  // ── Hive Settings ─────────────────────────────────────────────────────────
-  hiveSettings: {
-    title: 'Hive-Einstellungen',
-    generalSection: 'Allgemein',
-    nameLabel: 'Hive-Name',
-    namePlaceholder: 'z.B. Familie Müller',
-    localeLabel: 'Sprache des Hive',
-    saveSuccess: 'Einstellungen gespeichert!',
-    saveError: 'Fehler beim Speichern. Bitte erneut versuchen.',
-    dangerZone: 'Gefahrenzone',
-    deleteHive: 'Hive löschen',
-    deleteDescription: 'Alle Daten, Mitglieder und Inhalte werden unwiderruflich gelöscht.',
-    deleteConfirmLabel: 'Gib DELETE ein, um zu bestätigen',
-    deleteConfirmPlaceholder: 'DELETE',
-    deleteButton: 'Hive endgültig löschen',
-    deleteSuccess: 'Hive wurde gelöscht.',
-  },
-
-  // ── Notifications ─────────────────────────────────────────────────────────
-  notifications: {
-    title: 'Benachrichtigungen',
-    markAllRead: 'Alle als gelesen markieren',
-    noNotifications: 'Keine Benachrichtigungen.',
-    onlyUnread: 'Nur ungelesene',
-    allNotifications: 'Alle',
-    markRead: 'Als gelesen markieren',
-    preferences: 'Benachrichtigungseinstellungen',
-    preferencesInApp: 'In-App',
-    preferencesEmail: 'E-Mail',
-    preferencesSaved: 'Einstellungen gespeichert!',
-  },
-
-  // ── Messaging ─────────────────────────────────────────────────────────────
-  messaging: {
-    title: 'Nachrichten',
-    newMessage: 'Neue Nachricht',
-    messagePlaceholder: 'Nachricht eingeben…',
-    send: 'Senden',
-    noConversations: 'Noch keine Unterhaltungen.',
-    noMessages: 'Noch keine Nachrichten. Schreib als Erster!',
-    selectConversation: 'Unterhaltung auswählen',
-    unread: '{count} ungelesen',
-  },
-
-  // ── Activity ──────────────────────────────────────────────────────────────
-  activity: {
-    title: 'Aktivität',
-    noActivity: 'Noch keine Aktivitäten.',
-    loadMore: 'Mehr laden',
+    revokeInvitation: 'Zurückziehen',
+    revokeConfirm: 'Einladung zurückziehen?',
   },
 
   // ── Groups ────────────────────────────────────────────────────────────────
@@ -338,6 +284,63 @@ const de = {
     archivedNotice: 'Diese Liste ist archiviert.',
     showArchived: 'Archivierte anzeigen',
     hideArchived: 'Archivierte ausblenden',
+  },
+
+  // ── Activity ─────────────────────────────────────────────────────────────
+  activity: {
+    title: 'Aktivität',
+    noActivity: 'Keine Aktivitäten vorhanden.',
+    loadMore: 'Mehr laden',
+  },
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+  notifications: {
+    title: 'Benachrichtigungen',
+    markAllRead: 'Alle als gelesen markieren',
+    allNotifications: 'Alle',
+    onlyUnread: 'Ungelesen',
+    noNotifications: 'Noch keine Benachrichtigungen.',
+    markRead: 'Als gelesen markieren',
+  },
+
+  // ── Messaging ─────────────────────────────────────────────────────────────
+  messaging: {
+    title: 'Nachrichten',
+    noConversations: 'Noch keine Konversationen.',
+    noMessages: 'Noch keine Nachrichten.',
+    selectConversation: 'Wähle eine Konversation aus.',
+    messagePlaceholder: 'Nachricht schreiben…',
+    send: 'Senden',
+    newMessage: 'Neue Nachricht',
+    unread: '{count} ungelesen',
+  },
+
+  // ── Hive Settings ─────────────────────────────────────────────────────────
+  hiveSettings: {
+    title: 'Hive-Einstellungen',
+    generalSection: 'Allgemein',
+    nameLabel: 'Name',
+    namePlaceholder: 'Name deines Hives',
+    localeLabel: 'Sprache',
+    saveSuccess: 'Einstellungen gespeichert',
+    saveError: 'Speichern fehlgeschlagen',
+    dangerZone: 'Gefahrenzone',
+    deleteDescription:
+      'Löscht den gesamten Hive und alle Daten. Diese Aktion ist nicht rückgängig zu machen.',
+    deleteConfirmLabel: 'Zur Bestätigung "DELETE" eingeben',
+    deleteConfirmPlaceholder: 'DELETE',
+    deleteButton: 'Hive löschen',
+    notificationPrefsSection: 'Benachrichtigungen',
+    notificationPrefsDescription:
+      'Wähle, für welche Ereignisse du In-App- und E-Mail-Benachrichtigungen erhältst.',
+    notifInApp: 'In-App',
+    notifEmail: 'E-Mail',
+    notifSaved: 'Einstellungen gespeichert',
+    notifTypes: {
+      member_joined: 'Neues Mitglied beigetreten',
+      task_assigned: 'Aufgabe zugewiesen',
+      event_reminder: 'Terminerinnerung',
+    },
   },
 } satisfies Translation;
 

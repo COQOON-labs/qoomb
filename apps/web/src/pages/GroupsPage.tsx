@@ -1,5 +1,5 @@
 import { getInitials } from '@qoomb/types';
-import { Button, Card, Input } from '@qoomb/ui';
+import { Button, Card, ConfirmDialog, Input } from '@qoomb/ui';
 import { useCallback, useState } from 'react';
 
 import { PlusIcon, TrashIcon, UsersIcon } from '../components/icons';
@@ -55,6 +55,7 @@ export function GroupsPage() {
 
   // ── Delete ───────────────────────────────────────────────────────────────
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const deleteGroup = trpc.groups.delete.useMutation({
     onSuccess: () => {
@@ -66,14 +67,16 @@ export function GroupsPage() {
     },
   });
 
-  const handleDeleteClick = useCallback(
-    (id: string) => {
-      if (!window.confirm(LL.groups.deleteConfirm())) return;
-      setDeletingId(id);
-      deleteGroup.mutate(id);
-    },
-    [LL, deleteGroup]
-  );
+  const handleDeleteClick = useCallback((id: string) => {
+    setConfirmDeleteId(id);
+  }, []);
+
+  const handleDeleteConfirmed = useCallback(() => {
+    if (!confirmDeleteId) return;
+    setDeletingId(confirmDeleteId);
+    deleteGroup.mutate(confirmDeleteId);
+    setConfirmDeleteId(null);
+  }, [confirmDeleteId, deleteGroup]);
 
   // ── Detail view ──────────────────────────────────────────────────────────
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -160,32 +163,40 @@ export function GroupsPage() {
                   <Card
                     key={group.id}
                     padding="none"
-                    className="group cursor-pointer hover:border-foreground/20 transition-colors"
-                    onClick={() => setSelectedGroupId(group.id)}
+                    className="group hover:border-foreground/20 transition-colors"
                   >
-                    <div className="flex items-center gap-3 px-4 py-3.5">
-                      <UsersIcon className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <div className="flex items-center">
+                      {/* F-001: native <button> as the main clickable surface so keyboard
+                          users can focus + activate via Enter/Space (WCAG 2.1 SC 2.1.1).
+                          The delete button sits outside this button to avoid nesting
+                          interactive elements (WCAG 2.1 SC 4.1.2). */}
+                      <button
+                        type="button"
+                        className="flex-1 text-left cursor-pointer"
+                        onClick={() => setSelectedGroupId(group.id)}
+                      >
+                        <div className="flex items-center gap-3 px-4 py-3.5">
+                          <UsersIcon className="w-5 h-5 text-muted-foreground shrink-0" />
 
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-foreground truncate">{group.name}</p>
-                        {group.description && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {group.description}
-                          </p>
-                        )}
-                      </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground truncate">{group.name}</p>
+                            {group.description && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                {group.description}
+                              </p>
+                            )}
+                          </div>
 
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        {LL.groups.memberCount({ count: group.memberCount })}
-                      </span>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {LL.groups.memberCount({ count: group.memberCount })}
+                          </span>
+                        </div>
+                      </button>
 
                       <button
                         type="button"
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(group.id);
-                        }}
+                        className="opacity-0 group-hover:opacity-100 mx-3 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                        onClick={() => handleDeleteClick(group.id)}
                         disabled={deletingId === group.id}
                         aria-label={LL.groups.deleteGroup()}
                       >
@@ -199,6 +210,15 @@ export function GroupsPage() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        title={LL.groups.deleteConfirm()}
+        confirmLabel={LL.groups.deleteGroup()}
+        cancelLabel={LL.common.cancel()}
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </AppShell>
   );
 }
@@ -241,6 +261,11 @@ function GroupDetail({ groupId, onBack }: { groupId: string; onBack: () => void 
   );
 
   // ── Remove member ────────────────────────────────────────────────────────
+  const [confirmRemoveMember, setConfirmRemoveMember] = useState<{
+    personId: string;
+    name: string;
+  } | null>(null);
+
   const removeMember = trpc.groups.removeMember.useMutation({
     onSuccess: () => {
       void utils.groups.get.invalidate(groupId);
@@ -248,14 +273,15 @@ function GroupDetail({ groupId, onBack }: { groupId: string; onBack: () => void 
     },
   });
 
-  const handleRemoveMember = useCallback(
-    (personId: string, name: string | null) => {
-      const display = name ?? '?';
-      if (!window.confirm(LL.groups.removeMemberConfirm({ name: display }))) return;
-      removeMember.mutate({ groupId, personId });
-    },
-    [LL, groupId, removeMember]
-  );
+  const handleRemoveMember = useCallback((personId: string, name: string | null) => {
+    setConfirmRemoveMember({ personId, name: name ?? '?' });
+  }, []);
+
+  const handleRemoveMemberConfirmed = useCallback(() => {
+    if (!confirmRemoveMember) return;
+    removeMember.mutate({ groupId, personId: confirmRemoveMember.personId });
+    setConfirmRemoveMember(null);
+  }, [confirmRemoveMember, groupId, removeMember]);
 
   // Members not yet in this group (for add dropdown)
   const groupMemberIds = new Set(group?.members.map((m) => m.personId) ?? []);
@@ -381,6 +407,19 @@ function GroupDetail({ groupId, onBack }: { groupId: string; onBack: () => void 
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmRemoveMember !== null}
+        title={
+          confirmRemoveMember
+            ? LL.groups.removeMemberConfirm({ name: confirmRemoveMember.name })
+            : ''
+        }
+        confirmLabel={LL.groups.removeMember()}
+        cancelLabel={LL.common.cancel()}
+        onConfirm={handleRemoveMemberConfirmed}
+        onCancel={() => setConfirmRemoveMember(null)}
+      />
     </div>
   );
 }

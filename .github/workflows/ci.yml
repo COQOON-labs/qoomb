@@ -117,6 +117,71 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      # Regression pattern Q-003: reject hardcoded admin-role literals in module queries.
+      # isAdminRole() from @qoomb/types must be used instead so new roles are never silently missed.
+      - name: Check for hardcoded admin-role literals (Q-003)
+        run: |
+          if grep -rn \
+            --include="*.ts" \
+            --exclude-dir=node_modules \
+            -E "['\"](parent|org_admin)['\"]" \
+            apps/api/src/modules/ \
+            | grep -v "\.test\.ts" \
+            | grep -v "permissions\.ts" \
+            | grep -v "person\.utils\.ts"; then
+            echo "❌ Hardcoded admin-role literals found in module code."
+            echo "   Use isAdminRole() from @qoomb/types instead."
+            exit 1
+          else
+            echo "✅ No hardcoded admin-role literals found."
+          fi
+
+      # Regression pattern T-003: every service file must have a companion test file.
+      # New services must ship with tests — CI blocks immediately.
+      # Existing services without tests are listed in the allowlist below and tracked
+      # via T-003 in docs/REGRESSION-PATTERNS.md. Remove entries as tests are added.
+      - name: Check for service files without tests (T-003)
+        run: |
+          # Known tech-debt: these services predate T-003 and tests are being added progressively.
+          # DO NOT add new services here — write the test instead.
+          allowlist=(
+            "apps/api/src/modules/lists/lists.service.ts"
+            "apps/api/src/modules/email/email-queue.service.ts"
+            "apps/api/src/modules/email/email-renderer.service.ts"
+          )
+          missing=()
+          while IFS= read -r service_file; do
+            dir=$(dirname "$service_file")
+            base=$(basename "$service_file" .service.ts)
+            test_file="$dir/$base.service.test.ts"
+            if [ ! -f "$test_file" ]; then
+              # Check if this file is in the allowlist
+              in_allowlist=false
+              for allowed in "${allowlist[@]}"; do
+                if [[ "$service_file" == *"$allowed"* ]]; then
+                  in_allowlist=true
+                  break
+                fi
+              done
+              if [ "$in_allowlist" = false ]; then
+                missing+=("$service_file")
+              fi
+            fi
+          done < <(find apps/api/src/modules -name "*.service.ts" ! -name "*.spec.ts")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "❌ New service files without companion test files:"
+            for f in "${missing[@]}"; do
+              echo "   $f"
+            done
+            echo ""
+            echo "   Create a <name>.service.test.ts next to the service."
+            echo "   DO NOT add it to the allowlist in ci.yml — write the test."
+            exit 1
+          else
+            echo "✅ No new service files without tests."
+            echo "   (${#allowlist[@]} legacy services still need tests — see T-003 in docs/REGRESSION-PATTERNS.md)"
+          fi
+
       - name: Format check
         run: pnpm run format:check
 

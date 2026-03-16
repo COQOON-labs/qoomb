@@ -296,23 +296,27 @@ export class ListsService {
 
   @EncryptDecryptFields({ fields: VIEW_ENC_FIELDS, hiveIdArg: 1 })
   async createView(listId: string, hiveId: string, data: CreateViewData): Promise<ListViewRow> {
-    if (data.isDefault) {
-      await this.prisma.listView.updateMany({
-        where: { listId, isDefault: true },
-        data: { isDefault: false },
-      });
-    }
-    return this.prisma.listView.create({
-      data: {
-        listId,
-        name: data.name,
-        viewType: data.viewType,
-        config: (data.config ?? {}) as Prisma.InputJsonValue,
-        filter: data.filter ? (data.filter as Prisma.InputJsonValue) : Prisma.JsonNull,
-        sortBy: data.sortBy ? (data.sortBy as Prisma.InputJsonValue) : Prisma.JsonNull,
-        isDefault: data.isDefault ?? false,
-      },
-    }) as unknown as ListViewRow;
+    // Q-004: wrap the two-step isDefault reset + create in a transaction so a
+    // crash between the two writes never leaves the list with no default view.
+    return this.prisma.$transaction(async (tx) => {
+      if (data.isDefault) {
+        await tx.listView.updateMany({
+          where: { listId, isDefault: true },
+          data: { isDefault: false },
+        });
+      }
+      return tx.listView.create({
+        data: {
+          listId,
+          name: data.name,
+          viewType: data.viewType,
+          config: (data.config ?? {}) as Prisma.InputJsonValue,
+          filter: data.filter ? (data.filter as Prisma.InputJsonValue) : Prisma.JsonNull,
+          sortBy: data.sortBy ? (data.sortBy as Prisma.InputJsonValue) : Prisma.JsonNull,
+          isDefault: data.isDefault ?? false,
+        },
+      }) as unknown as ListViewRow;
+    });
   }
 
   @DecryptFields({ fields: VIEW_ENC_FIELDS, hiveIdArg: 2 })
@@ -332,10 +336,19 @@ export class ListsService {
 
     if (data.isDefault !== undefined) {
       if (data.isDefault) {
-        await this.prisma.listView.updateMany({
-          where: { listId, isDefault: true },
-          data: { isDefault: false },
+        // Q-004: run the two writes atomically — crash between them would leave
+        // the list with no default view.
+        await this.prisma.$transaction(async (tx) => {
+          await tx.listView.updateMany({
+            where: { listId, isDefault: true },
+            data: { isDefault: false },
+          });
+          await tx.listView.updateMany({
+            where: { id, listId },
+            data: { ...patch, isDefault: true },
+          });
         });
+        return this.prisma.listView.findUniqueOrThrow({ where: { id } }) as unknown as ListViewRow;
       }
       patch.isDefault = data.isDefault;
     }
@@ -463,6 +476,14 @@ export class ListsService {
 
   // ── Private helpers ───────────────────────────────────────────────────────
 
+  // Q-006: Why _encryptName() is used manually instead of @EncryptFields:
+  // @EncryptDecryptFields is used on methods where the ENTIRE input object can be
+  // encrypted in-place before the method body runs (e.g. create, createField).
+  // For partial updates (updateList, updateField, updateView), the method builds
+  // a `patch` object from optional fields. @EncryptFields would encrypt the whole
+  // `data` argument including undefined fields, which breaks partial-update logic.
+  // Manual encryption via _encryptName() is intentional here — it is NOT a gap
+  // in safety because _encryptName is always called when `data.name !== undefined`.
   private _encryptName(name: string, hiveId: string): string {
     return this.enc.serializeToStorage(this.enc.encrypt(name, hiveId));
   }

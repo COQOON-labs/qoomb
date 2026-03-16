@@ -18,7 +18,9 @@ import { getEnv } from '../../config/env.validation';
 import { PASSWORD_CONFIG, JWT_CONFIG } from '../../config/security.config';
 import { PrismaService, TransactionClient } from '../../prisma/prisma.service';
 import { EmailQueueService } from '../email/email-queue.service';
+import { EmailService } from '../email/email.service';
 import { EncryptionService } from '../encryption';
+import { NotificationsService } from '../notifications/notifications.service';
 
 import { RefreshTokenService } from './refresh-token.service';
 import { SystemConfigService } from './system-config.service';
@@ -60,9 +62,11 @@ export class AuthService {
     private readonly accountLockout: AccountLockoutService,
     private readonly tokenBlacklistService: TokenBlacklistService,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly emailService: EmailService,
     private readonly emailQueue: EmailQueueService,
     private readonly systemConfig: SystemConfigService,
-    private readonly enc: EncryptionService
+    private readonly enc: EncryptionService,
+    private readonly notifications: NotificationsService
   ) {}
 
   /**
@@ -328,12 +332,17 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify<JwtPayload>(token);
 
+      // S-002: Tokens without a JTI cannot be blacklisted — reject them outright.
+      // generateAccessToken always sets a JTI; absence means the token is
+      // malformed, from a different issuer, or a future regression.
+      if (!payload.jti) {
+        throw new UnauthorizedException('Authentication failed');
+      }
+
       // Check if token is blacklisted
-      if (payload.jti) {
-        const isBlacklisted = await this.tokenBlacklistService.isBlacklisted(payload.jti);
-        if (isBlacklisted) {
-          throw new UnauthorizedException('Token has been revoked');
-        }
+      const isBlacklisted = await this.tokenBlacklistService.isBlacklisted(payload.jti);
+      if (isBlacklisted) {
+        throw new UnauthorizedException('Token has been revoked');
       }
 
       // Check user-level blacklist (for logout-all)
@@ -381,7 +390,17 @@ export class AuthService {
         hiveName: hiveName,
         locale: resolveLocale(pii.locale, membership.hive.locale, getEnv().DEFAULT_LOCALE),
       };
-    } catch (_error) {
+    } catch (error) {
+      // Q-001: Log infrastructure errors (DB outage, bugs) so they are visible
+      // in monitoring. JwtService errors (expired/invalid) are expected and
+      // don't need logging. We distinguish by checking for known JWT error names.
+      const isExpectedJwtError =
+        error instanceof UnauthorizedException ||
+        (error instanceof Error &&
+          ['JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError'].includes(error.name));
+      if (!isExpectedJwtError) {
+        this.logger.error('Unexpected error during token validation', error);
+      }
       // SECURITY: Generic error for all token validation failures
       throw new UnauthorizedException('Authentication failed');
     }
@@ -845,8 +864,8 @@ export class AuthService {
       });
     });
 
-    // Send email OUTSIDE the transaction: don't hold a DB connection open
-    // while waiting for SMTP. The token is already persisted at this point.
+    // Enqueue OUTSIDE the transaction: don't hold a DB connection open while
+    // waiting for the queue. The token is already persisted at this point.
     await this.emailQueue.enqueueInvitation(email, inviterName, plainToken);
   }
 
@@ -974,6 +993,23 @@ export class AuthService {
 
     const pii = this.decryptUserPii(result.user);
 
+    // Fire-and-forget: notify the new member that they joined the hive.
+    // Only meaningful for invitation-to-existing-hive flows (hiveId present).
+    if (invitation.hiveId) {
+      void this.notifications
+        .create(
+          {
+            recipientPersonId: result.personId,
+            notificationType: 'member_joined',
+            title: pii.email,
+            resourceType: 'person',
+            resourceId: result.personId,
+          },
+          result.hive.id
+        )
+        .catch(() => undefined);
+    }
+
     return {
       accessToken,
       refreshToken: refreshTokenData.token,
@@ -1060,6 +1096,32 @@ export class AuthService {
   }
 
   /**
+   * List all pending (not used, not expired) invitations for a hive.
+   * Returns safe fields only — no token hashes exposed.
+   */
+  async listPendingInvitations(
+    hiveId: string
+  ): Promise<{ id: string; email: string; createdAt: Date; expiresAt: Date }[]> {
+    return this.prisma.invitation.findMany({
+      where: { hiveId, usedAt: null, expiresAt: { gte: new Date() } },
+      select: { id: true, email: true, createdAt: true, expiresAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Revoke a pending invitation by marking it as used.
+   * Returns false if the invitation was not found, already used, or doesn't belong to the hive.
+   */
+  async revokeInvitation(invitationId: string, hiveId: string): Promise<boolean> {
+    const result = await this.prisma.invitation.updateMany({
+      where: { id: invitationId, hiveId, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    return result.count > 0;
+  }
+
+  /**
    * Get all hives for a user
    */
   async getUserHives(userId: string): Promise<
@@ -1121,43 +1183,5 @@ export class AuthService {
     return {
       locale: resolveLocale(locale, hiveLocale, getEnv().DEFAULT_LOCALE),
     };
-  }
-
-  // ── Invitation Management (Phase 3) ────────────────────────────────────────
-
-  /**
-   * List all pending (not used, not expired) invitations for a hive.
-   * The plaintext email is returned — it is stored in the Invitation row
-   * specifically for this use case (see ADR-0008, migration 20260314000005).
-   */
-  async listPendingInvitations(hiveId: string) {
-    return this.prisma.invitation.findMany({
-      where: {
-        hiveId,
-        usedAt: null,
-        expiresAt: { gt: new Date() },
-      },
-      select: {
-        id: true,
-        email: true,
-        createdAt: true,
-        expiresAt: true,
-        invitedByUserId: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  /**
-   * Revoke a pending invitation.
-   * Marks it as used (soft delete) so the token becomes invalid.
-   * Returns false if not found or not belonging to this hive.
-   */
-  async revokeInvitation(invitationId: string, hiveId: string): Promise<boolean> {
-    const result = await this.prisma.invitation.updateMany({
-      where: { id: invitationId, hiveId, usedAt: null },
-      data: { usedAt: new Date() },
-    });
-    return result.count > 0;
   }
 }

@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 
-import { BellIcon } from '../icons';
 import { useAuth } from '../../lib/auth/useAuth';
 import { trpc } from '../../lib/trpc/client';
+import { BellIcon } from '../icons';
 
 // ── NotificationsBell ─────────────────────────────────────────────────────────
 

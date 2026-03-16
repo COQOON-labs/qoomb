@@ -1,6 +1,8 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PgBoss, type Job } from 'pg-boss';
 
+import { getEnv } from '../../config/env.validation';
+
 import { DEFAULT_LOCALE, EmailService, type SupportedLocale } from './email.service';
 
 interface VerificationJobData {
@@ -54,7 +56,8 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     this.boss = new PgBoss({
-      connectionString: process.env.DATABASE_URL,
+      // Q-002: use getEnv() so DATABASE_URL is Zod-validated at startup
+      connectionString: getEnv().DATABASE_URL,
     });
 
     this.boss.on('error', (error: Error) => this.logger.error('pg-boss error', error.stack));

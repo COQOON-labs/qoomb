@@ -21,7 +21,7 @@ model Hive {
   type      String   @db.VarChar(50)
   // BCP 47 locale tag (e.g. 'de-DE', 'en-US'). NULL = inherit platform default.
   locale    String?  @db.VarChar(12)
-  // Extensible settings bag (unencrypted JSONB — no PII, structural config only)
+  // Extensible hive configuration (JSON map of operator/user settings)
   settings  Json     @default("{}") @db.JsonB
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
@@ -132,21 +132,21 @@ model Person {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  hive                       Hive                     @relation(fields: [hiveId], references: [id], onDelete: Cascade)
-  user                       User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  memberships                UserHiveMembership[]
-  personShares               PersonShare[]
-  groupMemberships           HiveGroupMember[]        @relation("GroupMember")
-  groupMembersAdded          HiveGroupMember[]        @relation("GroupMemberAddedBy")
-  createdEvents              Event[]
-  createdLists               List[]                   @relation("ListCreator")
-  createdListItems           ListItem[]               @relation("ListItemCreator")
-  assignedListItems          ListItem[]               @relation("ListItemAssignee")
-  notifications              Notification[]           @relation("NotificationRecipient")
-  notificationPreferences    NotificationPreference[]
-  sentMessages               DirectMessage[]          @relation("MessageSender")
-  receivedMessages           DirectMessage[]          @relation("MessageRecipient")
-  activityEvents             ActivityEvent[]          @relation("ActivityActor")
+  hive              Hive                 @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  user              User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  memberships       UserHiveMembership[]
+  personShares      PersonShare[]
+  groupMemberships  HiveGroupMember[]    @relation("GroupMember")
+  groupMembersAdded HiveGroupMember[]    @relation("GroupMemberAddedBy")
+  createdEvents     Event[]
+  createdLists      List[]               @relation("ListCreator")
+  createdListItems  ListItem[]           @relation("ListItemCreator")
+  assignedListItems ListItem[]           @relation("ListItemAssignee")
+  notifications            Notification[]
+  notificationPreferences  NotificationPreference[]
+  sentMessages             DirectMessage[]        @relation("MessageSender")
+  receivedMessages         DirectMessage[]        @relation("MessageRecipient")
+  activityEvents           ActivityEvent[]
 
   @@index([hiveId])
   @@index([userId])
@@ -538,35 +538,18 @@ model Invitation {
 }
 
 // ============================================
-// PHASE 3: NOTIFICATIONS
+// PHASE 3: NOTIFICATIONS, MESSAGING, ACTIVITY
 // ============================================
 
-model NotificationPreference {
-  // preferences: JSON map of notificationType -> { inApp: boolean, email: boolean }
-  // Unencrypted JSONB — keys are system constants, no PII.
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  hiveId      String   @map("hive_id") @db.Uuid
-  personId    String   @map("person_id") @db.Uuid
-  preferences Json     @default("{}") @db.JsonB
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  hive   Hive   @relation(fields: [hiveId], references: [id], onDelete: Cascade)
-  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
-
-  @@unique([hiveId, personId])
-  @@index([hiveId])
-  @@index([personId])
-  @@map("notification_preferences")
-}
-
 model Notification {
-  // title, body: AES-256-GCM ciphertext (hive-scoped key).
   id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   hiveId            String   @map("hive_id") @db.Uuid
   recipientPersonId String   @map("recipient_person_id") @db.Uuid
+  // Enum-like type for client-side routing (not encrypted — structural metadata)
   notificationType  String   @map("notification_type") @db.VarChar(50)
+  // AES-256-GCM ciphertext (hive-scoped key)
   title             String   @db.Text
+  // AES-256-GCM ciphertext (hive-scoped key)
   body              String?  @db.Text
   resourceType      String?  @map("resource_type") @db.VarChar(50)
   resourceId        String?  @map("resource_id") @db.Uuid
@@ -574,23 +557,38 @@ model Notification {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   hive      Hive   @relation(fields: [hiveId], references: [id], onDelete: Cascade)
-  recipient Person @relation("NotificationRecipient", fields: [recipientPersonId], references: [id], onDelete: Cascade)
+  recipient Person @relation(fields: [recipientPersonId], references: [id], onDelete: Cascade)
 
-  @@index([hiveId, recipientPersonId, isRead])
-  @@index([hiveId, recipientPersonId, createdAt(sort: Desc)])
+  @@index([hiveId])
+  @@index([hiveId, recipientPersonId, isRead], map: "idx_notifications_recipient")
+  @@index([hiveId, recipientPersonId, createdAt(sort: Desc)], map: "idx_notifications_created")
   @@map("notifications")
 }
 
-// ============================================
-// PHASE 3: DIRECT MESSAGES
-// ============================================
+model NotificationPreference {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hiveId      String   @map("hive_id") @db.Uuid
+  personId    String   @map("person_id") @db.Uuid
+  // JSON map: notificationType -> { inApp: bool, email: bool }
+  preferences Json     @default("{}") @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  hive   Hive   @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([hiveId, personId], map: "uq_notification_preferences")
+  @@index([hiveId], map: "idx_notification_preferences_hive")
+  @@index([personId], map: "idx_notification_preferences_person")
+  @@map("notification_preferences")
+}
 
 model DirectMessage {
-  // body: AES-256-GCM ciphertext (hive-scoped key).
   id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   hiveId            String   @map("hive_id") @db.Uuid
   senderPersonId    String   @map("sender_person_id") @db.Uuid
   recipientPersonId String   @map("recipient_person_id") @db.Uuid
+  // AES-256-GCM ciphertext (hive-scoped key)
   body              String   @db.Text
   isRead            Boolean  @default(false) @map("is_read")
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -600,34 +598,32 @@ model DirectMessage {
   sender    Person @relation("MessageSender", fields: [senderPersonId], references: [id], onDelete: Cascade)
   recipient Person @relation("MessageRecipient", fields: [recipientPersonId], references: [id], onDelete: Cascade)
 
-  @@index([hiveId, senderPersonId, recipientPersonId, createdAt(sort: Desc)])
-  @@index([hiveId, recipientPersonId, isRead])
+  @@index([hiveId], map: "idx_direct_messages_hive")
+  @@index([hiveId, senderPersonId, recipientPersonId, createdAt(sort: Desc)], map: "idx_direct_messages_conversation")
+  @@index([hiveId, recipientPersonId, isRead], map: "idx_direct_messages_inbox")
   @@map("direct_messages")
 }
 
-// ============================================
-// PHASE 3: ACTIVITY LOG
-// ============================================
-
 model ActivityEvent {
-  // summary: AES-256-GCM ciphertext (hive-scoped key).
-  // metadata: unencrypted JSONB — structural data only, no PII.
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   hiveId        String   @map("hive_id") @db.Uuid
   actorPersonId String?  @map("actor_person_id") @db.Uuid
+  // Enum-like action type (not encrypted — structural metadata)
   action        String   @db.VarChar(50)
   resourceType  String   @map("resource_type") @db.VarChar(50)
   resourceId    String   @map("resource_id") @db.Uuid
+  // AES-256-GCM ciphertext (hive-scoped key): human-readable summary
   summary       String?  @db.Text
+  // Raw metadata snapshot (JSONB, unencrypted — no PII, structural only)
   metadata      Json     @default("{}") @db.JsonB
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   hive  Hive    @relation(fields: [hiveId], references: [id], onDelete: Cascade)
-  actor Person? @relation("ActivityActor", fields: [actorPersonId], references: [id], onDelete: SetNull)
+  actor Person? @relation(fields: [actorPersonId], references: [id], onDelete: SetNull)
 
-  @@index([hiveId, createdAt(sort: Desc)])
-  @@index([hiveId, resourceType, resourceId])
-  @@index([hiveId, actorPersonId])
+  @@index([hiveId, createdAt(sort: Desc)], map: "idx_activity_events_hive")
+  @@index([hiveId, resourceType, resourceId], map: "idx_activity_events_resource")
+  @@index([hiveId, actorPersonId], map: "idx_activity_events_actor")
   @@map("activity_events")
 }
 

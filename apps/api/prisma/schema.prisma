@@ -387,10 +387,11 @@ model ListItemValue {
   // value: AES-256-GCM ciphertext (hive-scoped key). All field types are serialized
   // to string, encrypted, and stored in this single column. Filtering/sorting happens
   // client-side — the server never inspects decrypted values.
-  id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  itemId  String  @map("item_id") @db.Uuid
-  fieldId String  @map("field_id") @db.Uuid
-  value   String? @map("value") @db.Text
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemId    String   @map("item_id") @db.Uuid
+  fieldId   String   @map("field_id") @db.Uuid
+  value     String?  @map("value") @db.Text
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   item  ListItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
   field ListField @relation(fields: [fieldId], references: [id], onDelete: Cascade)

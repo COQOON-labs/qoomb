@@ -140,11 +140,8 @@ export interface ListItemValue {
   id: UUID;
   itemId: UUID;
   fieldId: UUID;
-  valueText?: string;
-  valueNumber?: number;
-  valueDate?: Date;
-  valueBoolean?: boolean;
-  valueRef?: UUID;
+  value?: string;
+  updatedAt: Date;
 }
 
 // ── Template interfaces ───────────────────────────────────────────────────────

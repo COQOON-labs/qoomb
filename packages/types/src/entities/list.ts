@@ -94,11 +94,12 @@ export type ListViewConfig = ChecklistViewConfig | TableViewConfig;
 // ── Entity interfaces ─────────────────────────────────────────────────────────
 
 export interface List extends BaseEntity, EncryptedEntity {
-  hiveId: UUID;
-  creatorId: UUID;
+  hiveId?: UUID;
+  creatorId?: UUID;
   name: string;
   icon?: string;
   systemKey: string | null;
+  isTemplate: boolean;
   visibility: 'hive' | 'admins' | 'group' | 'private';
   groupId?: UUID;
   sortOrder: number;
@@ -142,42 +143,6 @@ export interface ListItemValue {
   fieldId: UUID;
   value?: string;
   updatedAt: Date;
-}
-
-// ── Template interfaces ───────────────────────────────────────────────────────
-
-export interface ListTemplate {
-  id: UUID;
-  hiveId?: UUID;
-  creatorId?: UUID;
-  name: string;
-  description?: string;
-  icon?: string;
-  isSystem: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface ListTemplateField {
-  id: UUID;
-  templateId: UUID;
-  name: string;
-  fieldType: ListFieldType;
-  config: ListFieldConfig;
-  isRequired: boolean;
-  isTitle: boolean;
-  sortOrder: number;
-}
-
-export interface ListTemplateView {
-  id: UUID;
-  templateId: UUID;
-  name: string;
-  viewType: ListViewType;
-  config: ListViewConfig;
-  filter?: FilterExpression;
-  sortBy?: SortExpression[];
-  isDefault: boolean;
 }
 
 // ── Input interfaces ──────────────────────────────────────────────────────────

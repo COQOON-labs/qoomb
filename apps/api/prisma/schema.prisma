@@ -366,6 +366,9 @@ model ListView {
 }
 
 model ListItem {
+  // hiveId: denormalized from lists.hive_id for cheap RLS evaluation.
+  // Kept in sync by the list_items_enforce_hive_id_trigger (BEFORE INSERT).
+  // lists.hive_id is immutable, so no UPDATE trigger is needed.
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   listId    String   @map("list_id") @db.Uuid
   hiveId    String   @map("hive_id") @db.Uuid

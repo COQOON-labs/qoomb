@@ -285,7 +285,7 @@ describe('GroupsPage', () => {
       const name =
         btn.getAttribute('aria-label') ??
         btn.getAttribute('aria-labelledby') ??
-        btn.textContent?.trim();
+        (btn.textContent ?? '').trim();
       expect(name, `button "${btn.outerHTML}" has no accessible name`).toBeTruthy();
     });
   });

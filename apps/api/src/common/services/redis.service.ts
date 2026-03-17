@@ -1,6 +1,8 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
 
+import { getEnv } from '../../config/env.validation';
+
 /**
  * Redis Service
  *
@@ -17,7 +19,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   constructor() {
     this.client = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      // Q-002: use getEnv() so REDIS_URL is Zod-validated at startup
+      url: getEnv().REDIS_URL,
     });
 
     // Error handling

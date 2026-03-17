@@ -2,6 +2,7 @@ export { Button, buttonVariants, type ButtonProps } from './Button';
 export { Input, type InputProps } from './Input';
 export { Select, type SelectProps } from './Select';
 export { FormSection, type FormSectionProps } from './FormSection';
+export { ConfirmDialog, type ConfirmDialogProps } from './ConfirmDialog';
 export {
   Card,
   CardHeader,

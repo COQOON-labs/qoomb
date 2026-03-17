@@ -45,3 +45,20 @@ export const ROLE_I18N_KEYS = {
 
 /** Union type of valid role i18n key names */
 export type RoleI18nKey = (typeof ROLE_I18N_KEYS)[PersonRole];
+
+// ── Hive-Type Role Helpers ───────────────────────────────────────────────────
+
+/**
+ * Returns the admin role for a given hive type.
+ * Family hives have a 'parent' admin; organization hives have an 'org_admin'.
+ *
+ * This is the single source of truth for the hive-type → admin-role mapping,
+ * so adding a new hive type only requires updating this one function.
+ *
+ * @example
+ * getAdminRoleForHiveType('family')       // → PersonRole.PARENT
+ * getAdminRoleForHiveType('organization') // → PersonRole.ORG_ADMIN
+ */
+export function getAdminRoleForHiveType(hiveType: string): PersonRole {
+  return hiveType === 'family' ? PersonRole.PARENT : PersonRole.ORG_ADMIN;
+}

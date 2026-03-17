@@ -75,6 +75,28 @@ module.exports = [
         'error',
         { props: 'never', children: 'never' },
       ],
+
+      // Regression pattern F-002: window.confirm must not be used for destructive actions.
+      // Use <ConfirmDialog> from @qoomb/ui instead — accessible, styleable, testable.
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'confirm',
+          message: 'Use <ConfirmDialog> from @qoomb/ui instead of window.confirm().',
+        },
+      ],
+
+      // Regression pattern F-003: hardcoded locale strings in date/number formatting.
+      // Use bcp47Locale from useLocale() so the user's actual locale is respected.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'CallExpression[callee.property.name=/^toLocaleDate$|^toLocaleTime$|^toLocaleString$/] > .arguments:first-child[type="Literal"]',
+          message:
+            "Don't hardcode a locale string. Use bcp47Locale from useLocale() instead.",
+        },
+      ],
     },
   },
   {

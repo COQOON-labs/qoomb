@@ -43,6 +43,10 @@ vi.mock('../lib/auth/useAuth', () => ({
   useAuth: () => ({ user: mockUser, login: vi.fn(), logout: vi.fn() }),
 }));
 
+vi.mock('../lib/locale/LocaleProvider', () => ({
+  useLocale: () => ({ bcp47Locale: 'de-DE' }),
+}));
+
 vi.mock('../lib/trpc/client', () => ({
   trpc: {
     lists: {

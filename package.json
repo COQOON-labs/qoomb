@@ -41,15 +41,15 @@
     "sbom": "npx @cyclonedx/cyclonedx-npm --output-file sbom.json --output-format JSON"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.4.3",
-    "@commitlint/config-conventional": "^20.4.3",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "dotenv-cli": "^11.0.0",
     "eslint": "^10.0.3",
-    "eslint-plugin-jsonc": "^3.1.1",
+    "eslint-plugin-jsonc": "^3.1.2",
     "husky": "^9.1.7",
-    "lint-staged": "^16.3.1",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
-    "turbo": "^2.8.14",
+    "turbo": "^2.8.17",
     "typescript": "^5.9.3"
   },
   "engines": {
@@ -72,7 +72,8 @@
       "minimatch": ">=10.2.3",
       "flatted": ">=3.4.0",
       "undici@>=7.0.0 <7.24.0": ">=7.24.0",
-      "yauzl": ">=3.2.1"
+      "yauzl": ">=3.2.1",
+      "@types/pg": "8.18.0"
     },
     "onlyBuiltDependencies": [
       "@nestjs/core",

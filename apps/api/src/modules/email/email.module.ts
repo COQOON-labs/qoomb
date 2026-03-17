@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { EmailQueueService } from './email-queue.service';
 import { EmailRendererService } from './email-renderer.service';
 import { EmailService } from './email.service';
 import { EMAIL_TRANSPORT } from './interfaces/email-transport.interface';
@@ -33,7 +34,8 @@ function createTransport() {
     },
     EmailRendererService,
     EmailService,
+    EmailQueueService,
   ],
-  exports: [EmailService],
+  exports: [EmailService, EmailQueueService],
 })
 export class EmailModule {}

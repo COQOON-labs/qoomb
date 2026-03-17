@@ -7,15 +7,17 @@ import { useCurrentPerson } from '../hooks/useCurrentPerson';
 import { useI18nContext } from '../i18n/i18n-react';
 import { AppShell } from '../layouts/AppShell';
 import { useAuth } from '../lib/auth/useAuth';
+import { useLocale } from '../lib/locale/LocaleProvider';
 import { trpc } from '../lib/trpc/client';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function useTodayLabel(): { dayNum: string; dateLabel: string } {
+  const { bcp47Locale } = useLocale();
   const now = new Date();
   const dayNum = String(now.getDate());
   const dateLabel = now
-    .toLocaleDateString('de-DE', { weekday: 'long', month: 'long', year: 'numeric' })
+    .toLocaleDateString(bcp47Locale, { weekday: 'long', month: 'long', year: 'numeric' })
     .replace(/(\w+), (\w+ \d{4})/, '$1 · $2');
   return { dayNum, dateLabel };
 }

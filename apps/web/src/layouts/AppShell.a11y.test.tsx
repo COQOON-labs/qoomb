@@ -45,6 +45,11 @@ vi.mock('../lib/trpc/client', () => ({
         useQuery: () => ({ data: { allowPasskeys: true }, isLoading: false }),
       },
     },
+    notifications: {
+      countUnread: {
+        useQuery: () => ({ data: { count: 0 }, isLoading: false }),
+      },
+    },
   },
 }));
 

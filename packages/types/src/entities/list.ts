@@ -133,7 +133,6 @@ export interface ListItem extends BaseEntity {
   listId: UUID;
   hiveId: UUID;
   creatorId: UUID;
-  assigneeId?: UUID;
   sortOrder: number;
 }
 
@@ -205,12 +204,10 @@ export interface UpdateListInput {
 
 export interface CreateListItemInput {
   listId: UUID;
-  assigneeId?: UUID;
   values: Record<UUID, string | number | boolean | Date | null>;
 }
 
 export interface UpdateListItemInput {
-  assigneeId?: UUID;
   values?: Record<UUID, string | number | boolean | Date | null>;
   sortOrder?: number;
 }

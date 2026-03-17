@@ -104,7 +104,6 @@ export interface UpdateViewData {
 }
 
 export interface UpdateItemData {
-  assigneeId?: string | null;
   values?: Record<string, unknown>;
   sortOrder?: number;
 }
@@ -379,14 +378,13 @@ export class ListsService {
     listId: string,
     hiveId: string,
     creatorId: string,
-    assigneeId: string | undefined,
     values: Record<string, unknown>
   ): Promise<ListItemRow> {
     const fields = await this.prisma.listField.findMany({ where: { listId } });
     const fieldMap = new Map(fields.map((f) => [f.id, f]));
 
     const item = await this.prisma.listItem.create({
-      data: { listId, hiveId, creatorId, assigneeId: assigneeId ?? null },
+      data: { listId, hiveId, creatorId },
     });
 
     const upserts = this._buildValueUpserts(item.id, fieldMap, values, hiveId);
@@ -415,7 +413,6 @@ export class ListsService {
     if (!item) throw new Error('ListItem not found in this hive');
 
     const patch: Prisma.ListItemUncheckedUpdateInput = {};
-    if ('assigneeId' in data) patch.assigneeId = data.assigneeId ?? null;
     if (data.sortOrder !== undefined) patch.sortOrder = data.sortOrder;
 
     if (Object.keys(patch).length > 0) {

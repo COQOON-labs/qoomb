@@ -433,7 +433,6 @@ export const listsRouter = (listsService: ListsService) =>
           input.listId,
           hiveId,
           personId,
-          input.assigneeId,
           input.values as Record<string, unknown>
         );
       } catch (e) {
@@ -475,7 +474,6 @@ export const listsRouter = (listsService: ListsService) =>
 
         try {
           return await listsService.updateItem(input.id, ctx.user.hiveId, {
-            assigneeId: input.data.assigneeId,
             values: input.data.values as Record<string, unknown> | undefined,
             sortOrder: input.data.sortOrder,
           });

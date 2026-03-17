@@ -372,28 +372,12 @@ describe('createListItemSchema', () => {
     });
   });
 
-  it('accepts optional assigneeId', () => {
-    expectPass(createListItemSchema, {
-      listId: validUuid,
-      assigneeId: validUuid2,
-      values: {},
-    });
-  });
-
   it('rejects missing listId', () => {
     expectFail(createListItemSchema, { values: {} });
   });
 
   it('rejects non-UUID listId', () => {
     expectFail(createListItemSchema, { listId: 'abc', values: {} });
-  });
-
-  it('rejects non-UUID assigneeId', () => {
-    expectFail(createListItemSchema, {
-      listId: validUuid,
-      assigneeId: 'not-uuid',
-      values: {},
-    });
   });
 });
 
@@ -408,10 +392,6 @@ describe('updateListItemSchema', () => {
     expectPass(updateListItemSchema, {
       values: { [validUuid]: 'Updated' },
     });
-  });
-
-  it('accepts assigneeId null (unassign)', () => {
-    expectPass(updateListItemSchema, { assigneeId: null });
   });
 
   it('accepts sortOrder change', () => {

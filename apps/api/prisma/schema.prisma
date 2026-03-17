@@ -139,9 +139,8 @@ model Person {
   groupMemberships  HiveGroupMember[]    @relation("GroupMember")
   groupMembersAdded HiveGroupMember[]    @relation("GroupMemberAddedBy")
   createdEvents     Event[]
-  createdLists      List[]               @relation("ListCreator")
-  createdListItems  ListItem[]           @relation("ListItemCreator")
-  assignedListItems ListItem[]           @relation("ListItemAssignee")
+  createdLists     List[]     @relation("ListCreator")
+  createdListItems ListItem[] @relation("ListItemCreator")
   notifications            Notification[]
   notificationPreferences  NotificationPreference[]
   sentMessages             DirectMessage[]        @relation("MessageSender")
@@ -367,23 +366,20 @@ model ListView {
 }
 
 model ListItem {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  listId     String   @map("list_id") @db.Uuid
-  hiveId     String   @map("hive_id") @db.Uuid
-  creatorId  String   @map("creator_id") @db.Uuid
-  assigneeId String?  @map("assignee_id") @db.Uuid
-  sortOrder  Float    @default(0) @map("sort_order")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listId    String   @map("list_id") @db.Uuid
+  hiveId    String   @map("hive_id") @db.Uuid
+  creatorId String   @map("creator_id") @db.Uuid
+  sortOrder Float    @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  list     List            @relation(fields: [listId], references: [id], onDelete: Cascade)
-  creator  Person          @relation("ListItemCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  assignee Person?         @relation("ListItemAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
-  values   ListItemValue[]
+  list    List            @relation(fields: [listId], references: [id], onDelete: Cascade)
+  creator Person          @relation("ListItemCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  values  ListItemValue[]
 
   @@index([listId, sortOrder])
   @@index([hiveId])
-  @@index([hiveId, assigneeId])
   @@map("list_items")
 }
 

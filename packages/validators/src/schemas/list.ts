@@ -163,12 +163,10 @@ export const listItemValueSchema = z.record(
 
 export const createListItemSchema = z.object({
   listId: z.uuid(),
-  assigneeId: z.uuid().optional(),
   values: listItemValueSchema,
 });
 
 export const updateListItemSchema = z.object({
-  assigneeId: z.uuid().nullish(),
   values: listItemValueSchema.optional(),
   sortOrder: z.number().optional(),
 });

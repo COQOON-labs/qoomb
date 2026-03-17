@@ -9,6 +9,7 @@ import {
   updateListViewSchema,
   createListItemSchema,
   updateListItemSchema,
+  reorderListItemsSchema,
   listListsSchema,
   sanitizeHtml,
 } from '@qoomb/validators';
@@ -481,6 +482,32 @@ export const listsRouter = (listsService: ListsService) =>
           throw mapPrismaError(e, 'Failed to update item');
         }
       }),
+
+    /**
+     * Bulk-reorder items within a list.
+     *
+     * The client is responsible for fractional-indexing arithmetic. When the
+     * computed gap between neighbours falls below an acceptable epsilon
+     * (typically < 1e-9), the client normalises all positions to integer
+     * multiples (1000, 2000, …) and sends the full rebalanced list here.
+     *
+     * Requires: lists:edit on the list.
+     */
+    reorderItems: hiveProcedure.input(reorderListItemsSchema).mutation(async ({ ctx, input }) => {
+      const list = await listsService.getById(input.listId, ctx.user.hiveId);
+      if (!list) throw new TRPCError({ code: 'NOT_FOUND', message: 'List not found' });
+
+      await requireResourceAccess(
+        ctx,
+        ctx.tx,
+        { type: 'list', ...list, groupId: list.groupId ?? undefined },
+        'edit',
+        LIST_PERMISSIONS
+      );
+
+      await listsService.reorderItems(input.listId, ctx.user.hiveId, input.items);
+      return { success: true as const };
+    }),
 
     /**
      * Delete an item.

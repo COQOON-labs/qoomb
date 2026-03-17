@@ -449,6 +449,29 @@ export class ListsService {
     return result.count > 0;
   }
 
+  /**
+   * Bulk-update sort_order for a set of items in a single transaction.
+   *
+   * Called by the client when fractional indexing produces gaps smaller than
+   * an acceptable epsilon (typically < 1e-9), triggering a full rebalance to
+   * integer multiples (e.g. 1000, 2000, 3000, …). All items must belong to
+   * the given listId + hiveId — any unrecognised id is silently skipped.
+   */
+  async reorderItems(
+    listId: string,
+    hiveId: string,
+    items: Array<{ id: string; sortOrder: number }>
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      for (const { id, sortOrder } of items) {
+        await tx.listItem.updateMany({
+          where: { id, listId, hiveId },
+          data: { sortOrder },
+        });
+      }
+    });
+  }
+
   // ── Templates ─────────────────────────────────────────────────────────────
 
   /**

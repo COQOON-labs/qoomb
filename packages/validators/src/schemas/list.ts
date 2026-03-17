@@ -171,6 +171,14 @@ export const updateListItemSchema = z.object({
   sortOrder: z.number().optional(),
 });
 
+export const reorderListItemsSchema = z.object({
+  listId: z.uuid(),
+  items: z
+    .array(z.object({ id: z.uuid(), sortOrder: z.number() }))
+    .min(1)
+    .max(5000),
+});
+
 export const listListItemsSchema = z.object({
   listId: z.uuid(),
   filter: filterExpressionSchema.optional(),

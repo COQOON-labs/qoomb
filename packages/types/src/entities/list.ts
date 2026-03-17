@@ -208,3 +208,8 @@ export interface UpdateListItemInput {
   values?: Record<UUID, string | number | boolean | Date | null>;
   sortOrder?: number;
 }
+
+export interface ReorderItemInput {
+  id: UUID;
+  sortOrder: number;
+}

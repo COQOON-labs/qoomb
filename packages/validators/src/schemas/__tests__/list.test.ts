@@ -16,6 +16,7 @@ import {
   updateListViewSchema,
   createListItemSchema,
   updateListItemSchema,
+  reorderListItemsSchema,
   listListsSchema,
   visibilitySchema,
   listFieldTypeSchema,
@@ -396,6 +397,60 @@ describe('updateListItemSchema', () => {
 
   it('accepts sortOrder change', () => {
     expectPass(updateListItemSchema, { sortOrder: 10 });
+  });
+});
+
+// ── listListsSchema ──────────────────────────────────────────────────────
+
+// ── reorderListItemsSchema ─────────────────────────────────────────────────
+
+describe('reorderListItemsSchema', () => {
+  it('accepts valid reorder payload', () => {
+    expectPass(reorderListItemsSchema, {
+      listId: validUuid,
+      items: [
+        { id: validUuid, sortOrder: 1000 },
+        { id: validUuid2, sortOrder: 2000 },
+      ],
+    });
+  });
+
+  it('accepts fractional sortOrder values', () => {
+    expectPass(reorderListItemsSchema, {
+      listId: validUuid,
+      items: [{ id: validUuid, sortOrder: 1.5 }],
+    });
+  });
+
+  it('rejects missing listId', () => {
+    expectFail(reorderListItemsSchema, {
+      items: [{ id: validUuid, sortOrder: 1000 }],
+    });
+  });
+
+  it('rejects non-UUID listId', () => {
+    expectFail(reorderListItemsSchema, {
+      listId: 'not-a-uuid',
+      items: [{ id: validUuid, sortOrder: 1000 }],
+    });
+  });
+
+  it('rejects empty items array', () => {
+    expectFail(reorderListItemsSchema, { listId: validUuid, items: [] });
+  });
+
+  it('rejects item with non-UUID id', () => {
+    expectFail(reorderListItemsSchema, {
+      listId: validUuid,
+      items: [{ id: 'bad', sortOrder: 1000 }],
+    });
+  });
+
+  it('rejects item with missing sortOrder', () => {
+    expectFail(reorderListItemsSchema, {
+      listId: validUuid,
+      items: [{ id: validUuid }],
+    });
   });
 });
 

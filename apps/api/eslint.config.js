@@ -41,6 +41,8 @@ module.exports = [
     // - encryption/providers/*: Key providers whose job IS to read env vars directly
     // - email/transports/*: Transport factories configured before DI injection
     // - email/email.module.ts + email.service.ts: NestJS module setup / useFactory
+    // - prisma/scripts/*: standalone CLI scripts that run outside NestJS DI context
+    //   and cannot import from src/config/env.validation.ts
     files: [
       'src/config/env.validation.ts',
       'src/config/security.config.ts',
@@ -50,6 +52,7 @@ module.exports = [
       'src/modules/email/transports/*.ts',
       'src/modules/email/email.module.ts',
       'src/modules/email/email.service.ts',
+      'prisma/scripts/*.ts',
     ],
     rules: { 'no-restricted-syntax': 'off' },
   },

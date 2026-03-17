@@ -19,6 +19,7 @@ overrides:
   flatted: '>=3.4.0'
   undici@>=7.0.0 <7.24.0: '>=7.24.0'
   yauzl: '>=3.2.1'
+  '@types/pg': 8.18.0
 
 importers:
 
@@ -161,7 +162,7 @@ importers:
         specifier: ^7.0.11
         version: 7.0.11
       '@types/pg':
-        specifier: ^8.18.0
+        specifier: 8.18.0
         version: 8.18.0
       eslint:
         specifier: ^10.0.3
@@ -5659,9 +5660,6 @@ packages:
     peerDependencies:
       pg: '>=8.0'
 
-  pg-protocol@1.11.0:
-    resolution: {integrity: sha512-pfsxk2M9M3BuGgDOfuy37VNRRX3jmKgMjcvAcWqNDpZSf4cUmv8HSOl5ViRQFsfARFn0KuUQTgLxVMbNq5NW3g==}
-
   pg-protocol@1.13.0:
     resolution: {integrity: sha512-zzdvXfS6v89r6v7OcFCHfHlyG/wvry1ALxZo4LqgUoy7W9xhBDMaqOuMiF3qEV45VqsN6rdlcehHrfDtlCPc8w==}
 
@@ -9716,7 +9714,7 @@ snapshots:
   '@types/pg@8.18.0':
     dependencies:
       '@types/node': 25.3.0
-      pg-protocol: 1.11.0
+      pg-protocol: 1.13.0
       pg-types: 2.2.0
 
   '@types/react-dom@19.2.3(@types/react@19.2.14)':
@@ -12941,8 +12939,6 @@ snapshots:
   pg-pool@3.13.0(pg@8.20.0):
     dependencies:
       pg: 8.20.0
-
-  pg-protocol@1.11.0: {}
 
   pg-protocol@1.13.0: {}
 

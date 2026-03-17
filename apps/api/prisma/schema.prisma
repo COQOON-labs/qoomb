@@ -343,7 +343,7 @@ model ListField {
   list   List            @relation(fields: [listId], references: [id], onDelete: Cascade)
   values ListItemValue[]
 
-  @@index([listId])
+  @@index([listId, sortOrder])
   @@map("list_fields")
 }
 
@@ -381,7 +381,7 @@ model ListItem {
   assignee Person?         @relation("ListItemAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   values   ListItemValue[]
 
-  @@index([listId])
+  @@index([listId, sortOrder])
   @@index([hiveId])
   @@index([hiveId, assigneeId])
   @@map("list_items")

@@ -22,6 +22,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage --passWithNoTests",
     "db:migrate": "dotenv -e ../../.env -- prisma migrate deploy",
+    "db:migrate:check": "dotenv -e ../../.env -- prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
     "db:generate": "dotenv -e ../../.env -- prisma generate",
     "db:push": "dotenv -e ../../.env -- prisma db push",
     "db:seed": "dotenv -e ../../.env -- prisma db seed",

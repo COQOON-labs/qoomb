@@ -4,9 +4,6 @@ import {
   type ListItem,
   type ListItemValue,
   type ListView,
-  type ListTemplate,
-  type ListTemplateField,
-  type ListTemplateView,
   Prisma,
 } from '@prisma/client';
 
@@ -20,12 +17,13 @@ import { DecryptFields, EncryptDecryptFields, EncryptionService } from '../encry
 /** List row including decrypted name and nested fields + views */
 export type ListRow = {
   id: string;
-  hiveId: string;
-  creatorId: string;
+  hiveId: string | null;
+  creatorId: string | null;
   groupId: string | null;
-  name: string; // decrypted
+  name: string; // decrypted (plaintext for global templates)
   icon: string | null;
   systemKey: string | null;
+  isTemplate: boolean;
   visibility: string;
   sortOrder: number;
   isArchived: boolean;
@@ -46,12 +44,6 @@ export type ListItemRow = Omit<ListItem, 'values'> & { values: ListItemValueRow[
 
 /** Single EAV value with decrypted value */
 export type ListItemValueRow = Omit<ListItemValue, 'value'> & { value: string | null };
-
-/** ListTemplate row with decrypted name/description for hive-owned templates */
-export type ListTemplateRow = ListTemplate & {
-  fields: ListTemplateField[];
-  views: ListTemplateView[];
-};
 
 // ── Input interfaces ──────────────────────────────────────────────────────────
 
@@ -104,7 +96,6 @@ export interface UpdateViewData {
 }
 
 export interface UpdateItemData {
-  assigneeId?: string | null;
   values?: Record<string, unknown>;
   sortOrder?: number;
 }
@@ -379,14 +370,13 @@ export class ListsService {
     listId: string,
     hiveId: string,
     creatorId: string,
-    assigneeId: string | undefined,
     values: Record<string, unknown>
   ): Promise<ListItemRow> {
     const fields = await this.prisma.listField.findMany({ where: { listId } });
     const fieldMap = new Map(fields.map((f) => [f.id, f]));
 
     const item = await this.prisma.listItem.create({
-      data: { listId, hiveId, creatorId, assigneeId: assigneeId ?? null },
+      data: { listId, hiveId, creatorId },
     });
 
     const upserts = this._buildValueUpserts(item.id, fieldMap, values, hiveId);
@@ -415,7 +405,6 @@ export class ListsService {
     if (!item) throw new Error('ListItem not found in this hive');
 
     const patch: Prisma.ListItemUncheckedUpdateInput = {};
-    if ('assigneeId' in data) patch.assigneeId = data.assigneeId ?? null;
     if (data.sortOrder !== undefined) patch.sortOrder = data.sortOrder;
 
     if (Object.keys(patch).length > 0) {
@@ -452,24 +441,59 @@ export class ListsService {
     return result.count > 0;
   }
 
+  /**
+   * Bulk-update sort_order for a set of items in a single transaction.
+   *
+   * Called by the client when fractional indexing produces gaps smaller than
+   * an acceptable epsilon (typically < 1e-9), triggering a full rebalance to
+   * integer multiples (e.g. 1000, 2000, 3000, …). All items must belong to
+   * the given listId + hiveId — any unrecognised id is silently skipped.
+   */
+  async reorderItems(
+    listId: string,
+    hiveId: string,
+    items: Array<{ id: string; sortOrder: number }>
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      for (const { id, sortOrder } of items) {
+        await tx.listItem.updateMany({
+          where: { id, listId, hiveId },
+          data: { sortOrder },
+        });
+      }
+    });
+  }
+
   // ── Templates ─────────────────────────────────────────────────────────────
 
   /**
-   * Returns system templates + hive-specific templates.
-   * System templates (isSystem=true, hiveId=null) are stored as plaintext.
-   * Hive templates have encrypted name/description and are decrypted before returning.
+   * Returns global templates (hiveId=null) + hive-specific templates.
+   * Global templates store name as plaintext (no hive key available — see ADR-0009).
+   * Hive templates have encrypted name/fields/views and are decrypted before returning.
    */
-  async listTemplates(hiveId: string): Promise<ListTemplateRow[]> {
-    const rows = await this.prisma.listTemplate.findMany({
-      where: { OR: [{ isSystem: true }, { hiveId }] },
+  async listTemplates(hiveId: string): Promise<ListRow[]> {
+    const rows = await this.prisma.list.findMany({
+      where: {
+        isTemplate: true,
+        OR: [{ hiveId: null }, { hiveId }],
+      },
       include: { fields: { orderBy: { sortOrder: 'asc' } }, views: true },
     });
-    return rows.map((t) => {
-      if (t.hiveId === null) return t; // system template — plaintext, no key available
+    return rows.map((t): ListRow => {
+      if (t.hiveId === null) {
+        // Global template — name and field names are plaintext
+        return {
+          ...t,
+          fields: t.fields,
+          views: t.views,
+        };
+      }
+      // Hive-owned template — decrypt name, field names, and view names
       return {
         ...t,
         name: this._decryptName(t.name, hiveId),
-        description: t.description ? this._decryptName(t.description, hiveId) : null,
+        fields: t.fields.map((f) => ({ ...f, name: this._decryptName(f.name, hiveId) })),
+        views: t.views.map((v) => ({ ...v, name: this._decryptName(v.name, hiveId) })),
       };
     });
   }

@@ -163,53 +163,25 @@ export const listItemValueSchema = z.record(
 
 export const createListItemSchema = z.object({
   listId: z.uuid(),
-  assigneeId: z.uuid().optional(),
   values: listItemValueSchema,
 });
 
 export const updateListItemSchema = z.object({
-  assigneeId: z.uuid().nullish(),
   values: listItemValueSchema.optional(),
   sortOrder: z.number().optional(),
+});
+
+export const reorderListItemsSchema = z.object({
+  listId: z.uuid(),
+  items: z
+    .array(z.object({ id: z.uuid(), sortOrder: z.number() }))
+    .min(1)
+    .max(5000),
 });
 
 export const listListItemsSchema = z.object({
   listId: z.uuid(),
   filter: filterExpressionSchema.optional(),
-});
-
-// ── Template schemas ──────────────────────────────────────────────────────────
-
-export const createListTemplateSchema = z.object({
-  name: z.string().min(1).max(200),
-  description: z.string().max(2000).optional(),
-  icon: z.string().max(50).optional(),
-  fields: z
-    .array(
-      z.object({
-        name: z.string().min(1).max(200),
-        fieldType: listFieldTypeSchema,
-        config: listFieldConfigSchema,
-        isRequired: z.boolean().default(false),
-        isTitle: z.boolean().default(false),
-        sortOrder: z.number(),
-      })
-    )
-    .min(1)
-    .max(50),
-  views: z
-    .array(
-      z.object({
-        name: z.string().min(1).max(200),
-        viewType: listViewTypeSchema,
-        config: z.union([checklistViewConfigSchema, tableViewConfigSchema]),
-        filter: filterExpressionSchema.optional(),
-        sortBy: z.array(sortExpressionSchema).max(5).optional(),
-        isDefault: z.boolean().default(false),
-      })
-    )
-    .min(1)
-    .max(10),
 });
 
 export const listListsSchema = z.object({

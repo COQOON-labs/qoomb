@@ -546,6 +546,12 @@ db-migrate:
     pnpm --filter @qoomb/api db:migrate
     @echo -e "{{green}}✓ Migrations complete{{nc}}"
 
+# Verify schema.prisma matches the applied migrations (needs running DB)
+# Run this after writing a manual migration: just db-migrate && just db-migrate-check
+db-migrate-check:
+    @echo -e "{{blue}}Checking schema/migration drift...{{nc}}"
+    pnpm --filter @qoomb/api db:migrate:check && echo -e "{{green}}✓ Schema and migrations are in sync{{nc}}" || (echo -e "{{red}}✗ Schema drift detected — run: pnpm db:migrate:dev{{nc}}" && exit 1)
+
 # Push schema changes without migration files (dev only)
 db-push:
     @echo -e "{{blue}}Pushing schema to database...{{nc}}"

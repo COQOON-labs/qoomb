@@ -193,7 +193,7 @@ describe('RefreshTokenService', () => {
 
       // Old token must be revoked and linked to the new hash
       const updateCall = mockPrisma.refreshToken.update.mock.calls.find(
-        (c) => c[0].where?.id === existingRow.id
+        (c: any[]) => c[0].where?.id === existingRow.id
       );
       expect(updateCall).toBeDefined();
       expect(updateCall![0].data.revokedAt).toBeInstanceOf(Date);

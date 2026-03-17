@@ -26,9 +26,9 @@
       "inputs": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"]
     },
     "type-check": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "db:generate"],
       "cache": true,
-      "inputs": ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json"]
+      "inputs": ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json", "prisma/schema.prisma"]
     },
     "test": {
       "dependsOn": ["^build"],
@@ -41,7 +41,9 @@
       "cache": false
     },
     "db:generate": {
-      "cache": false
+      "cache": true,
+      "inputs": ["prisma/schema.prisma"],
+      "outputs": ["../../node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client/**"]
     }
   }
 }

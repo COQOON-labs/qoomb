@@ -34,8 +34,8 @@ export interface ResourceAccessInput {
   type: string;
   /** UUID of the resource */
   id: string;
-  /** personId of the resource creator */
-  creatorId: string;
+  /** personId of the resource creator, or null for system-owned resources (e.g. global templates) */
+  creatorId: string | null;
   /** Visibility setting: 'hive' | 'admins' | 'group' | 'private' */
   visibility: string;
   /** Required when visibility = 'group': the group this resource belongs to */

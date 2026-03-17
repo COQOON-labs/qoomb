@@ -41,7 +41,6 @@ import {
   backupExpiresAt,
   buildBackupRow,
 } from './reencrypt';
-
 import { mapFieldName, SUPPORTED_TABLES, dispatchRestore } from './reencrypt-rollback';
 
 // ── Key material ──────────────────────────────────────────────────────────────

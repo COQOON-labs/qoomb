@@ -94,11 +94,12 @@ export type ListViewConfig = ChecklistViewConfig | TableViewConfig;
 // ── Entity interfaces ─────────────────────────────────────────────────────────
 
 export interface List extends BaseEntity, EncryptedEntity {
-  hiveId: UUID;
-  creatorId: UUID;
+  hiveId?: UUID;
+  creatorId?: UUID;
   name: string;
   icon?: string;
   systemKey: string | null;
+  isTemplate: boolean;
   visibility: 'hive' | 'admins' | 'group' | 'private';
   groupId?: UUID;
   sortOrder: number;
@@ -133,7 +134,6 @@ export interface ListItem extends BaseEntity {
   listId: UUID;
   hiveId: UUID;
   creatorId: UUID;
-  assigneeId?: UUID;
   sortOrder: number;
 }
 
@@ -141,47 +141,8 @@ export interface ListItemValue {
   id: UUID;
   itemId: UUID;
   fieldId: UUID;
-  valueText?: string;
-  valueNumber?: number;
-  valueDate?: Date;
-  valueBoolean?: boolean;
-  valueRef?: UUID;
-}
-
-// ── Template interfaces ───────────────────────────────────────────────────────
-
-export interface ListTemplate {
-  id: UUID;
-  hiveId?: UUID;
-  creatorId?: UUID;
-  name: string;
-  description?: string;
-  icon?: string;
-  isSystem: boolean;
-  createdAt: Date;
+  value?: string;
   updatedAt: Date;
-}
-
-export interface ListTemplateField {
-  id: UUID;
-  templateId: UUID;
-  name: string;
-  fieldType: ListFieldType;
-  config: ListFieldConfig;
-  isRequired: boolean;
-  isTitle: boolean;
-  sortOrder: number;
-}
-
-export interface ListTemplateView {
-  id: UUID;
-  templateId: UUID;
-  name: string;
-  viewType: ListViewType;
-  config: ListViewConfig;
-  filter?: FilterExpression;
-  sortBy?: SortExpression[];
-  isDefault: boolean;
 }
 
 // ── Input interfaces ──────────────────────────────────────────────────────────
@@ -205,12 +166,15 @@ export interface UpdateListInput {
 
 export interface CreateListItemInput {
   listId: UUID;
-  assigneeId?: UUID;
   values: Record<UUID, string | number | boolean | Date | null>;
 }
 
 export interface UpdateListItemInput {
-  assigneeId?: UUID;
   values?: Record<UUID, string | number | boolean | Date | null>;
   sortOrder?: number;
+}
+
+export interface ReorderItemInput {
+  id: UUID;
+  sortOrder: number;
 }

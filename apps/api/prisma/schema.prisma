@@ -139,9 +139,8 @@ model Person {
   groupMemberships  HiveGroupMember[]    @relation("GroupMember")
   groupMembersAdded HiveGroupMember[]    @relation("GroupMemberAddedBy")
   createdEvents     Event[]
-  createdLists      List[]               @relation("ListCreator")
-  createdListItems  ListItem[]           @relation("ListItemCreator")
-  assignedListItems ListItem[]           @relation("ListItemAssignee")
+  createdLists     List[]     @relation("ListCreator")
+  createdListItems ListItem[] @relation("ListItemCreator")
   notifications            Notification[]
   notificationPreferences  NotificationPreference[]
   sentMessages             DirectMessage[]        @relation("MessageSender")
@@ -300,22 +299,24 @@ model Event {
 // ============================================
 
 model List {
-  // name: AES-256-GCM ciphertext (hive-scoped key).
+  // name: AES-256-GCM ciphertext when hiveId is set (hive-scoped key).
+  // Global templates (hiveId IS NULL, isTemplate = true) store name as plaintext — see ADR-0009.
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  hiveId     String   @map("hive_id") @db.Uuid
-  creatorId  String   @map("creator_id") @db.Uuid
+  hiveId     String?  @map("hive_id") @db.Uuid
+  creatorId  String?  @map("creator_id") @db.Uuid
   groupId    String?  @map("group_id") @db.Uuid
   name       String   @db.Text
   icon       String?  @db.VarChar(50)
   systemKey  String?  @map("system_key") @db.VarChar(50)
+  isTemplate Boolean  @default(false) @map("is_template")
   visibility String   @default("hive") @db.VarChar(20)
   sortOrder  Float    @default(0) @map("sort_order")
   isArchived Boolean  @default(false) @map("is_archived")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  hive    Hive       @relation(fields: [hiveId], references: [id], onDelete: Cascade)
-  creator Person     @relation("ListCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  hive    Hive?      @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  creator Person?    @relation("ListCreator", fields: [creatorId], references: [id], onDelete: SetNull)
   group   HiveGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   fields  ListField[]
   views   ListView[]
@@ -324,6 +325,7 @@ model List {
   @@unique([hiveId, creatorId, systemKey])
   @@index([hiveId])
   @@index([hiveId, creatorId])
+  @@index([isTemplate])
   @@map("lists")
 }
 
@@ -343,7 +345,7 @@ model ListField {
   list   List            @relation(fields: [listId], references: [id], onDelete: Cascade)
   values ListItemValue[]
 
-  @@index([listId])
+  @@index([listId, sortOrder])
   @@map("list_fields")
 }
 
@@ -367,23 +369,23 @@ model ListView {
 }
 
 model ListItem {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  listId     String   @map("list_id") @db.Uuid
-  hiveId     String   @map("hive_id") @db.Uuid
-  creatorId  String   @map("creator_id") @db.Uuid
-  assigneeId String?  @map("assignee_id") @db.Uuid
-  sortOrder  Float    @default(0) @map("sort_order")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  // hiveId: denormalized from lists.hive_id for cheap RLS evaluation.
+  // Kept in sync by the list_items_enforce_hive_id_trigger (BEFORE INSERT).
+  // lists.hive_id is immutable, so no UPDATE trigger is needed.
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listId    String   @map("list_id") @db.Uuid
+  hiveId    String   @map("hive_id") @db.Uuid
+  creatorId String   @map("creator_id") @db.Uuid
+  sortOrder Float    @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  list     List            @relation(fields: [listId], references: [id], onDelete: Cascade)
-  creator  Person          @relation("ListItemCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  assignee Person?         @relation("ListItemAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
-  values   ListItemValue[]
+  list    List            @relation(fields: [listId], references: [id], onDelete: Cascade)
+  creator Person          @relation("ListItemCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  values  ListItemValue[]
 
-  @@index([listId])
+  @@index([listId, sortOrder])
   @@index([hiveId])
-  @@index([hiveId, assigneeId])
   @@map("list_items")
 }
 
@@ -391,10 +393,11 @@ model ListItemValue {
   // value: AES-256-GCM ciphertext (hive-scoped key). All field types are serialized
   // to string, encrypted, and stored in this single column. Filtering/sorting happens
   // client-side — the server never inspects decrypted values.
-  id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  itemId  String  @map("item_id") @db.Uuid
-  fieldId String  @map("field_id") @db.Uuid
-  value   String? @map("value") @db.Text
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemId    String   @map("item_id") @db.Uuid
+  fieldId   String   @map("field_id") @db.Uuid
+  value     String?  @map("value") @db.Text
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   item  ListItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
   field ListField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
@@ -404,61 +407,8 @@ model ListItemValue {
   @@map("list_item_values")
 }
 
-// ============================================
-// LIST TEMPLATES
-// ============================================
-
-model ListTemplate {
-  // name, description: AES-256-GCM ciphertext only when hiveId is set (user templates).
-  // System templates (hiveId = NULL) store plaintext — no hive key available.
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  hiveId      String?  @map("hive_id") @db.Uuid
-  creatorId   String?  @map("creator_id") @db.Uuid
-  name        String   @db.Text
-  description String?  @db.Text
-  icon        String?  @db.VarChar(50)
-  isSystem    Boolean  @default(false) @map("is_system")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  fields ListTemplateField[]
-  views  ListTemplateView[]
-
-  @@index([hiveId])
-  @@map("list_templates")
-}
-
-model ListTemplateField {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  templateId String   @map("template_id") @db.Uuid
-  name       String   @db.Text
-  fieldType  String   @map("field_type") @db.VarChar(30)
-  config     Json     @default("{}") @db.JsonB
-  isRequired Boolean  @default(false) @map("is_required")
-  isTitle    Boolean  @default(false) @map("is_title")
-  sortOrder  Float    @default(0) @map("sort_order")
-
-  template ListTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@index([templateId])
-  @@map("list_template_fields")
-}
-
-model ListTemplateView {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  templateId String   @map("template_id") @db.Uuid
-  name       String   @db.Text
-  viewType   String   @map("view_type") @db.VarChar(20)
-  config     Json     @default("{}") @db.JsonB
-  filter     Json?    @db.JsonB
-  sortBy     Json?    @map("sort_by") @db.JsonB
-  isDefault  Boolean  @default(false) @map("is_default")
-
-  template ListTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@index([templateId])
-  @@map("list_template_views")
-}
+// LIST TEMPLATES are now unified into the List model via isTemplate=true.
+// See ADR-0009 for the rationale.
 
 // ============================================
 // AUTH EXTENSION TABLES

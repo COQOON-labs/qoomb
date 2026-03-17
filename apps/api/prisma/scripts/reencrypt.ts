@@ -593,8 +593,15 @@ async function migrateLists(enc: EncryptionService, fromVersion: number): Promis
 
   for (const list of lists) {
     try {
-      const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), list.hiveId);
-      const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, list.hiveId));
+      // Global templates (hiveId=null) store plaintext — skip re-encryption (ADR-0009)
+      const hiveId = list.hiveId;
+      if (hiveId === null) {
+        stats.skipped++;
+        continue;
+      }
+
+      const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), hiveId);
+      const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, hiveId));
       const newName = reencryptField(list.name, fromVersion, dec, encFn);
 
       if (newName === null) {
@@ -641,7 +648,13 @@ async function migrateLists(enc: EncryptionService, fromVersion: number): Promis
 
   for (const field of fields) {
     try {
+      // Fields of global templates (hiveId=null) store plaintext — skip re-encryption (ADR-0009)
       const hiveId = field.list.hiveId;
+      if (hiveId === null) {
+        stats.skipped++;
+        continue;
+      }
+
       const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), hiveId);
       const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, hiveId));
       const newName = reencryptField(field.name, fromVersion, dec, encFn);
@@ -690,7 +703,13 @@ async function migrateLists(enc: EncryptionService, fromVersion: number): Promis
 
   for (const view of views) {
     try {
+      // Views of global templates (hiveId=null) store plaintext — skip re-encryption (ADR-0009)
       const hiveId = view.list.hiveId;
+      if (hiveId === null) {
+        stats.skipped++;
+        continue;
+      }
+
       const dec = (s: string) => enc.decrypt(enc.parseFromStorage(s), hiveId);
       const encFn = (s: string) => enc.serializeToStorage(enc.encrypt(s, hiveId));
       const newName = reencryptField(view.name, fromVersion, dec, encFn);

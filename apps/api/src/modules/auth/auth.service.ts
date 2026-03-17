@@ -9,7 +9,12 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Hive, Person, User, UserHiveMembership } from '@prisma/client';
-import { type CreateHiveInput, resolveLocale } from '@qoomb/types';
+import {
+  type CreateHiveInput,
+  getAdminRoleForHiveType,
+  PersonRole,
+  resolveLocale,
+} from '@qoomb/types';
 import * as bcrypt from 'bcrypt';
 
 import { AccountLockoutService } from '../../common/services/account-lockout.service';
@@ -17,8 +22,10 @@ import { TokenBlacklistService } from '../../common/services/token-blacklist.ser
 import { getEnv } from '../../config/env.validation';
 import { PASSWORD_CONFIG, JWT_CONFIG } from '../../config/security.config';
 import { PrismaService, TransactionClient } from '../../prisma/prisma.service';
+import { EmailQueueService } from '../email/email-queue.service';
 import { EmailService } from '../email/email.service';
 import { EncryptionService } from '../encryption';
+import { NotificationsService } from '../notifications/notifications.service';
 
 import { RefreshTokenService } from './refresh-token.service';
 import { SystemConfigService } from './system-config.service';
@@ -61,8 +68,10 @@ export class AuthService {
     private readonly tokenBlacklistService: TokenBlacklistService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly emailService: EmailService,
+    private readonly emailQueue: EmailQueueService,
     private readonly systemConfig: SystemConfigService,
-    private readonly enc: EncryptionService
+    private readonly enc: EncryptionService,
+    private readonly notifications: NotificationsService
   ) {}
 
   /**
@@ -114,7 +123,7 @@ export class AuthService {
       });
 
       // 2. Create admin person — role depends on hive type
-      const adminRole = input.type === 'family' ? 'parent' : 'org_admin';
+      const adminRole = getAdminRoleForHiveType(input.type);
       const person = await tx.person.create({
         data: {
           hiveId: hive.id,
@@ -328,12 +337,17 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify<JwtPayload>(token);
 
+      // S-002: Tokens without a JTI cannot be blacklisted — reject them outright.
+      // generateAccessToken always sets a JTI; absence means the token is
+      // malformed, from a different issuer, or a future regression.
+      if (!payload.jti) {
+        throw new UnauthorizedException('Authentication failed');
+      }
+
       // Check if token is blacklisted
-      if (payload.jti) {
-        const isBlacklisted = await this.tokenBlacklistService.isBlacklisted(payload.jti);
-        if (isBlacklisted) {
-          throw new UnauthorizedException('Token has been revoked');
-        }
+      const isBlacklisted = await this.tokenBlacklistService.isBlacklisted(payload.jti);
+      if (isBlacklisted) {
+        throw new UnauthorizedException('Token has been revoked');
       }
 
       // Check user-level blacklist (for logout-all)
@@ -381,7 +395,17 @@ export class AuthService {
         hiveName: hiveName,
         locale: resolveLocale(pii.locale, membership.hive.locale, getEnv().DEFAULT_LOCALE),
       };
-    } catch (_error) {
+    } catch (error) {
+      // Q-001: Log infrastructure errors (DB outage, bugs) so they are visible
+      // in monitoring. JwtService errors (expired/invalid) are expected and
+      // don't need logging. We distinguish by checking for known JWT error names.
+      const isExpectedJwtError =
+        error instanceof UnauthorizedException ||
+        (error instanceof Error &&
+          ['JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError'].includes(error.name));
+      if (!isExpectedJwtError) {
+        this.logger.error('Unexpected error during token validation', error);
+      }
       // SECURITY: Generic error for all token validation failures
       throw new UnauthorizedException('Authentication failed');
     }
@@ -657,7 +681,7 @@ export class AuthService {
       data: { token: tokenHash, userId, expiresAt },
     });
 
-    await this.emailService.sendEmailVerification(
+    await this.emailQueue.enqueueVerification(
       this.enc.decryptForUser(user.email, user.id),
       plainToken
     );
@@ -713,7 +737,7 @@ export class AuthService {
       data: { token: tokenHash, userId: user.id, expiresAt },
     });
 
-    await this.emailService.sendPasswordReset(
+    await this.emailQueue.enqueuePasswordReset(
       this.enc.decryptForUser(user.email, user.id),
       plainToken
     );
@@ -845,9 +869,9 @@ export class AuthService {
       });
     });
 
-    // Send email OUTSIDE the transaction: don't hold a DB connection open
-    // while waiting for SMTP. The token is already persisted at this point.
-    await this.emailService.sendInvitation(email, inviterName, plainToken);
+    // Enqueue OUTSIDE the transaction: don't hold a DB connection open while
+    // waiting for the queue. The token is already persisted at this point.
+    await this.emailQueue.enqueueInvitation(email, inviterName, plainToken);
   }
 
   /**
@@ -902,7 +926,7 @@ export class AuthService {
       if (invitation.hiveId) {
         // Join existing hive
         hive = await tx.hive.findUniqueOrThrow({ where: { id: invitation.hiveId } });
-        const defaultRole = hive.type === 'family' ? 'parent' : 'member';
+        const defaultRole = hive.type === 'family' ? PersonRole.PARENT : PersonRole.MEMBER;
         const person = await tx.person.create({
           data: { hiveId: hive.id, role: defaultRole },
         });
@@ -935,7 +959,7 @@ export class AuthService {
             type: input.type,
           },
         });
-        const adminRole = input.type === 'family' ? 'parent' : 'org_admin';
+        const adminRole = getAdminRoleForHiveType(input.type);
         const person = await tx.person.create({ data: { hiveId: hive.id, role: adminRole } });
         personId = person.id;
 
@@ -973,6 +997,23 @@ export class AuthService {
     void this.sendEmailVerification(result.user.id).catch(() => undefined);
 
     const pii = this.decryptUserPii(result.user);
+
+    // Fire-and-forget: notify the new member that they joined the hive.
+    // Only meaningful for invitation-to-existing-hive flows (hiveId present).
+    if (invitation.hiveId) {
+      void this.notifications
+        .create(
+          {
+            recipientPersonId: result.personId,
+            notificationType: 'member_joined',
+            title: pii.email,
+            resourceType: 'person',
+            resourceId: result.personId,
+          },
+          result.hive.id
+        )
+        .catch(() => undefined);
+    }
 
     return {
       accessToken,
@@ -1057,6 +1098,32 @@ export class AuthService {
       },
     });
     return result.count;
+  }
+
+  /**
+   * List all pending (not used, not expired) invitations for a hive.
+   * Returns safe fields only — no token hashes exposed.
+   */
+  async listPendingInvitations(
+    hiveId: string
+  ): Promise<{ id: string; email: string; createdAt: Date; expiresAt: Date }[]> {
+    return this.prisma.invitation.findMany({
+      where: { hiveId, usedAt: null, expiresAt: { gte: new Date() } },
+      select: { id: true, email: true, createdAt: true, expiresAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Revoke a pending invitation by marking it as used.
+   * Returns false if the invitation was not found, already used, or doesn't belong to the hive.
+   */
+  async revokeInvitation(invitationId: string, hiveId: string): Promise<boolean> {
+    const result = await this.prisma.invitation.updateMany({
+      where: { id: invitationId, hiveId, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    return result.count > 0;
   }
 
   /**

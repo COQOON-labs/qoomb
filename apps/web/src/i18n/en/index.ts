@@ -204,6 +204,12 @@ const en = {
     emptyState: 'No members yet.',
     you: '(You)',
     joined: 'Joined',
+    pendingInvitations: 'Pending Invitations',
+    invitedAt: 'Invited',
+    expiresAt: 'Expires',
+    resendInvitation: 'Resend',
+    revokeInvitation: 'Revoke',
+    revokeConfirm: 'Revoke this invitation?',
   },
 
   // ── Groups ────────────────────────────────────────────────────────────────
@@ -277,6 +283,62 @@ const en = {
     archivedNotice: 'This list is archived.',
     showArchived: 'Show archived',
     hideArchived: 'Hide archived',
+  },
+
+  // ── Activity ───────────────────────────────────────────────────────────────
+  activity: {
+    title: 'Activity',
+    noActivity: 'No recent activity.',
+    loadMore: 'Load more',
+  },
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+  notifications: {
+    title: 'Notifications',
+    markAllRead: 'Mark all as read',
+    allNotifications: 'All',
+    onlyUnread: 'Unread',
+    noNotifications: 'No notifications yet.',
+    markRead: 'Mark as read',
+  },
+
+  // ── Messaging ─────────────────────────────────────────────────────────────
+  messaging: {
+    title: 'Messages',
+    noConversations: 'No conversations yet.',
+    noMessages: 'No messages yet.',
+    selectConversation: 'Select a conversation to start chatting.',
+    messagePlaceholder: 'Write a message…',
+    send: 'Send',
+    newMessage: 'New message',
+    unread: '{count:number} unread',
+  },
+
+  // ── Hive Settings ─────────────────────────────────────────────────────────
+  hiveSettings: {
+    title: 'Hive Settings',
+    generalSection: 'General',
+    nameLabel: 'Name',
+    namePlaceholder: 'Your hive name',
+    localeLabel: 'Language',
+    saveSuccess: 'Settings saved',
+    saveError: 'Failed to save',
+    dangerZone: 'Danger Zone',
+    deleteDescription:
+      'Permanently deletes the hive and all its data. This action cannot be undone.',
+    deleteConfirmLabel: 'Type "DELETE" to confirm',
+    deleteConfirmPlaceholder: 'DELETE',
+    deleteButton: 'Delete hive',
+    notificationPrefsSection: 'Notifications',
+    notificationPrefsDescription: 'Choose which events trigger in-app and email notifications.',
+    notifInApp: 'In-App',
+    notifEmail: 'Email',
+    notifSaved: 'Preferences saved',
+    notifTypes: {
+      member_joined: 'New member joined',
+      task_assigned: 'Task assigned to me',
+      event_reminder: 'Event reminder',
+    },
   },
 } satisfies BaseTranslation;
 

@@ -9,18 +9,23 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { Pool } from 'pg';
 
+import { getEnv } from '../config/env.validation';
+
 // Create a properly typed Prisma Client instance.
 // No return type annotation: TypeScript infers the full generic type so model
 // accessors (e.g. .person) retain their correct delegate types.
 function createPrismaClient() {
+  // Q-002: use getEnv() so DATABASE_URL is Zod-validated at startup
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: getEnv().DATABASE_URL,
   });
 
   const adapter = new PrismaPg(pool);
 
   return new PrismaClient({
     adapter,
+    // NODE_ENV is not a secret and not in the getEnv() schema — inline exception allowed.
+    // eslint-disable-next-line no-restricted-syntax
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
 }
@@ -131,6 +136,22 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.listTemplateView;
   }
 
+  get notification() {
+    return this.client.notification;
+  }
+
+  get notificationPreference() {
+    return this.client.notificationPreference;
+  }
+
+  get directMessage() {
+    return this.client.directMessage;
+  }
+
+  get activityEvent() {
+    return this.client.activityEvent;
+  }
+
   // Expose Prisma methods
   async $connect() {
     return await this.client.$connect();
@@ -146,6 +167,13 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   async $queryRawUnsafe<T = unknown>(query: string, ...values: unknown[]): Promise<T> {
     return this.client.$queryRawUnsafe(query, ...values) as Promise<T>;
+  }
+
+  $queryRaw<T = unknown>(
+    query: TemplateStringsArray | Prisma.Sql,
+    ...values: unknown[]
+  ): Promise<T> {
+    return this.client.$queryRaw<T>(query as Prisma.Sql, ...values);
   }
 
   async $transaction<T>(
@@ -176,7 +204,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private validateUUID(uuid: string): void {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(uuid)) {
-      this.logger.error(`Invalid UUID format attempted: ${uuid}`);
+      // S-001: strip \r\n before logging to prevent log injection (CWE-117)
+      const safeUuid = uuid.replace(/[\r\n]/g, '');
+      this.logger.error(`Invalid UUID format attempted: ${safeUuid}`);
       throw new UnauthorizedException('Invalid hive identifier');
     }
   }
@@ -221,7 +251,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (!membership) {
-      this.logger.error(`User ${userId} attempted unauthorized access to hive ${hiveId}`);
+      // S-001: strip \r\n from user-controlled values before logging (CWE-117)
+      const safeUserId = userId.replace(/[\r\n]/g, '');
+      const safeHiveId = hiveId.replace(/[\r\n]/g, '');
+      this.logger.error(`User ${safeUserId} attempted unauthorized access to hive ${safeHiveId}`);
       throw new UnauthorizedException('Access to this hive is not authorized');
     }
   }

@@ -3,8 +3,16 @@ import { cn } from '@qoomb/ui';
 import { useMemo, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { CheckIcon, ChevronUpDownIcon, HomeIcon, UserIcon, UsersIcon } from '../components/icons';
+import {
+  CheckIcon,
+  ChevronUpDownIcon,
+  HomeIcon,
+  SettingsIcon,
+  UserIcon,
+  UsersIcon,
+} from '../components/icons';
 import { EmailVerificationBanner } from '../components/layout/EmailVerificationBanner';
+import { NotificationsBell } from '../components/layout/NotificationsBell';
 import { UserMenu } from '../components/layout/UserMenu';
 import { useCurrentPerson } from '../hooks/useCurrentPerson';
 import { useI18nContext } from '../i18n/i18n-react';
@@ -31,6 +39,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'lists', route: '/lists', icon: CheckIcon },
   { id: 'members', route: '/members', icon: UserIcon },
   { id: 'groups', route: '/groups', icon: UsersIcon },
+  { id: 'settings', route: '/settings', icon: SettingsIcon },
 ];
 
 // ── App Shell ─────────────────────────────────────────────────────────────────
@@ -57,6 +66,7 @@ export function AppShell({ children }: AppShellProps) {
     lists: LL.nav.lists(),
     members: LL.nav.members(),
     groups: LL.nav.groups(),
+    settings: LL.nav.settings(),
   };
 
   function handleNav(route: string) {
@@ -133,8 +143,11 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </nav>
 
-        {/* User */}
-        <div className="px-3 pb-3 pt-2 border-t border-white/10 shrink-0">
+        {/* Bell + User */}
+        <div className="px-3 pb-3 pt-2 border-t border-white/10 shrink-0 flex flex-col gap-1">
+          <div className="flex justify-end px-1 pb-1">
+            <NotificationsBell />
+          </div>
           <UserMenu displayName={displayName} initials={userInitials} roleLabel={roleLabel} />
         </div>
       </aside>

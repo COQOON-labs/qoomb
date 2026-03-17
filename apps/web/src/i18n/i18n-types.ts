@@ -644,6 +644,30 @@ type RootTranslation = {
      * J​o​i​n​e​d
      */
     joined: string;
+    /**
+     * P​e​n​d​i​n​g​ ​I​n​v​i​t​a​t​i​o​n​s
+     */
+    pendingInvitations: string;
+    /**
+     * I​n​v​i​t​e​d
+     */
+    invitedAt: string;
+    /**
+     * E​x​p​i​r​e​s
+     */
+    expiresAt: string;
+    /**
+     * R​e​s​e​n​d
+     */
+    resendInvitation: string;
+    /**
+     * R​e​v​o​k​e
+     */
+    revokeInvitation: string;
+    /**
+     * R​e​v​o​k​e​ ​t​h​i​s​ ​i​n​v​i​t​a​t​i​o​n​?
+     */
+    revokeConfirm: string;
   };
   groups: {
     /**
@@ -905,6 +929,165 @@ type RootTranslation = {
      * H​i​d​e​ ​a​r​c​h​i​v​e​d
      */
     hideArchived: string;
+  };
+  activity: {
+    /**
+     * A​c​t​i​v​i​t​y
+     */
+    title: string;
+    /**
+     * N​o​ ​r​e​c​e​n​t​ ​a​c​t​i​v​i​t​y​.
+     */
+    noActivity: string;
+    /**
+     * L​o​a​d​ ​m​o​r​e
+     */
+    loadMore: string;
+  };
+  notifications: {
+    /**
+     * N​o​t​i​f​i​c​a​t​i​o​n​s
+     */
+    title: string;
+    /**
+     * M​a​r​k​ ​a​l​l​ ​a​s​ ​r​e​a​d
+     */
+    markAllRead: string;
+    /**
+     * A​l​l
+     */
+    allNotifications: string;
+    /**
+     * U​n​r​e​a​d
+     */
+    onlyUnread: string;
+    /**
+     * N​o​ ​n​o​t​i​f​i​c​a​t​i​o​n​s​ ​y​e​t​.
+     */
+    noNotifications: string;
+    /**
+     * M​a​r​k​ ​a​s​ ​r​e​a​d
+     */
+    markRead: string;
+  };
+  messaging: {
+    /**
+     * M​e​s​s​a​g​e​s
+     */
+    title: string;
+    /**
+     * N​o​ ​c​o​n​v​e​r​s​a​t​i​o​n​s​ ​y​e​t​.
+     */
+    noConversations: string;
+    /**
+     * N​o​ ​m​e​s​s​a​g​e​s​ ​y​e​t​.
+     */
+    noMessages: string;
+    /**
+     * S​e​l​e​c​t​ ​a​ ​c​o​n​v​e​r​s​a​t​i​o​n​ ​t​o​ ​s​t​a​r​t​ ​c​h​a​t​t​i​n​g​.
+     */
+    selectConversation: string;
+    /**
+     * W​r​i​t​e​ ​a​ ​m​e​s​s​a​g​e​…
+     */
+    messagePlaceholder: string;
+    /**
+     * S​e​n​d
+     */
+    send: string;
+    /**
+     * N​e​w​ ​m​e​s​s​a​g​e
+     */
+    newMessage: string;
+    /**
+     * {​c​o​u​n​t​}​ ​u​n​r​e​a​d
+     * @param {number} count
+     */
+    unread: RequiredParams<'count'>;
+  };
+  hiveSettings: {
+    /**
+     * H​i​v​e​ ​S​e​t​t​i​n​g​s
+     */
+    title: string;
+    /**
+     * G​e​n​e​r​a​l
+     */
+    generalSection: string;
+    /**
+     * N​a​m​e
+     */
+    nameLabel: string;
+    /**
+     * Y​o​u​r​ ​h​i​v​e​ ​n​a​m​e
+     */
+    namePlaceholder: string;
+    /**
+     * L​a​n​g​u​a​g​e
+     */
+    localeLabel: string;
+    /**
+     * S​e​t​t​i​n​g​s​ ​s​a​v​e​d
+     */
+    saveSuccess: string;
+    /**
+     * F​a​i​l​e​d​ ​t​o​ ​s​a​v​e
+     */
+    saveError: string;
+    /**
+     * D​a​n​g​e​r​ ​Z​o​n​e
+     */
+    dangerZone: string;
+    /**
+     * P​e​r​m​a​n​e​n​t​l​y​ ​d​e​l​e​t​e​s​ ​t​h​e​ ​h​i​v​e​ ​a​n​d​ ​a​l​l​ ​i​t​s​ ​d​a​t​a​.​ ​T​h​i​s​ ​a​c​t​i​o​n​ ​c​a​n​n​o​t​ ​b​e​ ​u​n​d​o​n​e​.
+     */
+    deleteDescription: string;
+    /**
+     * T​y​p​e​ ​"​D​E​L​E​T​E​"​ ​t​o​ ​c​o​n​f​i​r​m
+     */
+    deleteConfirmLabel: string;
+    /**
+     * D​E​L​E​T​E
+     */
+    deleteConfirmPlaceholder: string;
+    /**
+     * D​e​l​e​t​e​ ​h​i​v​e
+     */
+    deleteButton: string;
+    /**
+     * N​o​t​i​f​i​c​a​t​i​o​n​s
+     */
+    notificationPrefsSection: string;
+    /**
+     * C​h​o​o​s​e​ ​w​h​i​c​h​ ​e​v​e​n​t​s​ ​t​r​i​g​g​e​r​ ​i​n​-​a​p​p​ ​a​n​d​ ​e​m​a​i​l​ ​n​o​t​i​f​i​c​a​t​i​o​n​s​.
+     */
+    notificationPrefsDescription: string;
+    /**
+     * I​n​-​A​p​p
+     */
+    notifInApp: string;
+    /**
+     * E​m​a​i​l
+     */
+    notifEmail: string;
+    /**
+     * P​r​e​f​e​r​e​n​c​e​s​ ​s​a​v​e​d
+     */
+    notifSaved: string;
+    notifTypes: {
+      /**
+       * N​e​w​ ​m​e​m​b​e​r​ ​j​o​i​n​e​d
+       */
+      member_joined: string;
+      /**
+       * T​a​s​k​ ​a​s​s​i​g​n​e​d​ ​t​o​ ​m​e
+       */
+      task_assigned: string;
+      /**
+       * E​v​e​n​t​ ​r​e​m​i​n​d​e​r
+       */
+      event_reminder: string;
+    };
   };
 };
 
@@ -1520,6 +1703,30 @@ export type TranslationFunctions = {
      * Joined
      */
     joined: () => LocalizedString;
+    /**
+     * Pending Invitations
+     */
+    pendingInvitations: () => LocalizedString;
+    /**
+     * Invited
+     */
+    invitedAt: () => LocalizedString;
+    /**
+     * Expires
+     */
+    expiresAt: () => LocalizedString;
+    /**
+     * Resend
+     */
+    resendInvitation: () => LocalizedString;
+    /**
+     * Revoke
+     */
+    revokeInvitation: () => LocalizedString;
+    /**
+     * Revoke this invitation?
+     */
+    revokeConfirm: () => LocalizedString;
   };
   groups: {
     /**
@@ -1778,6 +1985,164 @@ export type TranslationFunctions = {
      * Hide archived
      */
     hideArchived: () => LocalizedString;
+  };
+  activity: {
+    /**
+     * Activity
+     */
+    title: () => LocalizedString;
+    /**
+     * No recent activity.
+     */
+    noActivity: () => LocalizedString;
+    /**
+     * Load more
+     */
+    loadMore: () => LocalizedString;
+  };
+  notifications: {
+    /**
+     * Notifications
+     */
+    title: () => LocalizedString;
+    /**
+     * Mark all as read
+     */
+    markAllRead: () => LocalizedString;
+    /**
+     * All
+     */
+    allNotifications: () => LocalizedString;
+    /**
+     * Unread
+     */
+    onlyUnread: () => LocalizedString;
+    /**
+     * No notifications yet.
+     */
+    noNotifications: () => LocalizedString;
+    /**
+     * Mark as read
+     */
+    markRead: () => LocalizedString;
+  };
+  messaging: {
+    /**
+     * Messages
+     */
+    title: () => LocalizedString;
+    /**
+     * No conversations yet.
+     */
+    noConversations: () => LocalizedString;
+    /**
+     * No messages yet.
+     */
+    noMessages: () => LocalizedString;
+    /**
+     * Select a conversation to start chatting.
+     */
+    selectConversation: () => LocalizedString;
+    /**
+     * Write a message…
+     */
+    messagePlaceholder: () => LocalizedString;
+    /**
+     * Send
+     */
+    send: () => LocalizedString;
+    /**
+     * New message
+     */
+    newMessage: () => LocalizedString;
+    /**
+     * {count} unread
+     */
+    unread: (arg: { count: number }) => LocalizedString;
+  };
+  hiveSettings: {
+    /**
+     * Hive Settings
+     */
+    title: () => LocalizedString;
+    /**
+     * General
+     */
+    generalSection: () => LocalizedString;
+    /**
+     * Name
+     */
+    nameLabel: () => LocalizedString;
+    /**
+     * Your hive name
+     */
+    namePlaceholder: () => LocalizedString;
+    /**
+     * Language
+     */
+    localeLabel: () => LocalizedString;
+    /**
+     * Settings saved
+     */
+    saveSuccess: () => LocalizedString;
+    /**
+     * Failed to save
+     */
+    saveError: () => LocalizedString;
+    /**
+     * Danger Zone
+     */
+    dangerZone: () => LocalizedString;
+    /**
+     * Permanently deletes the hive and all its data. This action cannot be undone.
+     */
+    deleteDescription: () => LocalizedString;
+    /**
+     * Type "DELETE" to confirm
+     */
+    deleteConfirmLabel: () => LocalizedString;
+    /**
+     * DELETE
+     */
+    deleteConfirmPlaceholder: () => LocalizedString;
+    /**
+     * Delete hive
+     */
+    deleteButton: () => LocalizedString;
+    /**
+     * Notifications
+     */
+    notificationPrefsSection: () => LocalizedString;
+    /**
+     * Choose which events trigger in-app and email notifications.
+     */
+    notificationPrefsDescription: () => LocalizedString;
+    /**
+     * In-App
+     */
+    notifInApp: () => LocalizedString;
+    /**
+     * Email
+     */
+    notifEmail: () => LocalizedString;
+    /**
+     * Preferences saved
+     */
+    notifSaved: () => LocalizedString;
+    notifTypes: {
+      /**
+       * New member joined
+       */
+      member_joined: () => LocalizedString;
+      /**
+       * Task assigned to me
+       */
+      task_assigned: () => LocalizedString;
+      /**
+       * Event reminder
+       */
+      event_reminder: () => LocalizedString;
+    };
   };
 };
 

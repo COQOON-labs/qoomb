@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { isAdminRole, PersonRole } from '@qoomb/types';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -8,6 +9,7 @@ import {
   EncryptionService,
   type FieldTransforms,
 } from '../encryption';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // ============================================
 // TYPES
@@ -85,7 +87,8 @@ const BIRTHDATE_TRANSFORMS: Record<string, FieldTransforms> = {
 export class PersonsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly enc: EncryptionService
+    private readonly enc: EncryptionService,
+    private readonly notifications: NotificationsService
   ) {}
 
   /**
@@ -192,5 +195,49 @@ export class PersonsService {
       where: { id: personId, hiveId },
     });
     return result.count > 0;
+  }
+
+  /**
+   * Dispatch an in-app notification to all admins of a hive.
+   * Fire-and-forget — never throws, never blocks the caller.
+   */
+  async notifyAdmins(
+    hiveId: string,
+    notificationType: string,
+    title: string,
+    body: string,
+    resourceType?: string,
+    resourceId?: string
+  ): Promise<void> {
+    // Q-003: use isAdminRole() from @qoomb/types — single source of truth for admin role names
+    const admins = await this.prisma.person.findMany({
+      where: {
+        hiveId,
+        // We don't have hiveType here, so we use the union of all admin roles.
+        // isAdminRole covers PersonRole.PARENT (family) and PersonRole.ORG_ADMIN (organization).
+        role: {
+          in: [PersonRole.PARENT, PersonRole.ORG_ADMIN].filter(
+            (r) => isAdminRole('family', r) || isAdminRole('organization', r)
+          ),
+        },
+      },
+      select: { id: true },
+    });
+
+    await Promise.allSettled(
+      admins.map((admin) =>
+        this.notifications.create(
+          {
+            recipientPersonId: admin.id,
+            notificationType,
+            title,
+            body,
+            resourceType,
+            resourceId,
+          },
+          hiveId
+        )
+      )
+    );
   }
 }

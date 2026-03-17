@@ -106,12 +106,16 @@ describe('reencryptField — pure function (plain callbacks)', () => {
     const corruptEnc = (s: string): string => simpleEnc(2)(s + '\x00extra');
     expect(() => reencryptField(storedV1, 1, simpleDec, corruptEnc)).toThrow(/[Vv]erif/);
     // Error must NOT include plaintext — it could end up in log forwarding services
-    try {
-      reencryptField(storedV1, 1, simpleDec, corruptEnc);
-    } catch (e) {
-      const msg = (e as Error).message;
-      expect(msg).not.toContain('original');
-    }
+    let thrownMessage = '';
+    expect(() => {
+      try {
+        reencryptField(storedV1, 1, simpleDec, corruptEnc);
+      } catch (e) {
+        thrownMessage = (e as Error).message;
+        throw e;
+      }
+    }).toThrow();
+    expect(thrownMessage).not.toContain('original');
   });
 
   it('is a no-op on a second pass (idempotent)', () => {
@@ -800,7 +804,6 @@ describe('reencrypt-rollback — skip logic via reencryptField', () => {
   it('v1 record targeted for rollback to v1: matches fromVersion=1 prefix', () => {
     // A record at v1 does NOT start with v2 → reencryptField(v2→v1 migration) would skip
     // Modelled: a v2 record targeted for rollback to v1 should be processed.
-    const v2cipher = simpleEnc(2)('hello');
     // fromVersion of BACKUP row is 1 (before migration), toVersion is 2 (after migration).
     // rollback restores the v1 oldCiphertext verbatim — no re-decryption needed.
     // ∴ the skip condition is: fromVersion !== toVersion (not a reencryptField call).

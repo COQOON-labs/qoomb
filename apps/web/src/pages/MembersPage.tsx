@@ -1,5 +1,5 @@
 import { getInitials, ROLE_I18N_KEYS, type PersonRole, type RoleI18nKey } from '@qoomb/types';
-import { Button, Card, Input } from '@qoomb/ui';
+import { Button, Card, ConfirmDialog, Input } from '@qoomb/ui';
 import { useCallback, useState } from 'react';
 
 import { PlusIcon, TrashIcon, UserIcon } from '../components/icons';
@@ -7,6 +7,16 @@ import { useI18nContext } from '../i18n/i18n-react';
 import { AppShell } from '../layouts/AppShell';
 import { useAuth } from '../lib/auth/useAuth';
 import { trpc } from '../lib/trpc/client';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatDate(date: Date | string): string {
+  return new Date(date).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
 
 // ── MembersPage ───────────────────────────────────────────────────────────────
 
@@ -70,14 +80,45 @@ export function MembersPage() {
     },
   });
 
-  const handleRemove = useCallback(
-    (personId: string, name: string | null) => {
-      const display = name ?? '?';
-      if (!window.confirm(LL.members.removeConfirm({ name: display }))) return;
-      removeMember.mutate(personId);
-    },
-    [LL, removeMember]
+  // F-002: confirmation state replacing window.confirm
+  const [confirmRemove, setConfirmRemove] = useState<{ personId: string; name: string } | null>(
+    null
   );
+  const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
+
+  const handleRemove = useCallback((personId: string, name: string | null) => {
+    setConfirmRemove({ personId, name: name ?? '?' });
+  }, []);
+
+  const handleRemoveConfirmed = useCallback(() => {
+    if (confirmRemove) removeMember.mutate(confirmRemove.personId);
+    setConfirmRemove(null);
+  }, [confirmRemove, removeMember]);
+
+  // ── Pending invitations ───────────────────────────────────────────────────
+  const { data: invitations = [], refetch: refetchInvitations } =
+    trpc.persons.listInvitations.useQuery(undefined, { enabled: !!user });
+
+  const resendInvitation = trpc.persons.resendInvitation.useMutation({
+    onSuccess: () => void refetchInvitations(),
+  });
+  const revokeInvitation = trpc.persons.revokeInvitation.useMutation({
+    onSuccess: () => void refetchInvitations(),
+  });
+
+  const handleResend = useCallback(
+    (invitationId: string) => resendInvitation.mutate(invitationId),
+    [resendInvitation]
+  );
+
+  const handleRevoke = useCallback((invitationId: string) => {
+    setConfirmRevoke(invitationId);
+  }, []);
+
+  const handleRevokeConfirmed = useCallback(() => {
+    if (confirmRevoke) revokeInvitation.mutate(confirmRevoke);
+    setConfirmRevoke(null);
+  }, [confirmRevoke, revokeInvitation]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   function getRoleLabel(role: string): string {
@@ -203,7 +244,68 @@ export function MembersPage() {
             ))}
           </div>
         )}
+        {/* ── Pending Invitations ───────────────────────────────────── */}
+        {invitations.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-base font-bold text-foreground mb-3">
+              {LL.members.pendingInvitations()}
+            </h2>
+            <div className="flex flex-col gap-2">
+              {invitations.map((inv) => (
+                <Card key={inv.id} padding="none" className="group">
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground truncate text-sm">{inv.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {LL.members.invitedAt()}: {formatDate(inv.createdAt)} &middot;{' '}
+                        {LL.members.expiresAt()}: {formatDate(inv.expiresAt)}
+                      </p>
+                    </div>
+                    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => handleResend(inv.id)}
+                        disabled={resendInvitation.isPending}
+                        className="text-xs px-2 py-1 rounded-md border border-border text-foreground hover:bg-muted transition-colors"
+                      >
+                        {LL.members.resendInvitation()}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRevoke(inv.id)}
+                        disabled={revokeInvitation.isPending}
+                        className="text-xs px-2 py-1 rounded-md text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        {LL.members.revokeInvitation()}
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* F-002: ConfirmDialog replaces window.confirm for remove member */}
+      <ConfirmDialog
+        open={!!confirmRemove}
+        title={LL.members.removeConfirm({ name: confirmRemove?.name ?? '' })}
+        confirmLabel={LL.members.removeMember()}
+        cancelLabel={LL.common.cancel()}
+        onConfirm={handleRemoveConfirmed}
+        onCancel={() => setConfirmRemove(null)}
+      />
+
+      {/* F-002: ConfirmDialog for revoke invitation */}
+      <ConfirmDialog
+        open={!!confirmRevoke}
+        title={LL.members.revokeConfirm()}
+        confirmLabel={LL.members.revokeInvitation()}
+        cancelLabel={LL.common.cancel()}
+        onConfirm={handleRevokeConfirmed}
+        onCancel={() => setConfirmRevoke(null)}
+      />
     </AppShell>
   );
 }

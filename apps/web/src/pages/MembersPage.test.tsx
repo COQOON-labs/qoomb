@@ -100,6 +100,15 @@ vi.mock('../lib/trpc/client', () => ({
           isPending: false,
         }),
       },
+      listInvitations: {
+        useQuery: () => ({ data: [], isLoading: false, refetch: vi.fn() }),
+      },
+      resendInvitation: {
+        useMutation: () => ({ mutate: mutateFn, isPending: false }),
+      },
+      revokeInvitation: {
+        useMutation: () => ({ mutate: mutateFn, isPending: false }),
+      },
     },
   },
 }));
@@ -186,7 +195,7 @@ describe('MembersPage', () => {
       const name =
         btn.getAttribute('aria-label') ??
         btn.getAttribute('aria-labelledby') ??
-        btn.textContent?.trim();
+        (btn.textContent ?? '').trim();
       expect(name, `button "${btn.outerHTML}" has no accessible name`).toBeTruthy();
     });
   });

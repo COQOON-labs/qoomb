@@ -32,6 +32,12 @@ export enum HivePermission {
   LISTS_UPDATE_ANY = 'lists:update:any',
   LISTS_DELETE_OWN = 'lists:delete:own',
   LISTS_DELETE_ANY = 'lists:delete:any',
+
+  // Messaging (Phase 3)
+  MESSAGES_SEND = 'messages:send',
+
+  // Activity log (Phase 3)
+  ACTIVITY_VIEW = 'activity:view',
 }
 
 const ALL_PERMISSIONS = Object.values(HivePermission);
@@ -55,6 +61,8 @@ export const HIVE_ROLE_PERMISSIONS: Record<string, Record<string, HivePermission
       HivePermission.LISTS_CREATE,
       HivePermission.LISTS_UPDATE_OWN,
       HivePermission.LISTS_DELETE_OWN,
+      HivePermission.MESSAGES_SEND,
+      HivePermission.ACTIVITY_VIEW,
     ],
   },
   organization: {
@@ -75,6 +83,8 @@ export const HIVE_ROLE_PERMISSIONS: Record<string, Record<string, HivePermission
       HivePermission.LISTS_UPDATE_ANY,
       HivePermission.LISTS_DELETE_OWN,
       HivePermission.LISTS_DELETE_ANY,
+      HivePermission.MESSAGES_SEND,
+      HivePermission.ACTIVITY_VIEW,
     ],
     member: [
       HivePermission.MEMBERS_VIEW,
@@ -84,8 +94,15 @@ export const HIVE_ROLE_PERMISSIONS: Record<string, Record<string, HivePermission
       HivePermission.LISTS_VIEW,
       HivePermission.LISTS_CREATE,
       HivePermission.LISTS_UPDATE_OWN,
+      HivePermission.MESSAGES_SEND,
+      HivePermission.ACTIVITY_VIEW,
     ],
-    guest: [HivePermission.MEMBERS_VIEW, HivePermission.EVENTS_VIEW, HivePermission.LISTS_VIEW],
+    guest: [
+      HivePermission.MEMBERS_VIEW,
+      HivePermission.EVENTS_VIEW,
+      HivePermission.LISTS_VIEW,
+      HivePermission.ACTIVITY_VIEW,
+    ],
   },
 } as const;
 

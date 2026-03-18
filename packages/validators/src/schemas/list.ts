@@ -19,6 +19,10 @@ export const listFieldTypeSchema = z.enum([
 
 export const listViewTypeSchema = z.enum(['checklist', 'table']);
 
+export const listTypeSchema = z.enum(['custom', 'inbox']);
+
+export const listViewSortModeSchema = z.enum(['manual', 'auto']);
+
 export const visibilitySchema = z.enum(['hive', 'admins', 'group', 'private']);
 
 // ── Filter schemas ────────────────────────────────────────────────────────────
@@ -139,6 +143,7 @@ export const createListViewSchema = z.object({
   listId: z.uuid(),
   name: z.string().min(1).max(200),
   viewType: listViewTypeSchema,
+  sortMode: listViewSortModeSchema.default('manual'),
   config: z.union([checklistViewConfigSchema, tableViewConfigSchema]),
   filter: filterExpressionSchema.optional(),
   sortBy: z.array(sortExpressionSchema).max(5).optional(),
@@ -147,6 +152,7 @@ export const createListViewSchema = z.object({
 
 export const updateListViewSchema = z.object({
   name: z.string().min(1).max(200).optional(),
+  sortMode: listViewSortModeSchema.optional(),
   config: z.union([checklistViewConfigSchema, tableViewConfigSchema]).optional(),
   filter: filterExpressionSchema.nullish(),
   sortBy: z.array(sortExpressionSchema).max(5).nullish(),

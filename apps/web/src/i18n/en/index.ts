@@ -283,6 +283,33 @@ const en = {
     archivedNotice: 'This list is archived.',
     showArchived: 'Show archived',
     hideArchived: 'Hide archived',
+    // Settings panel
+    settings: 'Settings',
+    visibilityLabel: 'Visibility',
+    visibility: {
+      hive: 'Hive (all members)',
+      admins: 'Admins only',
+      group: 'Group',
+      private: 'Private (only me)',
+    },
+    groupLabel: 'Group',
+    selectGroup: 'Select a group',
+    // Field editing
+    renameField: 'Rename field',
+    fieldConfig: 'Configure field',
+    selectOptions: 'Select options',
+    addOption: 'Add option',
+    optionPlaceholder: 'New option…',
+    saveField: 'Save field',
+    // Toasts / feedback
+    updateSuccess: 'Saved',
+    updateError: 'Error saving',
+    deleteError: 'Error deleting',
+    createError: 'Error creating',
+    fieldSaved: 'Field saved',
+    // Select cells
+    selectPlaceholder: 'Select…',
+    noOptions: 'No options available',
   },
 
   // ── Activity ───────────────────────────────────────────────────────────────

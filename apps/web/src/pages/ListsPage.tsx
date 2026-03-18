@@ -1,4 +1,4 @@
-import { Button, Card, Input } from '@qoomb/ui';
+import { Button, Card, ConfirmDialog, Input } from '@qoomb/ui';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,6 +6,7 @@ import { CheckIcon, PlusIcon, TrashIcon } from '../components/icons';
 import { useI18nContext } from '../i18n/i18n-react';
 import { AppShell } from '../layouts/AppShell';
 import { useAuth } from '../lib/auth/useAuth';
+import { addToast } from '../lib/toast';
 import { trpc } from '../lib/trpc/client';
 
 // ── ListsPage ─────────────────────────────────────────────────────────────────
@@ -40,6 +41,9 @@ export function ListsPage() {
       setSelectedTemplateId('');
       setShowCreate(false);
     },
+    onError: () => {
+      addToast(LL.lists.createError(), 'error');
+    },
   });
 
   const handleCreateSubmit = useCallback(
@@ -64,6 +68,7 @@ export function ListsPage() {
 
   // ── Delete ─────────────────────────────────────────────────────────────────
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const deleteList = trpc.lists.delete.useMutation({
     onSuccess: () => {
@@ -72,18 +77,21 @@ export function ListsPage() {
     },
     onError: () => {
       setDeletingId(null);
+      addToast(LL.lists.deleteError(), 'error');
     },
   });
 
-  const handleDeleteClick = useCallback(
-    (id: string, systemKey: string | null) => {
-      if (systemKey) return; // system lists cannot be deleted
-      if (!window.confirm(LL.lists.deleteConfirm())) return;
-      setDeletingId(id);
-      deleteList.mutate(id);
-    },
-    [LL, deleteList]
-  );
+  const handleDeleteClick = useCallback((id: string, systemKey: string | null) => {
+    if (systemKey) return;
+    setConfirmDeleteId(id);
+  }, []);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!confirmDeleteId) return;
+    setDeletingId(confirmDeleteId);
+    deleteList.mutate(confirmDeleteId);
+    setConfirmDeleteId(null);
+  }, [confirmDeleteId, deleteList]);
 
   const handleListClick = useCallback(
     (id: string) => {
@@ -208,11 +216,18 @@ export function ListsPage() {
                   {/* Name + meta */}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-foreground truncate">{list.name}</p>
-                    {list.isArchived && (
-                      <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                        {LL.lists.archivedBadge()}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {list._count?.items !== undefined && (
+                        <span className="text-xs text-muted-foreground">
+                          {LL.lists.itemCount({ count: list._count.items })}
+                        </span>
+                      )}
+                      {list.isArchived && (
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                          {LL.lists.archivedBadge()}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Delete button — only for non-system lists */}
@@ -236,6 +251,16 @@ export function ListsPage() {
           </div>
         )}
       </div>
+      {/* ── Delete confirmation ─────────────────────────────────────── */}
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title={LL.lists.deleteList()}
+        description={LL.lists.deleteConfirm()}
+        confirmLabel={LL.common.remove()}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+        variant="destructive"
+      />
     </AppShell>
   );
 }

@@ -18,6 +18,16 @@ export enum ListViewType {
   TABLE = 'table',
 }
 
+export enum ListType {
+  CUSTOM = 'custom',
+  INBOX = 'inbox',
+}
+
+export enum ListViewSortMode {
+  MANUAL = 'manual',
+  AUTO = 'auto',
+}
+
 // ── Filter types (shared between views and rule-based references) ─────────────
 
 export type FilterComparator =
@@ -98,6 +108,7 @@ export interface List extends BaseEntity, EncryptedEntity {
   creatorId?: UUID;
   name: string;
   icon?: string;
+  type: ListType;
   systemKey: string | null;
   isTemplate: boolean;
   visibility: 'hive' | 'admins' | 'group' | 'private';
@@ -116,6 +127,7 @@ export interface ListField {
   isTitle: boolean;
   sortOrder: number;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ListView {
@@ -123,11 +135,13 @@ export interface ListView {
   listId: UUID;
   name: string;
   viewType: ListViewType;
+  sortMode: ListViewSortMode;
   config: ListViewConfig;
   filter?: FilterExpression;
   sortBy?: SortExpression[];
   isDefault: boolean;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ListItem extends BaseEntity {

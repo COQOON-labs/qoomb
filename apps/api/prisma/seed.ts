@@ -190,8 +190,258 @@ async function main() {
   console.log('  anna@doe.dev   → parent');
   console.log('  tim@doe.dev    → child');
 }
+// ── System templates ─────────────────────────────────────────────────────────
+//
+// Global templates (hiveId=null, creatorId=null, isTemplate=true).
+// Names and field names are stored as plaintext — templates contain no PII.
+// Each template is identified by a stable systemKey so re-running the seed
+// never creates duplicates.
 
+interface TemplateField {
+  name: string;
+  fieldType: string;
+  config?: Record<string, unknown>;
+  isTitle?: boolean;
+  isRequired?: boolean;
+  sortOrder: number;
+}
+
+interface TemplateView {
+  name: string;
+  viewType: string;
+  config?: Record<string, unknown>;
+  isDefault?: boolean;
+  sortOrder: number;
+}
+
+interface TemplateSpec {
+  systemKey: string;
+  name: string;
+  icon: string;
+  fields: TemplateField[];
+  views: TemplateView[];
+}
+
+const SYSTEM_TEMPLATES: TemplateSpec[] = [
+  {
+    systemKey: 'task-list',
+    name: 'Aufgabenliste',
+    icon: '✅',
+    fields: [
+      { name: 'Titel', fieldType: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      {
+        name: 'Status',
+        fieldType: 'select',
+        config: { options: ['Offen', 'In Bearbeitung', 'Erledigt'] },
+        sortOrder: 1,
+      },
+      {
+        name: 'Priorität',
+        fieldType: 'select',
+        config: { options: ['Hoch', 'Mittel', 'Niedrig'] },
+        sortOrder: 2,
+      },
+      { name: 'Fällig am', fieldType: 'date', sortOrder: 3 },
+      { name: 'Zugewiesen', fieldType: 'person', sortOrder: 4 },
+    ],
+    views: [
+      { name: 'Checkliste', viewType: 'checklist', isDefault: true, sortOrder: 0 },
+      { name: 'Tabelle', viewType: 'table', isDefault: false, sortOrder: 1 },
+    ],
+  },
+  {
+    systemKey: 'shopping-list',
+    name: 'Einkaufsliste',
+    icon: '🛒',
+    fields: [
+      { name: 'Artikel', fieldType: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      { name: 'Menge', fieldType: 'text', sortOrder: 1 },
+      {
+        name: 'Kategorie',
+        fieldType: 'select',
+        config: {
+          options: [
+            'Obst & Gemüse',
+            'Milch & Käse',
+            'Fleisch & Fisch',
+            'Backwaren',
+            'Getränke',
+            'Tiefkühl',
+            'Sonstiges',
+          ],
+        },
+        sortOrder: 2,
+      },
+      { name: 'Erledigt', fieldType: 'checkbox', sortOrder: 3 },
+    ],
+    views: [{ name: 'Checkliste', viewType: 'checklist', isDefault: true, sortOrder: 0 }],
+  },
+  {
+    systemKey: 'project',
+    name: 'Projekt',
+    icon: '📋',
+    fields: [
+      { name: 'Titel', fieldType: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      {
+        name: 'Status',
+        fieldType: 'select',
+        config: { options: ['Todo', 'In Bearbeitung', 'Erledigt', 'Blockiert'] },
+        sortOrder: 1,
+      },
+      {
+        name: 'Priorität',
+        fieldType: 'select',
+        config: { options: ['Hoch', 'Mittel', 'Niedrig'] },
+        sortOrder: 2,
+      },
+      { name: 'Zugewiesen', fieldType: 'person', sortOrder: 3 },
+      { name: 'Fällig am', fieldType: 'date', sortOrder: 4 },
+    ],
+    views: [
+      { name: 'Tabelle', viewType: 'table', isDefault: true, sortOrder: 0 },
+      { name: 'Checkliste', viewType: 'checklist', isDefault: false, sortOrder: 1 },
+    ],
+  },
+  {
+    systemKey: 'packing-list',
+    name: 'Packliste',
+    icon: '🧳',
+    fields: [
+      { name: 'Gegenstand', fieldType: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      {
+        name: 'Kategorie',
+        fieldType: 'select',
+        config: { options: ['Kleidung', 'Elektronik', 'Hygiene', 'Dokumente', 'Sonstiges'] },
+        sortOrder: 1,
+      },
+      { name: 'Eingepackt', fieldType: 'checkbox', sortOrder: 2 },
+    ],
+    views: [{ name: 'Checkliste', viewType: 'checklist', isDefault: true, sortOrder: 0 }],
+  },
+  {
+    systemKey: 'reading-list',
+    name: 'Leseliste',
+    icon: '📚',
+    fields: [
+      { name: 'Titel', fieldType: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      { name: 'Autor', fieldType: 'text', sortOrder: 1 },
+      {
+        name: 'Typ',
+        fieldType: 'select',
+        config: { options: ['Buch', 'Artikel', 'Film', 'Podcast'] },
+        sortOrder: 2,
+      },
+      {
+        name: 'Status',
+        fieldType: 'select',
+        config: { options: ['Will lesen', 'Lese gerade', 'Gelesen'] },
+        sortOrder: 3,
+      },
+      {
+        name: 'Bewertung',
+        fieldType: 'select',
+        config: { options: ['⭐', '⭐⭐', '⭐⭐⭐', '⭐⭐⭐⭐', '⭐⭐⭐⭐⭐'] },
+        sortOrder: 4,
+      },
+    ],
+    views: [{ name: 'Tabelle', viewType: 'table', isDefault: true, sortOrder: 0 }],
+  },
+  {
+    systemKey: 'wish-list',
+    name: 'Wunschliste',
+    icon: '🎁',
+    fields: [
+      { name: 'Gegenstand', fieldType: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      { name: 'Für wen', fieldType: 'text', sortOrder: 1 },
+      { name: 'Link', fieldType: 'url', sortOrder: 2 },
+      { name: 'Preis', fieldType: 'number', config: { unit: '€' }, sortOrder: 3 },
+      { name: 'Gekauft', fieldType: 'checkbox', sortOrder: 4 },
+    ],
+    views: [
+      { name: 'Tabelle', viewType: 'table', isDefault: true, sortOrder: 0 },
+      { name: 'Checkliste', viewType: 'checklist', isDefault: false, sortOrder: 1 },
+    ],
+  },
+  {
+    systemKey: 'habit-tracker',
+    name: 'Habit-Tracker',
+    icon: '🏃',
+    fields: [
+      { name: 'Gewohnheit', fieldType: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      { name: 'Erledigt', fieldType: 'checkbox', sortOrder: 1 },
+      { name: 'Notiz', fieldType: 'text', sortOrder: 2 },
+    ],
+    views: [{ name: 'Checkliste', viewType: 'checklist', isDefault: true, sortOrder: 0 }],
+  },
+  {
+    systemKey: 'collection',
+    name: 'Sammlung',
+    icon: '📦',
+    fields: [
+      { name: 'Titel', fieldType: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      { name: 'Notiz', fieldType: 'text', sortOrder: 1 },
+    ],
+    views: [
+      { name: 'Tabelle', viewType: 'table', isDefault: true, sortOrder: 0 },
+      { name: 'Checkliste', viewType: 'checklist', isDefault: false, sortOrder: 1 },
+    ],
+  },
+];
+
+async function seedSystemTemplates() {
+  console.log('🗂️  Seeding system templates...\n');
+  let created = 0;
+  let skipped = 0;
+
+  for (const spec of SYSTEM_TEMPLATES) {
+    const existing = await prisma.list.findFirst({
+      where: { systemKey: spec.systemKey, isTemplate: true, hiveId: null },
+    });
+
+    if (existing) {
+      skipped++;
+      continue;
+    }
+
+    await prisma.list.create({
+      data: {
+        hiveId: null,
+        creatorId: null,
+        name: spec.name,
+        icon: spec.icon,
+        type: 'custom',
+        systemKey: spec.systemKey,
+        isTemplate: true,
+        visibility: 'hive',
+        sortOrder: SYSTEM_TEMPLATES.indexOf(spec),
+        fields: {
+          create: spec.fields.map((f) => ({
+            name: f.name,
+            fieldType: f.fieldType,
+            config: (f.config ?? {}) as object,
+            isTitle: f.isTitle ?? false,
+            isRequired: f.isRequired ?? false,
+            sortOrder: f.sortOrder,
+          })),
+        },
+        views: {
+          create: spec.views.map((v) => ({
+            name: v.name,
+            viewType: v.viewType,
+            config: (v.config ?? {}) as object,
+            isDefault: v.isDefault ?? false,
+          })),
+        },
+      },
+    });
+    created++;
+    console.log(`  ✓ ${spec.icon} ${spec.name}`);
+  }
+
+  console.log(`\n  Created: ${created}, Skipped (already exist): ${skipped}\n`);
+}
 main()
+  .then(() => seedSystemTemplates())
   .catch((e) => {
     console.error(e);
     process.exit(1);

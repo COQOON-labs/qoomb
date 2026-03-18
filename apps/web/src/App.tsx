@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { AuthGuard } from './components/auth/AuthGuard';
 import { DevPanel } from './components/dev/DevPanel';
+import { ToastContainer } from './components/layout/ToastContainer';
 import { flag } from './lib/flags';
 import { ActivityPage } from './pages/ActivityPage';
 import { Dashboard } from './pages/Dashboard';
@@ -68,6 +69,9 @@ function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+
+      {/* Global toast notifications */}
+      <ToastContainer />
     </BrowserRouter>
   );
 }

@@ -301,12 +301,17 @@ model Event {
 model List {
   // name: AES-256-GCM ciphertext when hiveId is set (hive-scoped key).
   // Global templates (hiveId IS NULL, isTemplate = true) store name as plaintext — see ADR-0009.
+  //
+  // type: 'custom' (default) | 'inbox'
+  //   - 'inbox': the personal catch-all list auto-created per person on first access.
+  //     Enforced UNIQUE by (hive_id, creator_id) WHERE type = 'inbox' partial index.
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   hiveId     String?  @map("hive_id") @db.Uuid
   creatorId  String?  @map("creator_id") @db.Uuid
   groupId    String?  @map("group_id") @db.Uuid
   name       String   @db.Text
   icon       String?  @db.VarChar(50)
+  type       String   @default("custom") @db.VarChar(20)
   systemKey  String?  @map("system_key") @db.VarChar(50)
   isTemplate Boolean  @default(false) @map("is_template")
   visibility String   @default("hive") @db.VarChar(20)
@@ -326,6 +331,7 @@ model List {
   @@index([hiveId])
   @@index([hiveId, creatorId])
   @@index([isTemplate])
+  @@index([hiveId, type])
   @@map("lists")
 }
 
@@ -341,6 +347,7 @@ model ListField {
   isTitle    Boolean  @default(false) @map("is_title")
   sortOrder  Float    @default(0) @map("sort_order")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   list   List            @relation(fields: [listId], references: [id], onDelete: Cascade)
   values ListItemValue[]
@@ -352,15 +359,19 @@ model ListField {
 model ListView {
   // name: AES-256-GCM ciphertext (hive-scoped key).
   // config, filter, sortBy: JSONB — view-type-specific structures.
+  // sortMode: 'manual' = drag-and-drop order via sortOrder float;
+  //           'auto'   = server-sorted by sortBy fields.
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   listId    String   @map("list_id") @db.Uuid
   name      String   @db.Text
   viewType  String   @map("view_type") @db.VarChar(20)
+  sortMode  String   @default("manual") @map("sort_mode") @db.VarChar(10)
   config    Json     @default("{}") @db.JsonB
   filter    Json?    @db.JsonB
   sortBy    Json?    @map("sort_by") @db.JsonB
   isDefault Boolean  @default(false) @map("is_default")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   list List @relation(fields: [listId], references: [id], onDelete: Cascade)
 

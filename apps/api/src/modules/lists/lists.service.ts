@@ -22,6 +22,7 @@ export type ListRow = {
   groupId: string | null;
   name: string; // decrypted (plaintext for global templates)
   icon: string | null;
+  type: string;
   systemKey: string | null;
   isTemplate: boolean;
   visibility: string;
@@ -31,6 +32,7 @@ export type ListRow = {
   updatedAt: Date;
   fields: ListFieldRow[];
   views: ListViewRow[];
+  _count?: { items: number };
 };
 
 /** ListField row with decrypted name */
@@ -50,6 +52,7 @@ export type ListItemValueRow = Omit<ListItemValue, 'value'> & { value: string | 
 export interface CreateListData {
   name: string;
   icon?: string;
+  type?: string;
   visibility: string;
   groupId?: string;
 }
@@ -81,6 +84,7 @@ export interface UpdateFieldData {
 export interface CreateViewData {
   name: string;
   viewType: string;
+  sortMode?: string;
   config?: Record<string, unknown>;
   filter?: Record<string, unknown>;
   sortBy?: Array<{ fieldId: string; direction: string }>;
@@ -89,6 +93,7 @@ export interface CreateViewData {
 
 export interface UpdateViewData {
   name?: string;
+  sortMode?: string;
   config?: Record<string, unknown>;
   filter?: Record<string, unknown> | null;
   sortBy?: Array<{ fieldId: string; direction: string }> | null;
@@ -163,7 +168,11 @@ export class ListsService {
 
     return this.prisma.list.findMany({
       where,
-      include: { fields: { orderBy: { sortOrder: 'asc' } }, views: true },
+      include: {
+        fields: { orderBy: { sortOrder: 'asc' } },
+        views: true,
+        _count: { select: { items: true } },
+      },
       orderBy: { sortOrder: 'asc' },
     }) as unknown as ListRow[];
   }
@@ -186,6 +195,7 @@ export class ListsService {
         creatorId,
         name: data.name,
         icon: data.icon ?? null,
+        type: data.type ?? 'custom',
         visibility: data.visibility,
         groupId: data.groupId ?? null,
         systemKey: null,
@@ -216,6 +226,42 @@ export class ListsService {
   async remove(id: string, hiveId: string): Promise<boolean> {
     const result = await this.prisma.list.deleteMany({ where: { id, hiveId } });
     return result.count > 0;
+  }
+
+  /**
+   * Returns the inbox list for a particular person in a hive, creating it
+   * on first access if it does not yet exist.
+   *
+   * The inbox is a private list with type='inbox'. It is the landing zone for
+   * Quick-Add without an explicit list selection. Each person has exactly one
+   * inbox per hive, enforced by the partial unique index
+   * lists_hive_id_creator_id_inbox_key.
+   *
+   * Name is stored as plaintext "Inbox" (not encrypted) — it is a fixed system
+   * name, not user-defined PII. The client may display a localised label instead.
+   */
+  @DecryptFields({ fields: LIST_ENC_FIELDS, hiveIdArg: 0 })
+  // eslint-disable-next-line @typescript-eslint/require-await -- await handled by @DecryptFields wrapper
+  async getOrCreateInbox(hiveId: string, personId: string): Promise<ListRow> {
+    return this.prisma.list.upsert({
+      where: {
+        // Use the raw unique index fields via Prisma's compound unique selector.
+        // The partial index (WHERE type='inbox') is enforced at the DB level;
+        // Prisma uses the regular compound unique to locate the record.
+        hiveId_creatorId_systemKey: { hiveId, creatorId: personId, systemKey: 'inbox' },
+      },
+      create: {
+        hiveId,
+        creatorId: personId,
+        name: 'Inbox',
+        type: 'inbox',
+        systemKey: 'inbox',
+        visibility: 'private',
+        sortOrder: -1, // Always first in the nav
+      },
+      update: {},
+      include: { fields: { orderBy: { sortOrder: 'asc' } }, views: true },
+    }) as unknown as ListRow;
   }
 
   // ── Field CRUD ────────────────────────────────────────────────────────────
@@ -301,6 +347,7 @@ export class ListsService {
           listId,
           name: data.name,
           viewType: data.viewType,
+          sortMode: data.sortMode ?? 'manual',
           config: (data.config ?? {}) as Prisma.InputJsonValue,
           filter: data.filter ? (data.filter as Prisma.InputJsonValue) : Prisma.JsonNull,
           sortBy: data.sortBy ? (data.sortBy as Prisma.InputJsonValue) : Prisma.JsonNull,
@@ -319,6 +366,7 @@ export class ListsService {
   ): Promise<ListViewRow> {
     const patch: Prisma.ListViewUncheckedUpdateInput = {};
     if (data.name !== undefined) patch.name = this._encryptName(data.name, hiveId);
+    if (data.sortMode !== undefined) patch.sortMode = data.sortMode;
     if (data.config !== undefined) patch.config = data.config as Prisma.InputJsonValue;
     if ('filter' in data)
       patch.filter = data.filter ? (data.filter as Prisma.InputJsonValue) : Prisma.JsonNull;
@@ -496,6 +544,76 @@ export class ListsService {
         views: t.views.map((v) => ({ ...v, name: this._decryptName(v.name, hiveId) })),
       };
     });
+  }
+
+  /**
+   * Create a new list by copying the schema (fields + views) from a template.
+   *
+   * The template is identified by templateId. Both global (hiveId=null) and
+   * hive-specific templates are supported. The resulting list is a fully
+   * independent copy — changes to the template do not affect it, and vice versa.
+   *
+   * Field names from global templates are stored as plaintext in the template
+   * but are encrypted using the hive key when copied into the new list.
+   * This preserves encryption invariants for the new list's data.
+   *
+   * Returns the new list with fields and views.
+   */
+  @DecryptFields({ fields: LIST_ENC_FIELDS, hiveIdArg: 3 })
+  async createFromTemplate(
+    templateId: string,
+    data: CreateListData,
+    creatorId: string,
+    hiveId: string
+  ): Promise<ListRow> {
+    const template = await this.prisma.list.findFirst({
+      where: {
+        id: templateId,
+        isTemplate: true,
+        OR: [{ hiveId: null }, { hiveId }],
+      },
+      include: { fields: { orderBy: { sortOrder: 'asc' } }, views: true },
+    });
+
+    if (!template) throw new Error('Template not found');
+
+    // Encrypt the new list name with the hive key
+    const encryptedName = this._encryptName(data.name, hiveId);
+
+    return this.prisma.list.create({
+      data: {
+        hiveId,
+        creatorId,
+        name: encryptedName,
+        icon: data.icon ?? template.icon ?? null,
+        type: 'custom',
+        visibility: data.visibility,
+        groupId: data.groupId ?? null,
+        systemKey: null,
+        fields: {
+          create: template.fields.map((f) => ({
+            name: this._encryptName(f.name, hiveId),
+            fieldType: f.fieldType,
+            config: f.config as Prisma.InputJsonValue,
+            isRequired: f.isRequired,
+            isTitle: f.isTitle,
+            sortOrder: f.sortOrder,
+          })),
+        },
+        views: {
+          create: template.views.map((v) => ({
+            name: this._encryptName(v.name, hiveId),
+            viewType: v.viewType,
+            sortMode: 'sortMode' in v && typeof v.sortMode === 'string' ? v.sortMode : 'manual',
+            config: v.config as Prisma.InputJsonValue,
+            filter: v.filter ?? Prisma.JsonNull,
+            sortBy: v.sortBy ?? Prisma.JsonNull,
+            isDefault: v.isDefault,
+          })),
+        },
+      },
+      include: { fields: { orderBy: { sortOrder: 'asc' } }, views: true },
+    }) as unknown as ListRow;
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────

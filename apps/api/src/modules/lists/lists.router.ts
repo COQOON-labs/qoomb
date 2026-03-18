@@ -91,7 +91,7 @@ export const listsRouter = (listsService: ListsService) =>
       await requireResourceAccess(
         ctx,
         ctx.tx,
-        { type: 'list', ...list, groupId: list.groupId ?? undefined },
+        { ...list, type: 'list', groupId: list.groupId ?? undefined },
         'view',
         LIST_PERMISSIONS
       );
@@ -100,6 +100,7 @@ export const listsRouter = (listsService: ListsService) =>
 
     /**
      * Create a new list.
+     * If templateId is provided, copies fields + views from the template.
      * Requires: lists:create
      */
     create: hiveProcedure.input(createListSchema).mutation(async ({ ctx, input }) => {
@@ -110,17 +111,23 @@ export const listsRouter = (listsService: ListsService) =>
         throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No person record found' });
       }
 
+      const listData = {
+        name: sanitizeHtml(input.name),
+        icon: input.icon,
+        visibility: input.visibility,
+        groupId: input.groupId,
+      };
+
       try {
-        return await listsService.create(
-          {
-            name: sanitizeHtml(input.name),
-            icon: input.icon,
-            visibility: input.visibility,
-            groupId: input.groupId,
-          },
-          hiveId,
-          personId
-        );
+        if (input.templateId) {
+          return await listsService.createFromTemplate(
+            input.templateId,
+            listData,
+            personId,
+            hiveId
+          );
+        }
+        return await listsService.create(listData, hiveId, personId);
       } catch (e) {
         throw mapPrismaError(e, 'Failed to create list');
       }
@@ -140,7 +147,7 @@ export const listsRouter = (listsService: ListsService) =>
         await requireResourceAccess(
           ctx,
           ctx.tx,
-          { type: 'list', ...list, groupId: list.groupId ?? undefined },
+          { ...list, type: 'list', groupId: list.groupId ?? undefined },
           'edit',
           LIST_PERMISSIONS
         );
@@ -176,7 +183,7 @@ export const listsRouter = (listsService: ListsService) =>
       await requireResourceAccess(
         ctx,
         ctx.tx,
-        { type: 'list', ...list, groupId: list.groupId ?? undefined },
+        { ...list, type: 'list', groupId: list.groupId ?? undefined },
         'delete',
         LIST_PERMISSIONS
       );
@@ -199,7 +206,7 @@ export const listsRouter = (listsService: ListsService) =>
       await requireResourceAccess(
         ctx,
         ctx.tx,
-        { type: 'list', ...list, groupId: list.groupId ?? undefined },
+        { ...list, type: 'list', groupId: list.groupId ?? undefined },
         'edit',
         LIST_PERMISSIONS
       );
@@ -230,7 +237,7 @@ export const listsRouter = (listsService: ListsService) =>
         await requireResourceAccess(
           ctx,
           ctx.tx,
-          { type: 'list', ...list, groupId: list.groupId ?? undefined },
+          { ...list, type: 'list', groupId: list.groupId ?? undefined },
           'edit',
           LIST_PERMISSIONS
         );
@@ -260,7 +267,7 @@ export const listsRouter = (listsService: ListsService) =>
         await requireResourceAccess(
           ctx,
           ctx.tx,
-          { type: 'list', ...list, groupId: list.groupId ?? undefined },
+          { ...list, type: 'list', groupId: list.groupId ?? undefined },
           'edit',
           LIST_PERMISSIONS
         );
@@ -284,7 +291,7 @@ export const listsRouter = (listsService: ListsService) =>
         await requireResourceAccess(
           ctx,
           ctx.tx,
-          { type: 'list', ...list, groupId: list.groupId ?? undefined },
+          { ...list, type: 'list', groupId: list.groupId ?? undefined },
           'view',
           LIST_PERMISSIONS
         );
@@ -305,7 +312,7 @@ export const listsRouter = (listsService: ListsService) =>
       await requireResourceAccess(
         ctx,
         ctx.tx,
-        { type: 'list', ...list, groupId: list.groupId ?? undefined },
+        { ...list, type: 'list', groupId: list.groupId ?? undefined },
         'edit',
         LIST_PERMISSIONS
       );
@@ -314,6 +321,7 @@ export const listsRouter = (listsService: ListsService) =>
         return await listsService.createView(input.listId, ctx.user.hiveId, {
           name: sanitizeHtml(input.name),
           viewType: input.viewType,
+          sortMode: input.sortMode,
           config: input.config as Record<string, unknown>,
           filter: input.filter as Record<string, unknown> | undefined,
           sortBy: input.sortBy as Array<{ fieldId: string; direction: string }> | undefined,
@@ -337,7 +345,7 @@ export const listsRouter = (listsService: ListsService) =>
         await requireResourceAccess(
           ctx,
           ctx.tx,
-          { type: 'list', ...list, groupId: list.groupId ?? undefined },
+          { ...list, type: 'list', groupId: list.groupId ?? undefined },
           'edit',
           LIST_PERMISSIONS
         );
@@ -345,6 +353,7 @@ export const listsRouter = (listsService: ListsService) =>
         try {
           return await listsService.updateView(input.id, input.listId, ctx.user.hiveId, {
             name: input.data.name ? sanitizeHtml(input.data.name) : undefined,
+            sortMode: input.data.sortMode,
             config: input.data.config as Record<string, unknown> | undefined,
             filter:
               'filter' in input.data
@@ -377,7 +386,7 @@ export const listsRouter = (listsService: ListsService) =>
         await requireResourceAccess(
           ctx,
           ctx.tx,
-          { type: 'list', ...list, groupId: list.groupId ?? undefined },
+          { ...list, type: 'list', groupId: list.groupId ?? undefined },
           'edit',
           LIST_PERMISSIONS
         );
@@ -400,7 +409,7 @@ export const listsRouter = (listsService: ListsService) =>
       await requireResourceAccess(
         ctx,
         ctx.tx,
-        { type: 'list', ...list, groupId: list.groupId ?? undefined },
+        { ...list, type: 'list', groupId: list.groupId ?? undefined },
         'view',
         LIST_PERMISSIONS
       );
@@ -419,7 +428,7 @@ export const listsRouter = (listsService: ListsService) =>
       await requireResourceAccess(
         ctx,
         ctx.tx,
-        { type: 'list', ...list, groupId: list.groupId ?? undefined },
+        { ...list, type: 'list', groupId: list.groupId ?? undefined },
         'edit',
         LIST_PERMISSIONS
       );
@@ -463,8 +472,8 @@ export const listsRouter = (listsService: ListsService) =>
           ctx,
           ctx.tx,
           {
-            type: 'list',
             ...list,
+            type: 'list',
             groupId: list.groupId ?? undefined,
             // For OWN check: treat item creator as the relevant resource owner
             creatorId: item.creatorId,
@@ -500,7 +509,7 @@ export const listsRouter = (listsService: ListsService) =>
       await requireResourceAccess(
         ctx,
         ctx.tx,
-        { type: 'list', ...list, groupId: list.groupId ?? undefined },
+        { ...list, type: 'list', groupId: list.groupId ?? undefined },
         'edit',
         LIST_PERMISSIONS
       );
@@ -529,8 +538,8 @@ export const listsRouter = (listsService: ListsService) =>
         ctx,
         ctx.tx,
         {
-          type: 'list',
           ...list,
+          type: 'list',
           groupId: list.groupId ?? undefined,
           creatorId: itemRow.creatorId,
         },
@@ -552,6 +561,32 @@ export const listsRouter = (listsService: ListsService) =>
     listTemplates: hiveProcedure.query(async ({ ctx }) => {
       requirePermission(ctx, HivePermission.LISTS_VIEW);
       return listsService.listTemplates(ctx.user.hiveId);
+    }),
+
+    // ── Inbox ──────────────────────────────────────────────────────────────
+
+    /**
+     * Get (or create) the inbox list for the current user.
+     *
+     * The inbox is a private 'inbox'-type system list. It serves as the landing
+     * zone for Quick-Add without an explicit list selection. Created lazily on
+     * first access — no explicit setup step needed.
+     *
+     * Requires: lists:view
+     */
+    getInbox: hiveProcedure.query(async ({ ctx }) => {
+      requirePermission(ctx, HivePermission.LISTS_VIEW);
+
+      const { personId, hiveId } = ctx.user;
+      if (!personId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No person record found' });
+      }
+
+      try {
+        return await listsService.getOrCreateInbox(hiveId, personId);
+      } catch (e) {
+        throw mapPrismaError(e, 'Failed to get inbox');
+      }
     }),
   });
 

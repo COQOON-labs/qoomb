@@ -9,3 +9,20 @@
  */
 
 import '@testing-library/jest-dom/vitest';
+
+// jsdom does not implement HTMLDialogElement.showModal() / .close()
+// Polyfill them so that <ConfirmDialog> works in tests.
+if (typeof HTMLDialogElement !== 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/unbound-method
+  if (!HTMLDialogElement.prototype.showModal) {
+    HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    };
+  }
+  // eslint-disable-next-line @typescript-eslint/unbound-method
+  if (!HTMLDialogElement.prototype.close) {
+    HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+      this.removeAttribute('open');
+    };
+  }
+}

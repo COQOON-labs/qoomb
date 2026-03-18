@@ -1,11 +1,20 @@
-import { Button, Card, Input } from '@qoomb/ui';
+import { Button, Card, ConfirmDialog, Input } from '@qoomb/ui';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { ArrowLeftIcon, PencilIcon, PlusIcon, TrashIcon } from '../components/icons';
+import {
+  ArrowLeftIcon,
+  EllipsisVerticalIcon,
+  PencilIcon,
+  PlusIcon,
+  SettingsIcon,
+  TrashIcon,
+  XIcon,
+} from '../components/icons';
 import { useI18nContext } from '../i18n/i18n-react';
 import { AppShell } from '../layouts/AppShell';
 import { useAuth } from '../lib/auth/useAuth';
+import { addToast } from '../lib/toast';
 import { trpc } from '../lib/trpc/client';
 
 // ── Field type options ────────────────────────────────────────────────────────
@@ -63,6 +72,9 @@ export function ListDetailPage() {
       setNewFieldType('text');
       setShowAddField(false);
     },
+    onError: () => {
+      addToast(LL.lists.createError(), 'error');
+    },
   });
 
   const handleAddFieldSubmit = useCallback(
@@ -82,6 +94,9 @@ export function ListDetailPage() {
     onSuccess: () => {
       void utils.lists.listItems.invalidate({ listId: id! });
       setNewItemValues({});
+    },
+    onError: () => {
+      addToast(LL.lists.createError(), 'error');
     },
   });
 
@@ -109,19 +124,26 @@ export function ListDetailPage() {
   }, [id, list, newItemValues, fieldMap, createItem]);
 
   // ── Delete item ──────────────────────────────────────────────────────────
+  const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(null);
+
   const deleteItem = trpc.lists.deleteItem.useMutation({
     onSuccess: () => {
       void utils.lists.listItems.invalidate({ listId: id! });
     },
+    onError: () => {
+      addToast(LL.lists.deleteError(), 'error');
+    },
   });
 
-  const handleDeleteItem = useCallback(
-    (itemId: string) => {
-      if (!window.confirm(LL.lists.deleteItemConfirm())) return;
-      deleteItem.mutate(itemId);
-    },
-    [LL, deleteItem]
-  );
+  const handleDeleteItem = useCallback((itemId: string) => {
+    setConfirmDeleteItemId(itemId);
+  }, []);
+
+  const handleConfirmDeleteItem = useCallback(() => {
+    if (!confirmDeleteItemId) return;
+    deleteItem.mutate(confirmDeleteItemId);
+    setConfirmDeleteItemId(null);
+  }, [confirmDeleteItemId, deleteItem]);
 
   // ── Rename list (click-to-edit) ──────────────────────────────────────────
   const [editingName, setEditingName] = useState(false);
@@ -133,6 +155,10 @@ export function ListDetailPage() {
       void utils.lists.get.invalidate(id);
       void utils.lists.list.invalidate();
       setEditingName(false);
+      addToast(LL.lists.updateSuccess());
+    },
+    onError: () => {
+      addToast(LL.lists.updateError(), 'error');
     },
   });
 
@@ -198,19 +224,98 @@ export function ListDetailPage() {
   }, [id, list, updateList]);
 
   // ── Remove field ─────────────────────────────────────────────────────────
+  const [confirmDeleteFieldId, setConfirmDeleteFieldId] = useState<string | null>(null);
+
   const deleteField = trpc.lists.deleteField.useMutation({
     onSuccess: () => {
       void utils.lists.get.invalidate(id);
       void utils.lists.listItems.invalidate({ listId: id! });
+      setColumnMenuFieldId(null);
+    },
+    onError: () => {
+      addToast(LL.lists.deleteError(), 'error');
     },
   });
 
-  const handleDeleteField = useCallback(
-    (fieldId: string) => {
-      if (!id || !window.confirm(LL.lists.removeFieldConfirm())) return;
-      deleteField.mutate({ id: fieldId, listId: id });
+  const handleDeleteField = useCallback((fieldId: string) => {
+    setConfirmDeleteFieldId(fieldId);
+  }, []);
+
+  const handleConfirmDeleteField = useCallback(() => {
+    if (!confirmDeleteFieldId || !id) return;
+    deleteField.mutate({ id: confirmDeleteFieldId, listId: id });
+    setConfirmDeleteFieldId(null);
+  }, [confirmDeleteFieldId, id, deleteField]);
+
+  // ── Column header menu ───────────────────────────────────────────────────
+  const [columnMenuFieldId, setColumnMenuFieldId] = useState<string | null>(null);
+
+  // ── Field editing (rename + select options) ─────────────────────────────
+  const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+  const [fieldDraftName, setFieldDraftName] = useState('');
+  const [fieldDraftOptions, setFieldDraftOptions] = useState<string[]>([]);
+  const [newOption, setNewOption] = useState('');
+
+  const updateField = trpc.lists.updateField.useMutation({
+    onSuccess: () => {
+      void utils.lists.get.invalidate(id);
+      setEditingFieldId(null);
+      addToast(LL.lists.fieldSaved());
     },
-    [id, LL, deleteField]
+    onError: () => {
+      addToast(LL.lists.updateError(), 'error');
+    },
+  });
+
+  const handleStartEditField = useCallback(
+    (fieldId: string) => {
+      const field = fieldMap.get(fieldId);
+      if (!field || !id) return;
+      setFieldDraftName(field.name);
+      const config = field.config as Record<string, unknown> | null;
+      setFieldDraftOptions(Array.isArray(config?.options) ? (config.options as string[]) : []);
+      setEditingFieldId(fieldId);
+      setColumnMenuFieldId(null);
+    },
+    [fieldMap, id]
+  );
+
+  const handleSaveField = useCallback(() => {
+    if (!editingFieldId || !id) return;
+    const field = fieldMap.get(editingFieldId);
+    if (!field) return;
+    const trimmed = fieldDraftName.trim();
+    if (!trimmed) return;
+    updateField.mutate({
+      id: editingFieldId,
+      listId: id,
+      data: {
+        name: trimmed,
+        ...(field.fieldType === 'select' ? { config: { options: fieldDraftOptions } } : {}),
+      },
+    });
+  }, [editingFieldId, id, fieldMap, fieldDraftName, fieldDraftOptions, updateField]);
+
+  const handleAddOption = useCallback(() => {
+    const trimmed = newOption.trim();
+    if (!trimmed || fieldDraftOptions.includes(trimmed)) return;
+    setFieldDraftOptions((prev) => [...prev, trimmed]);
+    setNewOption('');
+  }, [newOption, fieldDraftOptions]);
+
+  const handleRemoveOption = useCallback((opt: string) => {
+    setFieldDraftOptions((prev) => prev.filter((o) => o !== opt));
+  }, []);
+
+  // ── Settings panel ──────────────────────────────────────────────────────
+  const [showSettings, setShowSettings] = useState(false);
+
+  const handleVisibilityChange = useCallback(
+    (v: string) => {
+      if (!id) return;
+      updateList.mutate({ id, data: { visibility: v as 'hive' | 'admins' | 'group' | 'private' } });
+    },
+    [id, updateList]
   );
 
   // ── Inline cell editing ──────────────────────────────────────────────────
@@ -222,6 +327,9 @@ export function ListDetailPage() {
     onSuccess: () => {
       void utils.lists.listItems.invalidate({ listId: id! });
       setEditingCell(null);
+    },
+    onError: () => {
+      addToast(LL.lists.updateError(), 'error');
     },
   });
 
@@ -412,19 +520,44 @@ export function ListDetailPage() {
                         {list.fields.map((field) => (
                           <th
                             key={field.id}
-                            className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap group/th"
+                            className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap group/th relative"
                           >
                             <div className="flex items-center gap-1">
                               <span>{field.name}</span>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteField(field.id)}
-                                className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive transition-all"
-                                aria-label={LL.lists.removeField()}
+                                onClick={() =>
+                                  setColumnMenuFieldId((prev) =>
+                                    prev === field.id ? null : field.id
+                                  )
+                                }
+                                className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground transition-all"
+                                aria-label={LL.lists.fieldConfig()}
                               >
-                                <TrashIcon className="w-3 h-3" />
+                                <EllipsisVerticalIcon className="w-3.5 h-3.5" />
                               </button>
                             </div>
+                            {columnMenuFieldId === field.id && (
+                              <div className="absolute top-full left-0 mt-1 z-20 bg-background border border-border rounded-lg shadow-lg min-w-[160px]">
+                                <button
+                                  type="button"
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                                  onClick={() => handleStartEditField(field.id)}
+                                >
+                                  {LL.lists.renameField()}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                                  onClick={() => {
+                                    setColumnMenuFieldId(null);
+                                    handleDeleteField(field.id);
+                                  }}
+                                >
+                                  {LL.lists.removeField()}
+                                </button>
+                              </div>
+                            )}
                           </th>
                         ))}
                         <th className="w-10">
@@ -453,21 +586,47 @@ export function ListDetailPage() {
                                 }}
                               >
                                 {isEditing ? (
-                                  <input
-                                    ref={cellInputRef}
-                                    type={
-                                      field.fieldType === 'number'
-                                        ? 'number'
-                                        : field.fieldType === 'date'
-                                          ? 'date'
-                                          : 'text'
-                                    }
-                                    value={cellDraft}
-                                    onChange={(e) => setCellDraft(e.target.value)}
-                                    onBlur={handleCellSave}
-                                    onKeyDown={handleCellKeyDown}
-                                    className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
-                                  />
+                                  field.fieldType === 'select' ? (
+                                    <select
+                                      value={cellDraft}
+                                      onChange={(e) => {
+                                        setCellDraft(e.target.value);
+                                        // Auto-save on select
+                                        const val = e.target.value || null;
+                                        updateItem.mutate({
+                                          id: item.id,
+                                          data: { values: { [field.id]: val } },
+                                        });
+                                      }}
+                                      className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
+                                    >
+                                      <option value="">{LL.lists.selectPlaceholder()}</option>
+                                      {(
+                                        (field.config as Record<string, unknown> | null)
+                                          ?.options as string[] | undefined
+                                      )?.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                          {opt}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <input
+                                      ref={cellInputRef}
+                                      type={
+                                        field.fieldType === 'number'
+                                          ? 'number'
+                                          : field.fieldType === 'date'
+                                            ? 'date'
+                                            : 'text'
+                                      }
+                                      value={cellDraft}
+                                      onChange={(e) => setCellDraft(e.target.value)}
+                                      onBlur={handleCellSave}
+                                      onKeyDown={handleCellKeyDown}
+                                      className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
+                                    />
+                                  )
                                 ) : (
                                   cellValue || <span className="text-muted-foreground/30">—</span>
                                 )}
@@ -504,6 +663,28 @@ export function ListDetailPage() {
                                 aria-label={field.name}
                                 className="h-4 w-4 rounded border-border"
                               />
+                            ) : field.fieldType === 'select' ? (
+                              <select
+                                value={newItemValues[field.id] ?? ''}
+                                onChange={(e) =>
+                                  setNewItemValues((prev) => ({
+                                    ...prev,
+                                    [field.id]: e.target.value,
+                                  }))
+                                }
+                                className="w-full bg-transparent text-sm text-foreground outline-none"
+                              >
+                                <option value="">{LL.lists.selectPlaceholder()}</option>
+                                {(
+                                  (field.config as Record<string, unknown> | null)?.options as
+                                    | string[]
+                                    | undefined
+                                )?.map((opt) => (
+                                  <option key={opt} value={opt}>
+                                    {opt}
+                                  </option>
+                                ))}
+                              </select>
                             ) : (
                               <input
                                 type={
@@ -621,6 +802,139 @@ export function ListDetailPage() {
             )}
           </>
         )}
+
+        {/* ── Settings panel ─────────────────────────────────────────── */}
+        {list && (
+          <div className="mt-6">
+            <button
+              type="button"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setShowSettings((p) => !p)}
+            >
+              <SettingsIcon className="w-4 h-4" />
+              {LL.lists.settings()}
+            </button>
+            {showSettings && (
+              <Card padding="md" className="mt-2">
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  {LL.lists.visibilityLabel()}
+                </label>
+                <select
+                  value={list.visibility}
+                  onChange={(e) => handleVisibilityChange(e.target.value)}
+                  className="w-full max-w-xs rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                >
+                  {(['hive', 'admins', 'group', 'private'] as const).map((v) => (
+                    <option key={v} value={v}>
+                      {LL.lists.visibility[v]()}
+                    </option>
+                  ))}
+                </select>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* ── Field editing panel ────────────────────────────────────── */}
+        {editingFieldId &&
+          (() => {
+            const field = fieldMap.get(editingFieldId);
+            if (!field) return null;
+            return (
+              <Card padding="md" className="mt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold">{LL.lists.fieldConfig()}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setEditingFieldId(null)}
+                    className="p-1 rounded text-muted-foreground hover:text-foreground"
+                  >
+                    <XIcon className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Input
+                    label={LL.lists.fieldNameLabel()}
+                    value={fieldDraftName}
+                    onChange={(e) => setFieldDraftName(e.target.value)}
+                  />
+                  {field.fieldType === 'select' && (
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">
+                        {LL.lists.selectOptions()}
+                      </label>
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {fieldDraftOptions.map((opt) => (
+                          <span
+                            key={opt}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-xs text-foreground"
+                          >
+                            {opt}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveOption(opt)}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <XIcon className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder={LL.lists.optionPlaceholder()}
+                          value={newOption}
+                          onChange={(e) => setNewOption(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddOption();
+                            }
+                          }}
+                        />
+                        <Button variant="ghost" size="sm" onClick={handleAddOption}>
+                          {LL.lists.addOption()}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleSaveField}
+                      disabled={!fieldDraftName.trim() || updateField.isPending}
+                    >
+                      {LL.lists.saveField()}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setEditingFieldId(null)}>
+                      {LL.common.cancel()}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
+
+        {/* ── Confirm dialogs ────────────────────────────────────────── */}
+        <ConfirmDialog
+          open={!!confirmDeleteFieldId}
+          title={LL.lists.removeField()}
+          description={LL.lists.removeFieldConfirm()}
+          confirmLabel={LL.common.remove()}
+          onConfirm={handleConfirmDeleteField}
+          onCancel={() => setConfirmDeleteFieldId(null)}
+          variant="destructive"
+        />
+        <ConfirmDialog
+          open={!!confirmDeleteItemId}
+          title={LL.lists.deleteItem()}
+          description={LL.lists.deleteItemConfirm()}
+          confirmLabel={LL.common.remove()}
+          onConfirm={handleConfirmDeleteItem}
+          onCancel={() => setConfirmDeleteItemId(null)}
+          variant="destructive"
+        />
       </div>
     </AppShell>
   );

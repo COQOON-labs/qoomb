@@ -28,10 +28,11 @@ const mockList = {
   icon: '🛒',
   systemKey: null as string | null,
   isArchived: false,
+  visibility: 'hive' as string,
   fields: [
-    { id: 'field-001', name: 'Item', fieldType: 'text', sortOrder: 0 },
-    { id: 'field-002', name: 'Quantity', fieldType: 'number', sortOrder: 1 },
-    { id: 'field-003', name: 'Done', fieldType: 'checkbox', sortOrder: 2 },
+    { id: 'field-001', name: 'Item', fieldType: 'text', sortOrder: 0, config: null },
+    { id: 'field-002', name: 'Quantity', fieldType: 'number', sortOrder: 1, config: null },
+    { id: 'field-003', name: 'Done', fieldType: 'checkbox', sortOrder: 2, config: null },
   ],
   views: [] as { id: string; name: string }[],
 };
@@ -80,6 +81,10 @@ vi.mock('../i18n/i18n-react', () => ({
 
 vi.mock('../lib/auth/useAuth', () => ({
   useAuth: () => ({ user: mockUser, login: vi.fn(), logout: vi.fn() }),
+}));
+
+vi.mock('../lib/toast', () => ({
+  addToast: vi.fn(),
 }));
 
 // Mock useParams to return list-001
@@ -157,6 +162,15 @@ vi.mock('../lib/trpc/client', () => ({
           isPending: false,
         }),
       },
+      updateField: {
+        useMutation: (opts?: { onSuccess?: () => void }) => ({
+          mutate: (...args: unknown[]) => {
+            mutateFn(...args);
+            opts?.onSuccess?.();
+          },
+          isPending: false,
+        }),
+      },
     },
   },
 }));
@@ -222,11 +236,11 @@ describe('ListDetailPage', () => {
     expect(deleteButtons).toHaveLength(2);
   });
 
-  it('shows remove-field buttons in column headers', () => {
+  it('shows column menu buttons in column headers', () => {
     renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
-    const removeButtons = screen.getAllByRole('button', { name: /lists\.removeField/ });
+    const menuButtons = screen.getAllByRole('button', { name: /lists\.fieldConfig/ });
     // One per field
-    expect(removeButtons).toHaveLength(3);
+    expect(menuButtons).toHaveLength(3);
   });
 
   it('shows add-field button', () => {
@@ -440,50 +454,51 @@ describe('ListDetailPage', () => {
   // ── Delete item ─────────────────────────────────────────────────────────
 
   it('calls deleteItem mutation when delete button is clicked with confirmation', () => {
-    // Mock window.confirm
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
 
     const deleteButtons = screen.getAllByRole('button', { name: /lists\.deleteItem/ });
     fireEvent.click(deleteButtons[0]);
 
-    expect(window.confirm).toHaveBeenCalled();
-    expect(mutateFn).toHaveBeenCalledWith('item-001');
+    // ConfirmDialog should appear with the confirm button
+    const confirmBtn = screen.getByRole('button', { name: /common\.remove/ });
+    fireEvent.click(confirmBtn);
 
-    vi.restoreAllMocks();
+    expect(mutateFn).toHaveBeenCalledWith('item-001');
   });
 
   it('does not delete item when confirmation is cancelled', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
 
     const deleteButtons = screen.getAllByRole('button', { name: /lists\.deleteItem/ });
     fireEvent.click(deleteButtons[0]);
 
-    expect(window.confirm).toHaveBeenCalled();
-    expect(mutateFn).not.toHaveBeenCalled();
+    // Cancel the dialog
+    const cancelBtn = screen.getByRole('button', { name: /Cancel/ });
+    fireEvent.click(cancelBtn);
 
-    vi.restoreAllMocks();
+    expect(mutateFn).not.toHaveBeenCalled();
   });
 
   // ── Remove field ────────────────────────────────────────────────────────
 
-  it('calls deleteField mutation when remove-field button is clicked with confirmation', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
+  it('calls deleteField mutation when remove-field is clicked via column menu with confirmation', () => {
     renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
 
-    const removeButtons = screen.getAllByRole('button', { name: /lists\.removeField/ });
-    fireEvent.click(removeButtons[0]);
+    // Open column menu for first field
+    const menuButtons = screen.getAllByRole('button', { name: /lists\.fieldConfig/ });
+    fireEvent.click(menuButtons[0]);
 
-    expect(window.confirm).toHaveBeenCalled();
+    // Click "Remove field" in the dropdown menu
+    const removeBtn = screen.getByText(/lists\.removeField/);
+    fireEvent.click(removeBtn);
+
+    // ConfirmDialog should appear — confirm it
+    const confirmBtn = screen.getByRole('button', { name: /common\.remove/ });
+    fireEvent.click(confirmBtn);
+
     expect(mutateFn).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'field-001', listId: 'list-001' })
     );
-
-    vi.restoreAllMocks();
   });
 
   // ── No-fields state ─────────────────────────────────────────────────────

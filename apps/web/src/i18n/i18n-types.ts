@@ -929,6 +929,92 @@ type RootTranslation = {
      * H​i​d​e​ ​a​r​c​h​i​v​e​d
      */
     hideArchived: string;
+    /**
+     * S​e​t​t​i​n​g​s
+     */
+    settings: string;
+    /**
+     * V​i​s​i​b​i​l​i​t​y
+     */
+    visibilityLabel: string;
+    visibility: {
+      /**
+       * H​i​v​e​ ​(​a​l​l​ ​m​e​m​b​e​r​s​)
+       */
+      hive: string;
+      /**
+       * A​d​m​i​n​s​ ​o​n​l​y
+       */
+      admins: string;
+      /**
+       * G​r​o​u​p
+       */
+      group: string;
+      /**
+       * P​r​i​v​a​t​e​ ​(​o​n​l​y​ ​m​e​)
+       */
+      private: string;
+    };
+    /**
+     * G​r​o​u​p
+     */
+    groupLabel: string;
+    /**
+     * S​e​l​e​c​t​ ​a​ ​g​r​o​u​p
+     */
+    selectGroup: string;
+    /**
+     * R​e​n​a​m​e​ ​f​i​e​l​d
+     */
+    renameField: string;
+    /**
+     * C​o​n​f​i​g​u​r​e​ ​f​i​e​l​d
+     */
+    fieldConfig: string;
+    /**
+     * S​e​l​e​c​t​ ​o​p​t​i​o​n​s
+     */
+    selectOptions: string;
+    /**
+     * A​d​d​ ​o​p​t​i​o​n
+     */
+    addOption: string;
+    /**
+     * N​e​w​ ​o​p​t​i​o​n​…
+     */
+    optionPlaceholder: string;
+    /**
+     * S​a​v​e​ ​f​i​e​l​d
+     */
+    saveField: string;
+    /**
+     * S​a​v​e​d
+     */
+    updateSuccess: string;
+    /**
+     * E​r​r​o​r​ ​s​a​v​i​n​g
+     */
+    updateError: string;
+    /**
+     * E​r​r​o​r​ ​d​e​l​e​t​i​n​g
+     */
+    deleteError: string;
+    /**
+     * E​r​r​o​r​ ​c​r​e​a​t​i​n​g
+     */
+    createError: string;
+    /**
+     * F​i​e​l​d​ ​s​a​v​e​d
+     */
+    fieldSaved: string;
+    /**
+     * S​e​l​e​c​t​…
+     */
+    selectPlaceholder: string;
+    /**
+     * N​o​ ​o​p​t​i​o​n​s​ ​a​v​a​i​l​a​b​l​e
+     */
+    noOptions: string;
   };
   activity: {
     /**
@@ -1985,6 +2071,92 @@ export type TranslationFunctions = {
      * Hide archived
      */
     hideArchived: () => LocalizedString;
+    /**
+     * Settings
+     */
+    settings: () => LocalizedString;
+    /**
+     * Visibility
+     */
+    visibilityLabel: () => LocalizedString;
+    visibility: {
+      /**
+       * Hive (all members)
+       */
+      hive: () => LocalizedString;
+      /**
+       * Admins only
+       */
+      admins: () => LocalizedString;
+      /**
+       * Group
+       */
+      group: () => LocalizedString;
+      /**
+       * Private (only me)
+       */
+      private: () => LocalizedString;
+    };
+    /**
+     * Group
+     */
+    groupLabel: () => LocalizedString;
+    /**
+     * Select a group
+     */
+    selectGroup: () => LocalizedString;
+    /**
+     * Rename field
+     */
+    renameField: () => LocalizedString;
+    /**
+     * Configure field
+     */
+    fieldConfig: () => LocalizedString;
+    /**
+     * Select options
+     */
+    selectOptions: () => LocalizedString;
+    /**
+     * Add option
+     */
+    addOption: () => LocalizedString;
+    /**
+     * New option…
+     */
+    optionPlaceholder: () => LocalizedString;
+    /**
+     * Save field
+     */
+    saveField: () => LocalizedString;
+    /**
+     * Saved
+     */
+    updateSuccess: () => LocalizedString;
+    /**
+     * Error saving
+     */
+    updateError: () => LocalizedString;
+    /**
+     * Error deleting
+     */
+    deleteError: () => LocalizedString;
+    /**
+     * Error creating
+     */
+    createError: () => LocalizedString;
+    /**
+     * Field saved
+     */
+    fieldSaved: () => LocalizedString;
+    /**
+     * Select…
+     */
+    selectPlaceholder: () => LocalizedString;
+    /**
+     * No options available
+     */
+    noOptions: () => LocalizedString;
   };
   activity: {
     /**

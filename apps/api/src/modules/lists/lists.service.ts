@@ -32,6 +32,7 @@ export type ListRow = {
   updatedAt: Date;
   fields: ListFieldRow[];
   views: ListViewRow[];
+  _count?: { items: number };
 };
 
 /** ListField row with decrypted name */
@@ -167,7 +168,11 @@ export class ListsService {
 
     return this.prisma.list.findMany({
       where,
-      include: { fields: { orderBy: { sortOrder: 'asc' } }, views: true },
+      include: {
+        fields: { orderBy: { sortOrder: 'asc' } },
+        views: true,
+        _count: { select: { items: true } },
+      },
       orderBy: { sortOrder: 'asc' },
     }) as unknown as ListRow[];
   }

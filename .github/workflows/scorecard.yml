@@ -14,6 +14,10 @@ concurrency:
 permissions:
   contents: read
 
+# Explicitly opt into Node.js 24 runtime for all actions.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   scorecard:
     name: OpenSSF Scorecard Analysis

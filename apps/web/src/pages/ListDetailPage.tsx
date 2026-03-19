@@ -22,6 +22,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeftIcon,
   CheckIcon,
+  DragHandleIcon,
   EllipsisVerticalIcon,
   PencilIcon,
   PlusIcon,
@@ -49,21 +50,6 @@ const FIELD_TYPES = [
 ] as const;
 
 type FieldType = (typeof FIELD_TYPES)[number];
-
-// ── Drag handle icon ──────────────────────────────────────────────────────────
-
-function DragHandleIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
-      <circle cx="7" cy="5" r="1.2" />
-      <circle cx="7" cy="10" r="1.2" />
-      <circle cx="7" cy="15" r="1.2" />
-      <circle cx="13" cy="5" r="1.2" />
-      <circle cx="13" cy="10" r="1.2" />
-      <circle cx="13" cy="15" r="1.2" />
-    </svg>
-  );
-}
 
 // ── Sortable table row ────────────────────────────────────────────────────────
 
@@ -306,7 +292,6 @@ export function ListDetailPage() {
   const isLoading = listLoading || itemsLoading;
 
   // Build a map: fieldId → field for quick lookup
-  type ListField = NonNullable<typeof list>['fields'][number];
   const fieldMap = useMemo(() => {
     if (!list) return new Map<string, ListField>();
     return new Map(list.fields.map((f) => [f.id, f]));

@@ -62,6 +62,7 @@ export function NotificationsPage() {
         {/* ── Filter ──────────────────────────────────────────────────── */}
         <div className="flex gap-2 mb-4">
           <button
+            type="button"
             onClick={() => setOnlyUnread(false)}
             className={`text-xs px-3 py-1.5 rounded-full font-semibold transition-colors ${
               !onlyUnread
@@ -72,6 +73,7 @@ export function NotificationsPage() {
             {LL.notifications.allNotifications()}
           </button>
           <button
+            type="button"
             onClick={() => setOnlyUnread(true)}
             className={`text-xs px-3 py-1.5 rounded-full font-semibold transition-colors ${
               onlyUnread

@@ -1015,6 +1015,56 @@ type RootTranslation = {
      * N​o​ ​o​p​t​i​o​n​s​ ​a​v​a​i​l​a​b​l​e
      */
     noOptions: string;
+    /**
+     * V​i​e​w​s
+     */
+    viewsLabel: string;
+    /**
+     * A​d​d​ ​v​i​e​w
+     */
+    addView: string;
+    viewType: {
+      /**
+       * T​a​b​l​e
+       */
+      table: string;
+      /**
+       * C​h​e​c​k​l​i​s​t
+       */
+      checklist: string;
+      /**
+       * K​a​n​b​a​n
+       */
+      kanban: string;
+    };
+    /**
+     * V​i​e​w​ ​n​a​m​e
+     */
+    newViewName: string;
+    /**
+     * N​o​ ​c​h​e​c​k​b​o​x​ ​f​i​e​l​d​ ​a​v​a​i​l​a​b​l​e​.​ ​A​d​d​ ​a​ ​c​h​e​c​k​b​o​x​ ​f​i​e​l​d​ ​f​i​r​s​t​.
+     */
+    noCheckboxField: string;
+    /**
+     * D​o​n​e​ ​f​i​e​l​d
+     */
+    checkboxFieldLabel: string;
+    /**
+     * H​i​d​e​ ​d​o​n​e
+     */
+    hideDone: string;
+    /**
+     * S​h​o​w​ ​d​o​n​e
+     */
+    showDone: string;
+    /**
+     * A​l​l​ ​i​t​e​m​s​ ​d​o​n​e​ ​�​�
+     */
+    noUncheckedItems: string;
+    /**
+     * C​h​e​c​k​ ​a​l​l
+     */
+    checkAll: string;
   };
   activity: {
     /**
@@ -2157,6 +2207,56 @@ export type TranslationFunctions = {
      * No options available
      */
     noOptions: () => LocalizedString;
+    /**
+     * Views
+     */
+    viewsLabel: () => LocalizedString;
+    /**
+     * Add view
+     */
+    addView: () => LocalizedString;
+    viewType: {
+      /**
+       * Table
+       */
+      table: () => LocalizedString;
+      /**
+       * Checklist
+       */
+      checklist: () => LocalizedString;
+      /**
+       * Kanban
+       */
+      kanban: () => LocalizedString;
+    };
+    /**
+     * View name
+     */
+    newViewName: () => LocalizedString;
+    /**
+     * No checkbox field available. Add a checkbox field first.
+     */
+    noCheckboxField: () => LocalizedString;
+    /**
+     * Done field
+     */
+    checkboxFieldLabel: () => LocalizedString;
+    /**
+     * Hide done
+     */
+    hideDone: () => LocalizedString;
+    /**
+     * Show done
+     */
+    showDone: () => LocalizedString;
+    /**
+     * All items done 🎉
+     */
+    noUncheckedItems: () => LocalizedString;
+    /**
+     * Check all
+     */
+    checkAll: () => LocalizedString;
   };
   activity: {
     /**

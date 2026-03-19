@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import {
   ArrowLeftIcon,
+  CheckIcon,
   EllipsisVerticalIcon,
   PencilIcon,
   PlusIcon,
@@ -318,6 +319,37 @@ export function ListDetailPage() {
     [id, updateList]
   );
 
+  // ── Views ────────────────────────────────────────────────────────────────
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const [showAddView, setShowAddView] = useState(false);
+  const [newViewName, setNewViewName] = useState('');
+  const [newViewType, setNewViewType] = useState<'table' | 'checklist'>('table');
+  const [hideDone, setHideDone] = useState(false);
+
+  const createView = trpc.lists.createView.useMutation({
+    onSuccess: (created) => {
+      void utils.lists.get.invalidate(id);
+      setActiveViewId(created.id);
+      setShowAddView(false);
+      setNewViewName('');
+      setNewViewType('table');
+    },
+    onError: () => {
+      addToast(LL.lists.createError(), 'error');
+    },
+  });
+
+  const handleAddView = useCallback(() => {
+    const trimmed = newViewName.trim();
+    if (!trimmed || !id) return;
+    const cbField = list?.fields.find((f) => f.fieldType === 'checkbox');
+    const config =
+      newViewType === 'checklist'
+        ? { checkboxFieldId: cbField?.id ?? '' }
+        : { visibleFieldIds: list?.fields.map((f) => f.id) ?? [] };
+    createView.mutate({ listId: id, name: trimmed, viewType: newViewType, config });
+  }, [newViewName, newViewType, id, list, createView]);
+
   // ── Inline cell editing ──────────────────────────────────────────────────
   const [editingCell, setEditingCell] = useState<{ itemId: string; fieldId: string } | null>(null);
   const [cellDraft, setCellDraft] = useState('');
@@ -399,6 +431,26 @@ export function ListDetailPage() {
         return val.value;
     }
   }
+
+  // ── View-derived computations ─────────────────────────────────────────────
+  const activeView = useMemo(
+    () => list?.views.find((v) => v.id === activeViewId) ?? list?.views[0] ?? null,
+    [list, activeViewId]
+  );
+
+  const checkboxField = useMemo(
+    () => list?.fields.find((f) => f.fieldType === 'checkbox') ?? null,
+    [list]
+  );
+
+  const visibleItems = useMemo(() => {
+    if (hideDone && activeView?.viewType === 'checklist' && checkboxField) {
+      return items.filter(
+        (item) => item.values.find((v) => v.fieldId === checkboxField.id)?.value !== 'true'
+      );
+    }
+    return items;
+  }, [items, hideDone, activeView, checkboxField]);
 
   // ── Not found / loading ──────────────────────────────────────────────────
   if (!id) return null;
@@ -496,6 +548,50 @@ export function ListDetailPage() {
               </div>
             )}
 
+            {/* ── View tab bar ───────────────────────────────────────────── */}
+            {list.views.length > 0 && (
+              <div className="flex items-center gap-1 mb-4 border-b border-border overflow-x-auto">
+                {list.views.map((view) => {
+                  const isActive = view.id === (activeView?.id ?? null);
+                  return (
+                    <button
+                      key={view.id}
+                      type="button"
+                      onClick={() => setActiveViewId(view.id)}
+                      className={`px-3 py-1.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors -mb-px ${
+                        isActive
+                          ? 'border-primary text-foreground'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {view.viewType === 'checklist' ? '✓ ' : '⊞ '}
+                      {view.name}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setShowAddView((p) => !p)}
+                  className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground border-b-2 border-transparent -mb-px transition-colors flex items-center gap-1"
+                >
+                  <PlusIcon className="w-3.5 h-3.5" />
+                  {LL.lists.addView()}
+                </button>
+              </div>
+            )}
+            {list.views.length === 0 && (
+              <div className="flex justify-end mb-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddView((p) => !p)}
+                  className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                >
+                  <PlusIcon className="w-3.5 h-3.5" />
+                  {LL.lists.addView()}
+                </button>
+              </div>
+            )}
+
             {/* ── No fields state ────────────────────────────────────────── */}
             {list.fields.length === 0 && !showAddField ? (
               <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
@@ -512,227 +608,318 @@ export function ListDetailPage() {
               </div>
             ) : (
               <>
-                {/* ── Table ─────────────────────────────────────────────── */}
-                <Card padding="none" className="overflow-x-auto mb-4">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border bg-muted/30">
-                        {list.fields.map((field) => (
-                          <th
-                            key={field.id}
-                            className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap group/th relative"
-                          >
-                            <div className="flex items-center gap-1">
-                              <span>{field.name}</span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setColumnMenuFieldId((prev) =>
-                                    prev === field.id ? null : field.id
-                                  )
-                                }
-                                className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground transition-all"
-                                aria-label={LL.lists.fieldConfig()}
-                              >
-                                <EllipsisVerticalIcon className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                            {columnMenuFieldId === field.id && (
-                              <div className="absolute top-full left-0 mt-1 z-20 bg-background border border-border rounded-lg shadow-lg min-w-[160px]">
+                {/* ── Table view ────────────────────────────────────────── */}
+                {activeView?.viewType !== 'checklist' && (
+                  <Card padding="none" className="overflow-x-auto mb-4">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          {list.fields.map((field) => (
+                            <th
+                              key={field.id}
+                              className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap group/th relative"
+                            >
+                              <div className="flex items-center gap-1">
+                                <span>{field.name}</span>
                                 <button
                                   type="button"
-                                  className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                                  onClick={() => handleStartEditField(field.id)}
+                                  onClick={() =>
+                                    setColumnMenuFieldId((prev) =>
+                                      prev === field.id ? null : field.id
+                                    )
+                                  }
+                                  className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground transition-all"
+                                  aria-label={LL.lists.fieldConfig()}
                                 >
-                                  {LL.lists.renameField()}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                                  onClick={() => {
-                                    setColumnMenuFieldId(null);
-                                    handleDeleteField(field.id);
-                                  }}
-                                >
-                                  {LL.lists.removeField()}
+                                  <EllipsisVerticalIcon className="w-3.5 h-3.5" />
                                 </button>
                               </div>
-                            )}
+                              {columnMenuFieldId === field.id && (
+                                <div className="absolute top-full left-0 mt-1 z-20 bg-background border border-border rounded-lg shadow-lg min-w-[160px]">
+                                  <button
+                                    type="button"
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                                    onClick={() => handleStartEditField(field.id)}
+                                  >
+                                    {LL.lists.renameField()}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                                    onClick={() => {
+                                      setColumnMenuFieldId(null);
+                                      handleDeleteField(field.id);
+                                    }}
+                                  >
+                                    {LL.lists.removeField()}
+                                  </button>
+                                </div>
+                              )}
+                            </th>
+                          ))}
+                          <th className="w-10">
+                            <span className="sr-only">{LL.common.remove()}</span>
                           </th>
-                        ))}
-                        <th className="w-10">
-                          <span className="sr-only">{LL.common.remove()}</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items.map((item) => (
-                        <tr
-                          key={item.id}
-                          className="border-b border-border last:border-0 hover:bg-muted/20 group"
-                        >
-                          {list.fields.map((field) => {
-                            const cellValue = getItemValue(item, field.id, field.fieldType);
-                            const isEditing =
-                              editingCell?.itemId === item.id && editingCell?.fieldId === field.id;
-                            return (
-                              <td
-                                key={field.id}
-                                className="px-3 py-2.5 text-foreground cursor-pointer"
-                                onClick={() => {
-                                  if (!isEditing) {
-                                    handleCellClick(item.id, field.id, field.fieldType, cellValue);
-                                  }
-                                }}
-                              >
-                                {isEditing ? (
-                                  field.fieldType === 'select' ? (
-                                    <select
-                                      value={cellDraft}
-                                      onChange={(e) => {
-                                        setCellDraft(e.target.value);
-                                        // Auto-save on select
-                                        const val = e.target.value || null;
-                                        updateItem.mutate({
-                                          id: item.id,
-                                          data: { values: { [field.id]: val } },
-                                        });
-                                      }}
-                                      className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
-                                    >
-                                      <option value="">{LL.lists.selectPlaceholder()}</option>
-                                      {(
-                                        (field.config as Record<string, unknown> | null)
-                                          ?.options as string[] | undefined
-                                      )?.map((opt) => (
-                                        <option key={opt} value={opt}>
-                                          {opt}
-                                        </option>
-                                      ))}
-                                    </select>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map((item) => (
+                          <tr
+                            key={item.id}
+                            className="border-b border-border last:border-0 hover:bg-muted/20 group"
+                          >
+                            {list.fields.map((field) => {
+                              const cellValue = getItemValue(item, field.id, field.fieldType);
+                              const isEditing =
+                                editingCell?.itemId === item.id &&
+                                editingCell?.fieldId === field.id;
+                              return (
+                                <td
+                                  key={field.id}
+                                  className="px-3 py-2.5 text-foreground cursor-pointer"
+                                  onClick={() => {
+                                    if (!isEditing) {
+                                      handleCellClick(
+                                        item.id,
+                                        field.id,
+                                        field.fieldType,
+                                        cellValue
+                                      );
+                                    }
+                                  }}
+                                >
+                                  {isEditing ? (
+                                    field.fieldType === 'select' ? (
+                                      <select
+                                        value={cellDraft}
+                                        onChange={(e) => {
+                                          setCellDraft(e.target.value);
+                                          // Auto-save on select
+                                          const val = e.target.value || null;
+                                          updateItem.mutate({
+                                            id: item.id,
+                                            data: { values: { [field.id]: val } },
+                                          });
+                                        }}
+                                        className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
+                                      >
+                                        <option value="">{LL.lists.selectPlaceholder()}</option>
+                                        {(
+                                          (field.config as Record<string, unknown> | null)
+                                            ?.options as string[] | undefined
+                                        )?.map((opt) => (
+                                          <option key={opt} value={opt}>
+                                            {opt}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    ) : (
+                                      <input
+                                        ref={cellInputRef}
+                                        type={
+                                          field.fieldType === 'number'
+                                            ? 'number'
+                                            : field.fieldType === 'date'
+                                              ? 'date'
+                                              : 'text'
+                                        }
+                                        value={cellDraft}
+                                        onChange={(e) => setCellDraft(e.target.value)}
+                                        onBlur={handleCellSave}
+                                        onKeyDown={handleCellKeyDown}
+                                        className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
+                                      />
+                                    )
                                   ) : (
-                                    <input
-                                      ref={cellInputRef}
-                                      type={
-                                        field.fieldType === 'number'
-                                          ? 'number'
-                                          : field.fieldType === 'date'
-                                            ? 'date'
-                                            : 'text'
-                                      }
-                                      value={cellDraft}
-                                      onChange={(e) => setCellDraft(e.target.value)}
-                                      onBlur={handleCellSave}
-                                      onKeyDown={handleCellKeyDown}
-                                      className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
-                                    />
-                                  )
-                                ) : (
-                                  cellValue || <span className="text-muted-foreground/30">—</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                          <td className="px-2 py-2.5">
+                                    cellValue || <span className="text-muted-foreground/30">—</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td className="px-2 py-2.5">
+                              <button
+                                type="button"
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                                onClick={() => handleDeleteItem(item.id)}
+                                aria-label={LL.lists.deleteItem()}
+                              >
+                                <TrashIcon className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+
+                        {/* ── Inline add row ──────────────────────────────── */}
+                        <tr className="bg-muted/10">
+                          {list.fields.map((field) => (
+                            <td key={field.id} className="px-3 py-2">
+                              {field.fieldType === 'checkbox' ? (
+                                <input
+                                  type="checkbox"
+                                  checked={newItemValues[field.id] === 'true'}
+                                  onChange={(e) =>
+                                    setNewItemValues((prev) => ({
+                                      ...prev,
+                                      [field.id]: String(e.target.checked),
+                                    }))
+                                  }
+                                  aria-label={field.name}
+                                  className="h-4 w-4 rounded border-border"
+                                />
+                              ) : field.fieldType === 'select' ? (
+                                <select
+                                  value={newItemValues[field.id] ?? ''}
+                                  onChange={(e) =>
+                                    setNewItemValues((prev) => ({
+                                      ...prev,
+                                      [field.id]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full bg-transparent text-sm text-foreground outline-none"
+                                >
+                                  <option value="">{LL.lists.selectPlaceholder()}</option>
+                                  {(
+                                    (field.config as Record<string, unknown> | null)?.options as
+                                      | string[]
+                                      | undefined
+                                  )?.map((opt) => (
+                                    <option key={opt} value={opt}>
+                                      {opt}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type={
+                                    field.fieldType === 'number'
+                                      ? 'number'
+                                      : field.fieldType === 'date'
+                                        ? 'date'
+                                        : 'text'
+                                  }
+                                  placeholder={LL.lists.itemNamePlaceholder()}
+                                  value={newItemValues[field.id] ?? ''}
+                                  onChange={(e) =>
+                                    setNewItemValues((prev) => ({
+                                      ...prev,
+                                      [field.id]: e.target.value,
+                                    }))
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleAddItem();
+                                  }}
+                                  className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
+                                />
+                              )}
+                            </td>
+                          ))}
+                          <td className="px-2 py-2">
                             <button
                               type="button"
-                              className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-                              onClick={() => handleDeleteItem(item.id)}
-                              aria-label={LL.lists.deleteItem()}
+                              onClick={handleAddItem}
+                              disabled={createItem.isPending}
+                              className="p-1 rounded-md text-muted-foreground hover:text-primary transition-colors"
+                              aria-label={LL.lists.addItem()}
                             >
-                              <TrashIcon className="w-3.5 h-3.5" />
+                              <PlusIcon className="w-3.5 h-3.5" />
                             </button>
                           </td>
                         </tr>
-                      ))}
-
-                      {/* ── Inline add row ──────────────────────────────── */}
-                      <tr className="bg-muted/10">
-                        {list.fields.map((field) => (
-                          <td key={field.id} className="px-3 py-2">
-                            {field.fieldType === 'checkbox' ? (
-                              <input
-                                type="checkbox"
-                                checked={newItemValues[field.id] === 'true'}
-                                onChange={(e) =>
-                                  setNewItemValues((prev) => ({
-                                    ...prev,
-                                    [field.id]: String(e.target.checked),
-                                  }))
-                                }
-                                aria-label={field.name}
-                                className="h-4 w-4 rounded border-border"
-                              />
-                            ) : field.fieldType === 'select' ? (
-                              <select
-                                value={newItemValues[field.id] ?? ''}
-                                onChange={(e) =>
-                                  setNewItemValues((prev) => ({
-                                    ...prev,
-                                    [field.id]: e.target.value,
-                                  }))
-                                }
-                                className="w-full bg-transparent text-sm text-foreground outline-none"
-                              >
-                                <option value="">{LL.lists.selectPlaceholder()}</option>
-                                {(
-                                  (field.config as Record<string, unknown> | null)?.options as
-                                    | string[]
-                                    | undefined
-                                )?.map((opt) => (
-                                  <option key={opt} value={opt}>
-                                    {opt}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <input
-                                type={
-                                  field.fieldType === 'number'
-                                    ? 'number'
-                                    : field.fieldType === 'date'
-                                      ? 'date'
-                                      : 'text'
-                                }
-                                placeholder={LL.lists.itemNamePlaceholder()}
-                                value={newItemValues[field.id] ?? ''}
-                                onChange={(e) =>
-                                  setNewItemValues((prev) => ({
-                                    ...prev,
-                                    [field.id]: e.target.value,
-                                  }))
-                                }
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleAddItem();
-                                }}
-                                className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
-                              />
-                            )}
-                          </td>
-                        ))}
-                        <td className="px-2 py-2">
+                      </tbody>
+                    </table>
+                  </Card>
+                )}{' '}
+                {/* end table view */}
+                {/* ── Checklist view ─────────────────────────────────────── */}
+                {activeView?.viewType === 'checklist' && (
+                  <div className="mb-4">
+                    {!checkboxField ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        {LL.lists.noCheckboxField()}
+                      </p>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-muted-foreground">
+                            {LL.lists.checkboxFieldLabel()}: {checkboxField.name}
+                          </span>
                           <button
                             type="button"
-                            onClick={handleAddItem}
-                            disabled={createItem.isPending}
-                            className="p-1 rounded-md text-muted-foreground hover:text-primary transition-colors"
-                            aria-label={LL.lists.addItem()}
+                            onClick={() => setHideDone((p) => !p)}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                           >
-                            <PlusIcon className="w-3.5 h-3.5" />
+                            {hideDone ? LL.lists.showDone() : LL.lists.hideDone()}
                           </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </Card>
-
+                        </div>
+                        <Card padding="none">
+                          {visibleItems.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-8">
+                              {LL.lists.noUncheckedItems()}
+                            </p>
+                          ) : (
+                            <ul>
+                              {visibleItems.map((item, idx) => {
+                                const isDone =
+                                  item.values.find((v) => v.fieldId === checkboxField.id)?.value ===
+                                  'true';
+                                const titleField = list.fields.find((f) => f.fieldType === 'text');
+                                const title = titleField
+                                  ? (item.values.find((v) => v.fieldId === titleField.id)?.value ??
+                                    '')
+                                  : '';
+                                return (
+                                  <li
+                                    key={item.id}
+                                    className={`flex items-center gap-3 px-4 py-3 group hover:bg-muted/20 ${idx < visibleItems.length - 1 ? 'border-b border-border' : ''}`}
+                                  >
+                                    <button
+                                      type="button"
+                                      aria-label={
+                                        isDone ? LL.lists.showDone() : LL.lists.checkAll()
+                                      }
+                                      onClick={() =>
+                                        updateItem.mutate({
+                                          id: item.id,
+                                          data: { values: { [checkboxField.id]: !isDone } },
+                                        })
+                                      }
+                                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                                        isDone
+                                          ? 'bg-primary border-primary text-primary-foreground'
+                                          : 'border-border hover:border-primary'
+                                      }`}
+                                    >
+                                      {isDone && <CheckIcon className="w-3 h-3" />}
+                                    </button>
+                                    <span
+                                      className={`flex-1 text-sm ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                                    >
+                                      {title || <span className="text-muted-foreground/40">—</span>}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                                      onClick={() => handleDeleteItem(item.id)}
+                                      aria-label={LL.lists.deleteItem()}
+                                    >
+                                      <TrashIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </Card>
+                      </>
+                    )}
+                  </div>
+                )}
                 {/* ── Empty items message ────────────────────────────────── */}
-                {items.length === 0 && (
+                {activeView?.viewType !== 'checklist' && items.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     {LL.lists.emptyItems()}
                   </p>
                 )}
-
                 {/* ── Add field button ───────────────────────────────────── */}
                 {!showAddField && (
                   <Button
@@ -801,6 +988,71 @@ export function ListDetailPage() {
               </Card>
             )}
           </>
+        )}
+
+        {/* ── Add view panel ──────────────────────────────────────────── */}
+        {showAddView && list && (
+          <Card padding="md" className="mt-4">
+            <p className="text-sm font-semibold text-foreground mb-3">{LL.lists.addView()}</p>
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  {LL.lists.newViewName()}
+                </label>
+                <Input
+                  value={newViewName}
+                  onChange={(e) => setNewViewName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddView();
+                    if (e.key === 'Escape') setShowAddView(false);
+                  }}
+                  placeholder={LL.lists.newViewName()}
+                  className="text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  {LL.lists.viewsLabel()}
+                </label>
+                <div className="flex gap-2">
+                  {(['table', 'checklist'] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setNewViewType(type)}
+                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                        newViewType === type
+                          ? 'border-primary bg-primary/10 text-foreground'
+                          : 'border-border text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {type === 'table' ? LL.lists.viewType.table() : LL.lists.viewType.checklist()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  onClick={handleAddView}
+                  disabled={!newViewName.trim() || createView.isPending}
+                >
+                  {LL.common.create()}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowAddView(false);
+                    setNewViewName('');
+                    setNewViewType('table');
+                  }}
+                >
+                  {LL.common.cancel()}
+                </Button>
+              </div>
+            </div>
+          </Card>
         )}
 
         {/* ── Settings panel ─────────────────────────────────────────── */}

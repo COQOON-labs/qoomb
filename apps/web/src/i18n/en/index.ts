@@ -310,6 +310,21 @@ const en = {
     // Select cells
     selectPlaceholder: 'Select…',
     noOptions: 'No options available',
+    // Views
+    viewsLabel: 'Views',
+    addView: 'Add view',
+    viewType: {
+      table: 'Table',
+      checklist: 'Checklist',
+      kanban: 'Kanban',
+    },
+    newViewName: 'View name',
+    noCheckboxField: 'No checkbox field available. Add a checkbox field first.',
+    checkboxFieldLabel: 'Done field',
+    hideDone: 'Hide done',
+    showDone: 'Show done',
+    noUncheckedItems: 'All items done 🎉',
+    checkAll: 'Check all',
   },
 
   // ── Activity ───────────────────────────────────────────────────────────────

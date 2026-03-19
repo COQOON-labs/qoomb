@@ -168,7 +168,7 @@ export function HiveSettingsPage() {
                 </div>
 
                 {saveStatus === 'success' && (
-                  <p className="text-sm text-green-600 font-medium">
+                  <p className="text-sm text-success font-medium">
                     {LL.hiveSettings.saveSuccess()}
                   </p>
                 )}
@@ -252,9 +252,7 @@ export function HiveSettingsPage() {
                   {updatePrefs.isPending ? LL.common.saving() : LL.common.save()}
                 </Button>
                 {prefsSaveStatus === 'success' && (
-                  <p className="text-sm text-green-600 font-medium">
-                    {LL.hiveSettings.notifSaved()}
-                  </p>
+                  <p className="text-sm text-success font-medium">{LL.hiveSettings.notifSaved()}</p>
                 )}
               </div>
             </Card>

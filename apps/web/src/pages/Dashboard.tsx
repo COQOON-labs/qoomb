@@ -82,7 +82,6 @@ export function Dashboard() {
 
   const handleNavigateToNewList = useCallback(() => {
     void navigate('/lists');
-    // The ListsPage will open with create form if navigated to with intent
   }, [navigate]);
 
   return (

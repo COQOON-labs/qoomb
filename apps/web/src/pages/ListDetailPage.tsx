@@ -1,10 +1,28 @@
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import type { AppRouter } from '@qoomb/api/src/trpc/app.router';
 import { Button, Card, ConfirmDialog, Input } from '@qoomb/ui';
+import type { inferRouterOutputs } from '@trpc/server';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
   ArrowLeftIcon,
   CheckIcon,
+  DragHandleIcon,
   EllipsisVerticalIcon,
   PencilIcon,
   PlusIcon,
@@ -33,6 +51,225 @@ const FIELD_TYPES = [
 
 type FieldType = (typeof FIELD_TYPES)[number];
 
+// ── Sortable table row ────────────────────────────────────────────────────────
+
+// ── Shared local types (inferred from tRPC) ───────────────────────────────────
+
+type RouterOutput = inferRouterOutputs<AppRouter>;
+type ListField = RouterOutput['lists']['get']['fields'][number];
+type ListItem = RouterOutput['lists']['listItems'][number];
+type UpdateItemMutation = ReturnType<typeof trpc.lists.updateItem.useMutation>;
+type LLType = ReturnType<typeof useI18nContext>['LL'];
+
+interface SortableTableRowProps {
+  item: ListItem;
+  fields: ListField[];
+  editingCell: { itemId: string; fieldId: string } | null;
+  cellDraft: string;
+  cellInputRef: React.RefObject<HTMLInputElement | null>;
+  getItemValue: (item: ListItem, fieldId: string, fieldType: string) => string;
+  handleCellClick: (itemId: string, fieldId: string, fieldType: string, value: string) => void;
+  handleCellSave: () => void;
+  handleCellKeyDown: (e: React.KeyboardEvent) => void;
+  handleDeleteItem: (id: string) => void;
+  setCellDraft: (v: string) => void;
+  updateItem: UpdateItemMutation;
+  LL: LLType;
+}
+
+function SortableTableRow({
+  item,
+  fields,
+  editingCell,
+  cellDraft,
+  cellInputRef,
+  getItemValue,
+  handleCellClick,
+  handleCellSave,
+  handleCellKeyDown,
+  handleDeleteItem,
+  setCellDraft,
+  updateItem,
+  LL,
+}: SortableTableRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className="border-b border-border last:border-0 hover:bg-muted/20 group"
+    >
+      {fields.map((field) => {
+        const cellValue = getItemValue(item, field.id, field.fieldType);
+        const isEditing = editingCell?.itemId === item.id && editingCell?.fieldId === field.id;
+        return (
+          <td
+            key={field.id}
+            className="px-3 py-2.5 text-foreground cursor-pointer"
+            onClick={() => {
+              if (!isEditing) {
+                handleCellClick(item.id, field.id, field.fieldType, cellValue);
+              }
+            }}
+          >
+            {isEditing ? (
+              field.fieldType === 'select' ? (
+                <select
+                  value={cellDraft}
+                  onChange={(e) => {
+                    setCellDraft(e.target.value);
+                    const val = e.target.value || null;
+                    updateItem.mutate({ id: item.id, data: { values: { [field.id]: val } } });
+                  }}
+                  className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
+                >
+                  <option value="">{LL.lists.selectPlaceholder()}</option>
+                  {(
+                    (field.config as Record<string, unknown> | null)?.options as
+                      | string[]
+                      | undefined
+                  )?.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  ref={cellInputRef}
+                  type={
+                    field.fieldType === 'number'
+                      ? 'number'
+                      : field.fieldType === 'date'
+                        ? 'date'
+                        : 'text'
+                  }
+                  value={cellDraft}
+                  onChange={(e) => setCellDraft(e.target.value)}
+                  onBlur={handleCellSave}
+                  onKeyDown={handleCellKeyDown}
+                  className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
+                />
+              )
+            ) : (
+              cellValue || <span className="text-muted-foreground/30">—</span>
+            )}
+          </td>
+        );
+      })}
+      <td className="px-2 py-2.5">
+        <button
+          type="button"
+          className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+          onClick={() => handleDeleteItem(item.id)}
+          aria-label={LL.lists.deleteItem()}
+        >
+          <TrashIcon className="w-3.5 h-3.5" />
+        </button>
+      </td>
+      {/* drag handle */}
+      <td className="w-6 px-1 py-2.5">
+        <button
+          type="button"
+          className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-all touch-none"
+          aria-label="Drag to reorder"
+          {...attributes}
+          {...listeners}
+        >
+          <DragHandleIcon className="w-4 h-4" />
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+// ── Sortable checklist item ───────────────────────────────────────────────────
+
+interface SortableChecklistItemProps {
+  item: ListItem;
+  isDone: boolean;
+  title: string;
+  isLast: boolean;
+  checkboxFieldId: string;
+  updateItem: UpdateItemMutation;
+  handleDeleteItem: (id: string) => void;
+  LL: LLType;
+}
+
+function SortableChecklistItem({
+  item,
+  isDone,
+  title,
+  isLast,
+  checkboxFieldId,
+  updateItem,
+  handleDeleteItem,
+  LL,
+}: SortableChecklistItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 px-4 py-3 group hover:bg-muted/20 ${!isLast ? 'border-b border-border' : ''}`}
+    >
+      {/* drag handle */}
+      <button
+        type="button"
+        className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-all touch-none flex-shrink-0"
+        aria-label="Drag to reorder"
+        {...attributes}
+        {...listeners}
+      >
+        <DragHandleIcon className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        aria-label={isDone ? LL.lists.showDone() : LL.lists.checkAll()}
+        onClick={() =>
+          updateItem.mutate({ id: item.id, data: { values: { [checkboxFieldId]: !isDone } } })
+        }
+        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+          isDone
+            ? 'bg-primary border-primary text-primary-foreground'
+            : 'border-border hover:border-primary'
+        }`}
+      >
+        {isDone && <CheckIcon className="w-3 h-3" />}
+      </button>
+      <span
+        className={`flex-1 text-sm ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+      >
+        {title || <span className="text-muted-foreground/40">—</span>}
+      </span>
+      <button
+        type="button"
+        className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+        onClick={() => handleDeleteItem(item.id)}
+        aria-label={LL.lists.deleteItem()}
+      >
+        <TrashIcon className="w-3.5 h-3.5" />
+      </button>
+    </li>
+  );
+}
+
 // ── ListDetailPage ────────────────────────────────────────────────────────────
 
 export function ListDetailPage() {
@@ -55,7 +292,6 @@ export function ListDetailPage() {
   const isLoading = listLoading || itemsLoading;
 
   // Build a map: fieldId → field for quick lookup
-  type ListField = NonNullable<typeof list>['fields'][number];
   const fieldMap = useMemo(() => {
     if (!list) return new Map<string, ListField>();
     return new Map(list.fields.map((f) => [f.id, f]));
@@ -350,6 +586,44 @@ export function ListDetailPage() {
     createView.mutate({ listId: id, name: trimmed, viewType: newViewType, config });
   }, [newViewName, newViewType, id, list, createView]);
 
+  // ── Drag & drop reorder ───────────────────────────────────────────────────
+  // Track the display order locally so we can reorder optimistically.
+  // Keeps IDs in sorted order; falls back to server order on invalidate.
+  const [localItemOrder, setLocalItemOrder] = useState<string[] | null>(null);
+
+  const reorderItems = trpc.lists.reorderItems.useMutation({
+    onError: () => {
+      addToast(LL.lists.updateError(), 'error');
+      setLocalItemOrder(null); // roll back on failure
+    },
+  });
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id || !id) return;
+
+      setLocalItemOrder((prev) => {
+        const base = prev ?? items.map((i) => i.id);
+        const oldIdx = base.indexOf(String(active.id));
+        const newIdx = base.indexOf(String(over.id));
+        if (oldIdx === -1 || newIdx === -1) return prev;
+        const next = arrayMove(base, oldIdx, newIdx);
+        // Persist: assign sortOrder = index (integer, simple)
+        reorderItems.mutate({
+          listId: id,
+          items: next.map((itemId, idx) => ({ id: itemId, sortOrder: idx })),
+        });
+        return next;
+      });
+    },
+    [id, items, reorderItems]
+  );
+
   // ── Inline cell editing ──────────────────────────────────────────────────
   const [editingCell, setEditingCell] = useState<{ itemId: string; fieldId: string } | null>(null);
   const [cellDraft, setCellDraft] = useState('');
@@ -443,14 +717,23 @@ export function ListDetailPage() {
     [list]
   );
 
+  // Apply local drag order (optimistic), then fall back to server sortOrder
+  const sortedItems = useMemo(() => {
+    if (localItemOrder) {
+      const byId = new Map(items.map((i) => [i.id, i]));
+      return localItemOrder.map((itemId) => byId.get(itemId)).filter(Boolean) as typeof items;
+    }
+    return items;
+  }, [items, localItemOrder]);
+
   const visibleItems = useMemo(() => {
     if (hideDone && activeView?.viewType === 'checklist' && checkboxField) {
-      return items.filter(
+      return sortedItems.filter(
         (item) => item.values.find((v) => v.fieldId === checkboxField.id)?.value !== 'true'
       );
     }
-    return items;
-  }, [items, hideDone, activeView, checkboxField]);
+    return sortedItems;
+  }, [sortedItems, hideDone, activeView, checkboxField]);
 
   // ── Not found / loading ──────────────────────────────────────────────────
   if (!id) return null;
@@ -660,95 +943,42 @@ export function ListDetailPage() {
                           <th className="w-10">
                             <span className="sr-only">{LL.common.remove()}</span>
                           </th>
+                          {/* drag handle column */}
+                          <th className="w-6" aria-hidden="true" />
                         </tr>
                       </thead>
+                      <DndContext
+                        sensors={dndSensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={sortedItems.map((i) => i.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <tbody>
+                            {sortedItems.map((item) => (
+                              <SortableTableRow
+                                key={item.id}
+                                item={item}
+                                fields={list.fields}
+                                editingCell={editingCell}
+                                cellDraft={cellDraft}
+                                cellInputRef={cellInputRef}
+                                getItemValue={getItemValue}
+                                handleCellClick={handleCellClick}
+                                handleCellSave={handleCellSave}
+                                handleCellKeyDown={handleCellKeyDown}
+                                handleDeleteItem={handleDeleteItem}
+                                setCellDraft={setCellDraft}
+                                updateItem={updateItem}
+                                LL={LL}
+                              />
+                            ))}
+                          </tbody>
+                        </SortableContext>
+                      </DndContext>
                       <tbody>
-                        {items.map((item) => (
-                          <tr
-                            key={item.id}
-                            className="border-b border-border last:border-0 hover:bg-muted/20 group"
-                          >
-                            {list.fields.map((field) => {
-                              const cellValue = getItemValue(item, field.id, field.fieldType);
-                              const isEditing =
-                                editingCell?.itemId === item.id &&
-                                editingCell?.fieldId === field.id;
-                              return (
-                                <td
-                                  key={field.id}
-                                  className="px-3 py-2.5 text-foreground cursor-pointer"
-                                  onClick={() => {
-                                    if (!isEditing) {
-                                      handleCellClick(
-                                        item.id,
-                                        field.id,
-                                        field.fieldType,
-                                        cellValue
-                                      );
-                                    }
-                                  }}
-                                >
-                                  {isEditing ? (
-                                    field.fieldType === 'select' ? (
-                                      <select
-                                        value={cellDraft}
-                                        onChange={(e) => {
-                                          setCellDraft(e.target.value);
-                                          // Auto-save on select
-                                          const val = e.target.value || null;
-                                          updateItem.mutate({
-                                            id: item.id,
-                                            data: { values: { [field.id]: val } },
-                                          });
-                                        }}
-                                        className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
-                                      >
-                                        <option value="">{LL.lists.selectPlaceholder()}</option>
-                                        {(
-                                          (field.config as Record<string, unknown> | null)
-                                            ?.options as string[] | undefined
-                                        )?.map((opt) => (
-                                          <option key={opt} value={opt}>
-                                            {opt}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    ) : (
-                                      <input
-                                        ref={cellInputRef}
-                                        type={
-                                          field.fieldType === 'number'
-                                            ? 'number'
-                                            : field.fieldType === 'date'
-                                              ? 'date'
-                                              : 'text'
-                                        }
-                                        value={cellDraft}
-                                        onChange={(e) => setCellDraft(e.target.value)}
-                                        onBlur={handleCellSave}
-                                        onKeyDown={handleCellKeyDown}
-                                        className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
-                                      />
-                                    )
-                                  ) : (
-                                    cellValue || <span className="text-muted-foreground/30">—</span>
-                                  )}
-                                </td>
-                              );
-                            })}
-                            <td className="px-2 py-2.5">
-                              <button
-                                type="button"
-                                className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-                                onClick={() => handleDeleteItem(item.id)}
-                                aria-label={LL.lists.deleteItem()}
-                              >
-                                <TrashIcon className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-
                         {/* ── Inline add row ──────────────────────────────── */}
                         <tr className="bg-muted/10">
                           {list.fields.map((field) => (
@@ -824,6 +1054,8 @@ export function ListDetailPage() {
                               <PlusIcon className="w-3.5 h-3.5" />
                             </button>
                           </td>
+                          {/* spacer for drag handle column */}
+                          <td className="w-6" aria-hidden="true" />
                         </tr>
                       </tbody>
                     </table>
@@ -857,57 +1089,44 @@ export function ListDetailPage() {
                               {LL.lists.noUncheckedItems()}
                             </p>
                           ) : (
-                            <ul>
-                              {visibleItems.map((item, idx) => {
-                                const isDone =
-                                  item.values.find((v) => v.fieldId === checkboxField.id)?.value ===
-                                  'true';
-                                const titleField = list.fields.find((f) => f.fieldType === 'text');
-                                const title = titleField
-                                  ? (item.values.find((v) => v.fieldId === titleField.id)?.value ??
-                                    '')
-                                  : '';
-                                return (
-                                  <li
-                                    key={item.id}
-                                    className={`flex items-center gap-3 px-4 py-3 group hover:bg-muted/20 ${idx < visibleItems.length - 1 ? 'border-b border-border' : ''}`}
-                                  >
-                                    <button
-                                      type="button"
-                                      aria-label={
-                                        isDone ? LL.lists.showDone() : LL.lists.checkAll()
-                                      }
-                                      onClick={() =>
-                                        updateItem.mutate({
-                                          id: item.id,
-                                          data: { values: { [checkboxField.id]: !isDone } },
-                                        })
-                                      }
-                                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                                        isDone
-                                          ? 'bg-primary border-primary text-primary-foreground'
-                                          : 'border-border hover:border-primary'
-                                      }`}
-                                    >
-                                      {isDone && <CheckIcon className="w-3 h-3" />}
-                                    </button>
-                                    <span
-                                      className={`flex-1 text-sm ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-                                    >
-                                      {title || <span className="text-muted-foreground/40">—</span>}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-                                      onClick={() => handleDeleteItem(item.id)}
-                                      aria-label={LL.lists.deleteItem()}
-                                    >
-                                      <TrashIcon className="w-3.5 h-3.5" />
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                            </ul>
+                            <DndContext
+                              sensors={dndSensors}
+                              collisionDetection={closestCenter}
+                              onDragEnd={handleDragEnd}
+                            >
+                              <SortableContext
+                                items={visibleItems.map((i) => i.id)}
+                                strategy={verticalListSortingStrategy}
+                              >
+                                <ul>
+                                  {visibleItems.map((item, idx) => {
+                                    const isDone =
+                                      item.values.find((v) => v.fieldId === checkboxField.id)
+                                        ?.value === 'true';
+                                    const titleField = list.fields.find(
+                                      (f) => f.fieldType === 'text'
+                                    );
+                                    const title = titleField
+                                      ? (item.values.find((v) => v.fieldId === titleField.id)
+                                          ?.value ?? '')
+                                      : '';
+                                    return (
+                                      <SortableChecklistItem
+                                        key={item.id}
+                                        item={item}
+                                        isDone={isDone}
+                                        title={title}
+                                        isLast={idx === visibleItems.length - 1}
+                                        checkboxFieldId={checkboxField.id}
+                                        updateItem={updateItem}
+                                        handleDeleteItem={handleDeleteItem}
+                                        LL={LL}
+                                      />
+                                    );
+                                  })}
+                                </ul>
+                              </SortableContext>
+                            </DndContext>
                           )}
                         </Card>
                       </>

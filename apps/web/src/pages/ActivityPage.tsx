@@ -8,15 +8,16 @@ import { trpc } from '../lib/trpc/client';
 
 // ── ActivityPage ──────────────────────────────────────────────────────────────
 
+const ACTIVITY_PAGE_LIMIT = 20;
+
 export function ActivityPage() {
   const { LL } = useI18nContext();
   const { user } = useAuth();
 
   const [page, setPage] = useState(1);
-  const LIMIT = 20;
 
   const { data: events = [], isLoading } = trpc.activity.list.useQuery(
-    { limit: LIMIT, page },
+    { limit: ACTIVITY_PAGE_LIMIT, page },
     { enabled: !!user }
   );
 
@@ -52,7 +53,7 @@ export function ActivityPage() {
               ))}
             </div>
 
-            {events.length === LIMIT && (
+            {events.length === ACTIVITY_PAGE_LIMIT && (
               <div className="mt-4 text-center">
                 <Button variant="ghost" size="sm" onClick={() => setPage((p) => p + 1)}>
                   {LL.activity.loadMore()}

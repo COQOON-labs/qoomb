@@ -1,6 +1,6 @@
 import { getInitials } from '@qoomb/types';
 import { Button, Card, ConfirmDialog, Input } from '@qoomb/ui';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { PlusIcon, TrashIcon, UsersIcon } from '../components/icons';
 import { useI18nContext } from '../i18n/i18n-react';
@@ -284,8 +284,10 @@ function GroupDetail({ groupId, onBack }: { groupId: string; onBack: () => void 
   }, [confirmRemoveMember, groupId, removeMember]);
 
   // Members not yet in this group (for add dropdown)
-  const groupMemberIds = new Set(group?.members.map((m) => m.personId) ?? []);
-  const availableMembers = allMembers.filter((m) => !groupMemberIds.has(m.id));
+  const availableMembers = useMemo(() => {
+    const memberIds = new Set(group?.members.map((m) => m.personId) ?? []);
+    return allMembers.filter((m) => !memberIds.has(m.id));
+  }, [group?.members, allMembers]);
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">{LL.common.loading()}</p>;

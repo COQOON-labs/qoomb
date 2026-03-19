@@ -17,6 +17,7 @@ export { CheckMarkIcon } from './CheckMarkIcon';
 export { ChevronDownIcon } from './ChevronDownIcon';
 export { ChevronUpDownIcon } from './ChevronUpDownIcon';
 export { DocumentIcon } from './DocumentIcon';
+export { DragHandleIcon } from './DragHandleIcon';
 export { EllipsisVerticalIcon } from './EllipsisVerticalIcon';
 export { HomeIcon } from './HomeIcon';
 export { LogOutIcon } from './LogOutIcon';

@@ -68,7 +68,7 @@ export function MessagingPage() {
   );
 
   // Sorted messages: oldest first for chat display
-  const sortedMessages = [...messages].reverse();
+  const sortedMessages = useMemo(() => [...messages].reverse(), [messages]);
 
   // Build a lookup map once whenever the members list changes (O(n) vs O(n²))
   const memberNameMap = useMemo(
@@ -115,6 +115,7 @@ export function MessagingPage() {
             ) : (
               conversations.map((conv) => (
                 <button
+                  type="button"
                   key={conv.partnerPersonId}
                   onClick={() => handleSelectPartner(conv.partnerPersonId)}
                   className={`w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-muted transition-colors ${

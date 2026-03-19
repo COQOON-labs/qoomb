@@ -161,7 +161,7 @@ export function MembersPage() {
                 onChange={(e) => setInviteEmail(e.target.value)}
               />
               {inviteSuccess && (
-                <p className="text-sm text-green-600 font-medium">{LL.members.inviteSuccess()}</p>
+                <p className="text-sm text-success font-medium">{LL.members.inviteSuccess()}</p>
               )}
               <div className="flex gap-2">
                 <Button

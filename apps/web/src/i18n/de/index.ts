@@ -311,6 +311,21 @@ const de = {
     // Select cells
     selectPlaceholder: 'Auswählen…',
     noOptions: 'Keine Optionen vorhanden',
+    // Views
+    viewsLabel: 'Ansichten',
+    addView: 'Ansicht hinzufügen',
+    viewType: {
+      table: 'Tabelle',
+      checklist: 'Checkliste',
+      kanban: 'Kanban',
+    },
+    newViewName: 'Name der Ansicht',
+    noCheckboxField: 'Kein Checkbox-Feld vorhanden. Bitte erst ein Checkbox-Feld anlegen.',
+    checkboxFieldLabel: 'Abgehakt-Feld',
+    hideDone: 'Erledigte ausblenden',
+    showDone: 'Erledigte anzeigen',
+    noUncheckedItems: 'Alle Einträge erledigt 🎉',
+    checkAll: 'Alle abhaken',
   },
 
   // ── Activity ─────────────────────────────────────────────────────────────

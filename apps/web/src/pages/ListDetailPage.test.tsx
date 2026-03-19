@@ -171,6 +171,15 @@ vi.mock('../lib/trpc/client', () => ({
           isPending: false,
         }),
       },
+      createView: {
+        useMutation: (opts?: { onSuccess?: (data: { id: string }) => void }) => ({
+          mutate: (...args: unknown[]) => {
+            mutateFn(...args);
+            opts?.onSuccess?.({ id: 'view-001' });
+          },
+          isPending: false,
+        }),
+      },
     },
   },
 }));

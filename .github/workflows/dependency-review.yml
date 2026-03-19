@@ -47,7 +47,9 @@ jobs:
           # Use 'critical' here if you prefer warnings-only for HIGH.
           fail-on-severity: high
 
-          # Warn (do not block) when a newly added dependency has an OpenSSF
-          # Scorecard level below 4. The PR still merges — it just makes the
-          # low score visible so the author explicitly acknowledges the risk.
-          warn-only-on-openssf-scorecard-level: 4
+          # Show + warn (do not block) when a newly added dependency has an
+          # OpenSSF Scorecard score below 4. The PR still merges — it just
+          # makes the low score visible so the author explicitly acknowledges
+          # the risk (e.g. @dnd-kit at 3.9).
+          show-openssf-scorecard: true
+          warn-on-openssf-scorecard-level: 4

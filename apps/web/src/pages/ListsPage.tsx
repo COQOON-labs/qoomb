@@ -211,6 +211,8 @@ function ListRow({
             <TrashIcon className="w-5 h-5" />
           </button>
         )}
+        {/* Spacer matching the drag handle width so icons align with SortableFavoriteRow */}
+        <div className="w-9 shrink-0" aria-hidden="true" />
       </div>
     </Card>
   );

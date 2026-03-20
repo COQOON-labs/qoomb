@@ -1065,6 +1065,18 @@ type RootTranslation = {
      * C​h​e​c​k​ ​a​l​l
      */
     checkAll: string;
+    /**
+     * G​r​o​u​p​ ​b​y
+     */
+    kanbanGroupBy: string;
+    /**
+     * (​N​o​ ​v​a​l​u​e​)
+     */
+    kanbanNoValue: string;
+    /**
+     * N​o​ ​s​e​l​e​c​t​ ​f​i​e​l​d​ ​f​o​u​n​d​.​ ​P​l​e​a​s​e​ ​c​r​e​a​t​e​ ​a​ ​s​e​l​e​c​t​ ​f​i​e​l​d​ ​f​i​r​s​t​.
+     */
+    noSelectFields: string;
   };
   activity: {
     /**
@@ -2257,6 +2269,18 @@ export type TranslationFunctions = {
      * Check all
      */
     checkAll: () => LocalizedString;
+    /**
+     * Group by
+     */
+    kanbanGroupBy: () => LocalizedString;
+    /**
+     * (No value)
+     */
+    kanbanNoValue: () => LocalizedString;
+    /**
+     * No select field found. Please create a select field first.
+     */
+    noSelectFields: () => LocalizedString;
   };
   activity: {
     /**

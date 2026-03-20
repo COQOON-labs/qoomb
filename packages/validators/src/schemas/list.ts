@@ -17,7 +17,7 @@ export const listFieldTypeSchema = z.enum([
   'url',
 ]);
 
-export const listViewTypeSchema = z.enum(['checklist', 'table']);
+export const listViewTypeSchema = z.enum(['checklist', 'table', 'kanban']);
 
 export const listTypeSchema = z.enum(['custom', 'inbox']);
 
@@ -100,6 +100,10 @@ export const tableViewConfigSchema = z.object({
   columnWidths: z.record(z.uuid(), z.number().positive()).optional(),
 });
 
+export const kanbanViewConfigSchema = z.object({
+  groupByFieldId: z.uuid(),
+});
+
 // ── List CRUD schemas ─────────────────────────────────────────────────────────
 
 export const createListSchema = z.object({
@@ -144,7 +148,7 @@ export const createListViewSchema = z.object({
   name: z.string().min(1).max(200),
   viewType: listViewTypeSchema,
   sortMode: listViewSortModeSchema.default('manual'),
-  config: z.union([checklistViewConfigSchema, tableViewConfigSchema]),
+  config: z.union([checklistViewConfigSchema, tableViewConfigSchema, kanbanViewConfigSchema]),
   filter: filterExpressionSchema.optional(),
   sortBy: z.array(sortExpressionSchema).max(5).optional(),
   isDefault: z.boolean().default(false),
@@ -153,7 +157,9 @@ export const createListViewSchema = z.object({
 export const updateListViewSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   sortMode: listViewSortModeSchema.optional(),
-  config: z.union([checklistViewConfigSchema, tableViewConfigSchema]).optional(),
+  config: z
+    .union([checklistViewConfigSchema, tableViewConfigSchema, kanbanViewConfigSchema])
+    .optional(),
   filter: filterExpressionSchema.nullish(),
   sortBy: z.array(sortExpressionSchema).max(5).nullish(),
   isDefault: z.boolean().optional(),

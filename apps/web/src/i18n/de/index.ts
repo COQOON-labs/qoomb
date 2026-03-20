@@ -326,6 +326,10 @@ const de = {
     showDone: 'Erledigte anzeigen',
     noUncheckedItems: 'Alle Einträge erledigt 🎉',
     checkAll: 'Alle abhaken',
+    // Kanban view
+    kanbanGroupBy: 'Gruppiert nach',
+    kanbanNoValue: '(Kein Wert)',
+    noSelectFields: 'Kein Auswahlfeld vorhanden. Bitte erst ein Auswahlfeld anlegen.',
   },
 
   // ── Activity ─────────────────────────────────────────────────────────────

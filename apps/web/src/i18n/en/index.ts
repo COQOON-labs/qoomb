@@ -325,6 +325,10 @@ const en = {
     showDone: 'Show done',
     noUncheckedItems: 'All items done 🎉',
     checkAll: 'Check all',
+    // Kanban view
+    kanbanGroupBy: 'Group by',
+    kanbanNoValue: '(No value)',
+    noSelectFields: 'No select field found. Please create a select field first.',
   },
 
   // ── Activity ───────────────────────────────────────────────────────────────

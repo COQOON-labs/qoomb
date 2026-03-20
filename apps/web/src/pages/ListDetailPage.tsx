@@ -1,7 +1,10 @@
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   closestCenter,
+  useDraggable,
+  useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -267,6 +270,106 @@ function SortableChecklistItem({
         <TrashIcon className="w-3.5 h-3.5" />
       </button>
     </li>
+  );
+}
+
+// ── Kanban card ───────────────────────────────────────────────────────────────
+
+interface KanbanCardProps {
+  item: ListItem;
+  titleFieldId: string | null;
+  handleDeleteItem: (id: string) => void;
+  LL: LLType;
+}
+
+function KanbanCard({ item, titleFieldId, handleDeleteItem, LL }: KanbanCardProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: item.id,
+  });
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+    : undefined;
+
+  const title = titleFieldId
+    ? (item.values.find((v) => v.fieldId === titleFieldId)?.value ?? '')
+    : '';
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`p-2.5 rounded-lg bg-background border border-border shadow-sm text-sm group cursor-grab active:cursor-grabbing select-none touch-none ${
+        isDragging ? 'opacity-40' : ''
+      }`}
+      {...listeners}
+      {...attributes}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <span className="flex-1 text-foreground break-words min-w-0">
+          {title || <span className="text-muted-foreground/40">—</span>}
+        </span>
+        <button
+          type="button"
+          className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDeleteItem(item.id);
+          }}
+          aria-label={LL.lists.deleteItem()}
+        >
+          <TrashIcon className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Kanban column ─────────────────────────────────────────────────────────────
+
+interface KanbanColumnProps {
+  columnId: string;
+  label: string;
+  items: ListItem[];
+  titleFieldId: string | null;
+  handleDeleteItem: (id: string) => void;
+  LL: LLType;
+}
+
+function KanbanColumn({
+  columnId,
+  label,
+  items,
+  titleFieldId,
+  handleDeleteItem,
+  LL,
+}: KanbanColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: columnId });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex flex-col min-w-[220px] max-w-[220px] rounded-xl border transition-colors ${
+        isOver ? 'border-primary/50 bg-primary/5' : 'border-border bg-muted/20'
+      }`}
+    >
+      {/* Column header */}
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+        <span className="text-sm font-semibold text-foreground truncate">{label}</span>
+        <span className="ml-2 text-xs text-muted-foreground flex-shrink-0">{items.length}</span>
+      </div>
+      {/* Cards */}
+      <div className="flex flex-col gap-2 p-2.5 min-h-[80px]">
+        {items.map((item) => (
+          <KanbanCard
+            key={item.id}
+            item={item}
+            titleFieldId={titleFieldId}
+            handleDeleteItem={handleDeleteItem}
+            LL={LL}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -559,8 +662,11 @@ export function ListDetailPage() {
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [showAddView, setShowAddView] = useState(false);
   const [newViewName, setNewViewName] = useState('');
-  const [newViewType, setNewViewType] = useState<'table' | 'checklist'>('table');
+  const [newViewType, setNewViewType] = useState<'table' | 'checklist' | 'kanban'>('table');
+  const [newViewGroupByFieldId, setNewViewGroupByFieldId] = useState<string>('');
   const [hideDone, setHideDone] = useState(false);
+  // Kanban drag state
+  const [kanbanDragItemId, setKanbanDragItemId] = useState<string | null>(null);
 
   const createView = trpc.lists.createView.useMutation({
     onSuccess: (created) => {
@@ -569,6 +675,7 @@ export function ListDetailPage() {
       setShowAddView(false);
       setNewViewName('');
       setNewViewType('table');
+      setNewViewGroupByFieldId('');
     },
     onError: () => {
       addToast(LL.lists.createError(), 'error');
@@ -582,9 +689,11 @@ export function ListDetailPage() {
     const config =
       newViewType === 'checklist'
         ? { checkboxFieldId: cbField?.id ?? '' }
-        : { visibleFieldIds: list?.fields.map((f) => f.id) ?? [] };
+        : newViewType === 'kanban'
+          ? { groupByFieldId: newViewGroupByFieldId }
+          : { visibleFieldIds: list?.fields.map((f) => f.id) ?? [] };
     createView.mutate({ listId: id, name: trimmed, viewType: newViewType, config });
-  }, [newViewName, newViewType, id, list, createView]);
+  }, [newViewName, newViewType, newViewGroupByFieldId, id, list, createView]);
 
   // ── Drag & drop reorder ───────────────────────────────────────────────────
   // Track the display order locally so we can reorder optimistically.
@@ -631,13 +740,32 @@ export function ListDetailPage() {
 
   const updateItem = trpc.lists.updateItem.useMutation({
     onSuccess: () => {
-      void utils.lists.listItems.invalidate({ listId: id! });
+      void utils.lists.listItems.invalidate({ listId: id ?? '' });
       setEditingCell(null);
     },
     onError: () => {
       addToast(LL.lists.updateError(), 'error');
     },
   });
+
+  // ── Kanban drag handlers ──────────────────────────────────────────────────
+  const handleKanbanDragStart = useCallback((itemId: string) => {
+    setKanbanDragItemId(itemId);
+  }, []);
+
+  const handleKanbanDragEnd = useCallback(
+    (event: DragEndEvent, groupByFieldId: string) => {
+      setKanbanDragItemId(null);
+      const { active, over } = event;
+      if (!over || !id) return;
+      const newValue = over.id === '__kanban_none__' ? null : String(over.id);
+      updateItem.mutate({
+        id: String(active.id),
+        data: { values: { [groupByFieldId]: newValue } },
+      });
+    },
+    [id, updateItem]
+  );
 
   const handleCellClick = useCallback(
     (itemId: string, fieldId: string, fieldType: string, currentValue: string) => {
@@ -693,18 +821,21 @@ export function ListDetailPage() {
   }, [navigate]);
 
   /** Resolve item value for a given field */
-  function getItemValue(item: (typeof items)[0], fieldId: string, fieldType: string): string {
-    const val = item.values.find((v) => v.fieldId === fieldId);
-    if (!val || val.value === null || val.value === undefined) return '';
-    switch (fieldType) {
-      case 'checkbox':
-        return val.value === 'true' ? '✓' : '✗';
-      case 'date':
-        return new Date(val.value).toLocaleDateString();
-      default:
-        return val.value;
-    }
-  }
+  const getItemValue = useCallback(
+    (item: (typeof items)[0], fieldId: string, fieldType: string): string => {
+      const val = item.values.find((v) => v.fieldId === fieldId);
+      if (!val || val.value === null || val.value === undefined) return '';
+      switch (fieldType) {
+        case 'checkbox':
+          return val.value === 'true' ? '✓' : '✗';
+        case 'date':
+          return new Date(val.value).toLocaleDateString();
+        default:
+          return val.value;
+      }
+    },
+    []
+  );
 
   // ── View-derived computations ─────────────────────────────────────────────
   const activeView = useMemo(
@@ -847,7 +978,11 @@ export function ListDetailPage() {
                           : 'border-transparent text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      {view.viewType === 'checklist' ? '✓ ' : '⊞ '}
+                      {view.viewType === 'checklist'
+                        ? '✓ '
+                        : view.viewType === 'kanban'
+                          ? '⬜ '
+                          : '⊞ '}
                       {view.name}
                     </button>
                   );
@@ -892,7 +1027,7 @@ export function ListDetailPage() {
             ) : (
               <>
                 {/* ── Table view ────────────────────────────────────────── */}
-                {activeView?.viewType !== 'checklist' && (
+                {activeView?.viewType !== 'checklist' && activeView?.viewType !== 'kanban' && (
                   <Card padding="none" className="overflow-x-auto mb-4">
                     <table className="w-full text-sm">
                       <thead>
@@ -1133,12 +1268,86 @@ export function ListDetailPage() {
                     )}
                   </div>
                 )}
+                {/* ── Kanban view ─────────────────────────────────────────── */}
+                {activeView?.viewType === 'kanban' &&
+                  (() => {
+                    const cfg = activeView.config as { groupByFieldId?: string } | null;
+                    const groupByField = cfg?.groupByFieldId
+                      ? list.fields.find((f) => f.id === cfg.groupByFieldId)
+                      : null;
+                    if (!groupByField) {
+                      return (
+                        <p className="text-sm text-muted-foreground text-center py-8 mb-4">
+                          {LL.lists.noSelectFields()}
+                        </p>
+                      );
+                    }
+                    const options =
+                      ((groupByField.config as Record<string, unknown> | null)?.options as
+                        | string[]
+                        | undefined) ?? [];
+                    const titleField = list.fields.find((f) => f.fieldType === 'text');
+                    // Group items by their select field value
+                    const columnIds = ['__kanban_none__', ...options];
+                    const columnItems: Record<string, ListItem[]> = Object.fromEntries(
+                      columnIds.map((col) => [col, []])
+                    );
+                    for (const item of sortedItems) {
+                      const val = item.values.find((v) => v.fieldId === groupByField.id)?.value;
+                      const key = val && options.includes(val) ? val : '__kanban_none__';
+                      columnItems[key]?.push(item);
+                    }
+                    const dragItem = kanbanDragItemId
+                      ? sortedItems.find((i) => i.id === kanbanDragItemId)
+                      : null;
+                    return (
+                      <div className="mb-4">
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {LL.lists.kanbanGroupBy()}: {groupByField.name}
+                        </p>
+                        <DndContext
+                          sensors={dndSensors}
+                          collisionDetection={closestCenter}
+                          onDragStart={(e) => handleKanbanDragStart(String(e.active.id))}
+                          onDragEnd={(e) => handleKanbanDragEnd(e, groupByField.id)}
+                        >
+                          <div className="flex gap-4 overflow-x-auto pb-2">
+                            {columnIds.map((colId) => (
+                              <KanbanColumn
+                                key={colId}
+                                columnId={colId}
+                                label={
+                                  colId === '__kanban_none__' ? LL.lists.kanbanNoValue() : colId
+                                }
+                                items={columnItems[colId] ?? []}
+                                titleFieldId={titleField?.id ?? null}
+                                handleDeleteItem={handleDeleteItem}
+                                LL={LL}
+                              />
+                            ))}
+                          </div>
+                          <DragOverlay>
+                            {dragItem ? (
+                              <div className="p-2.5 rounded-lg bg-background border border-primary shadow-lg text-sm opacity-90">
+                                {titleField
+                                  ? (dragItem.values.find((v) => v.fieldId === titleField.id)
+                                      ?.value ?? '')
+                                  : ''}
+                              </div>
+                            ) : null}
+                          </DragOverlay>
+                        </DndContext>
+                      </div>
+                    );
+                  })()}
                 {/* ── Empty items message ────────────────────────────────── */}
-                {activeView?.viewType !== 'checklist' && items.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    {LL.lists.emptyItems()}
-                  </p>
-                )}
+                {activeView?.viewType !== 'checklist' &&
+                  activeView?.viewType !== 'kanban' &&
+                  items.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      {LL.lists.emptyItems()}
+                    </p>
+                  )}
                 {/* ── Add field button ───────────────────────────────────── */}
                 {!showAddField && (
                   <Button
@@ -1233,8 +1442,8 @@ export function ListDetailPage() {
                 <label className="block text-xs font-medium text-muted-foreground mb-1">
                   {LL.lists.viewsLabel()}
                 </label>
-                <div className="flex gap-2">
-                  {(['table', 'checklist'] as const).map((type) => (
+                <div className="flex gap-2 flex-wrap">
+                  {(['table', 'checklist', 'kanban'] as const).map((type) => (
                     <button
                       key={type}
                       type="button"
@@ -1245,16 +1454,51 @@ export function ListDetailPage() {
                           : 'border-border text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      {type === 'table' ? LL.lists.viewType.table() : LL.lists.viewType.checklist()}
+                      {type === 'table'
+                        ? LL.lists.viewType.table()
+                        : type === 'checklist'
+                          ? LL.lists.viewType.checklist()
+                          : LL.lists.viewType.kanban()}
                     </button>
                   ))}
                 </div>
               </div>
+              {newViewType === 'kanban' &&
+                (() => {
+                  const selectFields = list?.fields.filter((f) => f.fieldType === 'select') ?? [];
+                  return (
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">
+                        {LL.lists.kanbanGroupBy()}
+                      </label>
+                      {selectFields.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">{LL.lists.noSelectFields()}</p>
+                      ) : (
+                        <select
+                          value={newViewGroupByFieldId}
+                          onChange={(e) => setNewViewGroupByFieldId(e.target.value)}
+                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                        >
+                          <option value="">{LL.lists.selectPlaceholder()}</option>
+                          {selectFields.map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {f.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  );
+                })()}
               <div className="flex gap-2 pt-1">
                 <Button
                   size="sm"
                   onClick={handleAddView}
-                  disabled={!newViewName.trim() || createView.isPending}
+                  disabled={
+                    !newViewName.trim() ||
+                    createView.isPending ||
+                    (newViewType === 'kanban' && !newViewGroupByFieldId)
+                  }
                 >
                   {LL.common.create()}
                 </Button>
@@ -1265,6 +1509,7 @@ export function ListDetailPage() {
                     setShowAddView(false);
                     setNewViewName('');
                     setNewViewType('table');
+                    setNewViewGroupByFieldId('');
                   }}
                 >
                   {LL.common.cancel()}

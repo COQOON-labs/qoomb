@@ -102,23 +102,44 @@ export function PersonCellPicker({
         {selected.length === 0 ? (
           <span className="text-muted-foreground/40 text-xs italic">—</span>
         ) : (
-          selected.map((v) => (
-            <span
-              key={v}
-              className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-foreground font-medium"
-            >
-              <UserIcon className="w-3 h-3 shrink-0" />
-              {label(v)}
-              <button
-                type="button"
-                onClick={() => remove(v)}
-                className="ml-0.5 leading-none hover:text-destructive"
-                aria-label={`Remove ${label(v)}`}
+          selected.map((v) => {
+            const isPerson = persons.some((p) => p.id === v);
+            return isPerson ? (
+              // Resolved hive member: primary badge + UserIcon (2 cues)
+              <span
+                key={v}
+                className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-foreground font-medium"
               >
-                <XIcon className="w-2.5 h-2.5" />
-              </button>
-            </span>
-          ))
+                <UserIcon className="w-3 h-3 shrink-0" aria-hidden="true" />
+                {label(v)}
+                <button
+                  type="button"
+                  onClick={() => remove(v)}
+                  className="ml-0.5 leading-none hover:text-destructive"
+                  aria-label={`Remove ${label(v)}`}
+                >
+                  <XIcon className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            ) : (
+              // Free-text external name: dashed border + no icon + italic (3 cues)
+              <span
+                key={v}
+                className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground italic"
+                title="Nicht im System"
+              >
+                {label(v)}
+                <button
+                  type="button"
+                  onClick={() => remove(v)}
+                  className="ml-0.5 leading-none hover:text-destructive"
+                  aria-label={`Remove ${label(v)}`}
+                >
+                  <XIcon className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            );
+          })
         )}
       </div>
 

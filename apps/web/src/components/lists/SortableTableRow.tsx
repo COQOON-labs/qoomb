@@ -140,12 +140,16 @@ export function SortableTableRow({
                           key={v}
                           className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-foreground font-medium"
                         >
-                          <UserIcon className="w-3 h-3 shrink-0" />
+                          <UserIcon className="w-3 h-3 shrink-0" aria-hidden="true" />
                           {person.displayName ?? '?'}
                         </span>
                       ) : (
-                        // Orphaned — person deleted or stored as free text
-                        <span key={v} className="text-muted-foreground/60 italic text-xs" title={v}>
+                        // Free-text / orphaned — 3 redundant cues: no icon + dashed border + italic
+                        <span
+                          key={v}
+                          className="inline-flex items-center text-xs px-1.5 py-0.5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground italic"
+                          title="Nicht im System"
+                        >
                           {v}
                         </span>
                       );

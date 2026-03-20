@@ -207,6 +207,77 @@ Every route must set a descriptive `<title>` element. The format is:
 <title>Anmelden · Qoomb</title>
 ```
 
+### 10. Colour-Blind Accessible Design — Never Colour Alone
+
+**Rule:** Colour must never be the _sole_ differentiator between two states or categories.
+Always combine colour with at least one additional visual cue: shape, icon, pattern, label,
+or typographic style.
+
+This principle is required by WCAG 2.1 criterion **1.4.1 Use of Colour (Level A)** and is
+critical for users with deuteranopia (red–green), protanopia, or tritanopia.
+
+#### Why it matters
+
+~8% of male and ~0.5% of female users have some form of colour vision deficiency. If
+"resolved person in the system" vs. "free-text external name" is distinguished only by
+badge colour (yellow vs. grey), those users cannot tell them apart.
+
+#### Pattern: Redundant Visual Cues (at least 2 of these 4)
+
+| Cue        | Example                               |
+| ---------- | ------------------------------------- |
+| Colour     | primary yellow vs. muted grey         |
+| Icon       | `UserIcon` present vs. absent         |
+| Shape      | filled badge vs. dashed-outline badge |
+| Typography | normal weight vs. italic weight       |
+
+Use **at least 2** cues simultaneously so that no single one of them is load-bearing.
+
+#### Applied example: Person field badges in list views
+
+```tsx
+// ✅ GOOD — resolved hive member: primary colour + UserIcon (2 cues)
+<span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5
+                 rounded-full bg-primary/10 text-foreground font-medium">
+  <UserIcon className="w-3 h-3 shrink-0" aria-hidden="true" />
+  Anna
+</span>
+
+// ✅ GOOD — free-text external name: muted colour + italic + no icon (3 cues)
+<span className="text-xs px-1.5 py-0.5 rounded-full
+                 border border-dashed border-muted-foreground/40
+                 text-muted-foreground italic"
+      title="Nicht im System">
+  Oma Lieselotte
+</span>
+
+// ❌ BAD — colour only
+<span className="badge-yellow">Anna</span>
+<span className="badge-grey">Oma Lieselotte</span>  // undetectable for deuteranopia
+```
+
+#### Further patterns using this principle
+
+| UI element          | DO                                        | DON'T                |
+| ------------------- | ----------------------------------------- | -------------------- |
+| Error state         | Red border + `!` icon + error text below  | Red border only      |
+| Required field      | Asterisk `*` + label text "Pflichtfeld"   | Red asterisk only    |
+| Active nav item     | Bold text + left border + background tint | Background tint only |
+| Favourite star      | Filled star icon + primary colour         | Primary colour only  |
+| Success toast       | ✓ icon + "Gespeichert" text + green tint  | Green tint only      |
+| Status badge (task) | Icon shape + label text + colour          | Colour only          |
+
+#### Design token guidance
+
+When choosing colours for semantic states, always verify:
+
+1. The colour has ≥ 3:1 contrast against adjacent background (WCAG 1.4.3)
+2. An additional non-colour cue is present on the same element
+3. The meaning survives a greyscale screenshot
+
+Tools to verify: [Coblis](https://www.color-blindness.com/coblis-color-blindness-simulator/)
+colour-blindness simulator, or the "Emulate vision deficiencies" panel in Chrome DevTools.
+
 ### 10. Testing Strategy
 
 Accessibility is verified at three levels:

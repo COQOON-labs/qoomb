@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-import { DragHandleIcon, TrashIcon } from '../icons';
+import { DragHandleIcon, TrashIcon, UserIcon } from '../icons';
 
 import type { ListField, ListItem, UpdateItemMutation, LLType } from './types';
 
@@ -19,6 +19,8 @@ export interface SortableTableRowProps {
   setCellDraft: (v: string) => void;
   updateItem: UpdateItemMutation;
   LL: LLType;
+  /** Hive persons for person-field autocomplete and display */
+  persons: readonly { id: string; displayName: string | null }[];
 }
 
 export function SortableTableRow({
@@ -35,6 +37,7 @@ export function SortableTableRow({
   setCellDraft,
   updateItem,
   LL,
+  persons,
 }: SortableTableRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -60,7 +63,12 @@ export function SortableTableRow({
             className="px-3 py-2.5 text-foreground cursor-pointer"
             onClick={() => {
               if (!isEditing) {
-                handleCellClick(item.id, field.id, field.fieldType, cellValue);
+                // For person fields pass the raw UUID (not the resolved display name)
+                const clickValue =
+                  field.fieldType === 'person'
+                    ? (item.values.find((v) => v.fieldId === field.id)?.value ?? '')
+                    : cellValue;
+                handleCellClick(item.id, field.id, field.fieldType, clickValue);
               }
             }}
           >
@@ -86,6 +94,24 @@ export function SortableTableRow({
                     </option>
                   ))}
                 </select>
+              ) : field.fieldType === 'person' ? (
+                <select
+                  value={cellDraft}
+                  onChange={(e) => {
+                    setCellDraft(e.target.value);
+                    const val = e.target.value || null;
+                    updateItem.mutate({ id: item.id, data: { values: { [field.id]: val } } });
+                  }}
+                  className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
+                  autoFocus
+                >
+                  <option value="">—</option>
+                  {persons.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.displayName ?? p.id}
+                    </option>
+                  ))}
+                </select>
               ) : (
                 <input
                   ref={cellInputRef}
@@ -103,6 +129,27 @@ export function SortableTableRow({
                   className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
                 />
               )
+            ) : field.fieldType === 'person' ? (
+              // Person display: resolved badge vs orphaned fallback
+              (() => {
+                const rawVal = item.values.find((v) => v.fieldId === field.id)?.value;
+                if (!rawVal) return <span className="text-muted-foreground/30">—</span>;
+                const person = persons.find((p) => p.id === rawVal);
+                if (person) {
+                  return (
+                    <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-foreground font-medium">
+                      <UserIcon className="w-3 h-3 shrink-0" />
+                      {person.displayName ?? '?'}
+                    </span>
+                  );
+                }
+                // Orphaned — person no longer exists or was stored as free text
+                return (
+                  <span className="text-muted-foreground/50 italic text-xs" title={rawVal}>
+                    {rawVal}
+                  </span>
+                );
+              })()
             ) : (
               cellValue || <span className="text-muted-foreground/30">—</span>
             )}

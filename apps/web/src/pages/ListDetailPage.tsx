@@ -351,6 +351,8 @@ export function ListDetailPage() {
         updateItem.mutate({ id: itemId, data: { values: { [fieldId]: newVal } } });
         return;
       }
+      // For person fields, currentValue is already the raw UUID (passed from SortableTableRow)
+      // For other fields it is the display value
       setEditingCell({ itemId, fieldId });
       setCellDraft(currentValue);
       setTimeout(() => cellInputRef.current?.focus(), 0);
@@ -695,6 +697,7 @@ export function ListDetailPage() {
                                 setCellDraft={setCellDraft}
                                 updateItem={updateItem}
                                 LL={LL}
+                                persons={persons}
                               />
                             ))}
                           </tbody>

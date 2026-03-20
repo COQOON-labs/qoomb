@@ -1077,6 +1077,41 @@ type RootTranslation = {
      * N​o​ ​s​e​l​e​c​t​ ​f​i​e​l​d​ ​f​o​u​n​d​.​ ​P​l​e​a​s​e​ ​c​r​e​a​t​e​ ​a​ ​s​e​l​e​c​t​ ​f​i​e​l​d​ ​f​i​r​s​t​.
      */
     noSelectFields: string;
+    /**
+     * R​e​p​e​a​t​s
+     */
+    recurrenceLabel: string;
+    /**
+     * D​o​e​s​ ​n​o​t​ ​r​e​p​e​a​t
+     */
+    recurrenceNone: string;
+    recurrenceFrequency: {
+      /**
+       * D​a​i​l​y
+       */
+      daily: string;
+      /**
+       * W​e​e​k​l​y
+       */
+      weekly: string;
+      /**
+       * M​o​n​t​h​l​y
+       */
+      monthly: string;
+      /**
+       * Y​e​a​r​l​y
+       */
+      yearly: string;
+    };
+    /**
+     * E​v​e​r​y​ ​{​n​}​ ​…
+     * @param {unknown} n
+     */
+    recurrenceInterval: RequiredParams<'n'>;
+    /**
+     * R​e​c​u​r​r​e​n​c​e​ ​s​a​v​e​d
+     */
+    recurrenceSaved: string;
   };
   activity: {
     /**
@@ -2281,6 +2316,40 @@ export type TranslationFunctions = {
      * No select field found. Please create a select field first.
      */
     noSelectFields: () => LocalizedString;
+    /**
+     * Repeats
+     */
+    recurrenceLabel: () => LocalizedString;
+    /**
+     * Does not repeat
+     */
+    recurrenceNone: () => LocalizedString;
+    recurrenceFrequency: {
+      /**
+       * Daily
+       */
+      daily: () => LocalizedString;
+      /**
+       * Weekly
+       */
+      weekly: () => LocalizedString;
+      /**
+       * Monthly
+       */
+      monthly: () => LocalizedString;
+      /**
+       * Yearly
+       */
+      yearly: () => LocalizedString;
+    };
+    /**
+     * Every {n} …
+     */
+    recurrenceInterval: (arg: { n: unknown }) => LocalizedString;
+    /**
+     * Recurrence saved
+     */
+    recurrenceSaved: () => LocalizedString;
   };
   activity: {
     /**

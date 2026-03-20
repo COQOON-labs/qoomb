@@ -173,14 +173,23 @@ export const listItemValueSchema = z.record(
   z.union([z.string(), z.number(), z.boolean(), z.null()])
 );
 
+export const recurrenceFrequencySchema = z.enum(['daily', 'weekly', 'monthly', 'yearly']);
+
+export const recurrenceRuleSchema = z.object({
+  frequency: recurrenceFrequencySchema,
+  interval: z.number().int().positive().optional(),
+});
+
 export const createListItemSchema = z.object({
   listId: z.uuid(),
   values: listItemValueSchema,
+  recurrenceRule: recurrenceRuleSchema.optional(),
 });
 
 export const updateListItemSchema = z.object({
   values: listItemValueSchema.optional(),
   sortOrder: z.number().optional(),
+  recurrenceRule: recurrenceRuleSchema.nullish(),
 });
 
 export const reorderListItemsSchema = z.object({

@@ -383,13 +383,14 @@ model ListItem {
   // hiveId: denormalized from lists.hive_id for cheap RLS evaluation.
   // Kept in sync by the list_items_enforce_hive_id_trigger (BEFORE INSERT).
   // lists.hive_id is immutable, so no UPDATE trigger is needed.
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  listId    String   @map("list_id") @db.Uuid
-  hiveId    String   @map("hive_id") @db.Uuid
-  creatorId String   @map("creator_id") @db.Uuid
-  sortOrder Float    @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listId         String   @map("list_id") @db.Uuid
+  hiveId         String   @map("hive_id") @db.Uuid
+  creatorId      String   @map("creator_id") @db.Uuid
+  sortOrder      Float    @default(0) @map("sort_order")
+  recurrenceRule Json?    @map("recurrence_rule") @db.JsonB
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   list    List            @relation(fields: [listId], references: [id], onDelete: Cascade)
   creator Person          @relation("ListItemCreator", fields: [creatorId], references: [id], onDelete: Cascade)

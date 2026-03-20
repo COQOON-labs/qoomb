@@ -329,6 +329,17 @@ const en = {
     kanbanGroupBy: 'Group by',
     kanbanNoValue: '(No value)',
     noSelectFields: 'No select field found. Please create a select field first.',
+    // Recurrence
+    recurrenceLabel: 'Repeats',
+    recurrenceNone: 'Does not repeat',
+    recurrenceFrequency: {
+      daily: 'Daily',
+      weekly: 'Weekly',
+      monthly: 'Monthly',
+      yearly: 'Yearly',
+    },
+    recurrenceInterval: 'Every {n} …',
+    recurrenceSaved: 'Recurrence saved',
   },
 
   // ── Activity ───────────────────────────────────────────────────────────────

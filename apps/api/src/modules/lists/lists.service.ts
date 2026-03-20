@@ -103,6 +103,7 @@ export interface UpdateViewData {
 export interface UpdateItemData {
   values?: Record<string, unknown>;
   sortOrder?: number;
+  recurrenceRule?: Record<string, unknown> | null;
 }
 
 // ============================================
@@ -418,13 +419,19 @@ export class ListsService {
     listId: string,
     hiveId: string,
     creatorId: string,
-    values: Record<string, unknown>
+    values: Record<string, unknown>,
+    recurrenceRule?: Record<string, unknown> | null
   ): Promise<ListItemRow> {
     const fields = await this.prisma.listField.findMany({ where: { listId } });
     const fieldMap = new Map(fields.map((f) => [f.id, f]));
 
     const item = await this.prisma.listItem.create({
-      data: { listId, hiveId, creatorId },
+      data: {
+        listId,
+        hiveId,
+        creatorId,
+        ...(recurrenceRule ? { recurrenceRule: recurrenceRule as Prisma.InputJsonValue } : {}),
+      },
     });
 
     const upserts = this._buildValueUpserts(item.id, fieldMap, values, hiveId);
@@ -454,6 +461,12 @@ export class ListsService {
 
     const patch: Prisma.ListItemUncheckedUpdateInput = {};
     if (data.sortOrder !== undefined) patch.sortOrder = data.sortOrder;
+    if ('recurrenceRule' in data) {
+      patch.recurrenceRule =
+        data.recurrenceRule !== null && data.recurrenceRule !== undefined
+          ? (data.recurrenceRule as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+    }
 
     if (Object.keys(patch).length > 0) {
       await this.prisma.listItem.update({ where: { id }, data: patch });

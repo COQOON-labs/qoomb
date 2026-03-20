@@ -330,6 +330,17 @@ const de = {
     kanbanGroupBy: 'Gruppiert nach',
     kanbanNoValue: '(Kein Wert)',
     noSelectFields: 'Kein Auswahlfeld vorhanden. Bitte erst ein Auswahlfeld anlegen.',
+    // Recurrence
+    recurrenceLabel: 'Wiederholt sich',
+    recurrenceNone: 'Nicht wiederholen',
+    recurrenceFrequency: {
+      daily: 'Täglich',
+      weekly: 'Wöchentlich',
+      monthly: 'Monatlich',
+      yearly: 'Jährlich',
+    },
+    recurrenceInterval: 'Alle {n} …',
+    recurrenceSaved: 'Wiederholung gespeichert',
   },
 
   // ── Activity ─────────────────────────────────────────────────────────────

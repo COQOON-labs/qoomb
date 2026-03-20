@@ -97,6 +97,26 @@ vi.mock('../lib/trpc/client', () => ({
           isPending: false,
         }),
       },
+      toggleFavorite: {
+        useMutation: (opts?: {
+          onSuccess?: (data: { isFavorite: boolean }) => void;
+          onError?: () => void;
+        }) => ({
+          mutate: (...args: unknown[]) => {
+            mutateFn(...args);
+            opts?.onSuccess?.({ isFavorite: true });
+          },
+          isPending: false,
+        }),
+      },
+      reorderFavorites: {
+        useMutation: (opts?: { onError?: () => void }) => ({
+          mutate: (...args: unknown[]) => {
+            mutateFn(...args);
+          },
+          isPending: false,
+        }),
+      },
     },
   },
 }));
@@ -147,7 +167,7 @@ describe('ListsPage', () => {
     fireEvent.click(newBtn);
 
     // Form should now be visible with an input and submit button
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /lists\.listNameLabel/i })).toBeInTheDocument();
   });
 
   it('shows template picker in create form when templates exist', () => {
@@ -170,14 +190,16 @@ describe('ListsPage', () => {
 
     // Open form
     fireEvent.click(screen.getByRole('button', { name: /lists\.newList/i }));
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /lists\.listNameLabel/i })).toBeInTheDocument();
 
     // Cancel
     const cancelBtn = screen.getByRole('button', { name: /common\.cancel/i });
     fireEvent.click(cancelBtn);
 
     // Form should be hidden, "New list" button back
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('textbox', { name: /lists\.listNameLabel/i })
+    ).not.toBeInTheDocument();
   });
 
   it('does not show delete button for system lists', () => {
@@ -228,7 +250,7 @@ describe('ListsPage', () => {
     // Empty state renders a "New list" CTA — click it
     const buttons = screen.getAllByRole('button', { name: /lists\.newList/ });
     fireEvent.click(buttons[0]);
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /lists\.listNameLabel/i })).toBeInTheDocument();
   });
 
   // ── Archived toggle ─────────────────────────────────────────────────────
@@ -266,7 +288,7 @@ describe('ListsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /lists\.newList/ }));
 
     // Type a name
-    const input = screen.getByRole('textbox');
+    const input = screen.getByRole('textbox', { name: /lists\.listNameLabel/i });
     fireEvent.change(input, { target: { value: 'My New List' } });
 
     // Submit

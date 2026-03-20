@@ -107,6 +107,11 @@ vi.mock('../lib/trpc/client', () => ({
         listItems: { invalidate: vi.fn() },
       },
     }),
+    persons: {
+      list: {
+        useQuery: () => ({ data: [], isLoading: false }),
+      },
+    },
     lists: {
       get: {
         useQuery: () => listOverride ?? { data: mockList, isLoading: false },

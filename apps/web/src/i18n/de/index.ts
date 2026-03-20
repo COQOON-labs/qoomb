@@ -350,6 +350,9 @@ const de = {
     favoriteAdded: 'Zu Favoriten hinzugefügt',
     favoriteRemoved: 'Aus Favoriten entfernt',
     allLists: 'Alle Listen',
+    dragToReorder: 'Ziehen zum Sortieren',
+    removeFromFavorites: 'Aus Favoriten entfernen',
+    addToFavorites: 'Zu Favoriten hinzufügen',
   },
 
   // ── Activity ─────────────────────────────────────────────────────────────

@@ -1148,6 +1148,18 @@ type RootTranslation = {
      * A​l​l​ ​l​i​s​t​s
      */
     allLists: string;
+    /**
+     * D​r​a​g​ ​t​o​ ​r​e​o​r​d​e​r
+     */
+    dragToReorder: string;
+    /**
+     * R​e​m​o​v​e​ ​f​r​o​m​ ​f​a​v​o​r​i​t​e​s
+     */
+    removeFromFavorites: string;
+    /**
+     * A​d​d​ ​t​o​ ​f​a​v​o​r​i​t​e​s
+     */
+    addToFavorites: string;
   };
   activity: {
     /**
@@ -2422,6 +2434,18 @@ export type TranslationFunctions = {
      * All lists
      */
     allLists: () => LocalizedString;
+    /**
+     * Drag to reorder
+     */
+    dragToReorder: () => LocalizedString;
+    /**
+     * Remove from favorites
+     */
+    removeFromFavorites: () => LocalizedString;
+    /**
+     * Add to favorites
+     */
+    addToFavorites: () => LocalizedString;
   };
   activity: {
     /**

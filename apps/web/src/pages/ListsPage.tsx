@@ -47,6 +47,8 @@ interface SortableFavoriteRowProps {
   deletingId: string | null;
   itemCountLabel: (count: number) => string;
   deleteLabel: string;
+  dragToReorderLabel: string;
+  removeFromFavoritesLabel: string;
 }
 
 function SortableFavoriteRow({
@@ -57,6 +59,8 @@ function SortableFavoriteRow({
   deletingId,
   itemCountLabel,
   deleteLabel,
+  dragToReorderLabel,
+  removeFromFavoritesLabel,
 }: SortableFavoriteRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: list.id,
@@ -74,19 +78,8 @@ function SortableFavoriteRow({
         className="group cursor-pointer hover:border-foreground/20 transition-colors"
         onClick={() => onListClick(list.id)}
       >
-        <div className="flex items-center gap-3 px-4 py-3.5">
-          {/* Drag handle */}
-          <button
-            type="button"
-            className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-all touch-none flex-shrink-0"
-            aria-label="Drag to reorder"
-            onClick={(e) => e.stopPropagation()}
-            {...attributes}
-            {...listeners}
-          >
-            <DragHandleIcon className="w-4 h-4" />
-          </button>
-          <span className="text-xl leading-none w-7 text-center shrink-0">{list.icon ?? '📋'}</span>
+        <div className="flex items-center gap-2 px-3 py-2.5">
+          <span className="text-xl leading-none w-8 text-center shrink-0">{list.icon ?? '📋'}</span>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-foreground truncate">{list.name}</p>
             {list._count?.items !== undefined && (
@@ -95,22 +88,23 @@ function SortableFavoriteRow({
               </span>
             )}
           </div>
-          {/* Star — filled yellow for favorites */}
+          {/* Star — filled, always visible */}
           <button
             type="button"
-            className="p-1.5 rounded-md transition-all flex-shrink-0 text-primary"
+            className="p-2 rounded-md transition-colors text-primary flex-shrink-0"
             onClick={(e) => {
               e.stopPropagation();
               onStarClick(list.id);
             }}
-            aria-label="Remove from favorites"
+            aria-label={removeFromFavoritesLabel}
           >
-            <StarIcon className="w-4 h-4 fill-primary stroke-primary" />
+            <StarIcon className="w-5 h-5 fill-primary stroke-primary" />
           </button>
+          {/* Trash — always at 40% opacity, destructive on hover */}
           {!list.systemKey && (
             <button
               type="button"
-              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+              className="p-2 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteClick(list.id, list.systemKey);
@@ -118,9 +112,20 @@ function SortableFavoriteRow({
               disabled={deletingId === list.id}
               aria-label={deleteLabel}
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashIcon className="w-5 h-5" />
             </button>
           )}
+          {/* Drag handle — trailing position, always visible at 40% */}
+          <button
+            type="button"
+            className="p-2 rounded-md text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing transition-colors touch-none flex-shrink-0"
+            aria-label={dragToReorderLabel}
+            onClick={(e) => e.stopPropagation()}
+            {...attributes}
+            {...listeners}
+          >
+            <DragHandleIcon className="w-5 h-5" />
+          </button>
         </div>
       </Card>
     </div>
@@ -138,6 +143,8 @@ interface ListRowProps {
   itemCountLabel: (count: number) => string;
   deleteLabel: string;
   archivedLabel: string;
+  addToFavoritesLabel: string;
+  removeFromFavoritesLabel: string;
 }
 
 function ListRow({
@@ -149,6 +156,8 @@ function ListRow({
   itemCountLabel,
   deleteLabel,
   archivedLabel,
+  addToFavoritesLabel,
+  removeFromFavoritesLabel,
 }: ListRowProps) {
   return (
     <Card
@@ -156,8 +165,8 @@ function ListRow({
       className="group cursor-pointer hover:border-foreground/20 transition-colors"
       onClick={() => onListClick(list.id)}
     >
-      <div className="flex items-center gap-3 px-4 py-3.5">
-        <span className="text-xl leading-none w-7 text-center shrink-0">{list.icon ?? '📋'}</span>
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        <span className="text-xl leading-none w-8 text-center shrink-0">{list.icon ?? '📋'}</span>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-foreground truncate">{list.name}</p>
           <div className="flex items-center gap-2">
@@ -173,22 +182,25 @@ function ListRow({
             )}
           </div>
         </div>
-        {/* Star — outline for non-favorites */}
+        {/* Star — filled if favorite, outline otherwise; always at 40% opacity */}
         <button
           type="button"
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-muted-foreground hover:text-primary transition-all flex-shrink-0"
+          className={`p-2 rounded-md transition-colors flex-shrink-0 ${
+            list.isFavorite ? 'text-primary' : 'text-muted-foreground/40 hover:text-primary'
+          }`}
           onClick={(e) => {
             e.stopPropagation();
             onStarClick(list.id);
           }}
-          aria-label="Add to favorites"
+          aria-label={list.isFavorite ? removeFromFavoritesLabel : addToFavoritesLabel}
         >
-          <StarIcon className="w-4 h-4" />
+          <StarIcon className={`w-5 h-5 ${list.isFavorite ? 'fill-primary stroke-primary' : ''}`} />
         </button>
+        {/* Trash — always at 40% opacity, destructive on hover */}
         {!list.systemKey && (
           <button
             type="button"
-            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+            className="p-2 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
             onClick={(e) => {
               e.stopPropagation();
               onDeleteClick(list.id, list.systemKey);
@@ -196,7 +208,7 @@ function ListRow({
             disabled={deletingId === list.id}
             aria-label={deleteLabel}
           >
-            <TrashIcon className="w-4 h-4" />
+            <TrashIcon className="w-5 h-5" />
           </button>
         )}
       </div>
@@ -369,13 +381,26 @@ export function ListsPage() {
   const handleListClick = useCallback((id: string) => void navigate(`/lists/${id}`), [navigate]);
 
   // ── Shared props for rows ──────────────────────────────────────────────────
-  const rowProps = {
+  const baseRowProps = {
     onStarClick: handleStarClick,
     onDeleteClick: handleDeleteClick,
     onListClick: handleListClick,
     deletingId,
     itemCountLabel: (count: number) => LL.lists.itemCount({ count }),
     deleteLabel: LL.lists.deleteList(),
+  };
+
+  const favoriteRowProps = {
+    ...baseRowProps,
+    dragToReorderLabel: LL.lists.dragToReorder(),
+    removeFromFavoritesLabel: LL.lists.removeFromFavorites(),
+  };
+
+  const listRowProps = {
+    ...baseRowProps,
+    archivedLabel: LL.lists.archivedBadge(),
+    addToFavoritesLabel: LL.lists.addToFavorites(),
+    removeFromFavoritesLabel: LL.lists.removeFromFavorites(),
   };
 
   return (
@@ -487,57 +512,59 @@ export function ListsPage() {
           </div>
         ) : (
           <>
-            {/* ── Favorites section ──────────────────────────────────── */}
-            {displayedFavorites.length > 0 && !q && (
-              <section className="mb-5">
-                <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                  {LL.lists.favorites()}
-                </h2>
-                <DndContext
-                  sensors={dndSensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleFavDragEnd}
-                >
-                  <SortableContext
-                    items={displayedFavorites.map((l) => l.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
+            {q ? (
+              /* ── Search mode: flat list, favorites shown with filled star ── */
+              <div className="flex flex-col gap-2">
+                {sortedLists.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    {LL.common.noResults()}
+                  </p>
+                ) : (
+                  sortedLists.map((list) => <ListRow key={list.id} list={list} {...listRowProps} />)
+                )}
+              </div>
+            ) : (
+              /* ── Normal mode: favorites + all lists ──────────────────── */
+              <>
+                {displayedFavorites.length > 0 && (
+                  <section className="mb-5">
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                      {LL.lists.favorites()}
+                    </h2>
+                    <DndContext
+                      sensors={dndSensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleFavDragEnd}
+                    >
+                      <SortableContext
+                        items={displayedFavorites.map((l) => l.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="flex flex-col gap-2">
+                          {displayedFavorites.map((list) => (
+                            <SortableFavoriteRow key={list.id} list={list} {...favoriteRowProps} />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  </section>
+                )}
+
+                {nonFavoritesList.length > 0 && (
+                  <section>
+                    {displayedFavorites.length > 0 && (
+                      <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                        {LL.lists.allLists()}
+                      </h2>
+                    )}
                     <div className="flex flex-col gap-2">
-                      {displayedFavorites.map((list) => (
-                        <SortableFavoriteRow key={list.id} list={list} {...rowProps} />
+                      {nonFavoritesList.map((list) => (
+                        <ListRow key={list.id} list={list} {...listRowProps} />
                       ))}
                     </div>
-                  </SortableContext>
-                </DndContext>
-              </section>
-            )}
-
-            {/* ── All lists section ──────────────────────────────────── */}
-            {nonFavoritesList.length > 0 && (
-              <section>
-                {displayedFavorites.length > 0 && !q && (
-                  <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                    {LL.lists.allLists()}
-                  </h2>
+                  </section>
                 )}
-                <div className="flex flex-col gap-2">
-                  {nonFavoritesList.map((list) => (
-                    <ListRow
-                      key={list.id}
-                      list={list}
-                      archivedLabel={LL.lists.archivedBadge()}
-                      {...rowProps}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* ── Search: no results ─────────────────────────────────── */}
-            {q && sortedLists.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                {LL.common.noResults()}
-              </p>
+              </>
             )}
           </>
         )}

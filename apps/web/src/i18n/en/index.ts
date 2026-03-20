@@ -349,6 +349,9 @@ const en = {
     favoriteAdded: 'Added to favorites',
     favoriteRemoved: 'Removed from favorites',
     allLists: 'All lists',
+    dragToReorder: 'Drag to reorder',
+    removeFromFavorites: 'Remove from favorites',
+    addToFavorites: 'Add to favorites',
   },
 
   // ── Activity ───────────────────────────────────────────────────────────────

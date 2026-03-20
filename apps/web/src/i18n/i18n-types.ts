@@ -85,6 +85,10 @@ type RootTranslation = {
      * I​n​v​i​t​e
      */
     invite: string;
+    /**
+     * N​o​ ​r​e​s​u​l​t​s​ ​f​o​u​n​d​.
+     */
+    noResults: string;
   };
   nav: {
     /**
@@ -1120,6 +1124,30 @@ type RootTranslation = {
      * R​e​c​u​r​r​e​n​c​e​ ​s​a​v​e​d
      */
     recurrenceSaved: string;
+    /**
+     * S​e​a​r​c​h​ ​l​i​s​t​s​…
+     */
+    searchPlaceholder: string;
+    /**
+     * F​a​v​o​r​i​t​e​s
+     */
+    favorites: string;
+    /**
+     * N​o​ ​f​a​v​o​r​i​t​e​s​ ​y​e​t​.​ ​C​l​i​c​k​ ​t​h​e​ ​s​t​a​r​ ​n​e​x​t​ ​t​o​ ​a​ ​l​i​s​t​.
+     */
+    noFavorites: string;
+    /**
+     * A​d​d​e​d​ ​t​o​ ​f​a​v​o​r​i​t​e​s
+     */
+    favoriteAdded: string;
+    /**
+     * R​e​m​o​v​e​d​ ​f​r​o​m​ ​f​a​v​o​r​i​t​e​s
+     */
+    favoriteRemoved: string;
+    /**
+     * A​l​l​ ​l​i​s​t​s
+     */
+    allLists: string;
   };
   activity: {
     /**
@@ -1352,6 +1380,10 @@ export type TranslationFunctions = {
      * Invite
      */
     invite: () => LocalizedString;
+    /**
+     * No results found.
+     */
+    noResults: () => LocalizedString;
   };
   nav: {
     /**
@@ -2366,6 +2398,30 @@ export type TranslationFunctions = {
      * Recurrence saved
      */
     recurrenceSaved: () => LocalizedString;
+    /**
+     * Search lists…
+     */
+    searchPlaceholder: () => LocalizedString;
+    /**
+     * Favorites
+     */
+    favorites: () => LocalizedString;
+    /**
+     * No favorites yet. Click the star next to a list.
+     */
+    noFavorites: () => LocalizedString;
+    /**
+     * Added to favorites
+     */
+    favoriteAdded: () => LocalizedString;
+    /**
+     * Removed from favorites
+     */
+    favoriteRemoved: () => LocalizedString;
+    /**
+     * All lists
+     */
+    allLists: () => LocalizedString;
   };
   activity: {
     /**

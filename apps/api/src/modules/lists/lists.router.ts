@@ -72,11 +72,28 @@ export const listsRouter = (listsService: ListsService) =>
         sharedIds
       );
 
-      return listsService.list(
-        ctx.user.hiveId,
-        visibilityFilter as Prisma.ListWhereInput,
-        input.includeArchived
-      );
+      const personId = ctx.user.personId ?? '';
+
+      const [lists, favorites] = await Promise.all([
+        listsService.list(
+          ctx.user.hiveId,
+          visibilityFilter as Prisma.ListWhereInput,
+          input.includeArchived
+        ),
+        personId
+          ? ctx.tx.listFavorite.findMany({
+              where: { personId },
+              select: { listId: true, sortOrder: true },
+            })
+          : [],
+      ]);
+
+      const favMap = new Map(favorites.map((f) => [f.listId, f.sortOrder]));
+      return lists.map((l) => ({
+        ...l,
+        isFavorite: favMap.has(l.id),
+        favoriteSortOrder: favMap.get(l.id) ?? null,
+      }));
     }),
 
     /**
@@ -597,6 +614,68 @@ export const listsRouter = (listsService: ListsService) =>
         throw mapPrismaError(e, 'Failed to get inbox');
       }
     }),
+
+    // ──────────────────────────────────────────────────────────────────────
+    // FAVORITES
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Toggle a list as favorite for the current person.
+     * Returns the new isFavorite state.
+     */
+    toggleFavorite: hiveProcedure
+      .input(z.object({ listId: z.uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        requirePermission(ctx, HivePermission.LISTS_VIEW);
+        const { personId } = ctx.user;
+        if (!personId) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No person record' });
+
+        const existing = await ctx.tx.listFavorite.findUnique({
+          where: { personId_listId: { personId, listId: input.listId } },
+        });
+
+        if (existing) {
+          await ctx.tx.listFavorite.delete({
+            where: { personId_listId: { personId, listId: input.listId } },
+          });
+          return { isFavorite: false };
+        }
+
+        // Place new favorite at the end of the current favorites list
+        const lastFavorite = await ctx.tx.listFavorite.findFirst({
+          where: { personId },
+          orderBy: { sortOrder: 'desc' },
+          select: { sortOrder: true },
+        });
+        const sortOrder = (lastFavorite?.sortOrder ?? -1) + 1;
+
+        await ctx.tx.listFavorite.create({
+          data: { personId, listId: input.listId, sortOrder },
+        });
+        return { isFavorite: true };
+      }),
+
+    /**
+     * Reorder the current person's favorites via drag-and-drop.
+     * Input: ordered array of listIds (favorites only).
+     */
+    reorderFavorites: hiveProcedure
+      .input(z.object({ listIds: z.array(z.uuid()) }))
+      .mutation(async ({ ctx, input }) => {
+        requirePermission(ctx, HivePermission.LISTS_VIEW);
+        const { personId } = ctx.user;
+        if (!personId) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No person record' });
+
+        await ctx.tx.$transaction(
+          input.listIds.map((listId, idx) =>
+            ctx.tx.listFavorite.updateMany({
+              where: { personId, listId },
+              data: { sortOrder: idx },
+            })
+          )
+        );
+        return { success: true };
+      }),
   });
 
 export type ListsRouter = ReturnType<typeof listsRouter>;

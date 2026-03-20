@@ -20,6 +20,7 @@ const de = {
     passwordHint: 'Min. 8 Zeichen mit Großbuchstabe, Zahl und Sonderzeichen',
     create: 'Erstellen',
     invite: 'Einladen',
+    noResults: 'Keine Ergebnisse gefunden.',
   },
 
   // ── Navigation ───────────────────────────────────────────────────────────────────────────────
@@ -343,6 +344,12 @@ const de = {
     },
     recurrenceInterval: 'Alle {n} …',
     recurrenceSaved: 'Wiederholung gespeichert',
+    searchPlaceholder: 'Listen durchsuchen…',
+    favorites: 'Favoriten',
+    noFavorites: 'Noch keine Favoriten. Klicke auf den Stern neben einer Liste.',
+    favoriteAdded: 'Zu Favoriten hinzugefügt',
+    favoriteRemoved: 'Aus Favoriten entfernt',
+    allLists: 'Alle Listen',
   },
 
   // ── Activity ─────────────────────────────────────────────────────────────

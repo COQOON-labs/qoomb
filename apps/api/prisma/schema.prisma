@@ -146,6 +146,7 @@ model Person {
   sentMessages             DirectMessage[]        @relation("MessageSender")
   receivedMessages         DirectMessage[]        @relation("MessageRecipient")
   activityEvents           ActivityEvent[]
+  listFavorites    ListFavorite[]
 
   @@index([hiveId])
   @@index([userId])
@@ -326,6 +327,7 @@ model List {
   fields  ListField[]
   views   ListView[]
   items   ListItem[]
+  favorites ListFavorite[]
 
   @@unique([hiveId, creatorId, systemKey])
   @@index([hiveId])
@@ -421,6 +423,26 @@ model ListItemValue {
 
 // LIST TEMPLATES are now unified into the List model via isTemplate=true.
 // See ADR-0009 for the rationale.
+
+// ── ListFavorite ────────────────────────────────────────────────────────────
+// Tracks which lists a person has starred, and in what order they want them.
+// One row per (person, list) pair. sortOrder defines drag-and-drop position
+// among a person's favorites. Scoped to hive via the list relation.
+model ListFavorite {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  personId  String   @map("person_id") @db.Uuid
+  listId    String   @map("list_id") @db.Uuid
+  sortOrder Float    @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  list   List   @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@unique([personId, listId])
+  @@index([personId])
+  @@index([listId])
+  @@map("list_favorites")
+}
 
 // ============================================
 // AUTH EXTENSION TABLES

@@ -1,23 +1,23 @@
 # Supply-Chain Monitoring
 #
-# Runs AFTER merging to main and on a weekly schedule — NOT on PRs.
-# PRs are already guarded by dependency-review (CVEs) and CodeQL (code bugs).
-# This workflow provides deeper, ongoing visibility into the supply chain:
+# Trivy SARIF scans run on PRs + push to main + weekly schedule.
+# This satisfies GitHub Code Scanning's required-check expectation (it needs
+# SARIF results uploaded for every PR in categories it has seen before).
 #
-#   Trivy   — deep vulnerability scan of all packages (fs), secrets, and IaC
-#             config files; uploads SARIF to the GitHub Security tab.
-#   Scorecard — measures qoomb's own security posture against the OpenSSF
-#             Scorecard rubric (branch protection, SAST, pinned deps, etc.)
-#             and publishes the score/badge to the public OpenSSF API.
+# The expensive blocking table scan (exit-code: 1) only runs on push + weekly
+# — not on PRs — since pnpm audit + dependency-review already guard PRs.
 #
-# Why not on PRs?
-#   Trivy takes ~15 min and pnpm audit + dependency-review already catch CVEs
-#   at PR time. Running Trivy on PRs would double the cost for no added signal.
+#   Trivy   — deep vulnerability scan (fs), secrets, IaC config files;
+#             SARIF uploaded to GitHub Security tab on every trigger.
+#   Scorecard — measures qoomb's own OpenSSF security posture;
+#             publishes score/badge; only runs on push + weekly (not PRs).
 
 name: Monitoring
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   schedule:
     - cron: '0 7 * * 1' # Every Monday at 7:00 UTC — Trivy deep scan
@@ -87,10 +87,12 @@ jobs:
           sarif_file: trivy-config.sarif
           category: trivy-config
 
-      # Human-readable table output — also gates the job on CRITICAL/HIGH findings
+      # Human-readable table output — also gates the job on CRITICAL/HIGH findings.
+      # Only run on push + schedule (not PRs) — pnpm audit + dependency-review
+      # already guard PRs; this avoids doubling scan time on every PR.
       - name: Scan filesystem (table — fail on CRITICAL/HIGH)
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
-        if: always()
+        if: github.event_name != 'pull_request'
         with:
           scan-type: fs
           scan-ref: '.'
@@ -130,11 +132,14 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   # OpenSSF Scorecard: measures qoomb's own security posture
   # Publishes the score to the public OpenSSF API (powers the README badge).
+  # Only runs on push to main + weekly — not on PRs (needs id-token: write
+  # which is unavailable on fork PRs, and score drifts slowly anyway).
   # ─────────────────────────────────────────────────────────────────────────────
   scorecard:
     name: OpenSSF Scorecard
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    if: github.event_name != 'pull_request'
     permissions:
       contents: read
       security-events: write # Upload SARIF to Security tab

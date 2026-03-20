@@ -75,13 +75,13 @@ describe('listFieldTypeSchema', () => {
 // ── listViewTypeSchema ────────────────────────────────────────────────────────
 
 describe('listViewTypeSchema', () => {
-  it.each(['checklist', 'table'])('accepts "%s"', (val) => {
+  it.each(['checklist', 'table', 'kanban'])('accepts "%s"', (val) => {
     expectPass(listViewTypeSchema, val);
   });
 
   it('rejects unknown view types', () => {
-    expectFail(listViewTypeSchema, 'kanban');
     expectFail(listViewTypeSchema, 'calendar');
+    expectFail(listViewTypeSchema, 'timeline');
   });
 });
 

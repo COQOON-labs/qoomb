@@ -321,11 +321,28 @@ const de = {
     },
     newViewName: 'Name der Ansicht',
     noCheckboxField: 'Kein Checkbox-Feld vorhanden. Bitte erst ein Checkbox-Feld anlegen.',
+    addCheckboxField: 'Checkbox-Feld hinzufügen',
+    checkboxFieldDefaultName: 'Erledigt',
     checkboxFieldLabel: 'Abgehakt-Feld',
     hideDone: 'Erledigte ausblenden',
     showDone: 'Erledigte anzeigen',
     noUncheckedItems: 'Alle Einträge erledigt 🎉',
     checkAll: 'Alle abhaken',
+    // Kanban view
+    kanbanGroupBy: 'Gruppiert nach',
+    kanbanNoValue: '(Kein Wert)',
+    noSelectFields: 'Kein Auswahlfeld vorhanden. Bitte erst ein Auswahlfeld anlegen.',
+    // Recurrence
+    recurrenceLabel: 'Wiederholt sich',
+    recurrenceNone: 'Nicht wiederholen',
+    recurrenceFrequency: {
+      daily: 'Täglich',
+      weekly: 'Wöchentlich',
+      monthly: 'Monatlich',
+      yearly: 'Jährlich',
+    },
+    recurrenceInterval: 'Alle {n} …',
+    recurrenceSaved: 'Wiederholung gespeichert',
   },
 
   // ── Activity ─────────────────────────────────────────────────────────────

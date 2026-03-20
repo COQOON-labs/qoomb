@@ -443,7 +443,8 @@ export const listsRouter = (listsService: ListsService) =>
           input.listId,
           hiveId,
           personId,
-          input.values as Record<string, unknown>
+          input.values as Record<string, unknown>,
+          input.recurrenceRule as Record<string, unknown> | undefined
         );
       } catch (e) {
         throw mapPrismaError(e, 'Failed to create item');
@@ -486,6 +487,14 @@ export const listsRouter = (listsService: ListsService) =>
           return await listsService.updateItem(input.id, ctx.user.hiveId, {
             values: input.data.values as Record<string, unknown> | undefined,
             sortOrder: input.data.sortOrder,
+            ...('recurrenceRule' in input.data
+              ? {
+                  recurrenceRule: input.data.recurrenceRule as
+                    | Record<string, unknown>
+                    | null
+                    | undefined,
+                }
+              : {}),
           });
         } catch (e) {
           throw mapPrismaError(e, 'Failed to update item');

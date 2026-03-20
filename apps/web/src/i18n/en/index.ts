@@ -320,11 +320,28 @@ const en = {
     },
     newViewName: 'View name',
     noCheckboxField: 'No checkbox field available. Add a checkbox field first.',
+    addCheckboxField: 'Add checkbox field',
+    checkboxFieldDefaultName: 'Done',
     checkboxFieldLabel: 'Done field',
     hideDone: 'Hide done',
     showDone: 'Show done',
     noUncheckedItems: 'All items done 🎉',
     checkAll: 'Check all',
+    // Kanban view
+    kanbanGroupBy: 'Group by',
+    kanbanNoValue: '(No value)',
+    noSelectFields: 'No select field found. Please create a select field first.',
+    // Recurrence
+    recurrenceLabel: 'Repeats',
+    recurrenceNone: 'Does not repeat',
+    recurrenceFrequency: {
+      daily: 'Daily',
+      weekly: 'Weekly',
+      monthly: 'Monthly',
+      yearly: 'Yearly',
+    },
+    recurrenceInterval: 'Every {n} …',
+    recurrenceSaved: 'Recurrence saved',
   },
 
   // ── Activity ───────────────────────────────────────────────────────────────

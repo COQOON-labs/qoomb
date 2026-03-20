@@ -1,4 +1,6 @@
+import type { AppRouter } from '@qoomb/api/src/trpc/app.router';
 import { Button, Card } from '@qoomb/ui';
+import type { inferRouterOutputs } from '@trpc/server';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,6 +11,58 @@ import { AppShell } from '../layouts/AppShell';
 import { useAuth } from '../lib/auth/useAuth';
 import { useLocale } from '../lib/locale/LocaleProvider';
 import { trpc } from '../lib/trpc/client';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type RouterOutput = inferRouterOutputs<AppRouter>;
+type ListSummary = RouterOutput['lists']['list'][number];
+
+// ── ListProgressBar ───────────────────────────────────────────────────────────
+
+interface ListProgressBarProps {
+  listId: string;
+  checkboxFieldId: string;
+}
+
+function ListProgressBar({ listId, checkboxFieldId }: ListProgressBarProps) {
+  const { LL } = useI18nContext();
+  const { data: items = [] } = trpc.lists.listItems.useQuery({ listId });
+
+  const total = items.length;
+  const done = items.filter(
+    (item) => item.values.find((v) => v.fieldId === checkboxFieldId)?.value === 'true'
+  ).length;
+
+  if (total === 0) return null;
+
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  return (
+    <div className="mt-1.5">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs text-muted-foreground">
+          {LL.dashboard.progressText({ done, total })}
+        </span>
+        <span className="text-xs font-medium text-muted-foreground">{pct}%</span>
+      </div>
+      <div className="h-1 bg-muted rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-green-500' : 'bg-primary'}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── getCheckboxFieldId ────────────────────────────────────────────────────────
+
+function getCheckboxFieldId(list: ListSummary): string | null {
+  const checklistView = list.views.find((v) => v.viewType === 'checklist');
+  if (!checklistView) return null;
+  const cfg = checklistView.config as { checkboxFieldId?: string } | null;
+  return cfg?.checkboxFieldId ?? null;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -141,21 +195,29 @@ export function Dashboard() {
                 </div>
               ) : (
                 <div className="flex flex-col divide-y divide-border">
-                  {recentLists.map((list) => (
-                    <button
-                      key={list.id}
-                      type="button"
-                      onClick={() => handleNavigateToList(list.id)}
-                      className="flex items-center gap-3 px-1 py-2.5 hover:bg-muted/20 transition-colors text-left rounded"
-                    >
-                      <span className="text-lg leading-none w-6 text-center shrink-0">
-                        {list.icon ?? '📋'}
-                      </span>
-                      <span className="text-sm font-medium text-foreground truncate">
-                        {list.name}
-                      </span>
-                    </button>
-                  ))}
+                  {recentLists.map((list) => {
+                    const checkboxFieldId = getCheckboxFieldId(list);
+                    return (
+                      <button
+                        key={list.id}
+                        type="button"
+                        onClick={() => handleNavigateToList(list.id)}
+                        className="flex items-start gap-3 px-1 py-2.5 hover:bg-muted/20 transition-colors text-left rounded"
+                      >
+                        <span className="text-lg leading-none w-6 text-center shrink-0 mt-0.5">
+                          {list.icon ?? '📋'}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-foreground truncate block">
+                            {list.name}
+                          </span>
+                          {checkboxFieldId && (
+                            <ListProgressBar listId={list.id} checkboxFieldId={checkboxFieldId} />
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

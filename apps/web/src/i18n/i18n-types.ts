@@ -1046,6 +1046,14 @@ type RootTranslation = {
      */
     noCheckboxField: string;
     /**
+     * A​d​d​ ​c​h​e​c​k​b​o​x​ ​f​i​e​l​d
+     */
+    addCheckboxField: string;
+    /**
+     * D​o​n​e
+     */
+    checkboxFieldDefaultName: string;
+    /**
      * D​o​n​e​ ​f​i​e​l​d
      */
     checkboxFieldLabel: string;
@@ -2284,6 +2292,14 @@ export type TranslationFunctions = {
      * No checkbox field available. Add a checkbox field first.
      */
     noCheckboxField: () => LocalizedString;
+    /**
+     * Add checkbox field
+     */
+    addCheckboxField: () => LocalizedString;
+    /**
+     * Done
+     */
+    checkboxFieldDefaultName: () => LocalizedString;
     /**
      * Done field
      */

@@ -321,6 +321,8 @@ const de = {
     },
     newViewName: 'Name der Ansicht',
     noCheckboxField: 'Kein Checkbox-Feld vorhanden. Bitte erst ein Checkbox-Feld anlegen.',
+    addCheckboxField: 'Checkbox-Feld hinzufügen',
+    checkboxFieldDefaultName: 'Erledigt',
     checkboxFieldLabel: 'Abgehakt-Feld',
     hideDone: 'Erledigte ausblenden',
     showDone: 'Erledigte anzeigen',

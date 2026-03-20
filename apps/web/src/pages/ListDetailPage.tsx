@@ -202,6 +202,24 @@ export function ListDetailPage() {
   const [confirmDeleteFieldId, setConfirmDeleteFieldId] = useState<string | null>(null);
   const [columnMenuFieldId, setColumnMenuFieldId] = useState<string | null>(null);
 
+  const createField = trpc.lists.createField.useMutation({
+    onSuccess: () => {
+      void utils.lists.get.invalidate(id);
+    },
+    onError: () => {
+      addToast(LL.lists.createError(), 'error');
+    },
+  });
+
+  const handleAddCheckboxField = useCallback(() => {
+    if (!id) return;
+    createField.mutate({
+      listId: id,
+      name: LL.lists.checkboxFieldDefaultName(),
+      fieldType: 'checkbox',
+    });
+  }, [id, LL, createField]);
+
   const deleteField = trpc.lists.deleteField.useMutation({
     onSuccess: () => {
       void utils.lists.get.invalidate(id);
@@ -396,10 +414,21 @@ export function ListDetailPage() {
     [list]
   );
 
+  const titleField = useMemo(
+    () => list?.fields.find((f) => f.fieldType === 'text') ?? null,
+    [list]
+  );
+
   const sortedItems = useMemo(() => {
     if (localItemOrder) {
       const byId = new Map(items.map((i) => [i.id, i]));
-      return localItemOrder.map((itemId) => byId.get(itemId)).filter(Boolean) as typeof items;
+      const ordered = localItemOrder
+        .map((itemId) => byId.get(itemId))
+        .filter(Boolean) as typeof items;
+      // Append items added after the last drag (not yet in localItemOrder)
+      const orderedIds = new Set(localItemOrder);
+      const newItems = items.filter((i) => !orderedIds.has(i.id));
+      return [...ordered, ...newItems];
     }
     return items;
   }, [items, localItemOrder]);
@@ -576,64 +605,64 @@ export function ListDetailPage() {
               <>
                 {/* ── Table view ────────────────────────────────────────── */}
                 {activeView?.viewType !== 'checklist' && activeView?.viewType !== 'kanban' && (
-                  <Card padding="none" className="overflow-x-auto mb-4">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border bg-muted/30">
-                          {list.fields.map((field) => (
-                            <th
-                              key={field.id}
-                              className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap group/th relative"
-                            >
-                              <div className="flex items-center gap-1">
-                                <span>{field.name}</span>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setColumnMenuFieldId((prev) =>
-                                      prev === field.id ? null : field.id
-                                    )
-                                  }
-                                  className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground transition-all"
-                                  aria-label={LL.lists.fieldConfig()}
-                                >
-                                  <EllipsisVerticalIcon className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                              {columnMenuFieldId === field.id && (
-                                <div className="absolute top-full left-0 mt-1 z-20 bg-background border border-border rounded-lg shadow-lg min-w-[160px]">
+                  <DndContext
+                    sensors={dndSensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <Card padding="none" className="overflow-x-auto mb-4">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border bg-muted/30">
+                            {list.fields.map((field) => (
+                              <th
+                                key={field.id}
+                                className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap group/th relative"
+                              >
+                                <div className="flex items-center gap-1">
+                                  <span>{field.name}</span>
                                   <button
                                     type="button"
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                                    onClick={() => handleStartEditField(field.id)}
+                                    onClick={() =>
+                                      setColumnMenuFieldId((prev) =>
+                                        prev === field.id ? null : field.id
+                                      )
+                                    }
+                                    className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground transition-all"
+                                    aria-label={LL.lists.fieldConfig()}
                                   >
-                                    {LL.lists.renameField()}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                                    onClick={() => {
-                                      setColumnMenuFieldId(null);
-                                      handleDeleteField(field.id);
-                                    }}
-                                  >
-                                    {LL.lists.removeField()}
+                                    <EllipsisVerticalIcon className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
-                              )}
+                                {columnMenuFieldId === field.id && (
+                                  <div className="absolute top-full left-0 mt-1 z-20 bg-background border border-border rounded-lg shadow-lg min-w-[160px]">
+                                    <button
+                                      type="button"
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                                      onClick={() => handleStartEditField(field.id)}
+                                    >
+                                      {LL.lists.renameField()}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                                      onClick={() => {
+                                        setColumnMenuFieldId(null);
+                                        handleDeleteField(field.id);
+                                      }}
+                                    >
+                                      {LL.lists.removeField()}
+                                    </button>
+                                  </div>
+                                )}
+                              </th>
+                            ))}
+                            <th className="w-10">
+                              <span className="sr-only">{LL.common.remove()}</span>
                             </th>
-                          ))}
-                          <th className="w-10">
-                            <span className="sr-only">{LL.common.remove()}</span>
-                          </th>
-                          <th className="w-6" aria-hidden="true" />
-                        </tr>
-                      </thead>
-                      <DndContext
-                        sensors={dndSensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                      >
+                            <th className="w-6" aria-hidden="true" />
+                          </tr>
+                        </thead>
                         <SortableContext
                           items={sortedItems.map((i) => i.id)}
                           strategy={verticalListSortingStrategy}
@@ -659,97 +688,107 @@ export function ListDetailPage() {
                             ))}
                           </tbody>
                         </SortableContext>
-                      </DndContext>
-                      <tbody>
-                        {/* ── Inline add row ──────────────────────────────── */}
-                        <tr className="bg-muted/10">
-                          {list.fields.map((field) => (
-                            <td key={field.id} className="px-3 py-2">
-                              {field.fieldType === 'checkbox' ? (
-                                <input
-                                  type="checkbox"
-                                  checked={newItemValues[field.id] === 'true'}
-                                  onChange={(e) =>
-                                    setNewItemValues((prev) => ({
-                                      ...prev,
-                                      [field.id]: String(e.target.checked),
-                                    }))
-                                  }
-                                  aria-label={field.name}
-                                  className="h-4 w-4 rounded border-border"
-                                />
-                              ) : field.fieldType === 'select' ? (
-                                <select
-                                  value={newItemValues[field.id] ?? ''}
-                                  onChange={(e) =>
-                                    setNewItemValues((prev) => ({
-                                      ...prev,
-                                      [field.id]: e.target.value,
-                                    }))
-                                  }
-                                  className="w-full bg-transparent text-sm text-foreground outline-none"
-                                >
-                                  <option value="">{LL.lists.selectPlaceholder()}</option>
-                                  {(
-                                    (field.config as Record<string, unknown> | null)?.options as
-                                      | string[]
-                                      | undefined
-                                  )?.map((opt) => (
-                                    <option key={opt} value={opt}>
-                                      {opt}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : (
-                                <input
-                                  type={
-                                    field.fieldType === 'number'
-                                      ? 'number'
-                                      : field.fieldType === 'date'
-                                        ? 'date'
-                                        : 'text'
-                                  }
-                                  placeholder={LL.lists.itemNamePlaceholder()}
-                                  value={newItemValues[field.id] ?? ''}
-                                  onChange={(e) =>
-                                    setNewItemValues((prev) => ({
-                                      ...prev,
-                                      [field.id]: e.target.value,
-                                    }))
-                                  }
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleAddItem();
-                                  }}
-                                  className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
-                                />
-                              )}
+                        <tbody>
+                          {/* ── Inline add row ──────────────────────────────── */}
+                          <tr className="bg-muted/10">
+                            {list.fields.map((field) => (
+                              <td key={field.id} className="px-3 py-2">
+                                {field.fieldType === 'checkbox' ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={newItemValues[field.id] === 'true'}
+                                    onChange={(e) =>
+                                      setNewItemValues((prev) => ({
+                                        ...prev,
+                                        [field.id]: String(e.target.checked),
+                                      }))
+                                    }
+                                    aria-label={field.name}
+                                    className="h-4 w-4 rounded border-border"
+                                  />
+                                ) : field.fieldType === 'select' ? (
+                                  <select
+                                    value={newItemValues[field.id] ?? ''}
+                                    onChange={(e) =>
+                                      setNewItemValues((prev) => ({
+                                        ...prev,
+                                        [field.id]: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full bg-transparent text-sm text-foreground outline-none"
+                                  >
+                                    <option value="">{LL.lists.selectPlaceholder()}</option>
+                                    {(
+                                      (field.config as Record<string, unknown> | null)?.options as
+                                        | string[]
+                                        | undefined
+                                    )?.map((opt) => (
+                                      <option key={opt} value={opt}>
+                                        {opt}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <input
+                                    type={
+                                      field.fieldType === 'number'
+                                        ? 'number'
+                                        : field.fieldType === 'date'
+                                          ? 'date'
+                                          : 'text'
+                                    }
+                                    placeholder={LL.lists.itemNamePlaceholder()}
+                                    value={newItemValues[field.id] ?? ''}
+                                    onChange={(e) =>
+                                      setNewItemValues((prev) => ({
+                                        ...prev,
+                                        [field.id]: e.target.value,
+                                      }))
+                                    }
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleAddItem();
+                                    }}
+                                    className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
+                                  />
+                                )}
+                              </td>
+                            ))}
+                            <td className="px-2 py-2">
+                              <button
+                                type="button"
+                                onClick={handleAddItem}
+                                disabled={createItem.isPending}
+                                className="p-1 rounded-md text-muted-foreground hover:text-primary transition-colors"
+                                aria-label={LL.lists.addItem()}
+                              >
+                                <PlusIcon className="w-3.5 h-3.5" />
+                              </button>
                             </td>
-                          ))}
-                          <td className="px-2 py-2">
-                            <button
-                              type="button"
-                              onClick={handleAddItem}
-                              disabled={createItem.isPending}
-                              className="p-1 rounded-md text-muted-foreground hover:text-primary transition-colors"
-                              aria-label={LL.lists.addItem()}
-                            >
-                              <PlusIcon className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                          <td className="w-6" aria-hidden="true" />
-                        </tr>
-                      </tbody>
-                    </table>
-                  </Card>
+                            <td className="w-6" aria-hidden="true" />
+                          </tr>
+                        </tbody>
+                      </table>
+                    </Card>
+                  </DndContext>
                 )}
 
                 {/* ── Checklist view ─────────────────────────────────────── */}
                 {activeView?.viewType === 'checklist' && (
                   <div className="mb-4">
                     {!checkboxField ? (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        {LL.lists.noCheckboxField()}
-                      </p>
+                      <div className="flex flex-col items-center gap-3 py-10">
+                        <p className="text-sm text-muted-foreground text-center">
+                          {LL.lists.noCheckboxField()}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleAddCheckboxField}
+                          disabled={createField.isPending}
+                          className="px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        >
+                          {LL.lists.addCheckboxField()}
+                        </button>
+                      </div>
                     ) : (
                       <>
                         <div className="flex items-center justify-between mb-2">
@@ -784,9 +823,6 @@ export function ListDetailPage() {
                                     const isDone =
                                       item.values.find((v) => v.fieldId === checkboxField.id)
                                         ?.value === 'true';
-                                    const titleField = list.fields.find(
-                                      (f) => f.fieldType === 'text'
-                                    );
                                     const title = titleField
                                       ? (item.values.find((v) => v.fieldId === titleField.id)
                                           ?.value ?? '')
@@ -810,6 +846,32 @@ export function ListDetailPage() {
                                 </ul>
                               </SortableContext>
                             </DndContext>
+                          )}
+                          {/* ── Add checklist item ────────────────────── */}
+                          {titleField && (
+                            <div
+                              className={`flex items-center gap-3 px-4 py-3 ${visibleItems.length > 0 ? 'border-t border-border' : ''}`}
+                            >
+                              {/* drag-handle spacer */}
+                              <span className="w-4 h-4 flex-shrink-0" />
+                              {/* unchecked checkbox placeholder */}
+                              <span className="w-5 h-5 rounded border-2 border-border/40 flex-shrink-0" />
+                              <input
+                                type="text"
+                                placeholder={LL.lists.addItem()}
+                                className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground/40"
+                                value={newItemValues[titleField.id] ?? ''}
+                                onChange={(e) =>
+                                  setNewItemValues((prev) => ({
+                                    ...prev,
+                                    [titleField.id]: e.target.value,
+                                  }))
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleAddItem();
+                                }}
+                              />
+                            </div>
                           )}
                         </Card>
                       </>
@@ -835,7 +897,6 @@ export function ListDetailPage() {
                       ((groupByField.config as Record<string, unknown> | null)?.options as
                         | string[]
                         | undefined) ?? [];
-                    const titleField = list.fields.find((f) => f.fieldType === 'text');
                     const columnIds = ['__kanban_none__', ...options];
                     const columnItems: Record<string, typeof sortedItems> = Object.fromEntries(
                       columnIds.map((col) => [col, []])

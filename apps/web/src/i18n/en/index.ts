@@ -320,6 +320,8 @@ const en = {
     },
     newViewName: 'View name',
     noCheckboxField: 'No checkbox field available. Add a checkbox field first.',
+    addCheckboxField: 'Add checkbox field',
+    checkboxFieldDefaultName: 'Done',
     checkboxFieldLabel: 'Done field',
     hideDone: 'Hide done',
     showDone: 'Show done',

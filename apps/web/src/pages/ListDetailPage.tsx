@@ -280,12 +280,12 @@ export function ListDetailPage() {
   const utils = trpc.useUtils();
 
   // ── Queries ──────────────────────────────────────────────────────────────
-  const { data: list, isLoading: listLoading } = trpc.lists.get.useQuery(id!, {
+  const { data: list, isLoading: listLoading } = trpc.lists.get.useQuery(id ?? '', {
     enabled: !!user && !!id,
   });
 
   const { data: items = [], isLoading: itemsLoading } = trpc.lists.listItems.useQuery(
-    { listId: id! },
+    { listId: id ?? '' },
     { enabled: !!user && !!id }
   );
 
@@ -329,7 +329,7 @@ export function ListDetailPage() {
 
   const createItem = trpc.lists.createItem.useMutation({
     onSuccess: () => {
-      void utils.lists.listItems.invalidate({ listId: id! });
+      void utils.lists.listItems.invalidate({ listId: id ?? '' });
       setNewItemValues({});
     },
     onError: () => {
@@ -365,7 +365,7 @@ export function ListDetailPage() {
 
   const deleteItem = trpc.lists.deleteItem.useMutation({
     onSuccess: () => {
-      void utils.lists.listItems.invalidate({ listId: id! });
+      void utils.lists.listItems.invalidate({ listId: id ?? '' });
     },
     onError: () => {
       addToast(LL.lists.deleteError(), 'error');
@@ -466,7 +466,7 @@ export function ListDetailPage() {
   const deleteField = trpc.lists.deleteField.useMutation({
     onSuccess: () => {
       void utils.lists.get.invalidate(id);
-      void utils.lists.listItems.invalidate({ listId: id! });
+      void utils.lists.listItems.invalidate({ listId: id ?? '' });
       setColumnMenuFieldId(null);
     },
     onError: () => {

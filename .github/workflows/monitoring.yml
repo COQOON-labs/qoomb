@@ -1,0 +1,169 @@
+# Supply-Chain Monitoring
+#
+# Trivy SARIF scans run on PRs + push to main + weekly schedule.
+# This satisfies GitHub Code Scanning's required-check expectation (it needs
+# SARIF results uploaded for every PR in categories it has seen before).
+#
+# The expensive blocking table scan (exit-code: 1) only runs on push + weekly
+# — not on PRs — since pnpm audit + dependency-review already guard PRs.
+#
+#   Trivy   — deep vulnerability scan (fs), secrets, IaC config files;
+#             SARIF uploaded to GitHub Security tab on every trigger.
+#   Scorecard — measures qoomb's own OpenSSF security posture;
+#             publishes score/badge; only runs on push + weekly (not PRs).
+
+name: Monitoring
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 7 * * 1' # Every Monday at 7:00 UTC — Trivy deep scan
+    - cron: '0 9 * * 3' # Every Wednesday at 9:00 UTC — Scorecard re-evaluation
+
+# Top-level: minimal permissions (read-only by default)
+permissions:
+  contents: read
+
+# Explicitly opt into Node.js 24 runtime for all actions.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Trivy: deep vulnerability + secrets + IaC config scan
+  # Results uploaded to GitHub Security tab as SARIF.
+  # ─────────────────────────────────────────────────────────────────────────────
+  trivy-filesystem:
+    name: Trivy — Filesystem
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # Upload SARIF to Security tab
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Scan filesystem for vulnerabilities (SARIF)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          scan-type: fs
+          scan-ref: '.'
+          format: sarif
+          output: trivy-fs.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '0' # Don't fail here — SARIF must always be generated
+
+      - name: Upload filesystem scan to Security tab
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4.32.6
+        if: always()
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-filesystem
+
+      - name: Scan IaC config files (SARIF)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        if: always()
+        with:
+          scan-type: config
+          scan-ref: '.'
+          format: sarif
+          output: trivy-config.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '0'
+
+      - name: Upload config scan to Security tab
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4.32.6
+        if: always()
+        with:
+          sarif_file: trivy-config.sarif
+          category: trivy-config
+
+      # Human-readable table output — also gates the job on CRITICAL/HIGH findings.
+      # Only run on push + schedule (not PRs) — pnpm audit + dependency-review
+      # already guard PRs; this avoids doubling scan time on every PR.
+      - name: Scan filesystem (table — fail on CRITICAL/HIGH)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        if: github.event_name != 'pull_request'
+        with:
+          scan-type: fs
+          scan-ref: '.'
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+
+  trivy-secrets:
+    name: Trivy — Secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Scan for secrets
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          scan-type: fs
+          scan-ref: '.'
+          scanners: secret
+          format: sarif
+          output: trivy-secrets.sarif
+          exit-code: '1' # Fail immediately if secrets are found
+
+      - name: Upload secrets scan to Security tab
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4.32.6
+        if: always()
+        with:
+          sarif_file: trivy-secrets.sarif
+          category: trivy-secrets
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # OpenSSF Scorecard: measures qoomb's own security posture
+  # Publishes the score to the public OpenSSF API (powers the README badge).
+  # Only runs on push to main + weekly — not on PRs (needs id-token: write
+  # which is unavailable on fork PRs, and score drifts slowly anyway).
+  # ─────────────────────────────────────────────────────────────────────────────
+  scorecard:
+    name: OpenSSF Scorecard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      security-events: write # Upload SARIF to Security tab
+      id-token: write # Publish to public OpenSSF API (badge)
+      actions: read # Analyze workflow files
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard analysis
+        uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a # v2.4.3
+        with:
+          results_file: scorecard.sarif
+          results_format: sarif
+          # Publish to the public OpenSSF API → powers the badge in README.
+          # Requires the repository to be public.
+          publish_results: true
+
+      - name: Upload Scorecard results to Security tab
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4.32.6
+        if: always()
+        with:
+          sarif_file: scorecard.sarif
+          category: openssf-scorecard

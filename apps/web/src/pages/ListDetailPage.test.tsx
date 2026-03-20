@@ -443,7 +443,9 @@ describe('ListDetailPage', () => {
 
     // Click on the ✗ checkbox value (Milk → Done=false)
     const unchecked = screen.getByText('✗');
-    fireEvent.click(unchecked.closest('td')!);
+    const td = unchecked.closest('td');
+    expect(td).not.toBeNull();
+    fireEvent.click(td as Element);
 
     expect(mutateFn).toHaveBeenCalledWith(
       expect.objectContaining({

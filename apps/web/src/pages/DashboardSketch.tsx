@@ -383,9 +383,10 @@ export function DashboardSketch() {
 
               <div className="space-y-px">
                 {tasks.slice(0, 5).map((task) => (
-                  <div
+                  <button
                     key={task.id}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-muted transition-colors cursor-pointer"
+                    type="button"
+                    className="flex w-full items-center gap-3 px-3 py-2 rounded-xl hover:bg-muted transition-colors"
                     onClick={() => toggleTask(task.id)}
                   >
                     <div
@@ -412,7 +413,7 @@ export function DashboardSketch() {
                       )}
                       <span className="text-xs text-muted-foreground">{task.assignee}</span>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
 

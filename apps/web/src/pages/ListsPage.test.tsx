@@ -110,7 +110,7 @@ vi.mock('../lib/trpc/client', () => ({
         }),
       },
       reorderFavorites: {
-        useMutation: (opts?: { onError?: () => void }) => ({
+        useMutation: (_opts?: { onError?: () => void }) => ({
           mutate: (...args: unknown[]) => {
             mutateFn(...args);
           },

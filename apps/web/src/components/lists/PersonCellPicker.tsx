@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { UserIcon, XIcon } from '../icons';
 
@@ -26,7 +26,7 @@ interface PersonCellPickerProps {
  *  - Filtered dropdown of hive members as you type
  *  - "Add free text" option when query has no exact member match
  *  - Keyboard: ArrowUp/Down, Enter to select, Backspace removes last chip, Esc commits
- *  - Click-outside → auto-saves and closes
+ * ARIA: implements WAI-ARIA 1.2 combobox + listbox pattern (multi-select).
  */
 export function PersonCellPicker({
   initialValue,
@@ -40,20 +40,35 @@ export function PersonCellPicker({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Keep a ref so the outside-click handler always reads the fresh selection
-  // without needing to be re-registered on every state change.
+  // ── Callback refs: always call the current onSave/onClose, regardless of
+  // when a closure was created. Prevents stale-closure bugs when the parent
+  // passes inline arrow functions (which are recreated on every render).
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Fresh selected state for event handlers that can't be cheaply recreated
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+
+  // Stable ARIA IDs per component instance (React useId — survives re-renders)
+  const pickerId = useId();
+  const listboxId = `${pickerId}lb`;
+  const freeTextOptionId = `${pickerId}oft`;
+  const toOptionId = (key: string) => `${pickerId}o${key.replace(/\W/g, '_')}`;
 
   // Focus the input immediately on mount so the user can start typing
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  function commit(values: string[]) {
-    onSave(serializePersonValues(values));
-    onClose();
-  }
+  // Stable commit — only reads from refs, zero stale-closure risk.
+  // Can be listed as a dep without causing re-registration of effects.
+  const commit = useCallback((values: string[]) => {
+    onSaveRef.current(serializePersonValues(values));
+    onCloseRef.current();
+  }, []);
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -63,8 +78,7 @@ export function PersonCellPicker({
     }
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [commit]);
 
   // Persons not yet selected, filtered by current query
   const suggestions = useMemo(() => {
@@ -83,10 +97,21 @@ export function PersonCellPicker({
 
   const totalOptions = suggestions.length + (showFreeTextOption ? 1 : 0);
 
-  // Reset keyboard highlight whenever the list changes
+  // Reset keyboard highlight whenever the suggestion list changes
   useEffect(() => {
     setHighlightedIndex(0);
   }, [suggestions.length, query]);
+
+  // aria-activedescendant: points to the keyboard-highlighted option's id.
+  // Distinct from aria-selected (which means "currently chosen", not "focused").
+  const activeDescendant =
+    totalOptions === 0
+      ? undefined
+      : highlightedIndex < suggestions.length
+        ? toOptionId(suggestions[highlightedIndex].id)
+        : showFreeTextOption
+          ? freeTextOptionId
+          : undefined;
 
   // Stable remove handler via data-value attribute — avoids jsx-no-bind warning
   const handleRemove = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
@@ -151,8 +176,7 @@ export function PersonCellPicker({
         }
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [query, suggestions, highlightedIndex, totalOptions, showFreeTextOption]
+    [commit, query, suggestions, highlightedIndex, totalOptions, showFreeTextOption]
   );
 
   function label(v: string) {
@@ -203,8 +227,10 @@ export function PersonCellPicker({
             </span>
           );
         })}
+        {/* WAI-ARIA 1.2 combobox pattern — role="combobox" on the input itself */}
         <input
           ref={inputRef}
+          role="combobox"
           type="text"
           value={query}
           onChange={handleQueryChange}
@@ -213,13 +239,20 @@ export function PersonCellPicker({
           className="min-w-[5rem] flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/40"
           aria-label="Person suchen"
           aria-autocomplete="list"
+          aria-haspopup="listbox"
+          aria-expanded={totalOptions > 0}
+          aria-controls={listboxId}
+          aria-activedescendant={activeDescendant}
         />
       </div>
 
       {/* ── Autocomplete dropdown ──────────────────────────────────────────── */}
       {totalOptions > 0 && (
         <div
+          id={listboxId}
           role="listbox"
+          aria-label="Personen auswählen"
+          aria-multiselectable="true"
           className="absolute z-50 top-full left-0 mt-1 w-56 bg-background border border-border rounded-lg shadow-lg overflow-hidden"
         >
           {suggestions.length > 0 && (
@@ -227,9 +260,10 @@ export function PersonCellPicker({
               {suggestions.map((p, i) => (
                 <button
                   key={p.id}
+                  id={toOptionId(p.id)}
                   type="button"
                   role="option"
-                  aria-selected={i === highlightedIndex}
+                  aria-selected={false}
                   data-id={p.id}
                   onClick={handlePersonClick}
                   className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${
@@ -250,7 +284,10 @@ export function PersonCellPicker({
           {showFreeTextOption && (
             <div className={suggestions.length > 0 ? 'border-t border-border' : ''}>
               <button
+                id={freeTextOptionId}
                 type="button"
+                role="option"
+                aria-selected={false}
                 onClick={handleFreeTextClick}
                 className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${
                   highlightedIndex === suggestions.length ? 'bg-muted/50' : 'hover:bg-muted/30'

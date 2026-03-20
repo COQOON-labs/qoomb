@@ -9,5 +9,4 @@
 --   the client spawns a new copy of the item (same field values, unchecked)
 --   so the next occurrence appears immediately in the checklist.
 
-ALTER TABLE "list_items"
-  ADD COLUMN "recurrence_rule" JSONB NULL;
+ALTER TABLE "list_items" ADD COLUMN "recurrence_rule" JSONB NULL;

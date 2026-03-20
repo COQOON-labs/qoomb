@@ -25,6 +25,7 @@ export { MenuIcon } from './MenuIcon';
 export { PencilIcon } from './PencilIcon';
 export { PlusIcon } from './PlusIcon';
 export { SettingsIcon } from './SettingsIcon';
+export { StarIcon } from './StarIcon';
 export { TrashIcon } from './TrashIcon';
 export { UserIcon } from './UserIcon';
 export { UsersIcon } from './UsersIcon';

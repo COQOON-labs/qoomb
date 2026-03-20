@@ -1,7 +1,7 @@
 import type { AppRouter } from '@qoomb/api/src/trpc/app.router';
 import { Button, Card } from '@qoomb/ui';
 import type { inferRouterOutputs } from '@trpc/server';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { CheckIcon, PlusIcon } from '../components/icons';
@@ -120,8 +120,14 @@ export function Dashboard() {
     { enabled: !!user }
   );
 
-  // Show max 5 lists on dashboard
-  const recentLists = lists.slice(0, 5);
+  // Show max 5 lists: favorites first (by sortOrder), then alphabetical
+  const recentLists = useMemo(() => {
+    const favs = lists
+      .filter((l) => l.isFavorite)
+      .sort((a, b) => (a.favoriteSortOrder ?? 0) - (b.favoriteSortOrder ?? 0));
+    const nonFavs = lists.filter((l) => !l.isFavorite).sort((a, b) => a.name.localeCompare(b.name));
+    return [...favs, ...nonFavs].slice(0, 5);
+  }, [lists]);
 
   const handleNavigateToLists = useCallback(() => {
     void navigate('/lists');

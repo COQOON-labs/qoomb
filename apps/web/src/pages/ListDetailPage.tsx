@@ -23,6 +23,7 @@ import { AddFieldForm } from '../components/lists/AddFieldForm';
 import { AddViewPanel } from '../components/lists/AddViewPanel';
 import { FieldEditPanel } from '../components/lists/FieldEditPanel';
 import { KanbanColumn } from '../components/lists/KanbanColumn';
+import { parsePersonValues } from '../components/lists/personField.utils';
 import { SortableChecklistItem } from '../components/lists/SortableChecklistItem';
 import { SortableTableRow } from '../components/lists/SortableTableRow';
 import { useI18nContext } from '../i18n/i18n-react';
@@ -69,6 +70,15 @@ export function ListDetailPage() {
   const { data: items = [], isLoading: itemsLoading } = trpc.lists.listItems.useQuery(
     { listId: id ?? '' },
     { enabled: !!user && !!id }
+  );
+
+  const { data: persons = [] } = trpc.persons.list.useQuery(undefined, {
+    enabled: !!user,
+  });
+
+  const personNameById = useMemo(
+    () => new Map(persons.map((p) => [p.id, p.displayName ?? p.id])),
+    [persons]
   );
 
   const isLoading = listLoading || itemsLoading;
@@ -342,6 +352,8 @@ export function ListDetailPage() {
         updateItem.mutate({ id: itemId, data: { values: { [fieldId]: newVal } } });
         return;
       }
+      // For person fields, currentValue is already the raw UUID (passed from SortableTableRow)
+      // For other fields it is the display value
       setEditingCell({ itemId, fieldId });
       setCellDraft(currentValue);
       setTimeout(() => cellInputRef.current?.focus(), 0);
@@ -396,11 +408,15 @@ export function ListDetailPage() {
           return val.value === 'true' ? '✓' : '✗';
         case 'date':
           return new Date(val.value).toLocaleDateString();
+        case 'person': {
+          const vals = parsePersonValues(val.value);
+          return vals.map((v) => personNameById.get(v) ?? v).join(', ');
+        }
         default:
           return val.value;
       }
     },
-    []
+    [personNameById]
   );
 
   // ── View-derived computations ─────────────────────────────────────────────
@@ -684,6 +700,8 @@ export function ListDetailPage() {
                                 setCellDraft={setCellDraft}
                                 updateItem={updateItem}
                                 LL={LL}
+                                persons={persons}
+                                onCloseCell={() => setEditingCell(null)}
                               />
                             ))}
                           </tbody>

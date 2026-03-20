@@ -20,6 +20,7 @@ const de = {
     passwordHint: 'Min. 8 Zeichen mit Großbuchstabe, Zahl und Sonderzeichen',
     create: 'Erstellen',
     invite: 'Einladen',
+    noResults: 'Keine Ergebnisse gefunden.',
   },
 
   // ── Navigation ───────────────────────────────────────────────────────────────────────────────
@@ -343,6 +344,22 @@ const de = {
     },
     recurrenceInterval: 'Alle {n} …',
     recurrenceSaved: 'Wiederholung gespeichert',
+    searchPlaceholder: 'Listen durchsuchen…',
+    favorites: 'Favoriten',
+    noFavorites: 'Noch keine Favoriten. Klicke auf den Stern neben einer Liste.',
+    favoriteAdded: 'Zu Favoriten hinzugefügt',
+    favoriteRemoved: 'Aus Favoriten entfernt',
+    allLists: 'Alle Listen',
+    dragToReorder: 'Ziehen zum Sortieren',
+    removeFromFavorites: 'Aus Favoriten entfernen',
+    addToFavorites: 'Zu Favoriten hinzufügen',
+    // Person field picker
+    personSearch: 'Person suchen…',
+    personSearchLabel: 'Person suchen',
+    personPickerLabel: 'Personen auswählen',
+    personRemove: '{name} entfernen',
+    personExternal: 'Nicht im System',
+    personAddFreeText: '„{name}" hinzufügen',
   },
 
   // ── Activity ─────────────────────────────────────────────────────────────

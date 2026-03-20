@@ -1,8 +1,10 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-import { DragHandleIcon, TrashIcon } from '../icons';
+import { DragHandleIcon, TrashIcon, UserIcon } from '../icons';
 
+import { PersonCellPicker } from './PersonCellPicker';
+import { parsePersonValues } from './personField.utils';
 import type { ListField, ListItem, UpdateItemMutation, LLType } from './types';
 
 export interface SortableTableRowProps {
@@ -19,6 +21,10 @@ export interface SortableTableRowProps {
   setCellDraft: (v: string) => void;
   updateItem: UpdateItemMutation;
   LL: LLType;
+  /** Hive persons for person-field autocomplete and display */
+  persons: readonly { id: string; displayName: string | null }[];
+  /** Close the currently editing cell (used by PersonCellPicker on commit) */
+  onCloseCell: () => void;
 }
 
 export function SortableTableRow({
@@ -35,6 +41,8 @@ export function SortableTableRow({
   setCellDraft,
   updateItem,
   LL,
+  persons,
+  onCloseCell,
 }: SortableTableRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -60,7 +68,12 @@ export function SortableTableRow({
             className="px-3 py-2.5 text-foreground cursor-pointer"
             onClick={() => {
               if (!isEditing) {
-                handleCellClick(item.id, field.id, field.fieldType, cellValue);
+                // For person fields pass the raw UUID (not the resolved display name)
+                const clickValue =
+                  field.fieldType === 'person'
+                    ? (item.values.find((v) => v.fieldId === field.id)?.value ?? '')
+                    : cellValue;
+                handleCellClick(item.id, field.id, field.fieldType, clickValue);
               }
             }}
           >
@@ -86,6 +99,15 @@ export function SortableTableRow({
                     </option>
                   ))}
                 </select>
+              ) : field.fieldType === 'person' ? (
+                <PersonCellPicker
+                  initialValue={item.values.find((v) => v.fieldId === field.id)?.value ?? ''}
+                  persons={persons}
+                  onSave={(val) => {
+                    updateItem.mutate({ id: item.id, data: { values: { [field.id]: val } } });
+                  }}
+                  onClose={onCloseCell}
+                />
               ) : (
                 <input
                   ref={cellInputRef}
@@ -103,6 +125,38 @@ export function SortableTableRow({
                   className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
                 />
               )
+            ) : field.fieldType === 'person' ? (
+              // Person display: handles multi-value JSON array or plain UUID/free text
+              (() => {
+                const rawVal = item.values.find((v) => v.fieldId === field.id)?.value;
+                if (!rawVal) return <span className="text-muted-foreground/30">—</span>;
+                const values = parsePersonValues(rawVal);
+                return (
+                  <div className="flex flex-wrap gap-1">
+                    {values.map((v) => {
+                      const person = persons.find((p) => p.id === v);
+                      return person ? (
+                        <span
+                          key={v}
+                          className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-foreground font-medium"
+                        >
+                          <UserIcon className="w-3 h-3 shrink-0" aria-hidden="true" />
+                          {person.displayName ?? '?'}
+                        </span>
+                      ) : (
+                        // Free-text / orphaned — 3 redundant cues: no icon + dashed border + italic
+                        <span
+                          key={v}
+                          className="inline-flex items-center text-xs px-1.5 py-0.5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground italic"
+                          title={LL.lists.personExternal()}
+                        >
+                          {v}
+                        </span>
+                      );
+                    })}
+                  </div>
+                );
+              })()
             ) : (
               cellValue || <span className="text-muted-foreground/30">—</span>
             )}
@@ -124,7 +178,7 @@ export function SortableTableRow({
         <button
           type="button"
           className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-all touch-none"
-          aria-label="Drag to reorder"
+          aria-label={LL.lists.dragToReorder()}
           {...attributes}
           {...listeners}
         >

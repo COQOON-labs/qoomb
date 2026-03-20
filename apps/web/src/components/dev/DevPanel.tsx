@@ -55,9 +55,14 @@ export function DevPanel() {
         </div>
       </div>
 
-      {/* Overlay when panel is open */}
+      {/* Overlay when panel is open — keyboard-accessible backdrop */}
       {isOpen && (
-        <div onClick={() => setIsOpen(false)} className="fixed inset-0 bg-black/30 z-9997" />
+        <button
+          type="button"
+          aria-label="Close dev panel"
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 bg-black/30 z-9997 cursor-default"
+        />
       )}
     </>
   );

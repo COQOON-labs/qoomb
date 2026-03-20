@@ -332,7 +332,7 @@ jobs:
         run: pnpm --filter @qoomb/validators test:coverage
 
       - name: Upload coverage
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        uses: codecov/codecov-action@4481f553995cc5011b158ce191746ac1a1d0f815 # v5.5.3
         if: always()
         with:
           files: |

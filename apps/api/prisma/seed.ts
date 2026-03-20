@@ -39,6 +39,31 @@ const PERSON_JOHN_ID = '20000000-0000-0000-0000-000000000001';
 const PERSON_ANNA_ID = '20000000-0000-0000-0000-000000000002';
 const PERSON_TIM_ID = '20000000-0000-0000-0000-000000000003';
 
+// ── Example list / field fixed IDs (idempotent re-runs) ─────────────────────
+const LIST_GROCERY_ID = '40000000-0000-0000-0000-000000000001';
+const LIST_CHORES_ID = '40000000-0000-0000-0000-000000000002';
+const LIST_PACKING_ID = '40000000-0000-0000-0000-000000000003';
+const LIST_XMAS_ID = '40000000-0000-0000-0000-000000000004';
+// Grocery list fields
+const FG_ITEM = '50000000-0000-0000-0000-000000000001';
+const FG_QTY = '50000000-0000-0000-0000-000000000002';
+const FG_CAT = '50000000-0000-0000-0000-000000000003';
+const FG_DONE = '50000000-0000-0000-0000-000000000004';
+// Chores list fields
+const FC_TASK = '50000000-0000-0000-0000-000000000011';
+const FC_PERSON = '50000000-0000-0000-0000-000000000012';
+const FC_STATUS = '50000000-0000-0000-0000-000000000013';
+const FC_DUE = '50000000-0000-0000-0000-000000000014';
+// Packing list fields
+const FP_ITEM = '50000000-0000-0000-0000-000000000021';
+const FP_CAT = '50000000-0000-0000-0000-000000000022';
+const FP_PACKED = '50000000-0000-0000-0000-000000000023';
+// Christmas wish list fields
+const FX_ITEM = '50000000-0000-0000-0000-000000000031';
+const FX_FOR = '50000000-0000-0000-0000-000000000032';
+const FX_PRICE = '50000000-0000-0000-0000-000000000033';
+const FX_BOUGHT = '50000000-0000-0000-0000-000000000034';
+
 async function main() {
   console.log('🌱 Seeding dev database...\n');
 
@@ -189,7 +214,269 @@ async function main() {
   console.log('  john@doe.dev   → parent + sysadmin');
   console.log('  anna@doe.dev   → parent');
   console.log('  tim@doe.dev    → child');
+  await seedSystemTemplates();
+  await seedExampleLists(enc);
 }
+
+// ── Example lists ─────────────────────────────────────────────────────────────
+
+async function seedExampleLists(enc: EncryptionService) {
+  console.log('📋 Seeding example lists...\n');
+  const e = (val: string) => enc.serializeToStorage(enc.encrypt(val, HIVE_ID));
+
+  async function seedList(
+    listId: string,
+    creatorId: string,
+    name: string,
+    icon: string,
+    listSortOrder: number,
+    fields: Array<{
+      id: string;
+      name: string;
+      type: string;
+      config?: Record<string, unknown>;
+      isTitle?: boolean;
+      isRequired?: boolean;
+      sortOrder: number;
+    }>,
+    views: Array<{ name: string; viewType: string; isDefault: boolean; sortOrder: number }>,
+    items: Array<Record<string, string>>
+  ) {
+    const exists = await prisma.list.findUnique({ where: { id: listId } });
+    if (exists) {
+      console.log(`  - ${icon} ${name} (already exists)`);
+      return;
+    }
+
+    await prisma.list.create({
+      data: {
+        id: listId,
+        hiveId: HIVE_ID,
+        creatorId,
+        name: e(name),
+        icon,
+        type: 'custom',
+        visibility: 'hive',
+        sortOrder: listSortOrder,
+        fields: {
+          create: fields.map((f) => ({
+            id: f.id,
+            name: e(f.name),
+            fieldType: f.type,
+            config: (f.config ?? {}) as object,
+            isTitle: f.isTitle ?? false,
+            isRequired: f.isRequired ?? false,
+            sortOrder: f.sortOrder,
+          })),
+        },
+        views: {
+          create: views.map((v) => ({
+            name: e(v.name),
+            viewType: v.viewType,
+            config: {} as object,
+            isDefault: v.isDefault,
+          })),
+        },
+      },
+    });
+
+    const fieldIdByName = new Map(fields.map((f) => [f.name, f.id]));
+    for (let i = 0; i < items.length; i++) {
+      const row = items[i];
+      const values = Object.entries(row)
+        .filter(([, v]) => v !== '')
+        .map(([fname, val]) => {
+          const fieldId = fieldIdByName.get(fname);
+          if (!fieldId) throw new Error(`Seed: unknown field "${fname}" in list "${name}"`);
+          return { fieldId, value: e(val) };
+        });
+      await prisma.listItem.create({
+        data: {
+          listId,
+          hiveId: HIVE_ID,
+          creatorId,
+          sortOrder: i,
+          values: { create: values },
+        },
+      });
+    }
+    console.log(`  ✓ ${icon} ${name} (${items.length} items)`);
+  }
+
+  // ── 1. Weekly Groceries ───────────────────────────────────────────────────
+  await seedList(
+    LIST_GROCERY_ID,
+    PERSON_ANNA_ID,
+    'Weekly Groceries',
+    '🛒',
+    0,
+    [
+      { id: FG_ITEM, name: 'Item', type: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      { id: FG_QTY, name: 'Quantity', type: 'text', sortOrder: 1 },
+      {
+        id: FG_CAT,
+        name: 'Category',
+        type: 'select',
+        sortOrder: 2,
+        config: {
+          options: ['Fruit & Veg', 'Dairy', 'Meat & Fish', 'Bakery', 'Drinks', 'Frozen', 'Other'],
+        },
+      },
+      { id: FG_DONE, name: 'Done', type: 'checkbox', sortOrder: 3 },
+    ],
+    [
+      { name: 'Checklist', viewType: 'checklist', isDefault: true, sortOrder: 0 },
+      { name: 'Table', viewType: 'table', isDefault: false, sortOrder: 1 },
+    ],
+    [
+      { Item: 'Whole wheat bread', Quantity: '1 loaf', Category: 'Bakery', Done: 'true' },
+      { Item: 'Milk', Quantity: '2 l', Category: 'Dairy', Done: 'true' },
+      { Item: 'Apples', Quantity: '1 kg', Category: 'Fruit & Veg', Done: 'false' },
+      { Item: 'Chicken breast', Quantity: '500 g', Category: 'Meat & Fish', Done: 'false' },
+      { Item: 'Mozzarella', Quantity: '125 g', Category: 'Dairy', Done: 'false' },
+      { Item: 'Cherry tomatoes', Quantity: '250 g', Category: 'Fruit & Veg', Done: 'false' },
+      { Item: 'Orange juice', Quantity: '1.5 l', Category: 'Drinks', Done: 'false' },
+      { Item: 'Pasta', Quantity: '500 g', Category: 'Other', Done: 'false' },
+      { Item: 'Sparkling water', Quantity: '6-pack', Category: 'Drinks', Done: 'false' },
+    ]
+  );
+
+  // ── 2. Family Chores ──────────────────────────────────────────────────────
+  await seedList(
+    LIST_CHORES_ID,
+    PERSON_JOHN_ID,
+    'Family Chores',
+    '🧹',
+    1,
+    [
+      { id: FC_TASK, name: 'Task', type: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      { id: FC_PERSON, name: 'Assigned To', type: 'person', sortOrder: 1 },
+      {
+        id: FC_STATUS,
+        name: 'Status',
+        type: 'select',
+        sortOrder: 2,
+        config: { options: ['Open', 'In Progress', 'Done'] },
+      },
+      { id: FC_DUE, name: 'Due Date', type: 'date', sortOrder: 3 },
+    ],
+    [
+      { name: 'Table', viewType: 'table', isDefault: true, sortOrder: 0 },
+      { name: 'Checklist', viewType: 'checklist', isDefault: false, sortOrder: 1 },
+    ],
+    [
+      {
+        Task: 'Clean kitchen',
+        'Assigned To': PERSON_ANNA_ID,
+        Status: 'Open',
+        'Due Date': '2026-03-22',
+      },
+      {
+        Task: 'Vacuum living room',
+        'Assigned To': PERSON_TIM_ID,
+        Status: 'Open',
+        'Due Date': '2026-03-21',
+      },
+      {
+        Task: 'Pay electricity bill',
+        'Assigned To': PERSON_JOHN_ID,
+        Status: 'Done',
+        'Due Date': '2026-03-20',
+      },
+      {
+        Task: 'Birthday present for Grandma',
+        'Assigned To': PERSON_JOHN_ID,
+        Status: 'In Progress',
+        'Due Date': '2026-03-28',
+      },
+      {
+        Task: 'Sort recycling',
+        'Assigned To': PERSON_TIM_ID,
+        Status: 'Open',
+        'Due Date': '2026-03-21',
+      },
+      {
+        Task: 'Book dentist appointment',
+        'Assigned To': PERSON_ANNA_ID,
+        Status: 'Open',
+        'Due Date': '2026-04-02',
+      },
+      {
+        Task: 'Repair garden fence',
+        'Assigned To': PERSON_JOHN_ID,
+        Status: 'Open',
+        'Due Date': '2026-04-05',
+      },
+    ]
+  );
+
+  // ── 3. Italy Trip — Packing ───────────────────────────────────────────────
+  await seedList(
+    LIST_PACKING_ID,
+    PERSON_JOHN_ID,
+    'Italy Trip — Packing',
+    '✈️',
+    2,
+    [
+      { id: FP_ITEM, name: 'Item', type: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      {
+        id: FP_CAT,
+        name: 'Category',
+        type: 'select',
+        sortOrder: 1,
+        config: { options: ['Clothing', 'Electronics', 'Toiletries', 'Documents', 'Other'] },
+      },
+      { id: FP_PACKED, name: 'Packed', type: 'checkbox', sortOrder: 2 },
+    ],
+    [{ name: 'Checklist', viewType: 'checklist', isDefault: true, sortOrder: 0 }],
+    [
+      { Item: 'Passports', Category: 'Documents', Packed: 'true' },
+      { Item: 'Travel insurance docs', Category: 'Documents', Packed: 'false' },
+      { Item: 'Phone chargers', Category: 'Electronics', Packed: 'true' },
+      { Item: 'Portable power bank', Category: 'Electronics', Packed: 'false' },
+      { Item: 'Sunscreen SPF 50', Category: 'Toiletries', Packed: 'false' },
+      { Item: 'T-shirts × 5', Category: 'Clothing', Packed: 'false' },
+      { Item: 'Shorts × 3', Category: 'Clothing', Packed: 'false' },
+      { Item: 'Swimwear', Category: 'Clothing', Packed: 'false' },
+      { Item: 'Beach towels', Category: 'Clothing', Packed: 'false' },
+      { Item: 'Sunglasses', Category: 'Other', Packed: 'true' },
+      { Item: 'Camera', Category: 'Electronics', Packed: 'false' },
+      { Item: 'Travel adapter', Category: 'Electronics', Packed: 'false' },
+    ]
+  );
+
+  // ── 4. Christmas Wish List ────────────────────────────────────────────────
+  await seedList(
+    LIST_XMAS_ID,
+    PERSON_ANNA_ID,
+    'Christmas Wish List',
+    '🎄',
+    3,
+    [
+      { id: FX_ITEM, name: 'Item', type: 'text', isTitle: true, isRequired: true, sortOrder: 0 },
+      { id: FX_FOR, name: 'For', type: 'text', sortOrder: 1 },
+      { id: FX_PRICE, name: 'Price', type: 'number', sortOrder: 2 },
+      { id: FX_BOUGHT, name: 'Bought', type: 'checkbox', sortOrder: 3 },
+    ],
+    [
+      { name: 'Table', viewType: 'table', isDefault: true, sortOrder: 0 },
+      { name: 'Checklist', viewType: 'checklist', isDefault: false, sortOrder: 1 },
+    ],
+    [
+      { Item: 'LEGO Technic 4×4 Off-Roader', For: 'Tim', Price: '89.99', Bought: 'false' },
+      { Item: 'Nintendo Switch Sports', For: 'Tim', Price: '49.99', Bought: 'true' },
+      { Item: 'KitchenAid Stand Mixer', For: 'Anna', Price: '449.00', Bought: 'false' },
+      { Item: 'Running shoes', For: 'John', Price: '139.99', Bought: 'false' },
+      { Item: 'Kindle Paperwhite', For: 'Anna', Price: '109.99', Bought: 'false' },
+      { Item: 'Wireless headphones', For: 'John', Price: '199.00', Bought: 'false' },
+      { Item: 'Telescope', For: 'Tim', Price: '79.99', Bought: 'false' },
+      { Item: 'Ottolenghi Simple cookbook', For: 'Anna', Price: '29.99', Bought: 'true' },
+    ]
+  );
+
+  console.log('');
+}
+
 // ── System templates ─────────────────────────────────────────────────────────
 //
 // Global templates (hiveId=null, creatorId=null, isTemplate=true).
@@ -441,7 +728,6 @@ async function seedSystemTemplates() {
   console.log(`\n  Created: ${created}, Skipped (already exist): ${skipped}\n`);
 }
 main()
-  .then(() => seedSystemTemplates())
   .catch((e) => {
     console.error(e);
     process.exit(1);

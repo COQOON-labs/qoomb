@@ -3,6 +3,8 @@ import { CSS } from '@dnd-kit/utilities';
 
 import { DragHandleIcon, TrashIcon, UserIcon } from '../icons';
 
+import { PersonCellPicker } from './PersonCellPicker';
+import { parsePersonValues } from './personField.utils';
 import type { ListField, ListItem, UpdateItemMutation, LLType } from './types';
 
 export interface SortableTableRowProps {
@@ -21,6 +23,8 @@ export interface SortableTableRowProps {
   LL: LLType;
   /** Hive persons for person-field autocomplete and display */
   persons: readonly { id: string; displayName: string | null }[];
+  /** Close the currently editing cell (used by PersonCellPicker on commit) */
+  onCloseCell: () => void;
 }
 
 export function SortableTableRow({
@@ -38,6 +42,7 @@ export function SortableTableRow({
   updateItem,
   LL,
   persons,
+  onCloseCell,
 }: SortableTableRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -95,23 +100,14 @@ export function SortableTableRow({
                   ))}
                 </select>
               ) : field.fieldType === 'person' ? (
-                <select
-                  value={cellDraft}
-                  onChange={(e) => {
-                    setCellDraft(e.target.value);
-                    const val = e.target.value || null;
+                <PersonCellPicker
+                  initialValue={item.values.find((v) => v.fieldId === field.id)?.value ?? ''}
+                  persons={persons}
+                  onSave={(val) => {
                     updateItem.mutate({ id: item.id, data: { values: { [field.id]: val } } });
                   }}
-                  className="w-full bg-transparent text-sm text-foreground border-b border-primary outline-none"
-                  autoFocus
-                >
-                  <option value="">—</option>
-                  {persons.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.displayName ?? p.id}
-                    </option>
-                  ))}
-                </select>
+                  onClose={onCloseCell}
+                />
               ) : (
                 <input
                   ref={cellInputRef}
@@ -130,24 +126,31 @@ export function SortableTableRow({
                 />
               )
             ) : field.fieldType === 'person' ? (
-              // Person display: resolved badge vs orphaned fallback
+              // Person display: handles multi-value JSON array or plain UUID/free text
               (() => {
                 const rawVal = item.values.find((v) => v.fieldId === field.id)?.value;
                 if (!rawVal) return <span className="text-muted-foreground/30">—</span>;
-                const person = persons.find((p) => p.id === rawVal);
-                if (person) {
-                  return (
-                    <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-foreground font-medium">
-                      <UserIcon className="w-3 h-3 shrink-0" />
-                      {person.displayName ?? '?'}
-                    </span>
-                  );
-                }
-                // Orphaned — person no longer exists or was stored as free text
+                const values = parsePersonValues(rawVal);
                 return (
-                  <span className="text-muted-foreground/50 italic text-xs" title={rawVal}>
-                    {rawVal}
-                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {values.map((v) => {
+                      const person = persons.find((p) => p.id === v);
+                      return person ? (
+                        <span
+                          key={v}
+                          className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-foreground font-medium"
+                        >
+                          <UserIcon className="w-3 h-3 shrink-0" />
+                          {person.displayName ?? '?'}
+                        </span>
+                      ) : (
+                        // Orphaned — person deleted or stored as free text
+                        <span key={v} className="text-muted-foreground/60 italic text-xs" title={v}>
+                          {v}
+                        </span>
+                      );
+                    })}
+                  </div>
                 );
               })()
             ) : (

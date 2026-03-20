@@ -23,6 +23,7 @@ import { AddFieldForm } from '../components/lists/AddFieldForm';
 import { AddViewPanel } from '../components/lists/AddViewPanel';
 import { FieldEditPanel } from '../components/lists/FieldEditPanel';
 import { KanbanColumn } from '../components/lists/KanbanColumn';
+import { parsePersonValues } from '../components/lists/personField.utils';
 import { SortableChecklistItem } from '../components/lists/SortableChecklistItem';
 import { SortableTableRow } from '../components/lists/SortableTableRow';
 import { useI18nContext } from '../i18n/i18n-react';
@@ -407,8 +408,10 @@ export function ListDetailPage() {
           return val.value === 'true' ? '✓' : '✗';
         case 'date':
           return new Date(val.value).toLocaleDateString();
-        case 'person':
-          return personNameById.get(val.value) ?? val.value;
+        case 'person': {
+          const vals = parsePersonValues(val.value);
+          return vals.map((v) => personNameById.get(v) ?? v).join(', ');
+        }
         default:
           return val.value;
       }
@@ -698,6 +701,7 @@ export function ListDetailPage() {
                                 updateItem={updateItem}
                                 LL={LL}
                                 persons={persons}
+                                onCloseCell={() => setEditingCell(null)}
                               />
                             ))}
                           </tbody>

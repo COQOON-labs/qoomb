@@ -127,6 +127,8 @@ _dev-stop:
     @pkill -f "{{project_dir}}/apps/web" 2>/dev/null || true
     @pkill -f "{{project_dir}}/apps/api" 2>/dev/null || true
     @pkill -f "prisma studio" 2>/dev/null || true
+    @caddy stop 2>/dev/null || true
+    @pkill -f "caddy run" 2>/dev/null || true
 
 [private]
 _docker-volumes-remove:
@@ -443,10 +445,30 @@ dev-start: _dev-stop _preflight
         echo -e "\033[0;32m  ✓ WEBAUTHN_ORIGIN (includes Caddy origin)\033[0m"
     fi
 
-    echo -e "\033[0;34mStarting Caddy...\033[0m"
+    # Stop any previously daemonised Caddy instance before we take over
     caddy stop 2>/dev/null || true
-    caddy start --config Caddyfile.dev
-    sleep 2
+
+    echo -e "  🗄️  DB Studio:    \033[0;32mhttp://localhost:5555\033[0m (starting in background)"
+    echo ""
+
+    # Run Caddy in the background as a child process so Ctrl+C kills it cleanly
+    caddy run --config Caddyfile.dev &
+    CADDY_PID=$!
+
+    # Run Prisma Studio in the background as a child process
+    (sleep 4 && pnpm --filter @qoomb/api db:studio) >/dev/null 2>&1 &
+    STUDIO_PID=$!
+
+    # Trap Ctrl+C / EXIT: kill Caddy and Studio, then exit
+    trap "echo ''; echo -e '\033[0;33mStopping dev servers...\033[0m'; kill $CADDY_PID $STUDIO_PID 2>/dev/null || true; wait $CADDY_PID 2>/dev/null || true; echo -e '\033[0;32m✓ All dev servers stopped\033[0m'" EXIT INT TERM
+
+    # Wait briefly for Caddy to bind before printing the banner
+    sleep 1
+    if ! kill -0 $CADDY_PID 2>/dev/null; then
+        echo -e "\033[0;31m✗ Caddy failed to start — check Caddyfile.dev\033[0m"
+        exit 1
+    fi
+
     echo -e "\033[0;32m✓ Caddy started (port 8443)\033[0m"
     echo ""
     echo -e "\033[0;32m========================================\033[0m"
@@ -458,18 +480,15 @@ dev-start: _dev-stop _preflight
     if [ -n "$LOCAL_IP" ]; then
         echo -e "  📱 Mobile:       \033[0;32mhttps://$LOCAL_IP:8443\033[0m (same WiFi)"
     fi
-    echo -e "  🗄️  DB Studio:    \033[0;32mhttp://localhost:5555\033[0m (starting in background)"
     echo ""
-    (sleep 4 && pnpm --filter @qoomb/api db:studio) >/dev/null 2>&1 &
-    STUDIO_PID=$!
-    trap "kill $STUDIO_PID 2>/dev/null || true" EXIT INT TERM
     (sleep 5 && (open https://qoomb.localhost:8443 2>/dev/null || xdg-open https://qoomb.localhost:8443 2>/dev/null || true)) &
     pnpm dev
 
 # Stop Caddy proxy (HTTPS mode only — does not stop API/web dev servers)
 stop:
-    @caddy stop 2>/dev/null || echo -e "{{yellow}}Caddy was not running{{nc}}"
-    @echo -e "{{green}}✓ Extended dev stopped{{nc}}"
+    @caddy stop 2>/dev/null || true
+    @pkill -f "caddy run" 2>/dev/null || true
+    @echo -e "{{green}}✓ Caddy stopped{{nc}}"
 
 # Start only the API server
 dev-api:

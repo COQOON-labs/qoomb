@@ -36,11 +36,51 @@ jobs:
         with:
           configFile: commitlint.config.mjs
 
+  validate-pr-title:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+    # Needs permissions to read the PR and post status comments
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Types from commitlint.config.mjs — keep in sync
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            test
+            chore
+            perf
+            ci
+            build
+            revert
+          # Scope is optional but if provided must be a known package/area
+          requireScope: false
+          # Single-commit PRs: also validate the commit message matches the title
+          # (prevents GitHub's "use commit message" squash merge suggestion from
+          # slipping through with a non-conventional message)
+          validateSingleCommit: true
+          validateSingleCommitMatchesPrTitle: true
+
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -50,6 +90,10 @@ jobs:
           # Block PRs that introduce new HIGH or CRITICAL vulnerabilities.
           # License compliance is handled separately in the quality job via pnpm licenses list.
           fail-on-severity: high
+          # Show OpenSSF Scorecard for newly added deps. Warns (does not block)
+          # when a dep scores below 4 — makes low-score additions a conscious decision.
+          show-openssf-scorecard: true
+          warn-on-openssf-scorecard-level: 4
 
   quality:
     name: Code Quality

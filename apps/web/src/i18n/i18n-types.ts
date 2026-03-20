@@ -1160,6 +1160,32 @@ type RootTranslation = {
      * A​d​d​ ​t​o​ ​f​a​v​o​r​i​t​e​s
      */
     addToFavorites: string;
+    /**
+     * S​e​a​r​c​h​ ​f​o​r​ ​a​ ​p​e​r​s​o​n​…
+     */
+    personSearch: string;
+    /**
+     * S​e​a​r​c​h​ ​f​o​r​ ​a​ ​p​e​r​s​o​n
+     */
+    personSearchLabel: string;
+    /**
+     * S​e​l​e​c​t​ ​p​e​r​s​o​n​s
+     */
+    personPickerLabel: string;
+    /**
+     * R​e​m​o​v​e​ ​{​n​a​m​e​}
+     * @param {unknown} name
+     */
+    personRemove: RequiredParams<'name'>;
+    /**
+     * N​o​t​ ​i​n​ ​s​y​s​t​e​m
+     */
+    personExternal: string;
+    /**
+     * A​d​d​ ​"​{​n​a​m​e​}​"
+     * @param {unknown} name
+     */
+    personAddFreeText: RequiredParams<'name'>;
   };
   activity: {
     /**
@@ -2446,6 +2472,30 @@ export type TranslationFunctions = {
      * Add to favorites
      */
     addToFavorites: () => LocalizedString;
+    /**
+     * Search for a person…
+     */
+    personSearch: () => LocalizedString;
+    /**
+     * Search for a person
+     */
+    personSearchLabel: () => LocalizedString;
+    /**
+     * Select persons
+     */
+    personPickerLabel: () => LocalizedString;
+    /**
+     * Remove {name}
+     */
+    personRemove: (arg: { name: unknown }) => LocalizedString;
+    /**
+     * Not in system
+     */
+    personExternal: () => LocalizedString;
+    /**
+     * Add "{name}"
+     */
+    personAddFreeText: (arg: { name: unknown }) => LocalizedString;
   };
   activity: {
     /**

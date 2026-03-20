@@ -352,6 +352,13 @@ const en = {
     dragToReorder: 'Drag to reorder',
     removeFromFavorites: 'Remove from favorites',
     addToFavorites: 'Add to favorites',
+    // Person field picker
+    personSearch: 'Search for a person…',
+    personSearchLabel: 'Search for a person',
+    personPickerLabel: 'Select persons',
+    personRemove: 'Remove {name}',
+    personExternal: 'Not in system',
+    personAddFreeText: 'Add "{name}"',
   },
 
   // ── Activity ───────────────────────────────────────────────────────────────

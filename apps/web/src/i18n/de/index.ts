@@ -353,6 +353,13 @@ const de = {
     dragToReorder: 'Ziehen zum Sortieren',
     removeFromFavorites: 'Aus Favoriten entfernen',
     addToFavorites: 'Zu Favoriten hinzufügen',
+    // Person field picker
+    personSearch: 'Person suchen…',
+    personSearchLabel: 'Person suchen',
+    personPickerLabel: 'Personen auswählen',
+    personRemove: '{name} entfernen',
+    personExternal: 'Nicht im System',
+    personAddFreeText: '„{name}" hinzufügen',
   },
 
   // ── Activity ─────────────────────────────────────────────────────────────

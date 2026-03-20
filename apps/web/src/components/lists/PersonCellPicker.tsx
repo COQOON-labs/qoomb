@@ -239,6 +239,7 @@ export function PersonCellPicker({
           onKeyDown={handleKeyDown}
           placeholder={selected.length === 0 ? LL.lists.personSearch() : ''}
           className="min-w-[5rem] flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/40"
+          maxLength={500}
           aria-label={LL.lists.personSearchLabel()}
           aria-autocomplete="list"
           aria-haspopup="listbox"

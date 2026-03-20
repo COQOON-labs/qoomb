@@ -167,10 +167,13 @@ export const updateListViewSchema = z.object({
 
 // ── Item CRUD schemas ─────────────────────────────────────────────────────────
 
-/** Value for a single field: key = fieldId, value = typed content or null to clear */
+/** Value for a single field: key = fieldId, value = typed content or null to clear.
+ *  String values are capped at 50 000 chars — generous for rich text and serialised
+ *  person arrays, while still blocking unbounded-input abuse at the API boundary.
+ */
 export const listItemValueSchema = z.record(
   z.uuid(),
-  z.union([z.string(), z.number(), z.boolean(), z.null()])
+  z.union([z.string().max(50000), z.number(), z.boolean(), z.null()])
 );
 
 export const recurrenceFrequencySchema = z.enum(['daily', 'weekly', 'monthly', 'yearly']);

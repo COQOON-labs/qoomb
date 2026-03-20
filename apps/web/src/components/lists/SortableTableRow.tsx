@@ -148,7 +148,7 @@ export function SortableTableRow({
                         <span
                           key={v}
                           className="inline-flex items-center text-xs px-1.5 py-0.5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground italic"
-                          title="Nicht im System"
+                          title={LL.lists.personExternal()}
                         >
                           {v}
                         </span>
@@ -178,7 +178,7 @@ export function SortableTableRow({
         <button
           type="button"
           className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-all touch-none"
-          aria-label="Drag to reorder"
+          aria-label={LL.lists.dragToReorder()}
           {...attributes}
           {...listeners}
         >

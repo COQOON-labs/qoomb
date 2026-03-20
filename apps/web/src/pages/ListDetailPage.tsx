@@ -71,6 +71,15 @@ export function ListDetailPage() {
     { enabled: !!user && !!id }
   );
 
+  const { data: persons = [] } = trpc.persons.list.useQuery(undefined, {
+    enabled: !!user,
+  });
+
+  const personNameById = useMemo(
+    () => new Map(persons.map((p) => [p.id, p.displayName ?? p.id])),
+    [persons]
+  );
+
   const isLoading = listLoading || itemsLoading;
 
   // Build a map: fieldId → field for quick lookup
@@ -396,11 +405,13 @@ export function ListDetailPage() {
           return val.value === 'true' ? '✓' : '✗';
         case 'date':
           return new Date(val.value).toLocaleDateString();
+        case 'person':
+          return personNameById.get(val.value) ?? val.value;
         default:
           return val.value;
       }
     },
-    []
+    [personNameById]
   );
 
   // ── View-derived computations ─────────────────────────────────────────────

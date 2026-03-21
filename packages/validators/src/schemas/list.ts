@@ -93,6 +93,7 @@ export const listFieldConfigSchema = z
 
 export const checklistViewConfigSchema = z.object({
   checkboxFieldId: z.uuid(),
+  titleFieldId: z.uuid().optional(),
   visibleFieldIds: z.array(z.uuid()).optional(),
 });
 

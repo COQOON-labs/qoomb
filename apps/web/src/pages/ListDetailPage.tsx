@@ -471,10 +471,15 @@ export function ListDetailPage() {
     [list]
   );
 
-  const titleField = useMemo(
-    () => list?.fields.find((f) => f.fieldType === 'text') ?? null,
-    [list]
-  );
+  const titleField = useMemo(() => {
+    if (activeView?.viewType === 'checklist') {
+      const cfg = activeView.config as { titleFieldId?: string } | null;
+      if (cfg?.titleFieldId) {
+        return list?.fields.find((f) => f.id === cfg.titleFieldId) ?? null;
+      }
+    }
+    return list?.fields.find((f) => f.fieldType === 'text') ?? null;
+  }, [list, activeView]);
 
   const sortedItems = useMemo(() => {
     if (localItemOrder) {

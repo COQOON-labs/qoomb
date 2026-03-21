@@ -88,4 +88,29 @@ describe('canDeleteField', () => {
     const result = canDeleteField('f1', fields, views);
     expect(result).toEqual({ allowed: true });
   });
+
+  it('blocks deleting the active title field of a checklist view', () => {
+    const fields = [field('t1', 'text'), field('cb', 'checkbox'), field('f3')];
+    const views: ViewInfo[] = [
+      { viewType: 'checklist', config: { checkboxFieldId: 'cb', titleFieldId: 't1' } },
+    ];
+    const result = canDeleteField('t1', fields, views);
+    expect(result).toEqual({ allowed: false, reason: 'activeTitleField' });
+  });
+
+  it('allows deleting a text field not used as title', () => {
+    const fields = [field('t1', 'text'), field('t2', 'text'), field('cb', 'checkbox')];
+    const views: ViewInfo[] = [
+      { viewType: 'checklist', config: { checkboxFieldId: 'cb', titleFieldId: 't1' } },
+    ];
+    const result = canDeleteField('t2', fields, views);
+    expect(result).toEqual({ allowed: true });
+  });
+
+  it('allows deleting a field when checklist view has no titleFieldId set', () => {
+    const fields = [field('t1', 'text'), field('cb', 'checkbox')];
+    const views: ViewInfo[] = [{ viewType: 'checklist', config: { checkboxFieldId: 'cb' } }];
+    const result = canDeleteField('t1', fields, views);
+    expect(result).toEqual({ allowed: true });
+  });
 });

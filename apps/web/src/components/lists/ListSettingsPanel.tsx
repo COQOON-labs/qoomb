@@ -509,10 +509,29 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
   const handleCheckboxFieldChange = useCallback(
     (checkboxFieldId: string) => {
       if (!activeView) return;
+      const cfg = activeView.config as { titleFieldId?: string } | null;
       updateView.mutate({
         id: activeView.id,
         listId,
-        data: { config: { checkboxFieldId } },
+        data: {
+          config: {
+            checkboxFieldId,
+            ...(cfg?.titleFieldId ? { titleFieldId: cfg.titleFieldId } : {}),
+          },
+        },
+      });
+    },
+    [activeView, listId, updateView]
+  );
+
+  const handleTitleFieldChange = useCallback(
+    (titleFieldId: string) => {
+      if (!activeView) return;
+      const cfg = activeView.config as { checkboxFieldId?: string } | null;
+      updateView.mutate({
+        id: activeView.id,
+        listId,
+        data: { config: { checkboxFieldId: cfg?.checkboxFieldId ?? '', titleFieldId } },
       });
     },
     [activeView, listId, updateView]
@@ -716,27 +735,50 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
 
               {/* Checklist: checkbox field picker */}
               {activeView.viewType === 'checklist' && (
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
-                    {LL.lists.checkboxFieldLabel()}
-                  </label>
-                  <select
-                    value={
-                      (activeView.config as { checkboxFieldId?: string } | null)?.checkboxFieldId ??
-                      ''
-                    }
-                    onChange={(e) => handleCheckboxFieldChange(e.target.value)}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                  >
-                    <option value="">{LL.lists.selectPlaceholder()}</option>
-                    {list.fields
-                      .filter((f) => f.fieldType === 'checkbox')
-                      .map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.name}
-                        </option>
-                      ))}
-                  </select>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">
+                      {LL.lists.checkboxFieldLabel()}
+                    </label>
+                    <select
+                      value={
+                        (activeView.config as { checkboxFieldId?: string } | null)
+                          ?.checkboxFieldId ?? ''
+                      }
+                      onChange={(e) => handleCheckboxFieldChange(e.target.value)}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    >
+                      <option value="">{LL.lists.selectPlaceholder()}</option>
+                      {list.fields
+                        .filter((f) => f.fieldType === 'checkbox')
+                        .map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">
+                      {LL.lists.titleFieldLabel()}
+                    </label>
+                    <select
+                      value={
+                        (activeView.config as { titleFieldId?: string } | null)?.titleFieldId ?? ''
+                      }
+                      onChange={(e) => handleTitleFieldChange(e.target.value)}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    >
+                      <option value="">{LL.lists.selectPlaceholder()}</option>
+                      {list.fields
+                        .filter((f) => f.fieldType === 'text')
+                        .map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
                 </div>
               )}
 

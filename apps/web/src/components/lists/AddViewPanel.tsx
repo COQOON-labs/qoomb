@@ -39,9 +39,10 @@ export function AddViewPanel({ listId, list, onSuccess, onClose }: AddViewPanelP
     const trimmed = newViewName.trim();
     if (!trimmed) return;
     const cbField = list.fields.find((f) => f.fieldType === 'checkbox');
+    const txtField = list.fields.find((f) => f.fieldType === 'text');
     const config =
       newViewType === 'checklist'
-        ? { checkboxFieldId: cbField?.id ?? '' }
+        ? { checkboxFieldId: cbField?.id ?? '', titleFieldId: txtField?.id ?? '' }
         : newViewType === 'kanban'
           ? { groupByFieldId: newViewGroupByFieldId }
           : { visibleFieldIds: list.fields.map((f) => f.id) };

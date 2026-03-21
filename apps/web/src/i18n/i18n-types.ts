@@ -1019,6 +1019,10 @@ type RootTranslation = {
          */
         activeGroupByField: string;
         /**
+         * T​h​i​s​ ​f​i​e​l​d​ ​i​s​ ​t​h​e​ ​t​i​t​l​e​ ​f​i​e​l​d​ ​o​f​ ​a​ ​c​h​e​c​k​l​i​s​t​ ​v​i​e​w
+         */
+        activeTitleField: string;
+        /**
          * T​h​e​ ​c​h​e​c​k​b​o​x​ ​f​i​e​l​d​ ​i​s​ ​a​l​w​a​y​s​ ​v​i​s​i​b​l​e​ ​i​n​ ​c​h​e​c​k​l​i​s​t​ ​v​i​e​w
          */
         checkboxFieldLocked: string;
@@ -1122,6 +1126,10 @@ type RootTranslation = {
      * D​o​n​e​ ​f​i​e​l​d
      */
     checkboxFieldLabel: string;
+    /**
+     * T​i​t​l​e​ ​f​i​e​l​d
+     */
+    titleFieldLabel: string;
     /**
      * H​i​d​e​ ​d​o​n​e
      */
@@ -2392,6 +2400,10 @@ export type TranslationFunctions = {
          */
         activeGroupByField: () => LocalizedString;
         /**
+         * This field is the title field of a checklist view
+         */
+        activeTitleField: () => LocalizedString;
+        /**
          * The checkbox field is always visible in checklist view
          */
         checkboxFieldLocked: () => LocalizedString;
@@ -2495,6 +2507,10 @@ export type TranslationFunctions = {
      * Done field
      */
     checkboxFieldLabel: () => LocalizedString;
+    /**
+     * Title field
+     */
+    titleFieldLabel: () => LocalizedString;
     /**
      * Hide done
      */

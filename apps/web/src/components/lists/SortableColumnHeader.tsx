@@ -39,15 +39,6 @@ export function SortableColumnHeader({
       className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap group/th relative"
     >
       <div className="flex items-center gap-1">
-        <button
-          type="button"
-          className="opacity-0 group-hover/th:opacity-100 cursor-grab active:cursor-grabbing p-0.5 text-muted-foreground/50 hover:text-muted-foreground transition-all shrink-0"
-          aria-label="Drag to reorder column"
-          {...attributes}
-          {...listeners}
-        >
-          <DragHandleIcon className="w-3 h-3" />
-        </button>
         <span className="select-none">{field.name}</span>
         <button
           type="button"
@@ -58,6 +49,16 @@ export function SortableColumnHeader({
           <EllipsisVerticalIcon className="w-3.5 h-3.5" />
         </button>
       </div>
+      {/* Drag handle positioned outside text flow to keep header text aligned with data cells */}
+      <button
+        type="button"
+        className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/th:opacity-100 cursor-grab active:cursor-grabbing p-0.5 text-muted-foreground/50 hover:text-muted-foreground transition-all"
+        aria-label="Drag to reorder column"
+        {...attributes}
+        {...listeners}
+      >
+        <DragHandleIcon className="w-3 h-3" />
+      </button>
       {columnMenuFieldId === field.id && (
         <div className="absolute top-full left-0 mt-1 z-20 bg-background border border-border rounded-lg shadow-lg min-w-40">
           <button

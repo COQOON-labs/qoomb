@@ -1,70 +1,15 @@
 /**
- * Pure guard functions for list field operations (delete, visibility toggle).
+ * Frontend-only visibility guard for list field operations.
  *
- * Every guard returns `{ allowed: true }` or `{ allowed: false, reason: string }`.
- * The reason key is an i18n key suffix consumers can resolve via `LL.lists.guards.*()`.
- *
- * All functions are framework-agnostic — no React, no tRPC, no side-effects.
+ * canDeleteField (domain rule, shared) is imported from @qoomb/types.
+ * canToggleVisibility is view-state-dependent, so it lives here (frontend only).
  */
+import type { FieldInfo, ViewInfo, GuardResult } from '@qoomb/types';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+export type { FieldInfo, ViewInfo, GuardResult };
+export { canDeleteField } from '@qoomb/types';
 
-export interface FieldInfo {
-  id: string;
-  fieldType: string;
-}
-
-export interface ViewInfo {
-  viewType: string;
-  config: Record<string, unknown> | null;
-}
-
-export type GuardResult = { allowed: true } | { allowed: false; reason: string };
-
-// ── Deletion guards ───────────────────────────────────────────────────────────
-
-/**
- * Can this field be deleted from the list?
- *
- * Rules:
- * 1. The last remaining field can never be deleted.
- * 2. A field that is the active checkboxFieldId of a checklist view can't be deleted.
- * 3. A field that is the active groupByFieldId of a kanban view can't be deleted.
- */
-export function canDeleteField(
-  fieldId: string,
-  allFields: readonly FieldInfo[],
-  views: readonly ViewInfo[]
-): GuardResult {
-  // Rule 1: last field
-  if (allFields.length <= 1) {
-    return { allowed: false, reason: 'lastField' };
-  }
-
-  // Rule 2: active checkbox field in a checklist view
-  for (const view of views) {
-    if (view.viewType === 'checklist') {
-      const cbId = (view.config as { checkboxFieldId?: string } | null)?.checkboxFieldId;
-      if (cbId === fieldId) {
-        return { allowed: false, reason: 'activeCheckboxField' };
-      }
-    }
-  }
-
-  // Rule 3: active groupBy field in a kanban view
-  for (const view of views) {
-    if (view.viewType === 'kanban') {
-      const gbId = (view.config as { groupByFieldId?: string } | null)?.groupByFieldId;
-      if (gbId === fieldId) {
-        return { allowed: false, reason: 'activeGroupByField' };
-      }
-    }
-  }
-
-  return { allowed: true };
-}
-
-// ── Visibility guards ─────────────────────────────────────────────────────────
+// ── Visibility guard (frontend only) ─────────────────────────────────────────
 
 /**
  * Can this field's visibility be toggled in the given view?
@@ -94,7 +39,7 @@ export function canToggleVisibility(
   }
 
   // Rule 2: last visible (non-locked) field
-  const lockedIds = getLockedFieldIds(allFields, activeView);
+  const lockedIds = getLockedFieldIds(activeView);
   const toggleableVisible = [...visibleFieldIds].filter((id) => !lockedIds.has(id));
   if (toggleableVisible.length <= 1 && visibleFieldIds.has(fieldId) && !lockedIds.has(fieldId)) {
     return { allowed: false, reason: 'lastVisibleField' };
@@ -103,16 +48,9 @@ export function canToggleVisibility(
   return { allowed: true };
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helper ────────────────────────────────────────────────────────────────────
 
-/**
- * Returns the set of field IDs that are "locked visible" in the given view
- * (e.g. the checkbox field in a checklist view).
- */
-function getLockedFieldIds(
-  _allFields: readonly FieldInfo[],
-  activeView: ViewInfo | null
-): ReadonlySet<string> {
+function getLockedFieldIds(activeView: ViewInfo | null): ReadonlySet<string> {
   const locked = new Set<string>();
   if (activeView?.viewType === 'checklist') {
     const cbId = (activeView.config as { checkboxFieldId?: string } | null)?.checkboxFieldId;

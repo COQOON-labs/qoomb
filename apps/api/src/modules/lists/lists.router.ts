@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { HivePermission } from '@qoomb/types';
+import { canDeleteField, HivePermission } from '@qoomb/types';
 import {
   createListSchema,
   updateListSchema,
@@ -289,6 +289,21 @@ export const listsRouter = (listsService: ListsService) =>
           'edit',
           LIST_PERMISSIONS
         );
+
+        const fieldGuard = canDeleteField(
+          input.id,
+          list.fields.map((f) => ({ id: f.id, fieldType: f.fieldType })),
+          list.views.map((v) => ({
+            viewType: v.viewType,
+            config: v.config as Record<string, unknown> | null,
+          }))
+        );
+        if (!fieldGuard.allowed) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: `Cannot delete field: ${fieldGuard.reason}`,
+          });
+        }
 
         const removed = await listsService.removeField(input.id, input.listId);
         if (!removed) throw new TRPCError({ code: 'NOT_FOUND', message: 'Field not found' });

@@ -307,6 +307,13 @@ const de = {
       hideField: 'Feld ausblenden',
       showField: 'Feld einblenden',
       lastFieldHint: 'Mindestens ein Feld muss sichtbar bleiben',
+      guards: {
+        lastField: 'Das letzte Feld kann nicht gelöscht werden',
+        activeCheckboxField: 'Dieses Feld wird von einer Checklisten-Ansicht verwendet',
+        activeGroupByField: 'Dieses Feld wird von einer Kanban-Ansicht gruppiert',
+        checkboxFieldLocked: 'Das Checkbox-Feld ist in der Checklisten-Ansicht immer sichtbar',
+        lastVisibleField: 'Mindestens ein Feld muss sichtbar bleiben',
+      },
     },
     // Field editing
     renameField: 'Feld umbenennen',

@@ -1005,6 +1005,28 @@ type RootTranslation = {
        * A​t​ ​l​e​a​s​t​ ​o​n​e​ ​f​i​e​l​d​ ​m​u​s​t​ ​r​e​m​a​i​n​ ​v​i​s​i​b​l​e
        */
       lastFieldHint: string;
+      guards: {
+        /**
+         * T​h​e​ ​l​a​s​t​ ​f​i​e​l​d​ ​c​a​n​n​o​t​ ​b​e​ ​d​e​l​e​t​e​d
+         */
+        lastField: string;
+        /**
+         * T​h​i​s​ ​f​i​e​l​d​ ​i​s​ ​u​s​e​d​ ​b​y​ ​a​ ​c​h​e​c​k​l​i​s​t​ ​v​i​e​w
+         */
+        activeCheckboxField: string;
+        /**
+         * T​h​i​s​ ​f​i​e​l​d​ ​i​s​ ​g​r​o​u​p​e​d​ ​b​y​ ​a​ ​k​a​n​b​a​n​ ​v​i​e​w
+         */
+        activeGroupByField: string;
+        /**
+         * T​h​e​ ​c​h​e​c​k​b​o​x​ ​f​i​e​l​d​ ​i​s​ ​a​l​w​a​y​s​ ​v​i​s​i​b​l​e​ ​i​n​ ​c​h​e​c​k​l​i​s​t​ ​v​i​e​w
+         */
+        checkboxFieldLocked: string;
+        /**
+         * A​t​ ​l​e​a​s​t​ ​o​n​e​ ​f​i​e​l​d​ ​m​u​s​t​ ​r​e​m​a​i​n​ ​v​i​s​i​b​l​e
+         */
+        lastVisibleField: string;
+      };
     };
     /**
      * R​e​n​a​m​e​ ​f​i​e​l​d
@@ -2356,6 +2378,28 @@ export type TranslationFunctions = {
        * At least one field must remain visible
        */
       lastFieldHint: () => LocalizedString;
+      guards: {
+        /**
+         * The last field cannot be deleted
+         */
+        lastField: () => LocalizedString;
+        /**
+         * This field is used by a checklist view
+         */
+        activeCheckboxField: () => LocalizedString;
+        /**
+         * This field is grouped by a kanban view
+         */
+        activeGroupByField: () => LocalizedString;
+        /**
+         * The checkbox field is always visible in checklist view
+         */
+        checkboxFieldLocked: () => LocalizedString;
+        /**
+         * At least one field must remain visible
+         */
+        lastVisibleField: () => LocalizedString;
+      };
     };
     /**
      * Rename field

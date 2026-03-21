@@ -31,6 +31,7 @@ import {
 } from '../icons';
 
 import { AddFieldForm } from './AddFieldForm';
+import { canDeleteField, canToggleVisibility, type ViewInfo } from './listFieldGuards';
 import type { ListDetail, ListField, LLType } from './types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -47,6 +48,7 @@ interface FieldDetailProps {
   listId: string;
   onBack: () => void;
   onDeleteField: (fieldId: string) => void;
+  deleteGuardReason: string | null;
 }
 
 // ── Sortable field row ────────────────────────────────────────────────────────
@@ -54,18 +56,26 @@ interface FieldDetailProps {
 interface SortableFieldRowProps {
   field: ListField;
   isVisible: boolean;
-  isLastVisible: boolean;
+  visibilityBlocked: boolean;
+  visibilityBlockReason: string | null;
+  deleteBlocked: boolean;
+  deleteBlockReason: string | null;
   onToggleVisibility: (fieldId: string) => void;
   onOpenDetail: (fieldId: string) => void;
+  onDeleteField: (fieldId: string) => void;
   LL: LLType;
 }
 
 function SortableFieldRow({
   field,
   isVisible,
-  isLastVisible,
+  visibilityBlocked,
+  visibilityBlockReason,
+  deleteBlocked,
+  deleteBlockReason,
   onToggleVisibility,
   onOpenDetail,
+  onDeleteField,
   LL,
 }: SortableFieldRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -103,22 +113,37 @@ function SortableFieldRow({
       <button
         type="button"
         onClick={() => onToggleVisibility(field.id)}
-        disabled={isVisible && isLastVisible}
+        disabled={visibilityBlocked}
         className={`p-1 rounded transition-colors shrink-0 ${
-          isVisible && isLastVisible
+          visibilityBlocked
             ? 'text-muted-foreground/30 cursor-not-allowed'
             : 'text-muted-foreground hover:text-foreground'
         }`}
         aria-label={
           isVisible ? LL.lists.settingsPanel.hideField() : LL.lists.settingsPanel.showField()
         }
-        title={isVisible && isLastVisible ? LL.lists.settingsPanel.lastFieldHint() : undefined}
+        title={visibilityBlockReason ?? undefined}
       >
         {isVisible ? (
           <EyeIcon className="w-3.5 h-3.5" />
         ) : (
           <EyeOffIcon className="w-3.5 h-3.5 opacity-40" />
         )}
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onDeleteField(field.id)}
+        disabled={deleteBlocked}
+        className={`p-1 rounded transition-colors shrink-0 ${
+          deleteBlocked
+            ? 'text-muted-foreground/30 cursor-not-allowed'
+            : 'text-muted-foreground hover:text-destructive'
+        }`}
+        aria-label={LL.lists.removeField()}
+        title={deleteBlockReason ?? undefined}
+      >
+        <TrashIcon className="w-3.5 h-3.5" />
       </button>
 
       <button
@@ -160,7 +185,13 @@ function fieldTypeIcon(type: string): string {
 
 // ── Field detail subpanel ─────────────────────────────────────────────────────
 
-function FieldDetail({ field, listId, onBack, onDeleteField }: FieldDetailProps) {
+function FieldDetail({
+  field,
+  listId,
+  onBack,
+  onDeleteField,
+  deleteGuardReason,
+}: FieldDetailProps) {
   const { LL } = useI18nContext();
   const utils = trpc.useUtils();
 
@@ -300,6 +331,8 @@ function FieldDetail({ field, listId, onBack, onDeleteField }: FieldDetailProps)
             size="sm"
             className="gap-1.5"
             onClick={() => onDeleteField(field.id)}
+            disabled={!!deleteGuardReason}
+            title={deleteGuardReason ?? undefined}
           >
             <TrashIcon className="w-3.5 h-3.5" />
             {LL.lists.removeField()}
@@ -390,25 +423,42 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
     [listId, updateList]
   );
 
-  // Checkbox fields are always visible in checklist views — they can't be toggled
-  const isChecklistView = activeView?.viewType === 'checklist';
-  const checkboxFieldId = useMemo(
-    () => list.fields.find((f) => f.fieldType === 'checkbox')?.id ?? null,
-    [list.fields]
+  // ── Guard context ─────────────────────────────────────────────────────
+  const viewInfos: ViewInfo[] = useMemo(
+    () =>
+      list.views.map((v) => ({
+        viewType: v.viewType,
+        config: (v.config as Record<string, unknown> | null) ?? null,
+      })),
+    [list.views]
+  );
+
+  const activeViewInfo: ViewInfo | null = useMemo(
+    () =>
+      activeView
+        ? {
+            viewType: activeView.viewType,
+            config: (activeView.config as Record<string, unknown> | null) ?? null,
+          }
+        : null,
+    [activeView]
   );
 
   const handleToggleFieldVisibility = useCallback(
     (fieldId: string) => {
       if (!activeView) return;
-      // Never hide checkbox field in checklist view
-      if (isChecklistView && fieldId === checkboxFieldId) return;
+      const isVisible = visibleFieldIds.has(fieldId);
+      const guard = canToggleVisibility(
+        fieldId,
+        isVisible,
+        list.fields,
+        visibleFieldIds,
+        activeViewInfo
+      );
+      if (!guard.allowed) return;
+
       const current = new Set(visibleFieldIds);
-      if (current.has(fieldId)) {
-        // Count non-checkbox visible fields
-        const nonCheckboxVisible = isChecklistView
-          ? [...current].filter((id) => id !== checkboxFieldId).length
-          : current.size;
-        if (nonCheckboxVisible <= 1) return;
+      if (isVisible) {
         current.delete(fieldId);
       } else {
         current.add(fieldId);
@@ -427,7 +477,7 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
         },
       });
     },
-    [activeView, listId, visibleFieldIds, updateView, isChecklistView, checkboxFieldId]
+    [activeView, listId, list.fields, visibleFieldIds, updateView, activeViewInfo]
   );
 
   // ── Field reorder (DnD) ─────────────────────────────────────────────────
@@ -495,6 +545,12 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
 
   // Field detail subpanel
   if (detailField) {
+    const delGuard = canDeleteField(detailField.id, list.fields, viewInfos);
+    const delReason = delGuard.allowed
+      ? null
+      : (LL.lists.settingsPanel.guards[
+          delGuard.reason as keyof typeof LL.lists.settingsPanel.guards
+        ]?.() ?? delGuard.reason);
     return (
       <aside className="fixed inset-y-0 right-0 z-40 w-full max-w-sm bg-background border-l border-border shadow-xl flex flex-col">
         <FieldDetail
@@ -502,6 +558,7 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
           listId={listId}
           onBack={() => setDetailFieldId(null)}
           onDeleteField={handleDeleteField}
+          deleteGuardReason={delReason}
         />
       </aside>
     );
@@ -573,29 +630,42 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-0.5">
-                {sortedFields.map((field) => (
-                  <SortableFieldRow
-                    key={field.id}
-                    field={field}
-                    isVisible={visibleFieldIds.has(field.id)}
-                    isLastVisible={(() => {
-                      // Checkbox in checklist view: always locked visible
-                      if (isChecklistView && field.id === checkboxFieldId) return true;
-                      // Count non-checkbox visible fields
-                      const nonCbVisible = isChecklistView
-                        ? [...visibleFieldIds].filter((id) => id !== checkboxFieldId).length
-                        : visibleFieldIds.size;
-                      return (
-                        nonCbVisible <= 1 &&
-                        visibleFieldIds.has(field.id) &&
-                        field.id !== checkboxFieldId
-                      );
-                    })()}
-                    onToggleVisibility={handleToggleFieldVisibility}
-                    onOpenDetail={setDetailFieldId}
-                    LL={LL}
-                  />
-                ))}
+                {sortedFields.map((field) => {
+                  const isVisible = visibleFieldIds.has(field.id);
+                  const visGuard = canToggleVisibility(
+                    field.id,
+                    isVisible,
+                    list.fields,
+                    visibleFieldIds,
+                    activeViewInfo
+                  );
+                  const delGuard = canDeleteField(field.id, list.fields, viewInfos);
+                  const visReason = visGuard.allowed
+                    ? null
+                    : (LL.lists.settingsPanel.guards[
+                        visGuard.reason as keyof typeof LL.lists.settingsPanel.guards
+                      ]?.() ?? visGuard.reason);
+                  const delReason = delGuard.allowed
+                    ? null
+                    : (LL.lists.settingsPanel.guards[
+                        delGuard.reason as keyof typeof LL.lists.settingsPanel.guards
+                      ]?.() ?? delGuard.reason);
+                  return (
+                    <SortableFieldRow
+                      key={field.id}
+                      field={field}
+                      isVisible={isVisible}
+                      visibilityBlocked={!visGuard.allowed}
+                      visibilityBlockReason={visReason}
+                      deleteBlocked={!delGuard.allowed}
+                      deleteBlockReason={delReason}
+                      onToggleVisibility={handleToggleFieldVisibility}
+                      onOpenDetail={setDetailFieldId}
+                      onDeleteField={handleDeleteField}
+                      LL={LL}
+                    />
+                  );
+                })}
               </div>
             </SortableContext>
           </DndContext>

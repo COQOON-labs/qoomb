@@ -306,6 +306,13 @@ const en = {
       hideField: 'Hide field',
       showField: 'Show field',
       lastFieldHint: 'At least one field must remain visible',
+      guards: {
+        lastField: 'The last field cannot be deleted',
+        activeCheckboxField: 'This field is used by a checklist view',
+        activeGroupByField: 'This field is grouped by a kanban view',
+        checkboxFieldLocked: 'The checkbox field is always visible in checklist view',
+        lastVisibleField: 'At least one field must remain visible',
+      },
     },
     // Field editing
     renameField: 'Rename field',

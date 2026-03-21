@@ -127,10 +127,15 @@ export function SortableChecklistItem({
             {title || <span className="text-muted-foreground/40">—</span>}
           </span>
           {extraFields && extraFields.length > 0 && (
-            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+            <div
+              className="grid gap-x-4 gap-y-0 mt-0.5"
+              style={{
+                gridTemplateColumns: `repeat(${extraFields.length}, minmax(0, 1fr))`,
+              }}
+            >
               {extraFields.map((ef) => (
                 <span key={ef.name} className="text-xs text-muted-foreground truncate">
-                  <span className="opacity-60">{ef.name}:</span> {ef.value || '—'}
+                  <span className="opacity-50">{ef.name}:</span> {ef.value || '—'}
                 </span>
               ))}
             </div>

@@ -1,0 +1,5 @@
+# Auto-reindex GitNexus knowledge graph after pull/merge.
+# Runs in the background so it never blocks the developer.
+if command -v npx &>/dev/null; then
+  npx gitnexus analyze &>/dev/null &
+fi

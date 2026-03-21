@@ -1,7 +1,8 @@
 # Qoomb - Development Guidelines
 
-> This file is read by AI coding agents (Devin, Codex, Cursor, etc.).
-> For full context see also `CLAUDE.md` (Claude) and `.github/copilot-instructions.md` (Copilot).
+> **Universal source of truth** for all AI coding agents.
+> Read by: Claude (`CLAUDE.md` → includes this file), Copilot (`.github/copilot-instructions.md`), Cursor, Devin, Codex, and others.
+> Agent-specific overrides live in their respective config files — this file contains the shared rules.
 
 ## JSON Files
 
@@ -110,14 +111,18 @@ qoomb/
 ├── .husky/                     # Git hooks
 │   ├── pre-commit                  # Prettier + Gitleaks
 │   ├── pre-push                    # Lint + types + tests
-│   └── commit-msg                  # Commitlint + anti-AI-trailer
+│   ├── commit-msg                  # Commitlint + anti-AI-trailer
+│   ├── post-merge                  # GitNexus auto-reindex
+│   └── post-checkout               # GitNexus auto-reindex (branch switch)
 │
+├── .mcp.json                   # Claude Code MCP config (GitNexus)
+├── .vscode/mcp.json            # VS Code / Copilot MCP config (GitNexus)
 ├── justfile                    # Task runner (44 recipes)
 ├── docker-compose.yml          # PostgreSQL + Redis
 ├── LICENSE.md                  # Fair Source License v1.0 + CLA
 ├── COMMERCIAL-LICENSE.md       # Commercial licensing details
-├── AGENTS.md                   # This file (for AI agents)
-├── CLAUDE.md                   # For Claude (same content)
+├── AGENTS.md                   # Universal AI agent guidelines (source of truth)
+├── CLAUDE.md                   # Claude-specific config (references AGENTS.md)
 └── README.md                   # For humans
 ```
 
@@ -1268,8 +1273,8 @@ WEBAUTHN_ORIGIN=https://app.qoomb.com
 
 ```text
 README.md              → Human onboarding
-AGENTS.md              → This file (AI agents: Devin, Codex, Cursor, etc.)
-CLAUDE.md              → AI context for Claude (identical content)
+AGENTS.md              → Universal AI agent guidelines (source of truth)
+CLAUDE.md              → Claude-specific config (references AGENTS.md)
 docs/
   ├── adr/                        → Architecture Decision Records (MADR)
   │   ├── 0001-adr-process.md     → ADR format and process

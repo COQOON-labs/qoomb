@@ -30,8 +30,9 @@ certs/
 # GitHub CLI workspace config
 .gh-config
 
-# IDE
-.vscode
+# IDE — ignore .vscode except shared MCP config
+.vscode/*
+!.vscode/mcp.json
 .idea
 *.swp
 *.swo

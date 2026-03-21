@@ -55,6 +55,9 @@ export const hiveProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   // reset when the transaction completes, so no pool contamination.
   return ctx.prisma.$transaction(
     async (tx) => {
+      // SECURITY: hiveId and userId are UUID-validated by setHiveSchemaValidation()
+      // above before this point — string interpolation here is safe.
+      // All other raw SQL in this codebase uses parameterized queries.
       await tx.$executeRawUnsafe(`SET LOCAL app.hive_id = '${hiveId}'`);
       await tx.$executeRawUnsafe(`SET LOCAL app.user_id = '${userId}'`);
 

@@ -181,6 +181,12 @@ export const listItemValueSchema = z
     message: 'Too many field values per item (max 200)',
   });
 
+// recurrenceRule schema — kept intentionally even though the Checklist UI no
+// longer exposes recurrence controls (removed in feat/list-settings-panel).
+// The DB column, backend service, and this schema remain in place as
+// infrastructure for a future "repeating tasks" feature. The Prisma schema
+// field is `list_items.recurrence_rule`. Do NOT delete until the column is
+// migrated away.
 export const recurrenceFrequencySchema = z.enum(['daily', 'weekly', 'monthly', 'yearly']);
 
 export const recurrenceRuleSchema = z.object({

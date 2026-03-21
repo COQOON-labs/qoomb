@@ -322,6 +322,7 @@ const de = {
     selectOptions: 'Auswahloptionen',
     addOption: 'Option hinzufügen',
     optionPlaceholder: 'Neue Option…',
+    removeOption: 'Option entfernen',
     saveField: 'Feld speichern',
     // Toasts / feedback
     updateSuccess: 'Gespeichert',
@@ -346,6 +347,7 @@ const de = {
     checkboxFieldDefaultName: 'Erledigt',
     checkboxFieldLabel: 'Abgehakt-Feld',
     titleFieldLabel: 'Titelfeld',
+    editItemTitle: 'Titel bearbeiten',
     hideDone: 'Erledigte ausblenden',
     showDone: 'Erledigte anzeigen',
     noUncheckedItems: 'Alle Einträge erledigt 🎉',
@@ -354,17 +356,6 @@ const de = {
     kanbanGroupBy: 'Gruppiert nach',
     kanbanNoValue: '(Kein Wert)',
     noSelectFields: 'Kein Auswahlfeld vorhanden. Bitte erst ein Auswahlfeld anlegen.',
-    // Recurrence
-    recurrenceLabel: 'Wiederholt sich',
-    recurrenceNone: 'Nicht wiederholen',
-    recurrenceFrequency: {
-      daily: 'Täglich',
-      weekly: 'Wöchentlich',
-      monthly: 'Monatlich',
-      yearly: 'Jährlich',
-    },
-    recurrenceInterval: 'Alle {n} …',
-    recurrenceSaved: 'Wiederholung gespeichert',
     searchPlaceholder: 'Listen durchsuchen…',
     favorites: 'Favoriten',
     noFavorites: 'Noch keine Favoriten. Klicke auf den Stern neben einer Liste.',

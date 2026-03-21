@@ -890,12 +890,11 @@ export function ListDetailPage() {
                                         item={item}
                                         isDone={isDone}
                                         title={title}
+                                        titleFieldId={titleField?.id ?? null}
                                         isLast={idx === visibleItems.length - 1}
                                         checkboxFieldId={checkboxField.id}
-                                        listId={id ?? ''}
                                         extraFields={extras}
                                         updateItem={updateItem}
-                                        createItem={createItem}
                                         handleDeleteItem={handleDeleteItem}
                                         LL={LL}
                                       />

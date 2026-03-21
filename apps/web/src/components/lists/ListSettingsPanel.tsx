@@ -286,6 +286,7 @@ function FieldDetail({
                   <button
                     type="button"
                     onClick={() => handleRemoveOption(opt)}
+                    aria-label={LL.lists.removeOption()}
                     className="p-0.5 text-muted-foreground hover:text-destructive"
                   >
                     <XIcon className="w-3 h-3" />

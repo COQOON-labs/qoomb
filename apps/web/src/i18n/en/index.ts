@@ -321,6 +321,7 @@ const en = {
     selectOptions: 'Select options',
     addOption: 'Add option',
     optionPlaceholder: 'New option…',
+    removeOption: 'Remove option',
     saveField: 'Save field',
     // Toasts / feedback
     updateSuccess: 'Saved',
@@ -345,6 +346,7 @@ const en = {
     checkboxFieldDefaultName: 'Done',
     checkboxFieldLabel: 'Done field',
     titleFieldLabel: 'Title field',
+    editItemTitle: 'Edit title',
     hideDone: 'Hide done',
     showDone: 'Show done',
     noUncheckedItems: 'All items done 🎉',
@@ -353,17 +355,6 @@ const en = {
     kanbanGroupBy: 'Group by',
     kanbanNoValue: '(No value)',
     noSelectFields: 'No select field found. Please create a select field first.',
-    // Recurrence
-    recurrenceLabel: 'Repeats',
-    recurrenceNone: 'Does not repeat',
-    recurrenceFrequency: {
-      daily: 'Daily',
-      weekly: 'Weekly',
-      monthly: 'Monthly',
-      yearly: 'Yearly',
-    },
-    recurrenceInterval: 'Every {n} …',
-    recurrenceSaved: 'Recurrence saved',
     searchPlaceholder: 'Search lists…',
     favorites: 'Favorites',
     noFavorites: 'No favorites yet. Click the star next to a list.',

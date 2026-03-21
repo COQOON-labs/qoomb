@@ -1,27 +1,27 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { CheckIcon, DragHandleIcon, TrashIcon } from '../icons';
 
-import type { ListItem, UpdateItemMutation, CreateItemMutation, LLType } from './types';
-
-// ── Recurrence constants ──────────────────────────────────────────────────────
-
-export const RECURRENCE_FREQUENCIES = ['daily', 'weekly', 'monthly', 'yearly'] as const;
-export type RecurrenceFrequency = (typeof RECURRENCE_FREQUENCIES)[number];
+import type { ListItem, UpdateItemMutation, LLType } from './types';
 
 // ── Component ─────────────────────────────────────────────────────────────────
+
+export interface ChecklistExtraField {
+  name: string;
+  value: string;
+}
 
 export interface SortableChecklistItemProps {
   item: ListItem;
   isDone: boolean;
   title: string;
+  titleFieldId: string | null;
   isLast: boolean;
   checkboxFieldId: string;
-  listId: string;
+  extraFields?: ChecklistExtraField[];
   updateItem: UpdateItemMutation;
-  createItem: CreateItemMutation;
   handleDeleteItem: (id: string) => void;
   LL: LLType;
 }
@@ -30,11 +30,11 @@ export function SortableChecklistItem({
   item,
   isDone,
   title,
+  titleFieldId,
   isLast,
   checkboxFieldId,
-  listId,
+  extraFields,
   updateItem,
-  createItem,
   handleDeleteItem,
   LL,
 }: SortableChecklistItemProps) {
@@ -47,42 +47,35 @@ export function SortableChecklistItem({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const [showRecurrence, setShowRecurrence] = useState(false);
-  const recRule = item.recurrenceRule as {
-    frequency?: RecurrenceFrequency;
-    interval?: number;
-  } | null;
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(title);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
+  const handleTitleClick = useCallback(() => {
+    if (!titleFieldId) return;
+    setTitleDraft(title);
+    setEditingTitle(true);
+    // Focus after paint
+    setTimeout(() => titleInputRef.current?.select(), 0);
+  }, [title, titleFieldId]);
+
+  const handleTitleSave = useCallback(() => {
+    setEditingTitle(false);
+    if (!titleFieldId || titleDraft === title) return;
+    updateItem.mutate({ id: item.id, data: { values: { [titleFieldId]: titleDraft } } });
+  }, [titleFieldId, titleDraft, title, item.id, updateItem]);
+
+  const handleTitleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') handleTitleSave();
+      if (e.key === 'Escape') setEditingTitle(false);
+    },
+    [handleTitleSave]
+  );
   const handleToggleDone = useCallback(() => {
     const newVal = !isDone;
     updateItem.mutate({ id: item.id, data: { values: { [checkboxFieldId]: newVal } } });
-    // Client-side recurrence expansion: when a recurring item is completed,
-    // spawn a fresh copy (unchecked) so the next occurrence appears immediately.
-    if (newVal && recRule?.frequency) {
-      const nextValues: Record<string, string | number | boolean | null> = {};
-      for (const v of item.values) {
-        if (v.fieldId === checkboxFieldId) {
-          nextValues[v.fieldId] = false;
-        } else if (v.value !== null && v.value !== undefined) {
-          nextValues[v.fieldId] = v.value;
-        }
-      }
-      createItem.mutate({
-        listId,
-        values: nextValues,
-        recurrenceRule: { frequency: recRule.frequency, interval: recRule.interval },
-      });
-    }
-  }, [isDone, item, checkboxFieldId, recRule, updateItem, createItem, listId]);
-
-  const handleRecurrenceChange = useCallback(
-    (frequency: RecurrenceFrequency | '') => {
-      const rule = frequency ? { frequency } : null;
-      updateItem.mutate({ id: item.id, data: { recurrenceRule: rule } });
-      setShowRecurrence(false);
-    },
-    [item.id, updateItem]
-  );
+  }, [isDone, item.id, checkboxFieldId, updateItem]);
 
   return (
     <li
@@ -113,24 +106,46 @@ export function SortableChecklistItem({
         >
           {isDone && <CheckIcon className="w-3 h-3" />}
         </button>
-        <span
-          className={`flex-1 text-sm ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-        >
-          {title || <span className="text-muted-foreground/40">—</span>}
-        </span>
-        {/* Recurrence indicator */}
-        {recRule?.frequency && (
-          <span className="text-xs text-muted-foreground flex-shrink-0">🔁</span>
-        )}
-        {/* Recurrence picker toggle */}
-        <button
-          type="button"
-          className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all flex-shrink-0"
-          onClick={() => setShowRecurrence((p) => !p)}
-          aria-label={LL.lists.recurrenceLabel()}
-        >
-          <span className="text-xs">🔁</span>
-        </button>
+        <div className="flex-1 min-w-0">
+          {editingTitle && titleFieldId ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={handleTitleSave}
+              onKeyDown={handleTitleKeyDown}
+              aria-label={LL.lists.editItemTitle()}
+              className="w-full text-sm bg-transparent border-b border-primary outline-none text-foreground"
+            />
+          ) : (
+            <span
+              role={titleFieldId ? 'button' : undefined}
+              tabIndex={titleFieldId ? 0 : undefined}
+              onClick={handleTitleClick}
+              onKeyDown={(e) => e.key === 'Enter' && handleTitleClick()}
+              className={`text-sm block ${
+                isDone ? 'line-through text-muted-foreground' : 'text-foreground'
+              } ${titleFieldId ? 'cursor-text hover:text-primary transition-colors' : ''}`}
+            >
+              {title || <span className="text-muted-foreground/40">—</span>}
+            </span>
+          )}
+          {extraFields && extraFields.length > 0 && (
+            <div
+              className="grid gap-x-4 gap-y-0 mt-0.5"
+              style={{
+                gridTemplateColumns: `repeat(${extraFields.length}, minmax(0, 1fr))`,
+              }}
+            >
+              {extraFields.map((ef) => (
+                <span key={ef.name} className="text-xs text-muted-foreground truncate">
+                  <span className="opacity-50">{ef.name}:</span> {ef.value || '—'}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
         <button
           type="button"
           className="opacity-0 group-hover:opacity-100 p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
@@ -140,36 +155,6 @@ export function SortableChecklistItem({
           <TrashIcon className="w-4 h-4" />
         </button>
       </div>
-      {/* Recurrence picker */}
-      {showRecurrence && (
-        <div className="mt-2 ml-14 flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => handleRecurrenceChange('')}
-            className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
-              !recRule?.frequency
-                ? 'border-primary bg-primary/10 text-foreground'
-                : 'border-border text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {LL.lists.recurrenceNone()}
-          </button>
-          {RECURRENCE_FREQUENCIES.map((freq) => (
-            <button
-              key={freq}
-              type="button"
-              onClick={() => handleRecurrenceChange(freq)}
-              className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
-                recRule?.frequency === freq
-                  ? 'border-primary bg-primary/10 text-foreground'
-                  : 'border-border text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {LL.lists.recurrenceFrequency[freq]()}
-            </button>
-          ))}
-        </div>
-      )}
     </li>
   );
 }

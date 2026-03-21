@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { AuthGuard } from './components/auth/AuthGuard';
@@ -6,7 +7,6 @@ import { ToastContainer } from './components/layout/ToastContainer';
 import { flag } from './lib/flags';
 import { ActivityPage } from './pages/ActivityPage';
 import { Dashboard } from './pages/Dashboard';
-import { DashboardSketch } from './pages/DashboardSketch';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { GroupsPage } from './pages/GroupsPage';
 import { HiveSettingsPage } from './pages/HiveSettingsPage';
@@ -20,6 +20,11 @@ import { ProfilePage } from './pages/ProfilePage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
+
+// Lazy-loaded dev-only sketch — excluded from prod bundle unless the route is hit
+const DashboardSketch = lazy(() =>
+  import('./pages/DashboardSketch').then((m) => ({ default: m.DashboardSketch }))
+);
 
 // Debug: Unregister any existing service workers (dev only)
 if (import.meta.env.DEV && 'serviceWorker' in navigator) {
@@ -62,7 +67,14 @@ function App() {
         {/* Dev-only: Designskizzen (nicht in Production) */}
         {flag('devSketches') && (
           <Route element={<AuthGuard />}>
-            <Route path="/dev/sketch/dashboard" element={<DashboardSketch />} />
+            <Route
+              path="/dev/sketch/dashboard"
+              element={
+                <Suspense fallback={null}>
+                  <DashboardSketch />
+                </Suspense>
+              }
+            />
           </Route>
         )}
 

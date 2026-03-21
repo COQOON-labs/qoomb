@@ -50,6 +50,10 @@ type RootTranslation = {
      */
     remove: string;
     /**
+     * C​l​o​s​e
+     */
+    close: string;
+    /**
      * B​a​c​k
      */
     back: string;
@@ -967,6 +971,67 @@ type RootTranslation = {
      * S​e​l​e​c​t​ ​a​ ​g​r​o​u​p
      */
     selectGroup: string;
+    settingsPanel: {
+      /**
+       * L​i​s​t​ ​s​e​t​t​i​n​g​s
+       */
+      title: string;
+      /**
+       * L​i​s​t
+       */
+      listSection: string;
+      /**
+       * F​i​e​l​d​s
+       */
+      fieldsSection: string;
+      /**
+       * V​i​e​w​:​ ​{​n​a​m​e​}
+       * @param {unknown} name
+       */
+      viewSection: RequiredParams<'name'>;
+      /**
+       * T​y​p​e
+       */
+      viewTypeLabel: string;
+      /**
+       * H​i​d​e​ ​f​i​e​l​d
+       */
+      hideField: string;
+      /**
+       * S​h​o​w​ ​f​i​e​l​d
+       */
+      showField: string;
+      /**
+       * A​t​ ​l​e​a​s​t​ ​o​n​e​ ​f​i​e​l​d​ ​m​u​s​t​ ​r​e​m​a​i​n​ ​v​i​s​i​b​l​e
+       */
+      lastFieldHint: string;
+      guards: {
+        /**
+         * T​h​e​ ​l​a​s​t​ ​f​i​e​l​d​ ​c​a​n​n​o​t​ ​b​e​ ​d​e​l​e​t​e​d
+         */
+        lastField: string;
+        /**
+         * T​h​i​s​ ​f​i​e​l​d​ ​i​s​ ​u​s​e​d​ ​b​y​ ​a​ ​c​h​e​c​k​l​i​s​t​ ​v​i​e​w
+         */
+        activeCheckboxField: string;
+        /**
+         * T​h​i​s​ ​f​i​e​l​d​ ​i​s​ ​g​r​o​u​p​e​d​ ​b​y​ ​a​ ​k​a​n​b​a​n​ ​v​i​e​w
+         */
+        activeGroupByField: string;
+        /**
+         * T​h​i​s​ ​f​i​e​l​d​ ​i​s​ ​t​h​e​ ​t​i​t​l​e​ ​f​i​e​l​d​ ​o​f​ ​a​ ​c​h​e​c​k​l​i​s​t​ ​v​i​e​w
+         */
+        activeTitleField: string;
+        /**
+         * T​h​e​ ​c​h​e​c​k​b​o​x​ ​f​i​e​l​d​ ​i​s​ ​a​l​w​a​y​s​ ​v​i​s​i​b​l​e​ ​i​n​ ​c​h​e​c​k​l​i​s​t​ ​v​i​e​w
+         */
+        checkboxFieldLocked: string;
+        /**
+         * A​t​ ​l​e​a​s​t​ ​o​n​e​ ​f​i​e​l​d​ ​m​u​s​t​ ​r​e​m​a​i​n​ ​v​i​s​i​b​l​e
+         */
+        lastVisibleField: string;
+      };
+    };
     /**
      * R​e​n​a​m​e​ ​f​i​e​l​d
      */
@@ -987,6 +1052,10 @@ type RootTranslation = {
      * N​e​w​ ​o​p​t​i​o​n​…
      */
     optionPlaceholder: string;
+    /**
+     * R​e​m​o​v​e​ ​o​p​t​i​o​n
+     */
+    removeOption: string;
     /**
      * S​a​v​e​ ​f​i​e​l​d
      */
@@ -1062,6 +1131,14 @@ type RootTranslation = {
      */
     checkboxFieldLabel: string;
     /**
+     * T​i​t​l​e​ ​f​i​e​l​d
+     */
+    titleFieldLabel: string;
+    /**
+     * E​d​i​t​ ​t​i​t​l​e
+     */
+    editItemTitle: string;
+    /**
      * H​i​d​e​ ​d​o​n​e
      */
     hideDone: string;
@@ -1089,41 +1166,6 @@ type RootTranslation = {
      * N​o​ ​s​e​l​e​c​t​ ​f​i​e​l​d​ ​f​o​u​n​d​.​ ​P​l​e​a​s​e​ ​c​r​e​a​t​e​ ​a​ ​s​e​l​e​c​t​ ​f​i​e​l​d​ ​f​i​r​s​t​.
      */
     noSelectFields: string;
-    /**
-     * R​e​p​e​a​t​s
-     */
-    recurrenceLabel: string;
-    /**
-     * D​o​e​s​ ​n​o​t​ ​r​e​p​e​a​t
-     */
-    recurrenceNone: string;
-    recurrenceFrequency: {
-      /**
-       * D​a​i​l​y
-       */
-      daily: string;
-      /**
-       * W​e​e​k​l​y
-       */
-      weekly: string;
-      /**
-       * M​o​n​t​h​l​y
-       */
-      monthly: string;
-      /**
-       * Y​e​a​r​l​y
-       */
-      yearly: string;
-    };
-    /**
-     * E​v​e​r​y​ ​{​n​}​ ​…
-     * @param {unknown} n
-     */
-    recurrenceInterval: RequiredParams<'n'>;
-    /**
-     * R​e​c​u​r​r​e​n​c​e​ ​s​a​v​e​d
-     */
-    recurrenceSaved: string;
     /**
      * S​e​a​r​c​h​ ​l​i​s​t​s​…
      */
@@ -1382,6 +1424,10 @@ export type TranslationFunctions = {
      * Remove
      */
     remove: () => LocalizedString;
+    /**
+     * Close
+     */
+    close: () => LocalizedString;
     /**
      * Back
      */
@@ -2280,6 +2326,66 @@ export type TranslationFunctions = {
      * Select a group
      */
     selectGroup: () => LocalizedString;
+    settingsPanel: {
+      /**
+       * List settings
+       */
+      title: () => LocalizedString;
+      /**
+       * List
+       */
+      listSection: () => LocalizedString;
+      /**
+       * Fields
+       */
+      fieldsSection: () => LocalizedString;
+      /**
+       * View: {name}
+       */
+      viewSection: (arg: { name: unknown }) => LocalizedString;
+      /**
+       * Type
+       */
+      viewTypeLabel: () => LocalizedString;
+      /**
+       * Hide field
+       */
+      hideField: () => LocalizedString;
+      /**
+       * Show field
+       */
+      showField: () => LocalizedString;
+      /**
+       * At least one field must remain visible
+       */
+      lastFieldHint: () => LocalizedString;
+      guards: {
+        /**
+         * The last field cannot be deleted
+         */
+        lastField: () => LocalizedString;
+        /**
+         * This field is used by a checklist view
+         */
+        activeCheckboxField: () => LocalizedString;
+        /**
+         * This field is grouped by a kanban view
+         */
+        activeGroupByField: () => LocalizedString;
+        /**
+         * This field is the title field of a checklist view
+         */
+        activeTitleField: () => LocalizedString;
+        /**
+         * The checkbox field is always visible in checklist view
+         */
+        checkboxFieldLocked: () => LocalizedString;
+        /**
+         * At least one field must remain visible
+         */
+        lastVisibleField: () => LocalizedString;
+      };
+    };
     /**
      * Rename field
      */
@@ -2300,6 +2406,10 @@ export type TranslationFunctions = {
      * New option…
      */
     optionPlaceholder: () => LocalizedString;
+    /**
+     * Remove option
+     */
+    removeOption: () => LocalizedString;
     /**
      * Save field
      */
@@ -2375,6 +2485,14 @@ export type TranslationFunctions = {
      */
     checkboxFieldLabel: () => LocalizedString;
     /**
+     * Title field
+     */
+    titleFieldLabel: () => LocalizedString;
+    /**
+     * Edit title
+     */
+    editItemTitle: () => LocalizedString;
+    /**
      * Hide done
      */
     hideDone: () => LocalizedString;
@@ -2402,40 +2520,6 @@ export type TranslationFunctions = {
      * No select field found. Please create a select field first.
      */
     noSelectFields: () => LocalizedString;
-    /**
-     * Repeats
-     */
-    recurrenceLabel: () => LocalizedString;
-    /**
-     * Does not repeat
-     */
-    recurrenceNone: () => LocalizedString;
-    recurrenceFrequency: {
-      /**
-       * Daily
-       */
-      daily: () => LocalizedString;
-      /**
-       * Weekly
-       */
-      weekly: () => LocalizedString;
-      /**
-       * Monthly
-       */
-      monthly: () => LocalizedString;
-      /**
-       * Yearly
-       */
-      yearly: () => LocalizedString;
-    };
-    /**
-     * Every {n} …
-     */
-    recurrenceInterval: (arg: { n: unknown }) => LocalizedString;
-    /**
-     * Recurrence saved
-     */
-    recurrenceSaved: () => LocalizedString;
     /**
      * Search lists…
      */

@@ -17,6 +17,14 @@
 - Formatting: `pnpm format` (Prettier on ts, tsx, md, json files)
 - Pre-commit hooks run both Prettier and JSON linting on staged files via lint-staged.
 
+## Code Review Checklist
+
+**Every PR must be verified against [`docs/CODE-REVIEW-CHECKLIST.md`](docs/CODE-REVIEW-CHECKLIST.md).**
+
+The checklist covers: dead code, ADR compliance (ADR-0002/0004/0005/0008/0006), security (SQL injection, XSS, log injection, ReDoS, rate limiting, RLS), type safety, i18n parity, SOLID/DRY, documentation freshness, test quality, and bundle size.
+Test quality criteria and anti-patterns are documented in [`docs/TESTING.md`](docs/TESTING.md).
+Update the checklist whenever new patterns or pitfalls are discovered.
+
 ## Project Structure
 
 ```text
@@ -305,17 +313,22 @@ qoomb/
   - Full 5-stage RBAC guard on `get` / `update` / `delete`
   - `list` uses `buildVisibilityFilter()` for share-aware visibility (role + personal/group shares)
 - Lists module (replaced Tasks): `list`, `get`, `create`, `update`, `archive`, `delete`
-  - Generic EAV model: `List → ListField → ListItem → ListItemValue`
+  - Generic EAV model: `List \u2192 ListField \u2192 ListItem \u2192 ListItemValue`
   - AES-256-GCM field encryption: `name` (list + fields + views), item values
   - System lists (e.g. "tasks" per user) auto-created on first access
   - Templates system (`ListTemplate`, `ListTemplateField`, `ListTemplateView`)
   - Items: `createItem`, `updateItem`, `deleteItem`, `listItems`
   - Fields: `createField`, `updateField`, `removeField`, `getSelectOptions`
-  - `getSelectOptions(fieldId, listId)` → `string[]` — returns configured options for a select-type field (Notion-style dropdown); requires `view` access; returns `[]` for non-select fields
-  - `ListField.config` JSONB intentionally unencrypted (structural metadata, not personal data) — see ADR-0007 Risks
+  - `getSelectOptions(fieldId, listId)` \u2192 `string[]` \u2014 returns configured options for a select-type field (Notion-style dropdown); requires `view` access; returns `[]` for non-select fields
+  - `ListField.config` JSONB intentionally unencrypted (structural metadata, not personal data) \u2014 see ADR-0007 Risks
   - Full 5-stage RBAC guard on all operations
-  - Frontend: ListsPage (overview) + ListDetailPage (inline editing, icon picker, archive)
-  - **Location:** `apps/api/src/modules/lists/`, `apps/web/src/pages/ListsPage.tsx`, `ListDetailPage.tsx`
+  - **Settings Panel** (`ListSettingsPanel.tsx`): per-view field visibility toggle, field deletion with guards, view-specific config (checklist checkbox/title field pickers)
+  - **Field deletion guard** (`canDeleteField` in `@qoomb/types`): shared domain rule enforced on both frontend (disabled trash button + tooltip) and backend (`PRECONDITION_FAILED`). 4 rules: last field, active checkbox field, active kanban groupBy field, active title field \u2014 all with implicit fallbacks for old views without explicit config.
+  - **Checklist inline title editing**: click-to-edit pattern on title span; Enter/Blur saves via `updateItem`, Escape cancels
+  - **Configurable checklist view**: `checkboxFieldId` and `titleFieldId` persisted in view config; frontend falls back to first checkbox/text field for old views (mirrors guard fallback)
+  - `recurrenceRule` kept as DB/API infrastructure for list items (UI removed in feat/list-settings-panel); safe to re-expose in future without migration
+  - Frontend: ListsPage (overview) + ListDetailPage (table/checklist/kanban views, inline editing, icon picker, archive, settings panel)
+  - **Location:** `apps/api/src/modules/lists/`, `apps/web/src/pages/ListsPage.tsx`, `ListDetailPage.tsx`, `apps/web/src/components/lists/`
 - Groups module: `list`, `get`, `create`, `update`, `delete`, `addMember`, `removeMember`
   - AES-256-GCM field encryption: `name`, `description`
   - MEMBERS_VIEW for read, MEMBERS_MANAGE for write

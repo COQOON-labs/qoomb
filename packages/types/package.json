@@ -10,13 +10,16 @@
     "clean": "rm -rf dist",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@qoomb/eslint-config": "workspace:^",
     "@qoomb/tsconfig": "workspace:*",
     "@types/node": "^25.5.0",
     "eslint": "^10.0.3",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   }
 }

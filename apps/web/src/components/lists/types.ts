@@ -14,5 +14,4 @@ export type ListField = RouterOutput['lists']['get']['fields'][number];
 export type ListItem = RouterOutput['lists']['listItems'][number];
 export type ListDetail = RouterOutput['lists']['get'];
 export type UpdateItemMutation = ReturnType<typeof trpc.lists.updateItem.useMutation>;
-export type CreateItemMutation = ReturnType<typeof trpc.lists.createItem.useMutation>;
 export type LLType = ReturnType<typeof useI18nContext>['LL'];

@@ -14,14 +14,14 @@ import {
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { Button, Card, ConfirmDialog } from '@qoomb/ui';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { ArrowLeftIcon, PencilIcon, PlusIcon, SettingsIcon } from '../components/icons';
 import { AddFieldForm } from '../components/lists/AddFieldForm';
 import { AddViewPanel } from '../components/lists/AddViewPanel';
-import { FieldEditPanel } from '../components/lists/FieldEditPanel';
 import { KanbanColumn } from '../components/lists/KanbanColumn';
+import { ListSettingsPanel } from '../components/lists/ListSettingsPanel';
 import { parsePersonValues } from '../components/lists/personField.utils';
 import { SortableChecklistItem } from '../components/lists/SortableChecklistItem';
 import { SortableColumnHeader } from '../components/lists/SortableColumnHeader';
@@ -210,7 +210,6 @@ export function ListDetailPage() {
 
   // ── Remove field ──────────────────────────────────────────────────────────
   const [confirmDeleteFieldId, setConfirmDeleteFieldId] = useState<string | null>(null);
-  const [columnMenuFieldId, setColumnMenuFieldId] = useState<string | null>(null);
 
   const createField = trpc.lists.createField.useMutation({
     onSuccess: () => {
@@ -234,16 +233,11 @@ export function ListDetailPage() {
     onSuccess: () => {
       void utils.lists.get.invalidate(id);
       void utils.lists.listItems.invalidate({ listId: id ?? '' });
-      setColumnMenuFieldId(null);
     },
     onError: () => {
       addToast(LL.lists.deleteError(), 'error');
     },
   });
-
-  const handleDeleteField = useCallback((fieldId: string) => {
-    setConfirmDeleteFieldId(fieldId);
-  }, []);
 
   const handleConfirmDeleteField = useCallback(() => {
     if (!confirmDeleteFieldId || !id) return;
@@ -251,24 +245,18 @@ export function ListDetailPage() {
     setConfirmDeleteFieldId(null);
   }, [confirmDeleteFieldId, id, deleteField]);
 
-  // ── Field editing ─────────────────────────────────────────────────────────
-  const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
-
-  const handleStartEditField = useCallback((fieldId: string) => {
-    setEditingFieldId(fieldId);
-    setColumnMenuFieldId(null);
-  }, []);
-
   // ── Settings panel ────────────────────────────────────────────────────────
   const [showSettings, setShowSettings] = useState(false);
 
-  const handleVisibilityChange = useCallback(
-    (v: string) => {
-      if (!id) return;
-      updateList.mutate({ id, data: { visibility: v as 'hive' | 'admins' | 'group' | 'private' } });
-    },
-    [id, updateList]
-  );
+  // Listen for field deletion events from the settings panel
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const fieldId = (e as CustomEvent<{ fieldId: string }>).detail.fieldId;
+      setConfirmDeleteFieldId(fieldId);
+    };
+    window.addEventListener('list-settings:delete-field', handler);
+    return () => window.removeEventListener('list-settings:delete-field', handler);
+  }, []);
 
   // ── Views ─────────────────────────────────────────────────────────────────
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
@@ -471,15 +459,27 @@ export function ListDetailPage() {
     [list, activeViewId]
   );
 
+  const visibleFields = useMemo(() => {
+    const cfg = activeView?.config as { visibleFieldIds?: string[] } | null;
+    if (!cfg?.visibleFieldIds) return sortedFields;
+    const visible = new Set(cfg.visibleFieldIds);
+    return sortedFields.filter((f) => visible.has(f.id));
+  }, [sortedFields, activeView]);
+
   const checkboxField = useMemo(
     () => list?.fields.find((f) => f.fieldType === 'checkbox') ?? null,
     [list]
   );
 
-  const titleField = useMemo(
-    () => list?.fields.find((f) => f.fieldType === 'text') ?? null,
-    [list]
-  );
+  const titleField = useMemo(() => {
+    if (activeView?.viewType === 'checklist') {
+      const cfg = activeView.config as { titleFieldId?: string } | null;
+      if (cfg?.titleFieldId) {
+        return list?.fields.find((f) => f.id === cfg.titleFieldId) ?? null;
+      }
+    }
+    return list?.fields.find((f) => f.fieldType === 'text') ?? null;
+  }, [list, activeView]);
 
   const sortedItems = useMemo(() => {
     if (localItemOrder) {
@@ -634,6 +634,21 @@ export function ListDetailPage() {
                   <PlusIcon className="w-3.5 h-3.5" />
                   {LL.lists.addView()}
                 </button>
+                <div className="ml-auto flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowSettings((p) => !p)}
+                    className={
+                      'px-3 py-1.5 text-sm border-b-2 -mb-px transition-colors flex items-center gap-1 ' +
+                      (showSettings
+                        ? 'border-primary text-foreground'
+                        : 'border-transparent text-muted-foreground hover:text-foreground')
+                    }
+                    aria-label={LL.lists.settings()}
+                  >
+                    <SettingsIcon className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
             {list.views.length === 0 && (
@@ -672,148 +687,137 @@ export function ListDetailPage() {
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                   >
-                    <Card padding="none" className="overflow-x-auto mb-4">
-                      <table className="w-full text-sm">
-                        <DndContext
-                          sensors={fieldDndSensors}
-                          collisionDetection={closestCenter}
-                          onDragEnd={handleFieldDragEnd}
-                        >
+                    <DndContext
+                      sensors={fieldDndSensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleFieldDragEnd}
+                    >
+                      <Card padding="none" className="overflow-x-auto mb-4">
+                        <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b border-border bg-muted/30">
-                              <th className="w-8" aria-hidden="true" />
+                              <th className="w-8 px-1" aria-hidden="true" />
                               <SortableContext
-                                items={sortedFields.map((f) => f.id)}
+                                items={visibleFields.map((f) => f.id)}
                                 strategy={horizontalListSortingStrategy}
                               >
-                                {sortedFields.map((field) => (
-                                  <SortableColumnHeader
-                                    key={field.id}
-                                    field={field}
-                                    columnMenuFieldId={columnMenuFieldId}
-                                    onToggleMenu={(fid) =>
-                                      setColumnMenuFieldId((prev) => (prev === fid ? null : fid))
-                                    }
-                                    onStartEditField={handleStartEditField}
-                                    onDeleteField={handleDeleteField}
-                                    LL={LL}
-                                  />
+                                {visibleFields.map((field) => (
+                                  <SortableColumnHeader key={field.id} field={field} />
                                 ))}
                               </SortableContext>
-                              <th className="w-10">
+                              <th className="w-10 px-1">
                                 <span className="sr-only">{LL.common.remove()}</span>
                               </th>
                             </tr>
                           </thead>
-                        </DndContext>
-                        <SortableContext
-                          items={sortedItems.map((i) => i.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
+                          <SortableContext
+                            items={sortedItems.map((i) => i.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <tbody>
+                              {sortedItems.map((item) => (
+                                <SortableTableRow
+                                  key={item.id}
+                                  item={item}
+                                  fields={visibleFields}
+                                  editingCell={editingCell}
+                                  cellDraft={cellDraft}
+                                  cellInputRef={cellInputRef}
+                                  getItemValue={getItemValue}
+                                  handleCellClick={handleCellClick}
+                                  handleCellSave={handleCellSave}
+                                  handleCellKeyDown={handleCellKeyDown}
+                                  handleDeleteItem={handleDeleteItem}
+                                  setCellDraft={setCellDraft}
+                                  updateItem={updateItem}
+                                  LL={LL}
+                                  persons={persons}
+                                  onCloseCell={() => setEditingCell(null)}
+                                />
+                              ))}
+                            </tbody>
+                          </SortableContext>
                           <tbody>
-                            {sortedItems.map((item) => (
-                              <SortableTableRow
-                                key={item.id}
-                                item={item}
-                                fields={sortedFields}
-                                editingCell={editingCell}
-                                cellDraft={cellDraft}
-                                cellInputRef={cellInputRef}
-                                getItemValue={getItemValue}
-                                handleCellClick={handleCellClick}
-                                handleCellSave={handleCellSave}
-                                handleCellKeyDown={handleCellKeyDown}
-                                handleDeleteItem={handleDeleteItem}
-                                setCellDraft={setCellDraft}
-                                updateItem={updateItem}
-                                LL={LL}
-                                persons={persons}
-                                onCloseCell={() => setEditingCell(null)}
-                              />
-                            ))}
-                          </tbody>
-                        </SortableContext>
-                        <tbody>
-                          {/* ── Inline add row ──────────────────────────────── */}
-                          <tr className="bg-muted/10">
-                            <td className="w-8" aria-hidden="true" />
-                            {sortedFields.map((field) => (
-                              <td key={field.id} className="px-3 py-2">
-                                {field.fieldType === 'checkbox' ? (
-                                  <input
-                                    type="checkbox"
-                                    checked={newItemValues[field.id] === 'true'}
-                                    onChange={(e) =>
-                                      setNewItemValues((prev) => ({
-                                        ...prev,
-                                        [field.id]: String(e.target.checked),
-                                      }))
-                                    }
-                                    aria-label={field.name}
-                                    className="h-4 w-4 rounded border-border"
-                                  />
-                                ) : field.fieldType === 'select' ? (
-                                  <select
-                                    value={newItemValues[field.id] ?? ''}
-                                    onChange={(e) =>
-                                      setNewItemValues((prev) => ({
-                                        ...prev,
-                                        [field.id]: e.target.value,
-                                      }))
-                                    }
-                                    className="w-full bg-transparent text-sm text-foreground outline-none"
-                                  >
-                                    <option value="">{LL.lists.selectPlaceholder()}</option>
-                                    {(
-                                      (field.config as Record<string, unknown> | null)?.options as
-                                        | string[]
-                                        | undefined
-                                    )?.map((opt) => (
-                                      <option key={opt} value={opt}>
-                                        {opt}
-                                      </option>
-                                    ))}
-                                  </select>
-                                ) : (
-                                  <input
-                                    type={
-                                      field.fieldType === 'number'
-                                        ? 'number'
-                                        : field.fieldType === 'date'
-                                          ? 'date'
-                                          : 'text'
-                                    }
-                                    placeholder={LL.lists.itemNamePlaceholder()}
-                                    value={newItemValues[field.id] ?? ''}
-                                    onChange={(e) =>
-                                      setNewItemValues((prev) => ({
-                                        ...prev,
-                                        [field.id]: e.target.value,
-                                      }))
-                                    }
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') handleAddItem();
-                                    }}
-                                    className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
-                                  />
-                                )}
+                            {/* ── Inline add row ──────────────────────────────── */}
+                            <tr className="bg-muted/10">
+                              <td className="w-8 px-1" aria-hidden="true" />
+                              {visibleFields.map((field) => (
+                                <td key={field.id} className="px-3 py-2.5">
+                                  {field.fieldType === 'checkbox' ? (
+                                    <input
+                                      type="checkbox"
+                                      checked={newItemValues[field.id] === 'true'}
+                                      onChange={(e) =>
+                                        setNewItemValues((prev) => ({
+                                          ...prev,
+                                          [field.id]: String(e.target.checked),
+                                        }))
+                                      }
+                                      aria-label={field.name}
+                                      className="h-4 w-4 rounded border-border"
+                                    />
+                                  ) : field.fieldType === 'select' ? (
+                                    <select
+                                      value={newItemValues[field.id] ?? ''}
+                                      onChange={(e) =>
+                                        setNewItemValues((prev) => ({
+                                          ...prev,
+                                          [field.id]: e.target.value,
+                                        }))
+                                      }
+                                      className="w-full bg-transparent text-sm text-foreground outline-none"
+                                    >
+                                      <option value="">{LL.lists.selectPlaceholder()}</option>
+                                      {(
+                                        (field.config as Record<string, unknown> | null)
+                                          ?.options as string[] | undefined
+                                      )?.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                          {opt}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <input
+                                      type={
+                                        field.fieldType === 'number'
+                                          ? 'number'
+                                          : field.fieldType === 'date'
+                                            ? 'date'
+                                            : 'text'
+                                      }
+                                      placeholder={LL.lists.itemNamePlaceholder()}
+                                      value={newItemValues[field.id] ?? ''}
+                                      onChange={(e) =>
+                                        setNewItemValues((prev) => ({
+                                          ...prev,
+                                          [field.id]: e.target.value,
+                                        }))
+                                      }
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleAddItem();
+                                      }}
+                                      className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
+                                    />
+                                  )}
+                                </td>
+                              ))}
+                              <td className="px-1 py-2.5">
+                                <button
+                                  type="button"
+                                  onClick={handleAddItem}
+                                  disabled={createItem.isPending}
+                                  className="p-1 rounded-md text-muted-foreground hover:text-primary transition-colors"
+                                  aria-label={LL.lists.addItem()}
+                                >
+                                  <PlusIcon className="w-3.5 h-3.5" />
+                                </button>
                               </td>
-                            ))}
-                            <td className="px-2 py-2">
-                              <button
-                                type="button"
-                                onClick={handleAddItem}
-                                disabled={createItem.isPending}
-                                className="p-1 rounded-md text-muted-foreground hover:text-primary transition-colors"
-                                aria-label={LL.lists.addItem()}
-                              >
-                                <PlusIcon className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </Card>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </Card>
+                    </DndContext>
                   </DndContext>
                 )}
 
@@ -872,17 +876,25 @@ export function ListDetailPage() {
                                       ? (item.values.find((v) => v.fieldId === titleField.id)
                                           ?.value ?? '')
                                       : '';
+                                    const extras = visibleFields
+                                      .filter(
+                                        (f) => f.id !== checkboxField.id && f.id !== titleField?.id
+                                      )
+                                      .map((f) => ({
+                                        name: f.name,
+                                        value: getItemValue(item, f.id, f.fieldType),
+                                      }));
                                     return (
                                       <SortableChecklistItem
                                         key={item.id}
                                         item={item}
                                         isDone={isDone}
                                         title={title}
+                                        titleFieldId={titleField?.id ?? null}
                                         isLast={idx === visibleItems.length - 1}
                                         checkboxFieldId={checkboxField.id}
-                                        listId={id ?? ''}
+                                        extraFields={extras}
                                         updateItem={updateItem}
-                                        createItem={createItem}
                                         handleDeleteItem={handleDeleteItem}
                                         LL={LL}
                                       />
@@ -1047,56 +1059,15 @@ export function ListDetailPage() {
           />
         )}
 
-        {/* ── Settings panel ────────────────────────────────────────────── */}
-        {list && (
-          <div className="mt-6">
-            <button
-              type="button"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setShowSettings((p) => !p)}
-            >
-              <SettingsIcon className="w-4 h-4" />
-              {LL.lists.settings()}
-            </button>
-            {showSettings && (
-              <Card padding="md" className="mt-2">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  {LL.lists.visibilityLabel()}
-                </label>
-                <select
-                  value={list.visibility}
-                  onChange={(e) => handleVisibilityChange(e.target.value)}
-                  className="w-full max-w-xs rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                >
-                  {(['hive', 'admins', 'group', 'private'] as const).map((v) => (
-                    <option key={v} value={v}>
-                      {LL.lists.visibility[v]()}
-                    </option>
-                  ))}
-                </select>
-              </Card>
-            )}
-          </div>
+        {/* ── Settings panel (slide-in) ──────────────────────────────────── */}
+        {showSettings && list && id && (
+          <ListSettingsPanel
+            list={list}
+            listId={id}
+            activeViewId={activeViewId}
+            onClose={() => setShowSettings(false)}
+          />
         )}
-
-        {/* ── Field editing panel ───────────────────────────────────────── */}
-        {editingFieldId &&
-          (() => {
-            const field = fieldMap.get(editingFieldId);
-            if (!field || !id) return null;
-            return (
-              <FieldEditPanel
-                key={editingFieldId}
-                listId={id}
-                field={field}
-                onSuccess={() => {
-                  void utils.lists.get.invalidate(id);
-                  setEditingFieldId(null);
-                }}
-                onClose={() => setEditingFieldId(null)}
-              />
-            );
-          })()}
 
         {/* ── Confirm dialogs ───────────────────────────────────────────── */}
         <ConfirmDialog

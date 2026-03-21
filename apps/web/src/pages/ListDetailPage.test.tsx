@@ -262,13 +262,6 @@ describe('ListDetailPage', () => {
     expect(deleteButtons).toHaveLength(2);
   });
 
-  it('shows column menu buttons in column headers', () => {
-    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
-    const menuButtons = screen.getAllByRole('button', { name: /lists\.fieldConfig/ });
-    // One per field
-    expect(menuButtons).toHaveLength(3);
-  });
-
   it('shows add-field button', () => {
     renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
     const addFieldBtn = screen.getByRole('button', { name: /lists\.addField/ });
@@ -508,26 +501,6 @@ describe('ListDetailPage', () => {
   });
 
   // ── Remove field ────────────────────────────────────────────────────────
-
-  it('calls deleteField mutation when remove-field is clicked via column menu with confirmation', () => {
-    renderWithProviders(<ListDetailPage />, { initialEntries: ['/lists/list-001'] });
-
-    // Open column menu for first field
-    const menuButtons = screen.getAllByRole('button', { name: /lists\.fieldConfig/ });
-    fireEvent.click(menuButtons[0]);
-
-    // Click "Remove field" in the dropdown menu
-    const removeBtn = screen.getByText(/lists\.removeField/);
-    fireEvent.click(removeBtn);
-
-    // ConfirmDialog should appear — confirm it
-    const confirmBtn = screen.getByRole('button', { name: /common\.remove/ });
-    fireEvent.click(confirmBtn);
-
-    expect(mutateFn).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'field-001', listId: 'list-001' })
-    );
-  });
 
   // ── No-fields state ─────────────────────────────────────────────────────
 

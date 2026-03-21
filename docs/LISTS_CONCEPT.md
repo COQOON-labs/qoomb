@@ -488,13 +488,176 @@ a list with the system key `tasks` (auto-created per person on first access).
 
 ---
 
-## 10. List Settings & UX Overhaul — Feature Roadmap
+## 7. List Settings Panel — UX Concept
 
-> Decided 2026-03-21. Inspired by Notion Databases. 19 features in 9 PRs.
+> Decided 2026-03-21. Replaces the per-column header menu approach.
+
+### Problem
+
+Per-column dropdown menus (⋮ in each header) have known weaknesses:
+
+- **Discoverability**: Users don't know options exist until they hover/tap
+- **Mobile**: No hover state — explicit touch targets per column don't scale beyond 8+ fields
+- **Context fragmentation**: Each field has its own menu — no overview of all fields at once
+- **No batch workflow**: You cannot quickly hide 3 fields or reorder them
+
+### Reference Analysis
+
+| App                 | Pattern                                   | Strength                                                    | Weakness                                |
+| ------------------- | ----------------------------------------- | ----------------------------------------------------------- | --------------------------------------- |
+| **Airtable**        | "Fields" sidebar panel via toolbar button | Full overview, drag-reorder, visibility toggles at a glance | Needs space                             |
+| **Notion**          | Toolbar "Properties" button → popover     | Lightweight, quick access                                   | Popover gets cluttered with many fields |
+| **Linear**          | "View" dropdown with filter/sort/group    | Compact, focused on view config                             | Field management separate               |
+| **Apple Reminders** | Dedicated settings page                   | Mobile-first, clearly structured                            | Navigation overhead                     |
+| **Monday.com**      | "Customize" panel (sidebar)               | All column settings in one place                            | Can feel overloaded                     |
+
+**Winner pattern**: The **sidebar panel** (Airtable/Monday.com) scales best — especially when both desktop and mobile must be served.
+
+### Design: Settings Panel with Two Levels
+
+**Entry point**: A single **⚙️ Settings button** in the view tab bar (right-aligned).
+
+- **Desktop**: Slide-in panel (right side, ~360px width)
+- **Mobile**: Bottom-sheet or full-screen overlay
+
+#### Level 1 — Overview
+
+```
+┌─────────────────────────────────────────────────┐
+│ ⚙️ List Settings                          ✕    │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│ ┌─ 📋 List ──────────────────────────────────┐ │
+│ │  Name:        [Shopping List       ] ✏️     │ │
+│ │  Icon:        📋  [change]                 │ │
+│ │  Visibility:  [Hive        ▾]              │ │
+│ └────────────────────────────────────────────┘ │
+│                                                 │
+│ ┌─ 📐 Fields ────────────────────────────────┐ │
+│ │  ⠿ ☑ Done              [👁] [⚙]           │ │
+│ │  ⠿ Aa Title             [👁] [⚙]           │ │
+│ │  ⠿ 📅 Due date          [👁] [⚙]           │ │
+│ │  ⠿ 🏷 Category          [👁] [⚙]           │ │
+│ │  ⠿ 👤 Assigned to       [👁] [⚙]           │ │
+│ │                                             │ │
+│ │  [+ Add field]                              │ │
+│ └────────────────────────────────────────────┘ │
+│                                                 │
+│ ┌─ 🎛 Active view: "Table" ──────────────────┐ │
+│ │  Type:          Table                       │ │
+│ │  Sort:          [+ Add sort]                │ │
+│ │  Filter:        [+ Add filter]              │ │
+│ │  (Kanban: Group by [Field ▾])               │ │
+│ │  (Checklist: Checkbox field [Field ▾])      │ │
+│ └────────────────────────────────────────────┘ │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+**Panel elements:**
+
+| Section         | Contents                                                                                                 |
+| --------------- | -------------------------------------------------------------------------------------------------------- |
+| **List**        | Name (editable), icon picker, visibility dropdown                                                        |
+| **Fields**      | One row per field: drag handle (⠿), type icon, name, visibility toggle (👁), config button (⚙)           |
+| **Active view** | View-type-specific config: checkbox field (checklist), group-by field (kanban), sort rules, filter rules |
+
+**Interactions in the fields section:**
+
+- **⠿ Drag handle**: Reorder fields via @dnd-kit (vertical sort)
+- **👁 Eye toggle**: Show/hide field in the active view (writes `visibleFieldIds` to view config)
+- **⚙ Gear button**: Opens field detail subpanel (level 2)
+- **[+ Add field]**: Inline add at the bottom, same as current `AddFieldForm` but embedded in the panel
+
+#### Level 2 — Field Detail (Subpanel)
+
+```
+┌─────────────────────────────────────────────────┐
+│ ← Back              Field: Category             │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  Name:     [Category              ]             │
+│  Type:     [Select           ▾]                 │
+│  Required: [ ] Required field                   │
+│  Icon:     🏷  [change]                         │
+│  Description: [Short help text    ]             │
+│                                                 │
+│  Options:                                       │
+│    ⠿ 🟢 Fruit                         [✕]      │
+│    ⠿ 🔵 Vegetables                    [✕]      │
+│    ⠿ 🟡 Household                     [✕]      │
+│    [+ Add option]                               │
+│                                                 │
+│  ─────────────────────────────────────────      │
+│  [Duplicate field]   [🗑 Delete field]          │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+**Field detail contains:**
+
+- Name (editable)
+- Type (dropdown — enables field type change, PR 8)
+- Required toggle
+- Icon picker (PR 3)
+- Description (PR 3)
+- Type-specific config (select options, number min/max, person multi-select, etc.)
+- Actions: Duplicate (PR 4) and Delete with confirmation
+
+### Why This Pattern
+
+1. **Single entry point** instead of N header menus — immediately clear where configuration lives
+2. **Overview**: All fields visible at once with visibility toggles — fast show/hide without per-field menus
+3. **Drag-reorder** fields in the panel instead of column headers (less fragile, no conflict with column resize)
+4. **Mobile-friendly**: Panel becomes bottom-sheet or full-screen — no hover dependency
+5. **Scales**: When filter, sort, field descriptions, field icons arrive later, there is a natural place for them
+6. **Two-level navigation** (list → field detail) instead of deeply nested menus
+7. **View config integrated**: Checklist checkbox field, kanban grouping, filter, sort — all under "Active view"
+
+### What Gets Removed
+
+| Current                                     | Replacement                          |
+| ------------------------------------------- | ------------------------------------ |
+| Column header ⋮ menu (SortableColumnHeader) | Panel → Field row → ⚙ → edit/delete  |
+| Inline field name edit in header            | Panel → Field row → ⚙ → Name         |
+| AddFieldForm (inline above table)           | Panel → "Add field" button           |
+| FieldEditPanel (floating component)         | Panel → Field detail subpanel        |
+| Checklist checkbox-field picker in header   | Panel → Active view → Checkbox field |
+| Kanban group-by picker in header            | Panel → Active view → Group by       |
+
+What stays: List name and icon inline editing (top of the page). This is a progressive-disclosure shortcut — the panel also exposes these fields for completeness.
+
+### Component Architecture
+
+```
+ListSettingsPanel (right slide-in / mobile bottom-sheet)
+├── ListSettingsSection        — name, icon, visibility
+├── FieldsSection              — field list with drag, visibility, gear
+│   ├── SortableFieldRow       — one row per field
+│   └── AddFieldInline         — add field at bottom
+├── ViewConfigSection          — active view settings
+│   ├── ChecklistConfig        — checkbox field picker
+│   ├── KanbanConfig           — group-by field picker
+│   ├── SortConfig             — sort rules (PR 9)
+│   └── FilterConfig           — filter rules (PR 9)
+└── FieldDetailSubpanel        — slide-in level 2
+    ├── FieldNameInput
+    ├── FieldTypeSelect        — type change (PR 8)
+    ├── FieldIconPicker        — (PR 3)
+    ├── FieldDescription       — (PR 3)
+    ├── FieldTypeConfig        — select options, number range, etc.
+    └── FieldActions           — duplicate (PR 4), delete
+```
+
+---
+
+## 8. List Settings & UX Overhaul — Feature Roadmap
+
+> Decided 2026-03-21, revised 2026-03-21. Inspired by Notion Databases. 19 features in 9 PRs.
 
 ### PR 1 — Quick Wins ✅ (merged)
 
-> Branch: `fix/list-ux-polish` · No backend changes
+> Branch: `fix/list-ux-polish` · PR #140
 
 | ID  | Feature                                        | Status |
 | --- | ---------------------------------------------- | ------ |
@@ -502,20 +665,25 @@ a list with the system key `tasks` (auto-created per person on first access).
 | E1  | Locale-aware date formatting (i18n locale)     | ✅     |
 | E4  | Cell text truncation (`max-w-50` + `truncate`) | ✅     |
 
-### PR 2 — Field Context Menu (Foundation)
+### PR 2 — Settings Panel (Foundation) ← replaces old "Field Context Menu"
 
-> Branch: `feat/field-context-menu`
+> Branch: `feat/list-settings-panel` · See §7 for full UX concept
 
-| ID  | Feature                                                      | Effort |
-| --- | ------------------------------------------------------------ | ------ |
-| A1  | Field context menu (Rename, Delete, Hide, Duplicate, Type)   | Medium |
-| A4  | Hide/show fields per view (`visibleFieldIds` in view config) | Small  |
+| ID  | Feature                                                     | Effort |
+| --- | ----------------------------------------------------------- | ------ |
+| NEW | Settings panel shell (⚙ button, slide-in, mobile sheet)     | Medium |
+| NEW | List section (name, icon, visibility inline editing)        | Small  |
+| NEW | Fields section (drag-reorder, 👁 visibility toggle, ⚙)      | Medium |
+| A4  | Hide/show fields per view (`visibleFieldIds` in config)     | Small  |
+| NEW | Field detail subpanel (name, type display, delete)          | Medium |
+| NEW | Active view section (checklist/kanban config, sort, filter) | Small  |
 
-A1 provides the UI shell into which all later field operations are hooked.
+This panel replaces all per-column ⋮ menus in `SortableColumnHeader`. The ⋮ menu and
+`FieldEditPanel` are removed once the Settings Panel ships.
 
 ### PR 3 — Field Metadata (Icon + Description)
 
-> Branch: `feat/field-metadata`
+> Branch: `feat/field-metadata` · Independent of PR 2
 
 | ID  | Feature                           | Effort |
 | --- | --------------------------------- | ------ |
@@ -523,26 +691,27 @@ A1 provides the UI shell into which all later field operations are hooked.
 | A6  | Field description (hover tooltip) | Small  |
 
 Backend: add `icon` and `description` to `ListField` (migration + encryption for `description`).
+Frontend: icon picker + description input in field detail subpanel (PR 2) and column header.
 
 ### PR 4 — Duplicate Actions
 
-> Branch: `feat/list-duplicate-actions`
+> Branch: `feat/list-duplicate-actions` · Depends on PR 2 (field detail subpanel)
 
 | ID  | Feature                                | Effort |
 | --- | -------------------------------------- | ------ |
 | A3  | Duplicate field (copy config)          | Small  |
 | D3  | Duplicate item (copy all field values) | Small  |
 
-### PR 5 — View Management
+### PR 5 — View Management ✅ (PR #141)
 
-> Branch: `feat/view-management`
+> Branch: `feat/view-management` · PR #141
 
-| ID  | Feature                                         | Effort |
+| ID  | Feature                                         | Status |
 | --- | ----------------------------------------------- | ------ |
-| C1  | View tabs drag-to-reorder (persisted sortOrder) | Small  |
-| C2  | Duplicate view                                  | Small  |
-| C5  | Checklist: switchable checkbox field            | Small  |
-| C6  | Kanban: switchable group-by field               | Small  |
+| C1  | View tabs drag-to-reorder (persisted sortOrder) | ✅     |
+| C2  | Duplicate view                                  | ✅     |
+| C5  | Checklist: switchable checkbox field            | ✅     |
+| C6  | Kanban: switchable group-by field               | ✅     |
 
 ### PR 6 — Visual Polish
 
@@ -569,7 +738,7 @@ Cleanup job hard-deletes after expiry. Requires schema migration.
 
 ### PR 8 — Field Type Change (largest feature)
 
-> Branch: `feat/field-type-change` · Depends on PR 2
+> Branch: `feat/field-type-change` · Depends on PR 2 (field detail subpanel)
 
 | ID  | Feature                                          | Effort |
 | --- | ------------------------------------------------ | ------ |
@@ -604,9 +773,11 @@ Non-convertible values → `null` + warning dialog ("3 of 12 values could not be
 ### Dependencies
 
 ```
-PR 2 (Field Context Menu) ──→ PR 4 (Duplicate Actions)
-                           ──→ PR 8 (Field Type Change)
-All others are independent / parallelizable.
+PR 2 (Settings Panel) ──→ PR 4 (Duplicate Actions)
+                       ──→ PR 8 (Field Type Change)
+PR 3 (Field Metadata) is independent — can be developed in parallel with PR 2.
+PR 5 (View Management) ✅ already merged.
+PR 6, 7, 9 are independent.
 ```
 
 ### Decided against (for now)

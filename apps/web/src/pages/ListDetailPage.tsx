@@ -474,6 +474,13 @@ export function ListDetailPage() {
     [list, activeViewId]
   );
 
+  const visibleFields = useMemo(() => {
+    const cfg = activeView?.config as { visibleFieldIds?: string[] } | null;
+    if (!cfg?.visibleFieldIds || cfg.visibleFieldIds.length === 0) return sortedFields;
+    const visible = new Set(cfg.visibleFieldIds);
+    return sortedFields.filter((f) => visible.has(f.id));
+  }, [sortedFields, activeView]);
+
   const checkboxField = useMemo(
     () => list?.fields.find((f) => f.fieldType === 'checkbox') ?? null,
     [list]
@@ -701,10 +708,10 @@ export function ListDetailPage() {
                             <tr className="border-b border-border bg-muted/30">
                               <th className="w-8" aria-hidden="true" />
                               <SortableContext
-                                items={sortedFields.map((f) => f.id)}
+                                items={visibleFields.map((f) => f.id)}
                                 strategy={horizontalListSortingStrategy}
                               >
-                                {sortedFields.map((field) => (
+                                {visibleFields.map((field) => (
                                   <SortableColumnHeader
                                     key={field.id}
                                     field={field}
@@ -733,7 +740,7 @@ export function ListDetailPage() {
                               <SortableTableRow
                                 key={item.id}
                                 item={item}
-                                fields={sortedFields}
+                                fields={visibleFields}
                                 editingCell={editingCell}
                                 cellDraft={cellDraft}
                                 cellInputRef={cellInputRef}
@@ -755,7 +762,7 @@ export function ListDetailPage() {
                           {/* ── Inline add row ──────────────────────────────── */}
                           <tr className="bg-muted/10">
                             <td className="w-8" aria-hidden="true" />
-                            {sortedFields.map((field) => (
+                            {visibleFields.map((field) => (
                               <td key={field.id} className="px-3 py-2">
                                 {field.fieldType === 'checkbox' ? (
                                   <input

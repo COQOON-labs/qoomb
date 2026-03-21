@@ -509,16 +509,15 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
   const handleCheckboxFieldChange = useCallback(
     (checkboxFieldId: string) => {
       if (!activeView) return;
-      const cfg = activeView.config as { titleFieldId?: string } | null;
+      // Spread full existing config to preserve titleFieldId + visibleFieldIds
+      const existing = (activeView.config ?? {}) as {
+        titleFieldId?: string;
+        visibleFieldIds?: string[];
+      };
       updateView.mutate({
         id: activeView.id,
         listId,
-        data: {
-          config: {
-            checkboxFieldId,
-            ...(cfg?.titleFieldId ? { titleFieldId: cfg.titleFieldId } : {}),
-          },
-        },
+        data: { config: { ...existing, checkboxFieldId } },
       });
     },
     [activeView, listId, updateView]
@@ -527,11 +526,15 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
   const handleTitleFieldChange = useCallback(
     (titleFieldId: string) => {
       if (!activeView) return;
-      const cfg = activeView.config as { checkboxFieldId?: string } | null;
+      // Spread full existing config to preserve checkboxFieldId + visibleFieldIds
+      const existing = (activeView.config ?? {}) as {
+        checkboxFieldId: string; // always present in a checklist view
+        visibleFieldIds?: string[];
+      };
       updateView.mutate({
         id: activeView.id,
         listId,
-        data: { config: { checkboxFieldId: cfg?.checkboxFieldId ?? '', titleFieldId } },
+        data: { config: { ...existing, titleFieldId } },
       });
     },
     [activeView, listId, updateView]
@@ -540,10 +543,12 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
   const handleGroupByChange = useCallback(
     (groupByFieldId: string) => {
       if (!activeView) return;
+      // Spread full existing config to preserve visibleFieldIds
+      const existing = (activeView.config ?? {}) as { visibleFieldIds?: string[] };
       updateView.mutate({
         id: activeView.id,
         listId,
-        data: { config: { groupByFieldId } },
+        data: { config: { ...existing, groupByFieldId } },
       });
     },
     [activeView, listId, updateView]

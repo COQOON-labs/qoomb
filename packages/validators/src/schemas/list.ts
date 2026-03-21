@@ -93,6 +93,7 @@ export const listFieldConfigSchema = z
 
 export const checklistViewConfigSchema = z.object({
   checkboxFieldId: z.uuid(),
+  visibleFieldIds: z.array(z.uuid()).optional(),
 });
 
 export const tableViewConfigSchema = z.object({
@@ -102,6 +103,7 @@ export const tableViewConfigSchema = z.object({
 
 export const kanbanViewConfigSchema = z.object({
   groupByFieldId: z.uuid(),
+  visibleFieldIds: z.array(z.uuid()).optional(),
 });
 
 // ── List CRUD schemas ─────────────────────────────────────────────────────────

@@ -391,11 +391,15 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
       } else {
         current.add(fieldId);
       }
+      // Merge visibleFieldIds into the existing view config so the
+      // union schema (checklist / table / kanban) validates correctly.
+      const existingConfig = (activeView.config as Record<string, unknown> | null) ?? {};
       updateView.mutate({
         id: activeView.id,
         listId,
         data: {
           config: {
+            ...existingConfig,
             visibleFieldIds: [...current],
           },
         },

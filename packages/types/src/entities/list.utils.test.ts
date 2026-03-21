@@ -82,10 +82,11 @@ describe('canDeleteField', () => {
     expect(result).toEqual({ allowed: true });
   });
 
-  it('handles view with null config', () => {
-    const fields = [field('f1'), field('f2')];
+  it('allows deleting a non-text field when checklist view has null config', () => {
+    // f1 is text (implicit title, protected), f2 is number (not protected)
+    const fields = [field('f1', 'text'), field('f2', 'number')];
     const views: ViewInfo[] = [{ viewType: 'checklist', config: null }];
-    const result = canDeleteField('f1', fields, views);
+    const result = canDeleteField('f2', fields, views);
     expect(result).toEqual({ allowed: true });
   });
 
@@ -107,10 +108,26 @@ describe('canDeleteField', () => {
     expect(result).toEqual({ allowed: true });
   });
 
-  it('allows deleting a field when checklist view has no titleFieldId set', () => {
-    const fields = [field('t1', 'text'), field('cb', 'checkbox')];
+  it('blocks deleting the first text field when titleFieldId is not configured (fallback)', () => {
+    // Simulates an old view where titleFieldId was never saved — the first text field
+    // is the implicit title, the same fallback the frontend uses for display.
+    const fields = [field('t1', 'text'), field('cb', 'checkbox'), field('f3')];
     const views: ViewInfo[] = [{ viewType: 'checklist', config: { checkboxFieldId: 'cb' } }];
     const result = canDeleteField('t1', fields, views);
+    expect(result).toEqual({ allowed: false, reason: 'activeTitleField' });
+  });
+
+  it('blocks deleting the first text field when checklist config is null (fallback)', () => {
+    const fields = [field('t1', 'text'), field('t2', 'text'), field('f3')];
+    const views: ViewInfo[] = [{ viewType: 'checklist', config: null }];
+    const result = canDeleteField('t1', fields, views);
+    expect(result).toEqual({ allowed: false, reason: 'activeTitleField' });
+  });
+
+  it('allows deleting a non-first text field when titleFieldId is not configured', () => {
+    const fields = [field('t1', 'text'), field('t2', 'text'), field('cb', 'checkbox')];
+    const views: ViewInfo[] = [{ viewType: 'checklist', config: { checkboxFieldId: 'cb' } }];
+    const result = canDeleteField('t2', fields, views);
     expect(result).toEqual({ allowed: true });
   });
 });

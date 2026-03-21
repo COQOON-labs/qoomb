@@ -30,7 +30,9 @@ export type GuardResult = { allowed: true } | { allowed: false; reason: string }
  * 1. The last remaining field can never be deleted.
  * 2. A field that is the active `checkboxFieldId` of a checklist view cannot be deleted.
  * 3. A field that is the active `groupByFieldId` of a kanban view cannot be deleted.
- * 4. A field that is the active `titleFieldId` of a checklist view cannot be deleted.
+ * 4. A field that is the active title field of a checklist view cannot be deleted.
+ *    If `titleFieldId` is not set in config, the first text field is the implicit title.
+ *    This mirrors the frontend fallback in `checklistConfig` / `ListDetailPage`.
  *
  * Reason keys map to `LL.lists.settingsPanel.guards.*` on the frontend and to
  * a PRECONDITION_FAILED TRPCError message on the backend.
@@ -52,9 +54,13 @@ export function canDeleteField(
       if (cbId === fieldId) {
         return { allowed: false, reason: 'activeCheckboxField' };
       }
-      // Rule 4: active title field in a checklist view
+      // Rule 4: active title field in a checklist view.
+      // If titleFieldId is explicitly set, protect that field.
+      // If not set (old view / null config), protect the first text field — same
+      // fallback the frontend uses so the guard matches what the user sees.
       const titleId = (view.config as { titleFieldId?: string } | null)?.titleFieldId;
-      if (titleId === fieldId) {
+      const effectiveTitleId = titleId ?? allFields.find((f) => f.fieldType === 'text')?.id;
+      if (effectiveTitleId === fieldId) {
         return { allowed: false, reason: 'activeTitleField' };
       }
     }

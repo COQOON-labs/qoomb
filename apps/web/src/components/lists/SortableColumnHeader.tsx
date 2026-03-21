@@ -30,7 +30,7 @@ export function SortableColumnHeader({ field }: SortableColumnHeaderProps) {
       {/* Drag handle positioned outside text flow to keep header text aligned with data cells */}
       <button
         type="button"
-        className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/th:opacity-100 cursor-grab active:cursor-grabbing p-0.5 text-muted-foreground/50 hover:text-muted-foreground transition-all"
+        className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/th:opacity-100 cursor-grab active:cursor-grabbing p-1.5 text-muted-foreground/50 hover:text-muted-foreground transition-all"
         aria-label="Drag to reorder column"
         {...attributes}
         {...listeners}

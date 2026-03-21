@@ -191,6 +191,24 @@ vi.mock('../lib/trpc/client', () => ({
           isPending: false,
         }),
       },
+      updateView: {
+        useMutation: (opts?: { onSuccess?: () => void }) => ({
+          mutate: (...args: unknown[]) => {
+            mutateFn(...args);
+            opts?.onSuccess?.();
+          },
+          isPending: false,
+        }),
+      },
+      deleteView: {
+        useMutation: (opts?: { onSuccess?: () => void }) => ({
+          mutate: (...args: unknown[]) => {
+            mutateFn(...args);
+            opts?.onSuccess?.();
+          },
+          isPending: false,
+        }),
+      },
     },
   },
 }));

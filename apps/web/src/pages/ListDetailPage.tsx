@@ -275,6 +275,116 @@ export function ListDetailPage() {
   const [showAddView, setShowAddView] = useState(false);
   const [hideDone, setHideDone] = useState(false);
   const [kanbanDragItemId, setKanbanDragItemId] = useState<string | null>(null);
+  const [viewMenuId, setViewMenuId] = useState<string | null>(null);
+  const [editingViewId, setEditingViewId] = useState<string | null>(null);
+  const [draftViewName, setDraftViewName] = useState('');
+  const [confirmDeleteViewId, setConfirmDeleteViewId] = useState<string | null>(null);
+  const viewNameInputRef = useRef<HTMLInputElement>(null);
+
+  const updateView = trpc.lists.updateView.useMutation({
+    onSuccess: () => {
+      void utils.lists.get.invalidate(id);
+    },
+    onError: () => {
+      addToast(LL.lists.updateError(), 'error');
+    },
+  });
+
+  const deleteView = trpc.lists.deleteView.useMutation({
+    onSuccess: () => {
+      void utils.lists.get.invalidate(id);
+      addToast(LL.lists.viewDeleted());
+    },
+    onError: () => {
+      addToast(LL.lists.deleteError(), 'error');
+    },
+  });
+
+  const handleStartEditView = useCallback(
+    (viewId: string) => {
+      const view = list?.views.find((v) => v.id === viewId);
+      if (!view) return;
+      setDraftViewName(view.name);
+      setEditingViewId(viewId);
+      setViewMenuId(null);
+      setTimeout(() => viewNameInputRef.current?.focus(), 0);
+    },
+    [list]
+  );
+
+  const handleSaveViewName = useCallback(() => {
+    const trimmed = draftViewName.trim();
+    if (!trimmed || !id || !editingViewId) {
+      setEditingViewId(null);
+      return;
+    }
+    const view = list?.views.find((v) => v.id === editingViewId);
+    if (trimmed === view?.name) {
+      setEditingViewId(null);
+      return;
+    }
+    updateView.mutate({ id: editingViewId, listId: id, data: { name: trimmed } });
+    setEditingViewId(null);
+  }, [draftViewName, id, editingViewId, list, updateView]);
+
+  const handleViewNameKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') handleSaveViewName();
+      if (e.key === 'Escape') setEditingViewId(null);
+    },
+    [handleSaveViewName]
+  );
+
+  const duplicateViewMut = trpc.lists.createView.useMutation({
+    onSuccess: (created) => {
+      void utils.lists.get.invalidate(id);
+      setActiveViewId(created.id);
+    },
+    onError: () => {
+      addToast(LL.lists.createError(), 'error');
+    },
+  });
+
+  const handleDuplicateView = useCallback(
+    (viewId: string) => {
+      const view = list?.views.find((v) => v.id === viewId);
+      if (!view || !id) return;
+      setViewMenuId(null);
+      const cfg = view.config as
+        | { checkboxFieldId: string }
+        | { visibleFieldIds: string[]; columnWidths?: Record<string, number> }
+        | { groupByFieldId: string };
+      duplicateViewMut.mutate({
+        listId: id,
+        name: `${view.name} ${LL.lists.duplicateViewSuffix()}`,
+        viewType: view.viewType as 'table' | 'checklist' | 'kanban',
+        config: cfg,
+      });
+    },
+    [list, id, LL, duplicateViewMut]
+  );
+
+  const handleConfirmDeleteView = useCallback(() => {
+    if (!confirmDeleteViewId || !id) return;
+    deleteView.mutate({ id: confirmDeleteViewId, listId: id });
+    if (activeViewId === confirmDeleteViewId) {
+      setActiveViewId(null);
+    }
+    setConfirmDeleteViewId(null);
+  }, [confirmDeleteViewId, id, deleteView, activeViewId]);
+
+  type ViewConfig =
+    | { checkboxFieldId: string }
+    | { visibleFieldIds: string[]; columnWidths?: Record<string, number> }
+    | { groupByFieldId: string };
+
+  const handleUpdateViewConfig = useCallback(
+    (viewId: string, config: ViewConfig) => {
+      if (!id) return;
+      updateView.mutate({ id: viewId, listId: id, data: { config } });
+    },
+    [id, updateView]
+  );
 
   // ── Drag & drop reorder ───────────────────────────────────────────────────
   const [localItemOrder, setLocalItemOrder] = useState<string[] | null>(null);
@@ -425,10 +535,16 @@ export function ListDetailPage() {
     [list, activeViewId]
   );
 
-  const checkboxField = useMemo(
-    () => list?.fields.find((f) => f.fieldType === 'checkbox') ?? null,
-    [list]
-  );
+  const checkboxField = useMemo(() => {
+    if (!list || !activeView) return null;
+    // Use the checkboxFieldId from the view config if available
+    const cfg = activeView.config as { checkboxFieldId?: string } | null;
+    if (cfg?.checkboxFieldId) {
+      return list.fields.find((f) => f.id === cfg.checkboxFieldId) ?? null;
+    }
+    // Fallback to first checkbox field
+    return list.fields.find((f) => f.fieldType === 'checkbox') ?? null;
+  }, [list, activeView]);
 
   const titleField = useMemo(
     () => list?.fields.find((f) => f.fieldType === 'text') ?? null,
@@ -559,25 +675,84 @@ export function ListDetailPage() {
               <div className="flex items-center gap-1 mb-4 border-b border-border overflow-x-auto">
                 {list.views.map((view) => {
                   const isActive = view.id === (activeView?.id ?? null);
+                  const isEditing = editingViewId === view.id;
+                  const viewIcon =
+                    view.viewType === 'checklist'
+                      ? '✓ '
+                      : view.viewType === 'kanban'
+                        ? '⬜ '
+                        : '⊞ ';
                   return (
-                    <button
-                      key={view.id}
-                      type="button"
-                      onClick={() => setActiveViewId(view.id)}
-                      className={
-                        'px-3 py-1.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors -mb-px ' +
-                        (isActive
-                          ? 'border-primary text-foreground'
-                          : 'border-transparent text-muted-foreground hover:text-foreground')
-                      }
-                    >
-                      {view.viewType === 'checklist'
-                        ? '✓ '
-                        : view.viewType === 'kanban'
-                          ? '⬜ '
-                          : '⊞ '}
-                      {view.name}
-                    </button>
+                    <div key={view.id} className="relative group/tab flex items-center -mb-px">
+                      {isEditing ? (
+                        <input
+                          ref={viewNameInputRef}
+                          value={draftViewName}
+                          onChange={(e) => setDraftViewName(e.target.value)}
+                          onBlur={handleSaveViewName}
+                          onKeyDown={handleViewNameKeyDown}
+                          className="px-3 py-1.5 text-sm font-medium border-b-2 border-primary bg-transparent outline-none min-w-20"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setActiveViewId(view.id)}
+                          className={
+                            'px-3 py-1.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ' +
+                            (isActive
+                              ? 'border-primary text-foreground'
+                              : 'border-transparent text-muted-foreground hover:text-foreground')
+                          }
+                        >
+                          {viewIcon}
+                          {view.name}
+                        </button>
+                      )}
+                      {!isEditing && (
+                        <button
+                          type="button"
+                          onClick={() => setViewMenuId(viewMenuId === view.id ? null : view.id)}
+                          className="opacity-0 group-hover/tab:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground transition-all -ml-1 mr-1"
+                          aria-label={LL.lists.viewsLabel()}
+                        >
+                          <EllipsisVerticalIcon className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {viewMenuId === view.id && (
+                        <div className="absolute top-full left-0 mt-1 z-20 bg-background border border-border rounded-lg shadow-lg min-w-40">
+                          <button
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors rounded-t-lg"
+                            onClick={() => handleStartEditView(view.id)}
+                          >
+                            {LL.lists.renameView()}
+                          </button>
+                          <button
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                            onClick={() => handleDuplicateView(view.id)}
+                          >
+                            {LL.lists.duplicateView()}
+                          </button>
+                          {list.views.length > 1 ? (
+                            <button
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors rounded-b-lg"
+                              onClick={() => {
+                                setViewMenuId(null);
+                                setConfirmDeleteViewId(view.id);
+                              }}
+                            >
+                              {LL.lists.deleteView()}
+                            </button>
+                          ) : (
+                            <span className="block px-3 py-2 text-sm text-muted-foreground/50 cursor-not-allowed">
+                              {LL.lists.deleteView()}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
                 <button
@@ -810,9 +985,37 @@ export function ListDetailPage() {
                     ) : (
                       <>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-muted-foreground">
-                            {LL.lists.checkboxFieldLabel()}: {checkboxField.name}
-                          </span>
+                          {(() => {
+                            const cbFields = list.fields.filter((f) => f.fieldType === 'checkbox');
+                            if (cbFields.length <= 1) {
+                              return (
+                                <span className="text-xs text-muted-foreground">
+                                  {LL.lists.checkboxFieldLabel()}: {checkboxField.name}
+                                </span>
+                              );
+                            }
+                            return (
+                              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                {LL.lists.checkboxFieldLabel()}:
+                                <select
+                                  value={checkboxField.id}
+                                  onChange={(e) => {
+                                    if (!activeView) return;
+                                    handleUpdateViewConfig(activeView.id, {
+                                      checkboxFieldId: e.target.value,
+                                    });
+                                  }}
+                                  className="rounded border border-border bg-background px-1.5 py-0.5 text-xs text-foreground"
+                                >
+                                  {cbFields.map((f) => (
+                                    <option key={f.id} value={f.id}>
+                                      {f.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            );
+                          })()}
                           <button
                             type="button"
                             onClick={() => setHideDone((p) => !p)}
@@ -929,9 +1132,37 @@ export function ListDetailPage() {
                       : null;
                     return (
                       <div className="mb-4">
-                        <p className="text-xs text-muted-foreground mb-2">
-                          {LL.lists.kanbanGroupBy()}: {groupByField.name}
-                        </p>
+                        {(() => {
+                          const selectFields = list.fields.filter((f) => f.fieldType === 'select');
+                          if (selectFields.length <= 1) {
+                            return (
+                              <p className="text-xs text-muted-foreground mb-2">
+                                {LL.lists.kanbanGroupBy()}: {groupByField.name}
+                              </p>
+                            );
+                          }
+                          return (
+                            <label className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+                              {LL.lists.kanbanGroupBy()}:
+                              <select
+                                value={groupByField.id}
+                                onChange={(e) => {
+                                  if (!activeView) return;
+                                  handleUpdateViewConfig(activeView.id, {
+                                    groupByFieldId: e.target.value,
+                                  });
+                                }}
+                                className="rounded border border-border bg-background px-1.5 py-0.5 text-xs text-foreground"
+                              >
+                                {selectFields.map((f) => (
+                                  <option key={f.id} value={f.id}>
+                                    {f.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          );
+                        })()}
                         <DndContext
                           sensors={dndSensors}
                           collisionDetection={closestCenter}
@@ -1088,6 +1319,17 @@ export function ListDetailPage() {
           confirmLabel={LL.common.remove()}
           onConfirm={handleConfirmDeleteItem}
           onCancel={() => setConfirmDeleteItemId(null)}
+          variant="destructive"
+        />
+        <ConfirmDialog
+          open={!!confirmDeleteViewId}
+          title={LL.lists.deleteView()}
+          description={LL.lists.deleteViewConfirm({
+            name: list?.views.find((v) => v.id === confirmDeleteViewId)?.name ?? '',
+          })}
+          confirmLabel={LL.common.remove()}
+          onConfirm={handleConfirmDeleteView}
+          onCancel={() => setConfirmDeleteViewId(null)}
           variant="destructive"
         />
       </div>

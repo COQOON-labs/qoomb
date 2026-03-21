@@ -1078,6 +1078,43 @@ type RootTranslation = {
      */
     checkAll: string;
     /**
+     * D​e​l​e​t​e​ ​v​i​e​w
+     */
+    deleteView: string;
+    /**
+     * R​e​a​l​l​y​ ​d​e​l​e​t​e​ ​v​i​e​w​ ​"​{​n​a​m​e​}​"​?
+     * @param {unknown} name
+     */
+    deleteViewConfirm: RequiredParams<'name'>;
+    /**
+     * D​u​p​l​i​c​a​t​e​ ​v​i​e​w
+     */
+    duplicateView: string;
+    /**
+     * (​C​o​p​y​)
+     */
+    duplicateViewSuffix: string;
+    /**
+     * R​e​n​a​m​e​ ​v​i​e​w
+     */
+    renameView: string;
+    /**
+     * V​i​e​w​ ​d​e​l​e​t​e​d
+     */
+    viewDeleted: string;
+    /**
+     * V​i​e​w​ ​r​e​n​a​m​e​d
+     */
+    viewRenamed: string;
+    /**
+     * V​i​e​w​ ​u​p​d​a​t​e​d
+     */
+    viewUpdated: string;
+    /**
+     * T​h​e​ ​l​a​s​t​ ​v​i​e​w​ ​c​a​n​n​o​t​ ​b​e​ ​d​e​l​e​t​e​d​.
+     */
+    lastViewWarning: string;
+    /**
      * G​r​o​u​p​ ​b​y
      */
     kanbanGroupBy: string;
@@ -2390,6 +2427,42 @@ export type TranslationFunctions = {
      * Check all
      */
     checkAll: () => LocalizedString;
+    /**
+     * Delete view
+     */
+    deleteView: () => LocalizedString;
+    /**
+     * Really delete view "{name}"?
+     */
+    deleteViewConfirm: (arg: { name: unknown }) => LocalizedString;
+    /**
+     * Duplicate view
+     */
+    duplicateView: () => LocalizedString;
+    /**
+     * (Copy)
+     */
+    duplicateViewSuffix: () => LocalizedString;
+    /**
+     * Rename view
+     */
+    renameView: () => LocalizedString;
+    /**
+     * View deleted
+     */
+    viewDeleted: () => LocalizedString;
+    /**
+     * View renamed
+     */
+    viewRenamed: () => LocalizedString;
+    /**
+     * View updated
+     */
+    viewUpdated: () => LocalizedString;
+    /**
+     * The last view cannot be deleted.
+     */
+    lastViewWarning: () => LocalizedString;
     /**
      * Group by
      */

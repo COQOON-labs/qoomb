@@ -27,7 +27,7 @@ Jede Liste hat:
 
 - einen **Namen** und optional ein **Icon**
 - einen **Bauplan** (Schema): welche Felder hat ein Element? (Titel, Checkbox, Datum, …)
-- eine oder mehrere **Ansichten** (Checkliste, Tabelle, später Kanban …)
+- eine oder mehrere **Ansichten** (Checkliste, Tabelle, Kanban)
 - eine **Sichtbarkeit** (Hive / Admins / Gruppe / Privat)
 
 ### 2.2 Elemente
@@ -48,13 +48,13 @@ Templates können vordefiniert (von Qoomb) oder selbst erstellt (vom Nutzer) sei
 
 Jede Liste kann **mehrere Ansichten** haben. Ansichten zeigen dieselben Daten unterschiedlich an:
 
-| Ansicht        | Beschreibung                                    | Scope    |
-| -------------- | ----------------------------------------------- | -------- |
-| **Checkliste** | Elemente als abhakbare Liste                    | Scope 1  |
-| **Tabelle**    | Elemente als Zeilen, Felder als Spalten         | Scope 1  |
-| **Kanban**     | Elemente als Karten, gruppiert nach Status-Feld | Scope 2  |
-| **Kalender**   | Elemente mit Datum auf einer Kalenderansicht    | Scope 3+ |
-| **Galerie**    | Elemente als Bild-Karten (z.B. Rezeptsammlung)  | Scope 3+ |
+| Ansicht        | Beschreibung                                    | Status     |
+| -------------- | ----------------------------------------------- | ---------- |
+| **Checkliste** | Elemente als abhakbare Liste                    | ✅ Fertig  |
+| **Tabelle**    | Elemente als Zeilen, Felder als Spalten         | ✅ Fertig  |
+| **Kanban**     | Elemente als Karten, gruppiert nach Status-Feld | ✅ Fertig  |
+| **Kalender**   | Elemente mit Datum auf einer Kalenderansicht    | 🔮 Geplant |
+| **Galerie**    | Elemente als Bild-Karten (z.B. Rezeptsammlung)  | 🔮 Geplant |
 
 Jede Ansicht kann **eigene Filter und Sortierung** haben:
 
@@ -112,23 +112,23 @@ Termine (Events) bleiben ein **eigenes Modell**. Bidirektionale Verknüpfung ist
 
 ## 3. Template-Katalog (vordefiniert)
 
-| Template                   | Typische Felder                                                              | Ansichten                 |
-| -------------------------- | ---------------------------------------------------------------------------- | ------------------------- |
-| **Aufgabenliste**          | Titel, Status (offen/erledigt), Priorität, Fällig am, Zugewiesen an          | Checkliste, Tabelle       |
-| **Einkaufsliste**          | Artikel, Menge, Kategorie (Obst, Milch…), Erledigt                           | Checkliste                |
-| **Projekt**                | Titel, Status (Todo/In Progress/Done/Blocked), Priorität, Zugewiesen, Fällig | Tabelle, (Kanban Scope 2) |
-| **Packliste**              | Gegenstand, Kategorie, Eingepackt                                            | Checkliste                |
-| **Putzplan**               | Bereich/Raum, Aufgabe, Zuständig, Erledigt                                   | Tabelle, Checkliste       |
-| **Leseliste**              | Titel, Autor, Typ (Buch/Artikel/Film), Status (will/lese/gelesen), Bewertung | Tabelle                   |
-| **Wunschliste**            | Gegenstand, Für wen, Link/URL, Preis, Gekauft                                | Tabelle, Checkliste       |
-| **Menüplan**               | Gericht, Tag (Mo–So), Mahlzeit (Frühstück/Mittag/Abend), Zutaten-Referenz    | Tabelle                   |
-| **Inventar**               | Gegenstand, Kategorie, Ort (Keller/Kühlschrank/…), Menge                     | Tabelle                   |
-| **Vokabelsammlung**        | Wort, Übersetzung, Beispielsatz, Gelernt                                     | Checkliste, Tabelle       |
-| **Budget-Tracker**         | Beschreibung, Kategorie, Betrag, Datum                                       | Tabelle                   |
-| **Kontakte/Dienstleister** | Name, Typ, Telefon, E-Mail, Notiz                                            | Tabelle                   |
-| **Kinder-Checkliste**      | Aufgabe, Kind (Zugewiesen), Erledigt                                         | Checkliste                |
-| **Habit-Tracker**          | Gewohnheit, Erledigt (pro Tag)                                               | Tabelle, Checkliste       |
-| **Sammlung** (generisch)   | Titel, Notiz                                                                 | Checkliste, Tabelle       |
+| Template                   | Typische Felder                                                              | Ansichten           |
+| -------------------------- | ---------------------------------------------------------------------------- | ------------------- |
+| **Aufgabenliste**          | Titel, Status (offen/erledigt), Priorität, Fällig am, Zugewiesen an          | Checkliste, Tabelle |
+| **Einkaufsliste**          | Artikel, Menge, Kategorie (Obst, Milch…), Erledigt                           | Checkliste          |
+| **Projekt**                | Titel, Status (Todo/In Progress/Done/Blocked), Priorität, Zugewiesen, Fällig | Tabelle, Kanban     |
+| **Packliste**              | Gegenstand, Kategorie, Eingepackt                                            | Checkliste          |
+| **Putzplan**               | Bereich/Raum, Aufgabe, Zuständig, Erledigt                                   | Tabelle, Checkliste |
+| **Leseliste**              | Titel, Autor, Typ (Buch/Artikel/Film), Status (will/lese/gelesen), Bewertung | Tabelle             |
+| **Wunschliste**            | Gegenstand, Für wen, Link/URL, Preis, Gekauft                                | Tabelle, Checkliste |
+| **Menüplan**               | Gericht, Tag (Mo–So), Mahlzeit (Frühstück/Mittag/Abend), Zutaten-Referenz    | Tabelle             |
+| **Inventar**               | Gegenstand, Kategorie, Ort (Keller/Kühlschrank/…), Menge                     | Tabelle             |
+| **Vokabelsammlung**        | Wort, Übersetzung, Beispielsatz, Gelernt                                     | Checkliste, Tabelle |
+| **Budget-Tracker**         | Beschreibung, Kategorie, Betrag, Datum                                       | Tabelle             |
+| **Kontakte/Dienstleister** | Name, Typ, Telefon, E-Mail, Notiz                                            | Tabelle             |
+| **Kinder-Checkliste**      | Aufgabe, Kind (Zugewiesen), Erledigt                                         | Checkliste          |
+| **Habit-Tracker**          | Gewohnheit, Erledigt (pro Tag)                                               | Tabelle, Checkliste |
+| **Sammlung** (generisch)   | Titel, Notiz                                                                 | Checkliste, Tabelle |
 
 Nutzer können jederzeit **eigene Templates erstellen**: den Bauplan einer bestehenden Liste als
 neues Template speichern, oder ein leeres Template von Grund auf bauen.
@@ -152,7 +152,11 @@ ListTemplate (Vorlagen)
 └── TemplateView[]    (Standard-Ansichten der Vorlage)
 ```
 
-### 4.2 Schema (geplant)
+### 4.2 Schema (implementiert)
+
+> Das tatsächliche Schema ist in `apps/api/prisma/schema.prisma` definiert.
+> Die folgende Darstellung ist eine vereinfachte Übersicht. Felder wie `system_key`,
+> `recurrence_rule` und die `list_favorites`-Tabelle sind seit der Implementierung hinzugekommen.
 
 ```sql
 -- ── Listen ────────────────────────────────────────────────────────────────────
@@ -164,6 +168,7 @@ lists:
   name            TEXT ENCRYPTED
   icon            TEXT?                         -- emoji oder URL, unencrypted (cosmetic)
   type            VARCHAR(20) DEFAULT 'custom'  -- 'custom' | 'inbox'
+  system_key      VARCHAR(50)?                  -- z.B. 'tasks' — bewirkt Auto-Erstellung + Löschschutz
   visibility      VARCHAR(20) DEFAULT 'hive'
     -- CHECK (visibility IN ('hive', 'admins', 'group', 'private'))
   group_id        UUID? FK → hive_groups        -- required when visibility = 'group'
@@ -175,6 +180,7 @@ lists:
 INDEX: (hive_id, type)
 INDEX: (hive_id, creator_id)
 UNIQUE: (hive_id, creator_id) WHERE type = 'inbox'  -- max 1 Inbox pro Person
+UNIQUE: (hive_id, creator_id, system_key)            -- max 1 System-Liste pro Typ pro Person
 
 -- ── Felddefinitionen (Bauplan einer Liste) ────────────────────────────────────
 
@@ -202,8 +208,7 @@ list_views:
   id              UUID PK
   list_id         UUID FK → lists (CASCADE)
   name            TEXT ENCRYPTED
-  view_type       VARCHAR(20)                   -- 'checklist' | 'table' (Scope 1)
-                                                -- 'kanban' (Scope 2)
+  view_type       VARCHAR(20)                   -- 'checklist' | 'table' | 'kanban'
   config          JSONB                         -- ansichtsspezifisch:
                   -- checklist: { checkboxFieldId: UUID }
                   -- table: { visibleFieldIds: UUID[], columnWidths: {} }
@@ -216,6 +221,18 @@ list_views:
 
 INDEX: (list_id)
 
+-- ── Favoriten ─────────────────────────────────────────────────────────────────
+
+list_favorites:
+  id              UUID PK
+  list_id         UUID FK → lists (CASCADE)
+  person_id       UUID FK → persons (CASCADE)
+  sort_order      FLOAT                         -- Reihenfolge in der Favoritenliste
+  created_at      TIMESTAMPTZ
+
+UNIQUE: (list_id, person_id)
+INDEX: (person_id)
+
 -- ── Listenelemente ────────────────────────────────────────────────────────────
 
 list_items:
@@ -225,6 +242,7 @@ list_items:
   creator_id      UUID FK → persons
   assignee_id     UUID? FK → persons
   sort_order      FLOAT                         -- manuelle Reihenfolge
+  recurrence_rule JSONB?                        -- Wiederholungsregel (unencrypted für Server-Expansion)
   created_at      TIMESTAMPTZ
   updated_at      TIMESTAMPTZ
 
@@ -404,7 +422,7 @@ Die Inbox-Liste einer Person hat automatisch `visibility: 'private'`.
 | Aspekt               | Listen                  | Termine                     |
 | -------------------- | ----------------------- | --------------------------- |
 | Zeitbezug            | Optional (Feld „Datum") | Zentral (Start/Ende, Dauer) |
-| Wiederkehr           | Scope 2+                | Scope 1 (RecurrenceRule)    |
+| Wiederkehr           | ✅ Implementiert        | ✅ (RecurrenceRule)         |
 | Kalender-Integration | Nein                    | Ja (Google, Apple, Outlook) |
 | Flexibles Schema     | Ja (Custom Fields)      | Nein (festes Schema)        |
 
@@ -424,38 +442,38 @@ Listenelemente können ein Textfeld haben, das als Mini-Notiz dient.
 
 ### Listen vs. das bestehende Tasks-Modul
 
-Das bestehende `tasks`-Modul (`apps/api/src/modules/tasks/`) wird durch das Listen-Konzept
-**abgelöst**. Eine Aufgabenliste ist eine Liste mit dem Template „Aufgabenliste". Die vorhandene
-Tasks-API bleibt vorerst bestehen, wird aber schrittweise migriert:
-
-1. **Scope 1**: Listen-System aufbauen, „Aufgabenliste"-Template als gleichwertigen Ersatz
-2. **Migration**: Bestehende Tasks in Listenelemente überführen
-3. **Deprecation**: Tasks-API als deprecated markieren, dann entfernen
+Das `tasks`-Modul wurde durch das Listen-Konzept **vollständig abgelöst und entfernt**.
+Das Verzeichnis `apps/api/src/modules/tasks/` existiert nicht mehr. Eine Aufgabenliste ist
+eine Liste mit dem System-Key `tasks` (auto-erstellt pro Person beim ersten Zugriff).
 
 ---
 
 ## 6. Scope-Planung
 
-### Scope 1 (MVP)
+### Scope 1 (MVP) — ✅ Implementiert
 
-- [ ] Datenmodell: `lists`, `list_fields`, `list_views`, `list_items`, `list_item_values`
-- [ ] Templates: `list_templates`, `list_template_fields`, `list_template_views`
-- [ ] Feldtypen: Text, Zahl, Datum, Checkbox, Select, Person, Referenz, URL
-- [ ] Ansichten: Checkliste + Tabelle (mit Filter & Sortierung)
-- [ ] Inbox: System-Liste pro Person (auto-erstellt)
-- [ ] Quick-Add: Inline + Global (→ Inbox)
-- [ ] Sichtbarkeit: Hive / Admins / Gruppe / Privat
-- [ ] Encryption: value encrypted, Feldnamen encrypted
-- [ ] Regelbasierte Referenzierungen (lesend)
-- [ ] RBAC: LISTS\_\* Permissions
-- [ ] Vordefinierte System-Templates (Aufgabenliste, Einkaufsliste, Projekt, …)
-- [ ] Eigene Templates erstellen
-- [ ] UI: Listen-Seite, List-Detail, Element-Detail, Quick-Add
+- [x] Datenmodell: `lists`, `list_fields`, `list_views`, `list_items`, `list_item_values`
+- [x] Templates: `list_templates`, `list_template_fields`, `list_template_views`
+- [x] Feldtypen: Text, Zahl, Datum, Checkbox, Select, Person, Referenz, URL
+- [x] Ansichten: Checkliste, Tabelle, Kanban (inkl. Drag & Drop)
+- [x] Inbox: System-Liste pro Person (auto-erstellt via `getInbox`)
+- [x] Quick-Add: Inline pro Liste
+- [x] Sichtbarkeit: Hive / Admins / Gruppe / Privat
+- [x] Encryption: value encrypted, Feldnamen encrypted
+- [x] RBAC: LISTS\_\* Permissions + 5-Stufen-Zugriffsmodell
+- [x] Vordefinierte System-Templates
+- [x] UI: Listen-Seite, List-Detail (Tabelle, Checkliste, Kanban)
+- [x] Favoriten: Toggle + Drag-to-Reorder
+- [x] Wiederkehrende Checklist-Items (Client-side Recurrence Expansion)
+- [x] System-Listen (`system_key`) mit Lösch-/Umbenennungsschutz
+- [ ] Quick-Add: Global (→ Inbox) — UI noch nicht implementiert
+- [ ] Regelbasierte Referenzierungen (lesend) — Schema vorhanden, UI fehlt
+- [ ] Eigene Templates erstellen — API vorhanden, UI fehlt
 
-### Scope 2
+### Scope 2 — Teilweise implementiert
 
-- [ ] Kanban-Ansicht
-- [ ] Wiederkehrende Elemente
+- [x] Kanban-Ansicht (nach Scope 1 vorgezogen)
+- [x] Wiederkehrende Elemente (Client-side Expansion bei Checklist-Items)
 - [ ] Cross-List-Automatisierungen (Einkauf abgehakt → Inventar)
 - [ ] Drag & Drop zwischen Listen (Element verschieben)
 - [ ] Listen als Dashboard-Widget

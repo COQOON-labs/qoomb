@@ -1,0 +1,6 @@
+# Auto-reindex GitNexus knowledge graph after branch switch.
+# $3 = 1 for branch checkout, 0 for file checkout — only reindex on branch switch.
+# Runs in the background so it never blocks the developer.
+if [ "$3" = "1" ] && command -v npx &>/dev/null; then
+  npx gitnexus analyze &>/dev/null &
+fi

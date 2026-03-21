@@ -39,14 +39,14 @@ export function KanbanCard({ item, titleFieldId, handleDeleteItem, LL }: KanbanC
         </span>
         <button
           type="button"
-          className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+          className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-2 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
           onClick={(e) => {
             e.stopPropagation();
             handleDeleteItem(item.id);
           }}
           aria-label={LL.lists.deleteItem()}
         >
-          <TrashIcon className="w-3.5 h-3.5" />
+          <TrashIcon className="w-4 h-4" />
         </button>
       </div>
     </div>

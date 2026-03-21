@@ -7,24 +7,24 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { Button, Card, ConfirmDialog } from '@qoomb/ui';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import {
-  ArrowLeftIcon,
-  EllipsisVerticalIcon,
-  PencilIcon,
-  PlusIcon,
-  SettingsIcon,
-} from '../components/icons';
+import { ArrowLeftIcon, PencilIcon, PlusIcon, SettingsIcon } from '../components/icons';
 import { AddFieldForm } from '../components/lists/AddFieldForm';
 import { AddViewPanel } from '../components/lists/AddViewPanel';
 import { FieldEditPanel } from '../components/lists/FieldEditPanel';
 import { KanbanColumn } from '../components/lists/KanbanColumn';
 import { parsePersonValues } from '../components/lists/personField.utils';
 import { SortableChecklistItem } from '../components/lists/SortableChecklistItem';
+import { SortableColumnHeader } from '../components/lists/SortableColumnHeader';
 import { SortableTableRow } from '../components/lists/SortableTableRow';
 import { useI18nContext } from '../i18n/i18n-react';
 import { AppShell } from '../layouts/AppShell';
@@ -56,7 +56,7 @@ const ICON_OPTIONS = [
 // ── ListDetailPage ────────────────────────────────────────────────────────────
 
 export function ListDetailPage() {
-  const { LL } = useI18nContext();
+  const { LL, locale } = useI18nContext();
   const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -276,7 +276,7 @@ export function ListDetailPage() {
   const [hideDone, setHideDone] = useState(false);
   const [kanbanDragItemId, setKanbanDragItemId] = useState<string | null>(null);
 
-  // ── Drag & drop reorder ───────────────────────────────────────────────────
+  // ── Drag & drop reorder (items) ─────────────────────────────────────────
   const [localItemOrder, setLocalItemOrder] = useState<string[] | null>(null);
 
   const reorderItems = trpc.lists.reorderItems.useMutation({
@@ -309,6 +309,52 @@ export function ListDetailPage() {
       });
     },
     [id, items, reorderItems]
+  );
+
+  // ── Drag & drop reorder (fields / columns) ────────────────────────────────
+  const [localFieldOrder, setLocalFieldOrder] = useState<string[] | null>(null);
+
+  const reorderFields = trpc.lists.reorderFields.useMutation({
+    onSuccess: () => {
+      setLocalFieldOrder(null);
+      void utils.lists.get.invalidate(id);
+    },
+    onError: () => {
+      addToast(LL.lists.updateError(), 'error');
+      setLocalFieldOrder(null);
+    },
+  });
+
+  const fieldDndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const sortedFields = useMemo(() => {
+    if (!list) return [];
+    if (!localFieldOrder) return list.fields;
+    return localFieldOrder
+      .map((fid) => list.fields.find((f) => f.id === fid))
+      .filter(Boolean) as typeof list.fields;
+  }, [list, localFieldOrder]);
+
+  const handleFieldDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id || !id || !list) return;
+
+      const fieldIds = localFieldOrder ?? list.fields.map((f) => f.id);
+      const oldIdx = fieldIds.indexOf(String(active.id));
+      const newIdx = fieldIds.indexOf(String(over.id));
+      if (oldIdx === -1 || newIdx === -1) return;
+
+      const next = arrayMove(fieldIds, oldIdx, newIdx);
+      setLocalFieldOrder(next);
+      reorderFields.mutate({
+        listId: id,
+        fields: next.map((fieldId, idx) => ({ id: fieldId, sortOrder: idx })),
+      });
+    },
+    [id, list, localFieldOrder, reorderFields]
   );
 
   // ── Inline cell editing ───────────────────────────────────────────────────
@@ -407,7 +453,7 @@ export function ListDetailPage() {
         case 'checkbox':
           return val.value === 'true' ? '✓' : '✗';
         case 'date':
-          return new Date(val.value).toLocaleDateString();
+          return new Date(val.value).toLocaleDateString(locale);
         case 'person': {
           const vals = parsePersonValues(val.value);
           return vals.map((v) => personNameById.get(v) ?? v).join(', ');
@@ -416,7 +462,7 @@ export function ListDetailPage() {
           return val.value;
       }
     },
-    [personNameById]
+    [locale, personNameById]
   );
 
   // ── View-derived computations ─────────────────────────────────────────────
@@ -628,57 +674,38 @@ export function ListDetailPage() {
                   >
                     <Card padding="none" className="overflow-x-auto mb-4">
                       <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-border bg-muted/30">
-                            {list.fields.map((field) => (
-                              <th
-                                key={field.id}
-                                className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap group/th relative"
+                        <DndContext
+                          sensors={fieldDndSensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleFieldDragEnd}
+                        >
+                          <thead>
+                            <tr className="border-b border-border bg-muted/30">
+                              <th className="w-8" aria-hidden="true" />
+                              <SortableContext
+                                items={sortedFields.map((f) => f.id)}
+                                strategy={horizontalListSortingStrategy}
                               >
-                                <div className="flex items-center gap-1">
-                                  <span>{field.name}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setColumnMenuFieldId((prev) =>
-                                        prev === field.id ? null : field.id
-                                      )
+                                {sortedFields.map((field) => (
+                                  <SortableColumnHeader
+                                    key={field.id}
+                                    field={field}
+                                    columnMenuFieldId={columnMenuFieldId}
+                                    onToggleMenu={(fid) =>
+                                      setColumnMenuFieldId((prev) => (prev === fid ? null : fid))
                                     }
-                                    className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground transition-all"
-                                    aria-label={LL.lists.fieldConfig()}
-                                  >
-                                    <EllipsisVerticalIcon className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                                {columnMenuFieldId === field.id && (
-                                  <div className="absolute top-full left-0 mt-1 z-20 bg-background border border-border rounded-lg shadow-lg min-w-[160px]">
-                                    <button
-                                      type="button"
-                                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                                      onClick={() => handleStartEditField(field.id)}
-                                    >
-                                      {LL.lists.renameField()}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                                      onClick={() => {
-                                        setColumnMenuFieldId(null);
-                                        handleDeleteField(field.id);
-                                      }}
-                                    >
-                                      {LL.lists.removeField()}
-                                    </button>
-                                  </div>
-                                )}
+                                    onStartEditField={handleStartEditField}
+                                    onDeleteField={handleDeleteField}
+                                    LL={LL}
+                                  />
+                                ))}
+                              </SortableContext>
+                              <th className="w-10">
+                                <span className="sr-only">{LL.common.remove()}</span>
                               </th>
-                            ))}
-                            <th className="w-10">
-                              <span className="sr-only">{LL.common.remove()}</span>
-                            </th>
-                            <th className="w-6" aria-hidden="true" />
-                          </tr>
-                        </thead>
+                            </tr>
+                          </thead>
+                        </DndContext>
                         <SortableContext
                           items={sortedItems.map((i) => i.id)}
                           strategy={verticalListSortingStrategy}
@@ -688,7 +715,7 @@ export function ListDetailPage() {
                               <SortableTableRow
                                 key={item.id}
                                 item={item}
-                                fields={list.fields}
+                                fields={sortedFields}
                                 editingCell={editingCell}
                                 cellDraft={cellDraft}
                                 cellInputRef={cellInputRef}
@@ -709,7 +736,8 @@ export function ListDetailPage() {
                         <tbody>
                           {/* ── Inline add row ──────────────────────────────── */}
                           <tr className="bg-muted/10">
-                            {list.fields.map((field) => (
+                            <td className="w-8" aria-hidden="true" />
+                            {sortedFields.map((field) => (
                               <td key={field.id} className="px-3 py-2">
                                 {field.fieldType === 'checkbox' ? (
                                   <input
@@ -782,7 +810,6 @@ export function ListDetailPage() {
                                 <PlusIcon className="w-3.5 h-3.5" />
                               </button>
                             </td>
-                            <td className="w-6" aria-hidden="true" />
                           </tr>
                         </tbody>
                       </table>

@@ -205,6 +205,14 @@ export const reorderListItemsSchema = z.object({
     .max(5000),
 });
 
+export const reorderListFieldsSchema = z.object({
+  listId: z.uuid(),
+  fields: z
+    .array(z.object({ id: z.uuid(), sortOrder: z.number() }))
+    .min(1)
+    .max(200),
+});
+
 export const listListItemsSchema = z.object({
   listId: z.uuid(),
   filter: filterExpressionSchema.optional(),

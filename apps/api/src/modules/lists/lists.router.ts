@@ -10,6 +10,7 @@ import {
   createListItemSchema,
   updateListItemSchema,
   reorderListItemsSchema,
+  reorderListFieldsSchema,
   listListsSchema,
   sanitizeHtml,
 } from '@qoomb/validators';
@@ -293,6 +294,26 @@ export const listsRouter = (listsService: ListsService) =>
         if (!removed) throw new TRPCError({ code: 'NOT_FOUND', message: 'Field not found' });
         return { success: true as const };
       }),
+
+    /**
+     * Bulk-reorder fields (columns) for a list.
+     * Requires edit access on the parent list.
+     */
+    reorderFields: hiveProcedure.input(reorderListFieldsSchema).mutation(async ({ ctx, input }) => {
+      const list = await listsService.getById(input.listId, ctx.user.hiveId);
+      if (!list) throw new TRPCError({ code: 'NOT_FOUND', message: 'List not found' });
+
+      await requireResourceAccess(
+        ctx,
+        ctx.tx,
+        { ...list, type: 'list', groupId: list.groupId ?? undefined },
+        'edit',
+        LIST_PERMISSIONS
+      );
+
+      await listsService.reorderFields(input.listId, input.fields);
+      return { success: true as const };
+    }),
 
     /**
      * Return configured options for a select-type field.

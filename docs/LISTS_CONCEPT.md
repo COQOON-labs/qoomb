@@ -1,219 +1,219 @@
-# Qoomb Lists — Konzept & Architektur
+# Qoomb Lists — Concept & Architecture
 
-> **Audience:** Product‑, Design‑ und Entwicklungsteam + AI Assistants.
-> Dieses Dokument beschreibt das „Listen"-Feature aus Nutzersicht und als technische Architektur.
-> Zugehörige ADR: [ADR-0007](adr/0007-flexible-lists-architecture.md)
+> **Audience:** Product, Design, and Engineering team + AI Assistants.
+> This document describes the "Lists" feature from a user perspective and as a technical architecture.
+> Related ADR: [ADR-0007](adr/0007-flexible-lists-architecture.md)
 
 ---
 
 ## 1. Vision
 
-**Alles ist eine Liste.** — Einkaufslisten, Projekte, Putzpläne, Vokabelsammlungen, Budget-Tracker
-und beliebige andere Sammlungen werden durch ein einziges, flexibles Datenmodell abgebildet. Die
-Mächtigkeit kommt durch konfigurierbare Felder und Ansichten — die Einfachheit durch Templates, die
-80 % der Arbeit abnehmen.
+**Everything is a list.** — Shopping lists, projects, cleaning schedules, vocabulary collections,
+budget trackers, and any other collections are represented by a single, flexible data model. The
+power comes from configurable fields and views — the simplicity from templates that handle 80% of
+the work.
 
-**Leitprinzip:** _„Man kann sehr viel damit machen — muss aber nicht."_
-Progressive Disclosure: einfache Listen funktionieren sofort, Power‑Features sind optional.
+**Guiding principle:** _"You can do a lot with it — but you don't have to."_
+Progressive Disclosure: simple lists work immediately, power features are optional.
 
 ---
 
-## 2. Nutzersicht
+## 2. User Perspective
 
-### 2.1 Was ist eine Liste?
+### 2.1 What is a List?
 
-Eine **Liste** ist eine konfigurierbare Sammlung von Elementen mit eigenem Schema (Bauplan).
-Jede Liste hat:
+A **list** is a configurable collection of items with its own schema (blueprint).
+Each list has:
 
-- einen **Namen** und optional ein **Icon**
-- einen **Bauplan** (Schema): welche Felder hat ein Element? (Titel, Checkbox, Datum, …)
-- eine oder mehrere **Ansichten** (Checkliste, Tabelle, Kanban)
-- eine **Sichtbarkeit** (Hive / Admins / Gruppe / Privat)
+- a **name** and optionally an **icon**
+- a **blueprint** (schema): which fields does an item have? (Title, Checkbox, Date, …)
+- one or more **views** (Checklist, Table, Kanban)
+- a **visibility** setting (Hive / Admins / Group / Private)
 
-### 2.2 Elemente
+### 2.2 Items
 
-Ein **Listenelement** ist ein Datensatz innerhalb einer Liste. Seine Felder werden durch den
-Bauplan der Liste definiert. Jedes Element gehört zu **genau einer** Liste — keine
-Mehrfachzugehörigkeit, aber Referenzen auf Elemente in anderen Listen sind möglich.
+A **list item** is a record within a list. Its fields are defined by the list's blueprint.
+Each item belongs to **exactly one** list — no multi-membership, but references to items in other
+lists are possible.
 
 ### 2.3 Templates
 
-Ein **Template** ist eine gespeicherte Bauplan-Vorlage. Beim Erstellen einer neuen Liste wählt man
-ein Template — die Liste bekommt eine Kopie des Bauplans. **Nach der Erstellung sind Liste und
-Template unabhängig voneinander.** Änderungen am Bauplan ändern nicht das Template und umgekehrt.
+A **template** is a saved blueprint preset. When creating a new list, you choose a template — the
+list gets a copy of the blueprint. **After creation, list and template are independent of each
+other.** Changes to the blueprint don't affect the template and vice versa.
 
-Templates können vordefiniert (von Qoomb) oder selbst erstellt (vom Nutzer) sein.
+Templates can be predefined (by Qoomb) or user-created.
 
-### 2.4 Ansichten
+### 2.4 Views
 
-Jede Liste kann **mehrere Ansichten** haben. Ansichten zeigen dieselben Daten unterschiedlich an:
+Each list can have **multiple views**. Views display the same data differently:
 
-| Ansicht        | Beschreibung                                    | Status     |
-| -------------- | ----------------------------------------------- | ---------- |
-| **Checkliste** | Elemente als abhakbare Liste                    | ✅ Fertig  |
-| **Tabelle**    | Elemente als Zeilen, Felder als Spalten         | ✅ Fertig  |
-| **Kanban**     | Elemente als Karten, gruppiert nach Status-Feld | ✅ Fertig  |
-| **Kalender**   | Elemente mit Datum auf einer Kalenderansicht    | 🔮 Geplant |
-| **Galerie**    | Elemente als Bild-Karten (z.B. Rezeptsammlung)  | 🔮 Geplant |
+| View          | Description                                   | Status     |
+| ------------- | --------------------------------------------- | ---------- |
+| **Checklist** | Items as a checkable list                     | ✅ Done    |
+| **Table**     | Items as rows, fields as columns              | ✅ Done    |
+| **Kanban**    | Items as cards, grouped by a status field     | ✅ Done    |
+| **Calendar**  | Items with dates on a calendar view           | 🔮 Planned |
+| **Gallery**   | Items as image cards (e.g. recipe collection) | 🔮 Planned |
 
-Jede Ansicht kann **eigene Filter und Sortierung** haben:
+Each view can have **its own filters and sorting**:
 
-- Filter: z.B. „erledigte ausblenden", „nur Prio hoch"
-- Sortierung: Drag & Drop (manuelle Reihenfolge) oder automatisch nach Attribut (Datum, Priorität…)
+- Filter: e.g. "hide completed", "only high priority"
+- Sorting: Drag & Drop (manual order) or automatic by attribute (date, priority…)
 
-**Archivierung = gefilterte Ansicht.** Es gibt kein explizites Archiv-Modell.
-Elemente mit Status „erledigt" werden in einer Ansicht ausgeblendet — bei Bedarf einblendbar.
-Endgültiges **Löschen** ist ebenfalls möglich.
+**Archiving = filtered view.** There is no explicit archive model.
+Items with "completed" status are hidden in a view — can be shown when needed.
+Permanent **deletion** is also possible.
 
 ### 2.5 Inbox
 
-Jede Person hat eine automatisch erstellte **Inbox-Liste** (Systemliste, `type: 'inbox'`).
-Quick-Add ohne Listenzuordnung → Element landet in der Inbox. Von dort werden Elemente manuell in
-echte Listen einsortiert.
+Each person has an automatically created **Inbox list** (system list, `type: 'inbox'`).
+Quick-Add without list assignment → item goes to the Inbox. From there, items are manually
+sorted into actual lists.
 
-Vorteile:
+Benefits:
 
-- `listId` ist immer NOT NULL — kein Sonderfall im Datenmodell
-- Inbox erscheint als normale Liste in der Navigation
-- Drag & Drop / Verschieben zwischen Listen ist ein einheitliches Muster
+- `listId` is always NOT NULL — no special case in the data model
+- Inbox appears as a normal list in the navigation
+- Drag & Drop / moving between lists is a uniform pattern
 
 ### 2.6 Quick-Add
 
-Schnelles Erfassen eines Elements:
+Quick capture of an item:
 
-- **In einer Liste**: Element wird direkt dort erstellt
-- **Global** (z.B. über ein `+`-Icon in der Navigation): Element landet in der Inbox
-- Minimale Eingabe: nur Titel → Enter → fertig (alle anderen Felder optional)
+- **Within a list**: Item is created directly there
+- **Global** (e.g. via a `+` icon in the navigation): Item goes to the Inbox
+- Minimal input: just title → Enter → done (all other fields optional)
 
-### 2.7 Zuweisungen
+### 2.7 Assignments
 
-Elemente können einer **Person zugewiesen** werden (pro Element). Nicht auf Listenebene.
+Items can be **assigned to a person** (per item). Not at the list level.
 
-### 2.8 Referenzen
+### 2.8 References
 
-Elemente können auf Elemente in **anderen Listen referenzieren** über ein Feld vom Typ „Referenz".
-In Scope 1 sind **regelbasierte Referenzierungen** möglich: ein Referenz-Feld kann automatisch
-befüllt werden basierend auf Bedingungen (z.B. „alle Zutaten aus Menüplan-Woche 12 die nicht
-im Inventar sind").
+Items can **reference items in other lists** via a "Reference" field type.
+In Scope 1, **rule-based references** are possible: a reference field can be automatically
+populated based on conditions (e.g. "all ingredients from meal plan week 12 that are not
+in inventory").
 
-### 2.9 Keine Verschachtelung
+### 2.9 No Nesting
 
-Listen haben keine Unter-Listen. Keine Parent-Child-Hierarchie. Flache Struktur.
-Beziehungen zwischen Listen werden über Referenzen abgebildet.
+Lists do not have sub-lists. No parent-child hierarchy. Flat structure.
+Relationships between lists are modeled via references.
 
-### 2.10 Verknüpfung mit Terminen
+### 2.10 Link to Events
 
-Termine (Events) bleiben ein **eigenes Modell**. Bidirektionale Verknüpfung ist möglich:
+Events remain a **separate model**. Bidirectional linking is possible:
 
-- Aus Terminen können sich Aufgaben/Listenelemente ergeben
-- Listenelemente können auf Termine referenzieren
-
----
-
-## 3. Template-Katalog (vordefiniert)
-
-| Template                   | Typische Felder                                                              | Ansichten           |
-| -------------------------- | ---------------------------------------------------------------------------- | ------------------- |
-| **Aufgabenliste**          | Titel, Status (offen/erledigt), Priorität, Fällig am, Zugewiesen an          | Checkliste, Tabelle |
-| **Einkaufsliste**          | Artikel, Menge, Kategorie (Obst, Milch…), Erledigt                           | Checkliste          |
-| **Projekt**                | Titel, Status (Todo/In Progress/Done/Blocked), Priorität, Zugewiesen, Fällig | Tabelle, Kanban     |
-| **Packliste**              | Gegenstand, Kategorie, Eingepackt                                            | Checkliste          |
-| **Putzplan**               | Bereich/Raum, Aufgabe, Zuständig, Erledigt                                   | Tabelle, Checkliste |
-| **Leseliste**              | Titel, Autor, Typ (Buch/Artikel/Film), Status (will/lese/gelesen), Bewertung | Tabelle             |
-| **Wunschliste**            | Gegenstand, Für wen, Link/URL, Preis, Gekauft                                | Tabelle, Checkliste |
-| **Menüplan**               | Gericht, Tag (Mo–So), Mahlzeit (Frühstück/Mittag/Abend), Zutaten-Referenz    | Tabelle             |
-| **Inventar**               | Gegenstand, Kategorie, Ort (Keller/Kühlschrank/…), Menge                     | Tabelle             |
-| **Vokabelsammlung**        | Wort, Übersetzung, Beispielsatz, Gelernt                                     | Checkliste, Tabelle |
-| **Budget-Tracker**         | Beschreibung, Kategorie, Betrag, Datum                                       | Tabelle             |
-| **Kontakte/Dienstleister** | Name, Typ, Telefon, E-Mail, Notiz                                            | Tabelle             |
-| **Kinder-Checkliste**      | Aufgabe, Kind (Zugewiesen), Erledigt                                         | Checkliste          |
-| **Habit-Tracker**          | Gewohnheit, Erledigt (pro Tag)                                               | Tabelle, Checkliste |
-| **Sammlung** (generisch)   | Titel, Notiz                                                                 | Checkliste, Tabelle |
-
-Nutzer können jederzeit **eigene Templates erstellen**: den Bauplan einer bestehenden Liste als
-neues Template speichern, oder ein leeres Template von Grund auf bauen.
+- Events can spawn tasks / list items
+- List items can reference events
 
 ---
 
-## 4. Architektur
+## 3. Template Catalog (Predefined)
 
-### 4.1 Datenmodell (Übersicht)
+| Template                       | Typical Fields                                                              | Views            |
+| ------------------------------ | --------------------------------------------------------------------------- | ---------------- |
+| **Task List**                  | Title, Status (open/done), Priority, Due date, Assigned to                  | Checklist, Table |
+| **Shopping List**              | Item, Quantity, Category (Fruit, Dairy…), Done                              | Checklist        |
+| **Project**                    | Title, Status (Todo/In Progress/Done/Blocked), Priority, Assigned to, Due   | Table, Kanban    |
+| **Packing List**               | Item, Category, Packed                                                      | Checklist        |
+| **Cleaning Schedule**          | Area/Room, Task, Responsible, Done                                          | Table, Checklist |
+| **Reading List**               | Title, Author, Type (Book/Article/Film), Status (want/reading/read), Rating | Table            |
+| **Wish List**                  | Item, For whom, Link/URL, Price, Purchased                                  | Table, Checklist |
+| **Meal Plan**                  | Dish, Day (Mon–Sun), Meal (Breakfast/Lunch/Dinner), Ingredients reference   | Table            |
+| **Inventory**                  | Item, Category, Location (Basement/Fridge/…), Quantity                      | Table            |
+| **Vocabulary Collection**      | Word, Translation, Example sentence, Learned                                | Checklist, Table |
+| **Budget Tracker**             | Description, Category, Amount, Date                                         | Table            |
+| **Contacts/Service Providers** | Name, Type, Phone, Email, Note                                              | Table            |
+| **Kids Checklist**             | Task, Child (Assigned), Done                                                | Checklist        |
+| **Habit Tracker**              | Habit, Done (per day)                                                       | Table, Checklist |
+| **Collection** (generic)       | Title, Note                                                                 | Checklist, Table |
+
+Users can **create their own templates** at any time: save the blueprint of an existing list as a
+new template, or build an empty template from scratch.
+
+---
+
+## 4. Architecture
+
+### 4.1 Data Model (Overview)
 
 ```text
-List (Schema/Bauplan)
-├── ListField[]       (Felddefinitionen des Bauplans)
-├── ListView[]        (Ansichten: Checkliste, Tabelle, …)
-│   └── ViewFilter[]  (Filter + Sortierung pro Ansicht)
-└── ListItem[]        (die eigentlichen Daten-Elemente)
-    └── ListItemValue[] (Feldwerte pro Element)
+List (Schema/Blueprint)
+├── ListField[]       (Field definitions of the blueprint)
+├── ListView[]        (Views: Checklist, Table, …)
+│   └── ViewFilter[]  (Filters + sorting per view)
+└── ListItem[]        (The actual data items)
+    └── ListItemValue[] (Field values per item)
 
-ListTemplate (Vorlagen)
-├── TemplateField[]   (Felddefinitionen der Vorlage)
-└── TemplateView[]    (Standard-Ansichten der Vorlage)
+ListTemplate (Presets)
+├── TemplateField[]   (Field definitions of the preset)
+└── TemplateView[]    (Default views of the preset)
 ```
 
-### 4.2 Schema (implementiert)
+### 4.2 Schema (Implemented)
 
-> Das tatsächliche Schema ist in `apps/api/prisma/schema.prisma` definiert.
-> Die folgende Darstellung ist eine vereinfachte Übersicht. Felder wie `system_key`,
-> `recurrence_rule` und die `list_favorites`-Tabelle sind seit der Implementierung hinzugekommen.
+> The actual schema is defined in `apps/api/prisma/schema.prisma`.
+> The following is a simplified overview. Fields like `system_key`,
+> `recurrence_rule` and the `list_favorites` table were added during implementation.
 
 ```sql
--- ── Listen ────────────────────────────────────────────────────────────────────
+-- ── Lists ─────────────────────────────────────────────────────────────────────
 
 lists:
   id              UUID PK
   hive_id         UUID FK → hives
   creator_id      UUID FK → persons
   name            TEXT ENCRYPTED
-  icon            TEXT?                         -- emoji oder URL, unencrypted (cosmetic)
+  icon            TEXT?                         -- emoji or URL, unencrypted (cosmetic)
   type            VARCHAR(20) DEFAULT 'custom'  -- 'custom' | 'inbox'
-  system_key      VARCHAR(50)?                  -- z.B. 'tasks' — bewirkt Auto-Erstellung + Löschschutz
+  system_key      VARCHAR(50)?                  -- e.g. 'tasks' — triggers auto-creation + delete protection
   visibility      VARCHAR(20) DEFAULT 'hive'
     -- CHECK (visibility IN ('hive', 'admins', 'group', 'private'))
   group_id        UUID? FK → hive_groups        -- required when visibility = 'group'
-  sort_order      FLOAT                         -- Reihenfolge in der Navigation
+  sort_order      FLOAT                         -- order in the navigation
   is_archived     BOOLEAN DEFAULT false
   created_at      TIMESTAMPTZ
   updated_at      TIMESTAMPTZ
 
 INDEX: (hive_id, type)
 INDEX: (hive_id, creator_id)
-UNIQUE: (hive_id, creator_id) WHERE type = 'inbox'  -- max 1 Inbox pro Person
-UNIQUE: (hive_id, creator_id, system_key)            -- max 1 System-Liste pro Typ pro Person
+UNIQUE: (hive_id, creator_id) WHERE type = 'inbox'  -- max 1 Inbox per person
+UNIQUE: (hive_id, creator_id, system_key)            -- max 1 system list per type per person
 
--- ── Felddefinitionen (Bauplan einer Liste) ────────────────────────────────────
+-- ── Field Definitions (Blueprint of a List) ──────────────────────────────────
 
 list_fields:
   id              UUID PK
   list_id         UUID FK → lists (CASCADE)
-  name            TEXT ENCRYPTED                -- Feldname, z.B. "Priorität"
+  name            TEXT ENCRYPTED                -- field name, e.g. "Priority"
   field_type      VARCHAR(30)                   -- text | number | date | checkbox |
                                                 -- select | person | reference | url
-  config          JSONB                         -- typspezifisch:
-                  -- select: { options: ["Hoch", "Mittel", "Niedrig"] }
+  config          JSONB                         -- type-specific:
+                  -- select: { options: ["High", "Medium", "Low"] }
                   -- reference: { targetListId: UUID, rule?: FilterExpression }
                   -- person: {}
                   -- number: { min?, max?, unit? }
   is_required     BOOLEAN DEFAULT false
-  is_title        BOOLEAN DEFAULT false         -- genau 1 Feld pro Liste ist der Titel
-  sort_order      FLOAT                         -- Reihenfolge der Felder
+  is_title        BOOLEAN DEFAULT false         -- exactly 1 field per list is the title
+  sort_order      FLOAT                         -- field order
   created_at      TIMESTAMPTZ
 
 INDEX: (list_id, sort_order)
 
--- ── Ansichten ─────────────────────────────────────────────────────────────────
+-- ── Views ─────────────────────────────────────────────────────────────────────
 
 list_views:
   id              UUID PK
   list_id         UUID FK → lists (CASCADE)
   name            TEXT ENCRYPTED
   view_type       VARCHAR(20)                   -- 'checklist' | 'table' | 'kanban'
-  config          JSONB                         -- ansichtsspezifisch:
+  config          JSONB                         -- view-specific:
                   -- checklist: { checkboxFieldId: UUID }
                   -- table: { visibleFieldIds: UUID[], columnWidths: {} }
                   -- kanban: { groupByFieldId: UUID }
-  filter          JSONB?                        -- FilterExpression (siehe §4.4)
+  filter          JSONB?                        -- FilterExpression (see §4.4)
   sort_by         JSONB?                        -- [{ fieldId: UUID, direction: 'asc'|'desc' }]
   sort_mode       VARCHAR(10) DEFAULT 'auto'    -- 'auto' | 'manual'
   is_default      BOOLEAN DEFAULT false
@@ -221,19 +221,19 @@ list_views:
 
 INDEX: (list_id)
 
--- ── Favoriten ─────────────────────────────────────────────────────────────────
+-- ── Favorites ─────────────────────────────────────────────────────────────────
 
 list_favorites:
   id              UUID PK
   list_id         UUID FK → lists (CASCADE)
   person_id       UUID FK → persons (CASCADE)
-  sort_order      FLOAT                         -- Reihenfolge in der Favoritenliste
+  sort_order      FLOAT                         -- order in the favorites list
   created_at      TIMESTAMPTZ
 
 UNIQUE: (list_id, person_id)
 INDEX: (person_id)
 
--- ── Listenelemente ────────────────────────────────────────────────────────────
+-- ── List Items ────────────────────────────────────────────────────────────────
 
 list_items:
   id              UUID PK
@@ -241,8 +241,8 @@ list_items:
   hive_id         UUID FK → hives               -- denormalized for RLS
   creator_id      UUID FK → persons
   assignee_id     UUID? FK → persons
-  sort_order      FLOAT                         -- manuelle Reihenfolge
-  recurrence_rule JSONB?                        -- Wiederholungsregel (unencrypted für Server-Expansion)
+  sort_order      FLOAT                         -- manual order
+  recurrence_rule JSONB?                        -- recurrence rule (unencrypted for server-side expansion)
   created_at      TIMESTAMPTZ
   updated_at      TIMESTAMPTZ
 
@@ -250,15 +250,15 @@ INDEX: (list_id, sort_order)
 INDEX: (hive_id, creator_id)
 INDEX: (hive_id, assignee_id)
 
--- ── Feldwerte pro Element ─────────────────────────────────────────────────────
+-- ── Field Values per Item ─────────────────────────────────────────────────────
 
 list_item_values:
   id              UUID PK
   item_id         UUID FK → list_items (CASCADE)
   field_id        UUID FK → list_fields (CASCADE)
-  value           TEXT? ENCRYPTED               -- alle Werte: serialisiert → verschlüsselt
+  value           TEXT? ENCRYPTED               -- all values: serialized → encrypted
 
-UNIQUE: (item_id, field_id)  -- ein Wert pro Feld pro Element
+UNIQUE: (item_id, field_id)  -- one value per field per item
 INDEX: (field_id)
 
 -- ── Templates ─────────────────────────────────────────────────────────────────
@@ -267,27 +267,27 @@ list_templates:
   id              UUID PK
   hive_id         UUID? FK → hives              -- NULL = System-Template (vordefiniert)
   creator_id      UUID? FK → persons            -- NULL = System-Template
-  name            TEXT                           -- unencrypted (Templates sind Vorlagen, kein PII)
+  name            TEXT                           -- unencrypted (templates are presets, not PII)
   description     TEXT?
   icon            TEXT?
-  is_system       BOOLEAN DEFAULT false         -- true = von Qoomb vordefiniert
+  is_system       BOOLEAN DEFAULT false         -- true = predefined by Qoomb
   created_at      TIMESTAMPTZ
   updated_at      TIMESTAMPTZ
 
 INDEX: (hive_id)
 
--- Template-Felddefinitionen (Kopiervorlage)
+-- Template field definitions (copy preset)
 list_template_fields:
   id              UUID PK
   template_id     UUID FK → list_templates (CASCADE)
-  name            TEXT                           -- Klartext (Templates enthalten kein PII)
+  name            TEXT                           -- plaintext (templates contain no PII)
   field_type      VARCHAR(30)
   config          JSONB
   is_required     BOOLEAN DEFAULT false
   is_title        BOOLEAN DEFAULT false
   sort_order      FLOAT
 
--- Template-Ansichten (Kopiervorlage)
+-- Template views (copy preset)
 list_template_views:
   id              UUID PK
   template_id     UUID FK → list_templates (CASCADE)
@@ -300,22 +300,22 @@ list_template_views:
   is_default      BOOLEAN DEFAULT false
 ```
 
-### 4.3 Feldtypen (Scope 1)
+### 4.3 Field Types (Scope 1)
 
-| Typ          | `field_type` | Gespeichert in                      | Beschreibung                         |
-| ------------ | ------------ | ----------------------------------- | ------------------------------------ |
-| **Text**     | `text`       | `value` (encrypted)                 | Freitext, einzeilig oder mehrzeilig  |
-| **Zahl**     | `number`     | `value` (encrypted, als String)     | Numerischer Wert (Betrag, Menge, …)  |
-| **Datum**    | `date`       | `value` (encrypted, ISO 8601)       | Datum/Zeitpunkt                      |
-| **Checkbox** | `checkbox`   | `value` (encrypted, "true"/"false") | Ja/Nein (zum Abhaken)                |
-| **Auswahl**  | `select`     | `value` (encrypted)                 | Dropdown aus vordefinierten Optionen |
-| **Person**   | `person`     | `value` (encrypted, UUID)           | Zuweisung an ein Hive-Mitglied       |
-| **Referenz** | `reference`  | `value` (encrypted, UUID)           | Verweis auf Element in anderer Liste |
-| **URL**      | `url`        | `value` (encrypted)                 | Link                                 |
+| Type          | `field_type` | Stored in                           | Description                         |
+| ------------- | ------------ | ----------------------------------- | ----------------------------------- |
+| **Text**      | `text`       | `value` (encrypted)                 | Free text, single or multi-line     |
+| **Number**    | `number`     | `value` (encrypted, as string)      | Numeric value (amount, quantity, …) |
+| **Date**      | `date`       | `value` (encrypted, ISO 8601)       | Date/timestamp                      |
+| **Checkbox**  | `checkbox`   | `value` (encrypted, "true"/"false") | Yes/No (checkable)                  |
+| **Select**    | `select`     | `value` (encrypted)                 | Dropdown from predefined options    |
+| **Person**    | `person`     | `value` (encrypted, UUID)           | Assignment to a hive member         |
+| **Reference** | `reference`  | `value` (encrypted, UUID)           | Reference to item in another list   |
+| **URL**       | `url`        | `value` (encrypted)                 | Link                                |
 
-### 4.4 Filter-Ausdrücke (FilterExpression)
+### 4.4 Filter Expressions (FilterExpression)
 
-Ansichten und regelbasierte Referenzen verwenden denselben Filter-Ausdruck:
+Views and rule-based references use the same filter expression:
 
 ```typescript
 interface FilterExpression {
@@ -324,7 +324,7 @@ interface FilterExpression {
 }
 
 interface FilterCondition {
-  fieldId: string; // UUID des Felds
+  fieldId: string; // UUID of the field
   comparator:
     | 'eq'
     | 'neq'
@@ -342,7 +342,7 @@ interface FilterCondition {
 }
 ```
 
-Beispiel — „Erledigte ausblenden":
+Example — "Hide completed":
 
 ```json
 {
@@ -351,51 +351,51 @@ Beispiel — „Erledigte ausblenden":
 }
 ```
 
-### 4.5 Regelbasierte Referenzierung
+### 4.5 Rule-Based References
 
-Ein Referenz-Feld kann optional eine **Regel** (Filter) haben, die automatisch bestimmt, welche
-Elemente aus der Ziel-Liste referenziert werden. Die Regel wird als `FilterExpression` in
-`list_fields.config.rule` gespeichert.
+A reference field can optionally have a **rule** (filter) that automatically determines which
+items from the target list are referenced. The rule is stored as a `FilterExpression` in
+`list_fields.config.rule`.
 
-Beispiel — Einkaufsliste referenziert automatisch alle Zutaten aus dem Menüplan, die nicht
-im Inventar vorhanden sind:
+Example — Shopping list automatically references all ingredients from the meal plan that are not
+in inventory:
 
 ```json
 {
-  "targetListId": "<menüplan-list-id>",
+  "targetListId": "<meal-plan-list-id>",
   "rule": {
     "operator": "and",
-    "conditions": [{ "fieldId": "<zutaten-feld-id>", "comparator": "is_not_empty" }]
+    "conditions": [{ "fieldId": "<ingredients-field-id>", "comparator": "is_not_empty" }]
   }
 }
 ```
 
-> **Hinweis:** Komplexere Cross-List-Automatisierungen (z.B. „wenn Einkauf abgehakt → ins Inventar
-> verschieben") sind für Scope 2+ geplant. Scope 1 beschränkt sich auf lesende Referenzen.
+> **Note:** More complex cross-list automations (e.g. "when shopping item checked → move to
+> inventory") are planned for Scope 2+. Scope 1 is limited to read-only references.
 
 ### 4.6 Encryption
 
-Folgt dem bestehenden Muster (siehe [ADR-0005](adr/0005-hybrid-encryption-architecture.md)):
+Follows the existing pattern (see [ADR-0005](adr/0005-hybrid-encryption-architecture.md)):
 
-| Feld                        | Encrypted? | Begründung                                         |
-| --------------------------- | ---------- | -------------------------------------------------- |
-| `lists.name`                | ✅         | Vom Nutzer eingegebener Name                       |
-| `list_fields.name`          | ✅         | Vom Nutzer definierter Feldname                    |
-| `list_views.name`           | ✅         | Vom Nutzer benannter Ansichtsname                  |
-| `list_item_values.value`    | ✅         | Alle Nutzerdaten (serialisiert + verschlüsselt)    |
-| IDs, Timestamps, sort_order | ❌         | Strukturell/operationell                           |
-| Template-Felder             | ❌         | Templates enthalten kein PII (generische Vorlagen) |
+| Field                       | Encrypted? | Reason                                     |
+| --------------------------- | ---------- | ------------------------------------------ |
+| `lists.name`                | ✅         | User-entered name                          |
+| `list_fields.name`          | ✅         | User-defined field name                    |
+| `list_views.name`           | ✅         | User-named view name                       |
+| `list_item_values.value`    | ✅         | All user data (serialized + encrypted)     |
+| IDs, Timestamps, sort_order | ❌         | Structural/operational                     |
+| Template fields             | ❌         | Templates contain no PII (generic presets) |
 
-### 4.7 Berechtigungen
+### 4.7 Permissions
 
-Listen nutzen das bestehende 5-Stufen-Zugriffsmodell (siehe [PERMISSIONS.md](PERMISSIONS.md)):
+Lists use the existing 5-stage access model (see [PERMISSIONS.md](PERMISSIONS.md)):
 
-- **Sichtbarkeit**: `hive` / `admins` / `group` / `private`
+- **Visibility**: `hive` / `admins` / `group` / `private`
 - **PersonShares & GroupShares**: `VIEW (1)` / `EDIT (2)` / `MANAGE (3)`
-- **Rollenbasierte Berechtigungen** (neu):
+- **Role-based permissions** (new):
 
 ```typescript
-// Neue Permissions für packages/types/src/permissions.ts
+// New permissions for packages/types/src/permissions.ts
 LISTS_VIEW = 'lists:view';
 LISTS_CREATE = 'lists:create';
 LISTS_UPDATE_OWN = 'lists:update:own';
@@ -404,87 +404,87 @@ LISTS_DELETE_OWN = 'lists:delete:own';
 LISTS_DELETE_ANY = 'lists:delete:any';
 ```
 
-| Rolle                  | Family Hive                          | Organization Hive        |
+| Role                   | Family Hive                          | Organization Hive        |
 | ---------------------- | ------------------------------------ | ------------------------ |
-| `parent` / `org_admin` | Alle Permissions                     | Alle Permissions         |
+| `parent` / `org_admin` | All permissions                      | All permissions          |
 | `child` / `member`     | VIEW, CREATE, UPDATE_OWN, DELETE_OWN | VIEW, CREATE, UPDATE_OWN |
-| `manager`              | —                                    | Alle Permissions         |
+| `manager`              | —                                    | All permissions          |
 | `guest`                | —                                    | VIEW                     |
 
-Die Inbox-Liste einer Person hat automatisch `visibility: 'private'`.
+A person's Inbox list automatically has `visibility: 'private'`.
 
 ---
 
-## 5. Abgrenzungen
+## 5. Boundaries
 
-### Listen vs. Termine (Events)
+### Lists vs. Events
 
-| Aspekt               | Listen                  | Termine                     |
-| -------------------- | ----------------------- | --------------------------- |
-| Zeitbezug            | Optional (Feld „Datum") | Zentral (Start/Ende, Dauer) |
-| Wiederkehr           | ✅ Implementiert        | ✅ (RecurrenceRule)         |
-| Kalender-Integration | Nein                    | Ja (Google, Apple, Outlook) |
-| Flexibles Schema     | Ja (Custom Fields)      | Nein (festes Schema)        |
+| Aspect               | Lists                   | Events                        |
+| -------------------- | ----------------------- | ----------------------------- |
+| Time relation        | Optional ("Date" field) | Central (Start/End, Duration) |
+| Recurrence           | ✅ Implemented          | ✅ (RecurrenceRule)           |
+| Calendar integration | No                      | Yes (Google, Apple, Outlook)  |
+| Flexible schema      | Yes (Custom Fields)     | No (fixed schema)             |
 
-**Verknüpfung**: Listenelemente können über ein Referenz-Feld auf einen Termin zeigen.
-Termine können Listenelemente „spawnen" (z.B. „Aufgaben für diesen Termin").
+**Linking**: List items can point to an event via a reference field.
+Events can spawn list items (e.g. "tasks for this event").
 
-### Listen vs. Pages
+### Lists vs. Pages
 
-| Aspekt    | Listen                             | Pages                        |
-| --------- | ---------------------------------- | ---------------------------- |
-| Struktur  | Strukturierte Elemente mit Feldern | Freitext (Tiptap Rich-Text)  |
-| Ansichten | Checkliste, Tabelle, Kanban, …     | Dokumentenansicht            |
-| Anwendung | Aufgaben, Sammlungen, Tracker      | Notizen, Dokumentation, Wiki |
+| Aspect    | Lists                        | Pages                        |
+| --------- | ---------------------------- | ---------------------------- |
+| Structure | Structured items with fields | Free text (Tiptap Rich-Text) |
+| Views     | Checklist, Table, Kanban, …  | Document view                |
+| Use case  | Tasks, collections, trackers | Notes, documentation, wiki   |
 
-**Verknüpfung**: Pages können Listenelemente als Referenz-Blöcke einbetten.
-Listenelemente können ein Textfeld haben, das als Mini-Notiz dient.
+**Linking**: Pages can embed list items as reference blocks.
+List items can have a text field serving as a mini-note.
 
-### Listen vs. das bestehende Tasks-Modul
+### Lists vs. the Former Tasks Module
 
-Das `tasks`-Modul wurde durch das Listen-Konzept **vollständig abgelöst und entfernt**.
-Das Verzeichnis `apps/api/src/modules/tasks/` existiert nicht mehr. Eine Aufgabenliste ist
-eine Liste mit dem System-Key `tasks` (auto-erstellt pro Person beim ersten Zugriff).
+The `tasks` module has been **fully replaced and removed** by the Lists concept.
+The directory `apps/api/src/modules/tasks/` no longer exists. A task list is
+a list with the system key `tasks` (auto-created per person on first access).
 
 ---
 
-## 6. Scope-Planung
+## 6. Scope Planning
 
-### Scope 1 (MVP) — ✅ Implementiert
+### Scope 1 (MVP) — ✅ Implemented
 
-- [x] Datenmodell: `lists`, `list_fields`, `list_views`, `list_items`, `list_item_values`
+- [x] Data model: `lists`, `list_fields`, `list_views`, `list_items`, `list_item_values`
 - [x] Templates: `list_templates`, `list_template_fields`, `list_template_views`
-- [x] Feldtypen: Text, Zahl, Datum, Checkbox, Select, Person, Referenz, URL
-- [x] Ansichten: Checkliste, Tabelle, Kanban (inkl. Drag & Drop)
-- [x] Inbox: System-Liste pro Person (auto-erstellt via `getInbox`)
-- [x] Quick-Add: Inline pro Liste
-- [x] Sichtbarkeit: Hive / Admins / Gruppe / Privat
-- [x] Encryption: value encrypted, Feldnamen encrypted
-- [x] RBAC: LISTS\_\* Permissions + 5-Stufen-Zugriffsmodell
-- [x] Vordefinierte System-Templates
-- [x] UI: Listen-Seite, List-Detail (Tabelle, Checkliste, Kanban)
-- [x] Favoriten: Toggle + Drag-to-Reorder
-- [x] Wiederkehrende Checklist-Items (Client-side Recurrence Expansion)
-- [x] System-Listen (`system_key`) mit Lösch-/Umbenennungsschutz
-- [ ] Quick-Add: Global (→ Inbox) — UI noch nicht implementiert
-- [ ] Regelbasierte Referenzierungen (lesend) — Schema vorhanden, UI fehlt
-- [ ] Eigene Templates erstellen — API vorhanden, UI fehlt
+- [x] Field types: Text, Number, Date, Checkbox, Select, Person, Reference, URL
+- [x] Views: Checklist, Table, Kanban (incl. Drag & Drop)
+- [x] Inbox: System list per person (auto-created via `getInbox`)
+- [x] Quick-Add: Inline per list
+- [x] Visibility: Hive / Admins / Group / Private
+- [x] Encryption: value encrypted, field names encrypted
+- [x] RBAC: LISTS\_\* Permissions + 5-stage access model
+- [x] Predefined system templates
+- [x] UI: Lists page, List detail (Table, Checklist, Kanban)
+- [x] Favorites: Toggle + Drag-to-Reorder
+- [x] Recurring checklist items (client-side recurrence expansion)
+- [x] System lists (`system_key`) with delete/rename protection
+- [ ] Quick-Add: Global (→ Inbox) — UI not yet implemented
+- [ ] Rule-based references (read-only) — schema exists, UI missing
+- [ ] Create custom templates — API exists, UI missing
 
-### Scope 2 — Teilweise implementiert
+### Scope 2 — Partially Implemented
 
-- [x] Kanban-Ansicht (nach Scope 1 vorgezogen)
-- [x] Wiederkehrende Elemente (Client-side Expansion bei Checklist-Items)
-- [ ] Cross-List-Automatisierungen (Einkauf abgehakt → Inventar)
-- [ ] Drag & Drop zwischen Listen (Element verschieben)
-- [ ] Listen als Dashboard-Widget
+- [x] Kanban view (moved forward from Scope 2)
+- [x] Recurring items (client-side expansion for checklist items)
+- [ ] Cross-list automations (shopping checked → inventory)
+- [ ] Drag & Drop between lists (move item)
+- [ ] Lists as dashboard widget
 
 ### Scope 3+
 
-- [ ] Kalender-Ansicht für Listen
-- [ ] Galerie-Ansicht
-- [ ] API für externe Integrationen
-- [ ] Offline-Sync (SQLite, wie in Phase 4 geplant)
-- [ ] pgvector Semantic Search über Listenelemente
+- [ ] Calendar view for lists
+- [ ] Gallery view
+- [ ] API for external integrations
+- [ ] Offline sync (SQLite, as planned in Phase 4)
+- [ ] pgvector semantic search over list items
 
 ---
 

@@ -13,6 +13,11 @@ export type RecurrenceFrequency = (typeof RECURRENCE_FREQUENCIES)[number];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+export interface ChecklistExtraField {
+  name: string;
+  value: string;
+}
+
 export interface SortableChecklistItemProps {
   item: ListItem;
   isDone: boolean;
@@ -20,6 +25,7 @@ export interface SortableChecklistItemProps {
   isLast: boolean;
   checkboxFieldId: string;
   listId: string;
+  extraFields?: ChecklistExtraField[];
   updateItem: UpdateItemMutation;
   createItem: CreateItemMutation;
   handleDeleteItem: (id: string) => void;
@@ -33,6 +39,7 @@ export function SortableChecklistItem({
   isLast,
   checkboxFieldId,
   listId,
+  extraFields,
   updateItem,
   createItem,
   handleDeleteItem,
@@ -113,11 +120,22 @@ export function SortableChecklistItem({
         >
           {isDone && <CheckIcon className="w-3 h-3" />}
         </button>
-        <span
-          className={`flex-1 text-sm ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-        >
-          {title || <span className="text-muted-foreground/40">—</span>}
-        </span>
+        <div className="flex-1 min-w-0">
+          <span
+            className={`text-sm ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+          >
+            {title || <span className="text-muted-foreground/40">—</span>}
+          </span>
+          {extraFields && extraFields.length > 0 && (
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+              {extraFields.map((ef) => (
+                <span key={ef.name} className="text-xs text-muted-foreground truncate">
+                  <span className="opacity-60">{ef.name}:</span> {ef.value || '—'}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
         {/* Recurrence indicator */}
         {recRule?.frequency && (
           <span className="text-xs text-muted-foreground flex-shrink-0">🔁</span>

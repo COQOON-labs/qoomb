@@ -390,12 +390,25 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
     [listId, updateList]
   );
 
+  // Checkbox fields are always visible in checklist views — they can't be toggled
+  const isChecklistView = activeView?.viewType === 'checklist';
+  const checkboxFieldId = useMemo(
+    () => list.fields.find((f) => f.fieldType === 'checkbox')?.id ?? null,
+    [list.fields]
+  );
+
   const handleToggleFieldVisibility = useCallback(
     (fieldId: string) => {
       if (!activeView) return;
+      // Never hide checkbox field in checklist view
+      if (isChecklistView && fieldId === checkboxFieldId) return;
       const current = new Set(visibleFieldIds);
       if (current.has(fieldId)) {
-        if (current.size <= 1) return;
+        // Count non-checkbox visible fields
+        const nonCheckboxVisible = isChecklistView
+          ? [...current].filter((id) => id !== checkboxFieldId).length
+          : current.size;
+        if (nonCheckboxVisible <= 1) return;
         current.delete(fieldId);
       } else {
         current.add(fieldId);
@@ -414,7 +427,7 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
         },
       });
     },
-    [activeView, listId, visibleFieldIds, updateView]
+    [activeView, listId, visibleFieldIds, updateView, isChecklistView, checkboxFieldId]
   );
 
   // ── Field reorder (DnD) ─────────────────────────────────────────────────
@@ -565,7 +578,19 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
                     key={field.id}
                     field={field}
                     isVisible={visibleFieldIds.has(field.id)}
-                    isLastVisible={visibleFieldIds.size <= 1 && visibleFieldIds.has(field.id)}
+                    isLastVisible={(() => {
+                      // Checkbox in checklist view: always locked visible
+                      if (isChecklistView && field.id === checkboxFieldId) return true;
+                      // Count non-checkbox visible fields
+                      const nonCbVisible = isChecklistView
+                        ? [...visibleFieldIds].filter((id) => id !== checkboxFieldId).length
+                        : visibleFieldIds.size;
+                      return (
+                        nonCbVisible <= 1 &&
+                        visibleFieldIds.has(field.id) &&
+                        field.id !== checkboxFieldId
+                      );
+                    })()}
                     onToggleVisibility={handleToggleFieldVisibility}
                     onOpenDetail={setDetailFieldId}
                     LL={LL}

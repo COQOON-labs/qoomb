@@ -896,6 +896,14 @@ export function ListDetailPage() {
                                       ? (item.values.find((v) => v.fieldId === titleField.id)
                                           ?.value ?? '')
                                       : '';
+                                    const extras = visibleFields
+                                      .filter(
+                                        (f) => f.id !== checkboxField.id && f.id !== titleField?.id
+                                      )
+                                      .map((f) => ({
+                                        name: f.name,
+                                        value: getItemValue(item, f.id, f.fieldType),
+                                      }));
                                     return (
                                       <SortableChecklistItem
                                         key={item.id}
@@ -905,6 +913,7 @@ export function ListDetailPage() {
                                         isLast={idx === visibleItems.length - 1}
                                         checkboxFieldId={checkboxField.id}
                                         listId={id ?? ''}
+                                        extraFields={extras}
                                         updateItem={updateItem}
                                         createItem={createItem}
                                         handleDeleteItem={handleDeleteItem}

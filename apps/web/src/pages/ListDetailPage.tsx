@@ -706,7 +706,7 @@ export function ListDetailPage() {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b border-border bg-muted/30">
-                              <th className="w-8" aria-hidden="true" />
+                              <th className="w-8 px-1" aria-hidden="true" />
                               <SortableContext
                                 items={visibleFields.map((f) => f.id)}
                                 strategy={horizontalListSortingStrategy}
@@ -725,7 +725,7 @@ export function ListDetailPage() {
                                   />
                                 ))}
                               </SortableContext>
-                              <th className="w-10">
+                              <th className="w-10 px-1">
                                 <span className="sr-only">{LL.common.remove()}</span>
                               </th>
                             </tr>
@@ -760,9 +760,9 @@ export function ListDetailPage() {
                           <tbody>
                             {/* ── Inline add row ──────────────────────────────── */}
                             <tr className="bg-muted/10">
-                              <td className="w-8" aria-hidden="true" />
+                              <td className="w-8 px-1" aria-hidden="true" />
                               {visibleFields.map((field) => (
-                                <td key={field.id} className="px-3 py-2">
+                                <td key={field.id} className="px-3 py-2.5">
                                   {field.fieldType === 'checkbox' ? (
                                     <input
                                       type="checkbox"
@@ -822,7 +822,7 @@ export function ListDetailPage() {
                                   )}
                                 </td>
                               ))}
-                              <td className="px-2 py-2">
+                              <td className="px-1 py-2.5">
                                 <button
                                   type="button"
                                   onClick={handleAddItem}

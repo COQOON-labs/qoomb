@@ -11,6 +11,7 @@ const en = {
     cancel: 'Cancel',
     add: 'Add',
     remove: 'Remove',
+    close: 'Close',
     back: 'Back',
     details: 'Details',
     showAll: 'Show all',
@@ -295,6 +296,16 @@ const en = {
     },
     groupLabel: 'Group',
     selectGroup: 'Select a group',
+    // Settings panel (slide-in)
+    settingsPanel: {
+      title: 'List settings',
+      listSection: 'List',
+      fieldsSection: 'Fields',
+      viewSection: 'View: {name}',
+      viewTypeLabel: 'Type',
+      hideField: 'Hide field',
+      showField: 'Show field',
+    },
     // Field editing
     renameField: 'Rename field',
     fieldConfig: 'Configure field',

@@ -14,7 +14,7 @@ import {
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { Button, Card, ConfirmDialog } from '@qoomb/ui';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { ArrowLeftIcon, PencilIcon, PlusIcon, SettingsIcon } from '../components/icons';
@@ -22,6 +22,7 @@ import { AddFieldForm } from '../components/lists/AddFieldForm';
 import { AddViewPanel } from '../components/lists/AddViewPanel';
 import { FieldEditPanel } from '../components/lists/FieldEditPanel';
 import { KanbanColumn } from '../components/lists/KanbanColumn';
+import { ListSettingsPanel } from '../components/lists/ListSettingsPanel';
 import { parsePersonValues } from '../components/lists/personField.utils';
 import { SortableChecklistItem } from '../components/lists/SortableChecklistItem';
 import { SortableColumnHeader } from '../components/lists/SortableColumnHeader';
@@ -262,13 +263,15 @@ export function ListDetailPage() {
   // ── Settings panel ────────────────────────────────────────────────────────
   const [showSettings, setShowSettings] = useState(false);
 
-  const handleVisibilityChange = useCallback(
-    (v: string) => {
-      if (!id) return;
-      updateList.mutate({ id, data: { visibility: v as 'hive' | 'admins' | 'group' | 'private' } });
-    },
-    [id, updateList]
-  );
+  // Listen for field deletion events from the settings panel
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const fieldId = (e as CustomEvent<{ fieldId: string }>).detail.fieldId;
+      setConfirmDeleteFieldId(fieldId);
+    };
+    window.addEventListener('list-settings:delete-field', handler);
+    return () => window.removeEventListener('list-settings:delete-field', handler);
+  }, []);
 
   // ── Views ─────────────────────────────────────────────────────────────────
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
@@ -634,6 +637,21 @@ export function ListDetailPage() {
                   <PlusIcon className="w-3.5 h-3.5" />
                   {LL.lists.addView()}
                 </button>
+                <div className="ml-auto flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowSettings((p) => !p)}
+                    className={
+                      'px-3 py-1.5 text-sm border-b-2 -mb-px transition-colors flex items-center gap-1 ' +
+                      (showSettings
+                        ? 'border-primary text-foreground'
+                        : 'border-transparent text-muted-foreground hover:text-foreground')
+                    }
+                    aria-label={LL.lists.settings()}
+                  >
+                    <SettingsIcon className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
             {list.views.length === 0 && (
@@ -1047,36 +1065,14 @@ export function ListDetailPage() {
           />
         )}
 
-        {/* ── Settings panel ────────────────────────────────────────────── */}
-        {list && (
-          <div className="mt-6">
-            <button
-              type="button"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setShowSettings((p) => !p)}
-            >
-              <SettingsIcon className="w-4 h-4" />
-              {LL.lists.settings()}
-            </button>
-            {showSettings && (
-              <Card padding="md" className="mt-2">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  {LL.lists.visibilityLabel()}
-                </label>
-                <select
-                  value={list.visibility}
-                  onChange={(e) => handleVisibilityChange(e.target.value)}
-                  className="w-full max-w-xs rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                >
-                  {(['hive', 'admins', 'group', 'private'] as const).map((v) => (
-                    <option key={v} value={v}>
-                      {LL.lists.visibility[v]()}
-                    </option>
-                  ))}
-                </select>
-              </Card>
-            )}
-          </div>
+        {/* ── Settings panel (slide-in) ──────────────────────────────────── */}
+        {showSettings && list && id && (
+          <ListSettingsPanel
+            list={list}
+            listId={id}
+            activeViewId={activeViewId}
+            onClose={() => setShowSettings(false)}
+          />
         )}
 
         {/* ── Field editing panel ───────────────────────────────────────── */}

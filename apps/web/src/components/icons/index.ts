@@ -19,6 +19,8 @@ export { ChevronUpDownIcon } from './ChevronUpDownIcon';
 export { DocumentIcon } from './DocumentIcon';
 export { DragHandleIcon } from './DragHandleIcon';
 export { EllipsisVerticalIcon } from './EllipsisVerticalIcon';
+export { EyeIcon } from './EyeIcon';
+export { EyeOffIcon } from './EyeOffIcon';
 export { HomeIcon } from './HomeIcon';
 export { LogOutIcon } from './LogOutIcon';
 export { MenuIcon } from './MenuIcon';

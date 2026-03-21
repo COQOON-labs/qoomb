@@ -50,6 +50,10 @@ type RootTranslation = {
      */
     remove: string;
     /**
+     * C​l​o​s​e
+     */
+    close: string;
+    /**
      * B​a​c​k
      */
     back: string;
@@ -967,6 +971,37 @@ type RootTranslation = {
      * S​e​l​e​c​t​ ​a​ ​g​r​o​u​p
      */
     selectGroup: string;
+    settingsPanel: {
+      /**
+       * L​i​s​t​ ​s​e​t​t​i​n​g​s
+       */
+      title: string;
+      /**
+       * L​i​s​t
+       */
+      listSection: string;
+      /**
+       * F​i​e​l​d​s
+       */
+      fieldsSection: string;
+      /**
+       * V​i​e​w​:​ ​{​n​a​m​e​}
+       * @param {unknown} name
+       */
+      viewSection: RequiredParams<'name'>;
+      /**
+       * T​y​p​e
+       */
+      viewTypeLabel: string;
+      /**
+       * H​i​d​e​ ​f​i​e​l​d
+       */
+      hideField: string;
+      /**
+       * S​h​o​w​ ​f​i​e​l​d
+       */
+      showField: string;
+    };
     /**
      * R​e​n​a​m​e​ ​f​i​e​l​d
      */
@@ -1382,6 +1417,10 @@ export type TranslationFunctions = {
      * Remove
      */
     remove: () => LocalizedString;
+    /**
+     * Close
+     */
+    close: () => LocalizedString;
     /**
      * Back
      */
@@ -2280,6 +2319,36 @@ export type TranslationFunctions = {
      * Select a group
      */
     selectGroup: () => LocalizedString;
+    settingsPanel: {
+      /**
+       * List settings
+       */
+      title: () => LocalizedString;
+      /**
+       * List
+       */
+      listSection: () => LocalizedString;
+      /**
+       * Fields
+       */
+      fieldsSection: () => LocalizedString;
+      /**
+       * View: {name}
+       */
+      viewSection: (arg: { name: unknown }) => LocalizedString;
+      /**
+       * Type
+       */
+      viewTypeLabel: () => LocalizedString;
+      /**
+       * Hide field
+       */
+      hideField: () => LocalizedString;
+      /**
+       * Show field
+       */
+      showField: () => LocalizedString;
+    };
     /**
      * Rename field
      */

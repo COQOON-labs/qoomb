@@ -11,6 +11,7 @@ const de = {
     cancel: 'Abbrechen',
     add: 'Hinzufügen',
     remove: 'Entfernen',
+    close: 'Schließen',
     back: 'Zurück',
     details: 'Details',
     showAll: 'Alle anzeigen',
@@ -296,6 +297,16 @@ const de = {
     },
     groupLabel: 'Gruppe',
     selectGroup: 'Gruppe auswählen',
+    // Settings panel (slide-in)
+    settingsPanel: {
+      title: 'Listeneinstellungen',
+      listSection: 'Liste',
+      fieldsSection: 'Felder',
+      viewSection: 'Ansicht: {name}',
+      viewTypeLabel: 'Typ',
+      hideField: 'Feld ausblenden',
+      showField: 'Feld einblenden',
+    },
     // Field editing
     renameField: 'Feld umbenennen',
     fieldConfig: 'Feld konfigurieren',

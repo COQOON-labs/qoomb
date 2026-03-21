@@ -525,6 +525,24 @@ export class ListsService {
     });
   }
 
+  /**
+   * Bulk-update sort_order for a set of fields in a single transaction.
+   * Same rebalance pattern as reorderItems.
+   */
+  async reorderFields(
+    listId: string,
+    fields: Array<{ id: string; sortOrder: number }>
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      for (const { id, sortOrder } of fields) {
+        await tx.listField.updateMany({
+          where: { id, listId },
+          data: { sortOrder },
+        });
+      }
+    });
+  }
+
   // ── Templates ─────────────────────────────────────────────────────────────
 
   /**

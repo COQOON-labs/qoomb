@@ -630,6 +630,7 @@ export function ListDetailPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-border bg-muted/30">
+                            <th className="w-8" aria-hidden="true" />
                             {list.fields.map((field) => (
                               <th
                                 key={field.id}
@@ -676,7 +677,6 @@ export function ListDetailPage() {
                             <th className="w-10">
                               <span className="sr-only">{LL.common.remove()}</span>
                             </th>
-                            <th className="w-6" aria-hidden="true" />
                           </tr>
                         </thead>
                         <SortableContext
@@ -709,6 +709,7 @@ export function ListDetailPage() {
                         <tbody>
                           {/* ── Inline add row ──────────────────────────────── */}
                           <tr className="bg-muted/10">
+                            <td className="w-8" aria-hidden="true" />
                             {list.fields.map((field) => (
                               <td key={field.id} className="px-3 py-2">
                                 {field.fieldType === 'checkbox' ? (
@@ -782,7 +783,6 @@ export function ListDetailPage() {
                                 <PlusIcon className="w-3.5 h-3.5" />
                               </button>
                             </td>
-                            <td className="w-6" aria-hidden="true" />
                           </tr>
                         </tbody>
                       </table>

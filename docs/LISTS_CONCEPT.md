@@ -467,3 +467,137 @@ Tasks-API bleibt vorerst bestehen, wird aber schrittweise migriert:
 - [ ] API für externe Integrationen
 - [ ] Offline-Sync (SQLite, wie in Phase 4 geplant)
 - [ ] pgvector Semantic Search über Listenelemente
+
+---
+
+## 10. List Settings & UX Overhaul — Feature Roadmap
+
+> Decided 2026-03-21. Inspired by Notion Databases. 19 features in 9 PRs.
+
+### PR 1 — Quick Wins ✅ (merged)
+
+> Branch: `fix/list-ux-polish` · No backend changes
+
+| ID  | Feature                                        | Status |
+| --- | ---------------------------------------------- | ------ |
+| D1  | Larger delete icon touch targets (44px)        | ✅     |
+| E1  | Locale-aware date formatting (i18n locale)     | ✅     |
+| E4  | Cell text truncation (`max-w-50` + `truncate`) | ✅     |
+
+### PR 2 — Field Context Menu (Foundation)
+
+> Branch: `feat/field-context-menu`
+
+| ID  | Feature                                                      | Effort |
+| --- | ------------------------------------------------------------ | ------ |
+| A1  | Field context menu (Rename, Delete, Hide, Duplicate, Type)   | Medium |
+| A4  | Hide/show fields per view (`visibleFieldIds` in view config) | Small  |
+
+A1 provides the UI shell into which all later field operations are hooked.
+
+### PR 3 — Field Metadata (Icon + Description)
+
+> Branch: `feat/field-metadata`
+
+| ID  | Feature                           | Effort |
+| --- | --------------------------------- | ------ |
+| A5  | Field icons (emoji per column)    | Small  |
+| A6  | Field description (hover tooltip) | Small  |
+
+Backend: add `icon` and `description` to `ListField` (migration + encryption for `description`).
+
+### PR 4 — Duplicate Actions
+
+> Branch: `feat/list-duplicate-actions`
+
+| ID  | Feature                                | Effort |
+| --- | -------------------------------------- | ------ |
+| A3  | Duplicate field (copy config)          | Small  |
+| D3  | Duplicate item (copy all field values) | Small  |
+
+### PR 5 — View Management
+
+> Branch: `feat/view-management`
+
+| ID  | Feature                                         | Effort |
+| --- | ----------------------------------------------- | ------ |
+| C1  | View tabs drag-to-reorder (persisted sortOrder) | Small  |
+| C2  | Duplicate view                                  | Small  |
+| C5  | Checklist: switchable checkbox field            | Small  |
+| C6  | Kanban: switchable group-by field               | Small  |
+
+### PR 6 — Visual Polish
+
+> Branch: `feat/list-visual-polish`
+
+| ID  | Feature                               | Effort |
+| --- | ------------------------------------- | ------ |
+| E5  | Colored select tags (Notion-style)    | Medium |
+| E3  | Resizable column widths (drag handle) | Medium |
+
+E5: `color` property per select option in `config.options[]` (JSONB, no migration).
+E3: Drag on column border + `columnWidths` in view config (field already exists in schema).
+
+### PR 7 — Undo Delete
+
+> Branch: `feat/list-undo-delete`
+
+| ID  | Feature                                  | Effort |
+| --- | ---------------------------------------- | ------ |
+| D5  | Undo item deletion (toast + soft-delete) | Medium |
+
+Items get `deletedAt` timestamp instead of hard-delete. 5-second undo toast.
+Cleanup job hard-deletes after expiry. Requires schema migration.
+
+### PR 8 — Field Type Change (largest feature)
+
+> Branch: `feat/field-type-change` · Depends on PR 2
+
+| ID  | Feature                                          | Effort |
+| --- | ------------------------------------------------ | ------ |
+| A2  | Change field type with value conversion strategy | High   |
+
+**Conversion matrix:**
+
+| From → To       | Strategy                              |
+| --------------- | ------------------------------------- |
+| Text → Number   | Parse as number, else `null`          |
+| Text → Date     | Parse as ISO date, else `null`        |
+| Text → Checkbox | `"true"/"1"/"ja"` → true, else false  |
+| Text → Select   | Value becomes first option            |
+| Number → Text   | `String(value)`                       |
+| Select → Text   | Option name becomes plaintext         |
+| Checkbox → Text | `"true"/"false"`                      |
+| Date → Text     | ISO string                            |
+| Any → URL       | Keep string if valid URL, else `null` |
+| Any → Person    | Not convertible → `null`              |
+
+Non-convertible values → `null` + warning dialog ("3 of 12 values could not be converted").
+
+### PR 9 — Filter & Sort UI
+
+> Branch: `feat/list-filter-sort` · Backend schema already exists
+
+| ID  | Feature                             | Effort |
+| --- | ----------------------------------- | ------ |
+| C3  | Filter UI (multi-condition builder) | High   |
+| C4  | Sort UI (multi-level sort dropdown) | Medium |
+
+### Dependencies
+
+```
+PR 2 (Field Context Menu) ──→ PR 4 (Duplicate Actions)
+                           ──→ PR 8 (Field Type Change)
+All others are independent / parallelizable.
+```
+
+### Decided against (for now)
+
+| ID   | Feature                      | Reason                        |
+| ---- | ---------------------------- | ----------------------------- |
+| D2   | Item detail page (modal)     | Deferred to later phase       |
+| D4   | Batch actions (multi-select) | Deferred to later phase       |
+| E2   | Relative date display        | Nice-to-have, not prioritized |
+| C7   | Gallery view                 | High effort, Phase 5 (Pages)  |
+| C8   | Calendar view                | High effort, Phase 6          |
+| F1–5 | Formulas, Rollups, etc.      | Power features, future phases |

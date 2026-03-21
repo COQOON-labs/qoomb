@@ -59,13 +59,25 @@ export function SortableTableRow({
       style={style}
       className="border-b border-border last:border-0 hover:bg-muted/20 group"
     >
+      {/* drag handle — first column */}
+      <td className="w-8 px-1 py-2.5">
+        <button
+          type="button"
+          className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-all touch-none"
+          aria-label={LL.lists.dragToReorder()}
+          {...attributes}
+          {...listeners}
+        >
+          <DragHandleIcon className="w-4 h-4" />
+        </button>
+      </td>
       {fields.map((field) => {
         const cellValue = getItemValue(item, field.id, field.fieldType);
         const isEditing = editingCell?.itemId === item.id && editingCell?.fieldId === field.id;
         return (
           <td
             key={field.id}
-            className="px-3 py-2.5 text-foreground cursor-pointer max-w-50"
+            className="px-3 py-2.5 text-foreground cursor-pointer select-none max-w-50"
             onClick={() => {
               if (!isEditing) {
                 // For person fields pass the raw UUID (not the resolved display name)
@@ -173,18 +185,6 @@ export function SortableTableRow({
           aria-label={LL.lists.deleteItem()}
         >
           <TrashIcon className="w-4 h-4" />
-        </button>
-      </td>
-      {/* drag handle */}
-      <td className="w-6 px-1 py-2.5">
-        <button
-          type="button"
-          className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-all touch-none"
-          aria-label={LL.lists.dragToReorder()}
-          {...attributes}
-          {...listeners}
-        >
-          <DragHandleIcon className="w-4 h-4" />
         </button>
       </td>
     </tr>

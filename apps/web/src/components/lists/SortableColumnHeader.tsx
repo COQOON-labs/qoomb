@@ -30,7 +30,7 @@ export function SortableColumnHeader({ field }: SortableColumnHeaderProps) {
       {/* Drag handle shifted into the preceding empty drag column so it never overlaps header text */}
       <button
         type="button"
-        className="absolute -left-5 top-1/2 -translate-y-1/2 opacity-0 group-hover/th:opacity-100 cursor-grab active:cursor-grabbing p-1.5 text-muted-foreground/50 hover:text-muted-foreground transition-all"
+        className="absolute -left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/th:opacity-100 cursor-grab active:cursor-grabbing p-1.5 text-muted-foreground/50 hover:text-muted-foreground transition-all"
         aria-label="Drag to reorder column"
         {...attributes}
         {...listeners}

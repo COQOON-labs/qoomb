@@ -191,6 +191,12 @@ vi.mock('../lib/trpc/client', () => ({
           isPending: false,
         }),
       },
+      reorderFields: {
+        useMutation: () => ({
+          mutate: mutateFn,
+          isPending: false,
+        }),
+      },
     },
   },
 }));

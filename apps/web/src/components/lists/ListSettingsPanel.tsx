@@ -505,39 +505,60 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
     [list, listId, localFieldOrder, reorderFields]
   );
 
+  // ── View config helpers ─────────────────────────────────────────────────
+  // activeView.config may be null for views created before titleFieldId was
+  // added, so we always fall back to deriving values from list.fields.
+  const checklistConfig = useMemo(() => {
+    const cfg = activeView?.config as
+      | { checkboxFieldId?: string; titleFieldId?: string; visibleFieldIds?: string[] }
+      | null
+      | undefined;
+    const checkboxFieldId =
+      cfg?.checkboxFieldId ?? list.fields.find((f) => f.fieldType === 'checkbox')?.id ?? '';
+    const titleFieldId = cfg?.titleFieldId ?? list.fields.find((f) => f.fieldType === 'text')?.id;
+    const visibleFieldIds = cfg?.visibleFieldIds;
+    return { checkboxFieldId, titleFieldId, visibleFieldIds };
+  }, [activeView, list.fields]);
+
   // ── View config handlers ────────────────────────────────────────────────
   const handleCheckboxFieldChange = useCallback(
     (checkboxFieldId: string) => {
       if (!activeView) return;
-      // Spread full existing config to preserve titleFieldId + visibleFieldIds
-      const existing = (activeView.config ?? {}) as {
-        titleFieldId?: string;
-        visibleFieldIds?: string[];
-      };
       updateView.mutate({
         id: activeView.id,
         listId,
-        data: { config: { ...existing, checkboxFieldId } },
+        data: {
+          config: {
+            checkboxFieldId,
+            ...(checklistConfig.titleFieldId ? { titleFieldId: checklistConfig.titleFieldId } : {}),
+            ...(checklistConfig.visibleFieldIds
+              ? { visibleFieldIds: checklistConfig.visibleFieldIds }
+              : {}),
+          },
+        },
       });
     },
-    [activeView, listId, updateView]
+    [activeView, checklistConfig, listId, updateView]
   );
 
   const handleTitleFieldChange = useCallback(
     (titleFieldId: string) => {
-      if (!activeView) return;
-      // Spread full existing config to preserve checkboxFieldId + visibleFieldIds
-      const existing = (activeView.config ?? {}) as {
-        checkboxFieldId: string; // always present in a checklist view
-        visibleFieldIds?: string[];
-      };
+      if (!activeView || !checklistConfig.checkboxFieldId) return;
       updateView.mutate({
         id: activeView.id,
         listId,
-        data: { config: { ...existing, titleFieldId } },
+        data: {
+          config: {
+            checkboxFieldId: checklistConfig.checkboxFieldId,
+            titleFieldId,
+            ...(checklistConfig.visibleFieldIds
+              ? { visibleFieldIds: checklistConfig.visibleFieldIds }
+              : {}),
+          },
+        },
       });
     },
-    [activeView, listId, updateView]
+    [activeView, checklistConfig, listId, updateView]
   );
 
   const handleGroupByChange = useCallback(
@@ -746,10 +767,7 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
                       {LL.lists.checkboxFieldLabel()}
                     </label>
                     <select
-                      value={
-                        (activeView.config as { checkboxFieldId?: string } | null)
-                          ?.checkboxFieldId ?? ''
-                      }
+                      value={checklistConfig.checkboxFieldId}
                       onChange={(e) => handleCheckboxFieldChange(e.target.value)}
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
                     >
@@ -768,9 +786,7 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
                       {LL.lists.titleFieldLabel()}
                     </label>
                     <select
-                      value={
-                        (activeView.config as { titleFieldId?: string } | null)?.titleFieldId ?? ''
-                      }
+                      value={checklistConfig.titleFieldId ?? ''}
                       onChange={(e) => handleTitleFieldChange(e.target.value)}
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
                     >

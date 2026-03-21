@@ -306,6 +306,7 @@ const de = {
       viewTypeLabel: 'Typ',
       hideField: 'Feld ausblenden',
       showField: 'Feld einblenden',
+      lastFieldHint: 'Mindestens ein Feld muss sichtbar bleiben',
     },
     // Field editing
     renameField: 'Feld umbenennen',

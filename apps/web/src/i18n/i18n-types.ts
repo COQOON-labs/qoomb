@@ -1001,6 +1001,10 @@ type RootTranslation = {
        * S​h​o​w​ ​f​i​e​l​d
        */
       showField: string;
+      /**
+       * A​t​ ​l​e​a​s​t​ ​o​n​e​ ​f​i​e​l​d​ ​m​u​s​t​ ​r​e​m​a​i​n​ ​v​i​s​i​b​l​e
+       */
+      lastFieldHint: string;
     };
     /**
      * R​e​n​a​m​e​ ​f​i​e​l​d
@@ -2348,6 +2352,10 @@ export type TranslationFunctions = {
        * Show field
        */
       showField: () => LocalizedString;
+      /**
+       * At least one field must remain visible
+       */
+      lastFieldHint: () => LocalizedString;
     };
     /**
      * Rename field

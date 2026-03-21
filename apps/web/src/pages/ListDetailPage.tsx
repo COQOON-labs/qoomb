@@ -476,7 +476,7 @@ export function ListDetailPage() {
 
   const visibleFields = useMemo(() => {
     const cfg = activeView?.config as { visibleFieldIds?: string[] } | null;
-    if (!cfg?.visibleFieldIds || cfg.visibleFieldIds.length === 0) return sortedFields;
+    if (!cfg?.visibleFieldIds) return sortedFields;
     const visible = new Set(cfg.visibleFieldIds);
     return sortedFields.filter((f) => visible.has(f.id));
   }, [sortedFields, activeView]);

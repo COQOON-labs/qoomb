@@ -54,6 +54,7 @@ interface FieldDetailProps {
 interface SortableFieldRowProps {
   field: ListField;
   isVisible: boolean;
+  isLastVisible: boolean;
   onToggleVisibility: (fieldId: string) => void;
   onOpenDetail: (fieldId: string) => void;
   LL: LLType;
@@ -62,6 +63,7 @@ interface SortableFieldRowProps {
 function SortableFieldRow({
   field,
   isVisible,
+  isLastVisible,
   onToggleVisibility,
   onOpenDetail,
   LL,
@@ -101,10 +103,16 @@ function SortableFieldRow({
       <button
         type="button"
         onClick={() => onToggleVisibility(field.id)}
-        className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        disabled={isVisible && isLastVisible}
+        className={`p-1 rounded transition-colors shrink-0 ${
+          isVisible && isLastVisible
+            ? 'text-muted-foreground/30 cursor-not-allowed'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
         aria-label={
           isVisible ? LL.lists.settingsPanel.hideField() : LL.lists.settingsPanel.showField()
         }
+        title={isVisible && isLastVisible ? LL.lists.settingsPanel.lastFieldHint() : undefined}
       >
         {isVisible ? (
           <EyeIcon className="w-3.5 h-3.5" />
@@ -387,6 +395,7 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
       if (!activeView) return;
       const current = new Set(visibleFieldIds);
       if (current.has(fieldId)) {
+        if (current.size <= 1) return;
         current.delete(fieldId);
       } else {
         current.add(fieldId);
@@ -556,6 +565,7 @@ export function ListSettingsPanel({ list, listId, activeViewId, onClose }: ListS
                     key={field.id}
                     field={field}
                     isVisible={visibleFieldIds.has(field.id)}
+                    isLastVisible={visibleFieldIds.size <= 1 && visibleFieldIds.has(field.id)}
                     onToggleVisibility={handleToggleFieldVisibility}
                     onOpenDetail={setDetailFieldId}
                     LL={LL}

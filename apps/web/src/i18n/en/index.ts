@@ -305,6 +305,7 @@ const en = {
       viewTypeLabel: 'Type',
       hideField: 'Hide field',
       showField: 'Show field',
+      lastFieldHint: 'At least one field must remain visible',
     },
     // Field editing
     renameField: 'Rename field',

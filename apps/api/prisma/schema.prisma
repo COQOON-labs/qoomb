@@ -26,20 +26,20 @@ model Hive {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  memberships              UserHiveMembership[]
-  persons                  Person[]
-  hiveRolePermissions      HiveRolePermission[]
-  hiveGroups               HiveGroup[]
-  hiveGroupMembers         HiveGroupMember[]
-  personShares             PersonShare[]
-  groupShares              GroupShare[]
-  events                   Event[]
-  lists                    List[]
-  invitations              Invitation[]
-  notifications            Notification[]
-  notificationPreferences  NotificationPreference[]
-  directMessages           DirectMessage[]
-  activityEvents           ActivityEvent[]
+  memberships             UserHiveMembership[]
+  persons                 Person[]
+  hiveRolePermissions     HiveRolePermission[]
+  hiveGroups              HiveGroup[]
+  hiveGroupMembers        HiveGroupMember[]
+  personShares            PersonShare[]
+  groupShares             GroupShare[]
+  events                  Event[]
+  lists                   List[]
+  invitations             Invitation[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  directMessages          DirectMessage[]
+  activityEvents          ActivityEvent[]
 
   @@map("hives")
 }
@@ -132,21 +132,21 @@ model Person {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  hive              Hive                 @relation(fields: [hiveId], references: [id], onDelete: Cascade)
-  user              User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
-  memberships       UserHiveMembership[]
-  personShares      PersonShare[]
-  groupMemberships  HiveGroupMember[]    @relation("GroupMember")
-  groupMembersAdded HiveGroupMember[]    @relation("GroupMemberAddedBy")
-  createdEvents     Event[]
-  createdLists     List[]     @relation("ListCreator")
-  createdListItems ListItem[] @relation("ListItemCreator")
-  notifications            Notification[]
-  notificationPreferences  NotificationPreference[]
-  sentMessages             DirectMessage[]        @relation("MessageSender")
-  receivedMessages         DirectMessage[]        @relation("MessageRecipient")
-  activityEvents           ActivityEvent[]
-  listFavorites    ListFavorite[]
+  hive                    Hive                     @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  user                    User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  memberships             UserHiveMembership[]
+  personShares            PersonShare[]
+  groupMemberships        HiveGroupMember[]        @relation("GroupMember")
+  groupMembersAdded       HiveGroupMember[]        @relation("GroupMemberAddedBy")
+  createdEvents           Event[]
+  createdLists            List[]                   @relation("ListCreator")
+  createdListItems        ListItem[]               @relation("ListItemCreator")
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  sentMessages            DirectMessage[]          @relation("MessageSender")
+  receivedMessages        DirectMessage[]          @relation("MessageRecipient")
+  activityEvents          ActivityEvent[]
+  listFavorites           ListFavorite[]
 
   @@index([hiveId])
   @@index([userId])
@@ -321,12 +321,12 @@ model List {
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  hive    Hive?      @relation(fields: [hiveId], references: [id], onDelete: Cascade)
-  creator Person?    @relation("ListCreator", fields: [creatorId], references: [id], onDelete: SetNull)
-  group   HiveGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  fields  ListField[]
-  views   ListView[]
-  items   ListItem[]
+  hive      Hive?          @relation(fields: [hiveId], references: [id], onDelete: Cascade)
+  creator   Person?        @relation("ListCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  group     HiveGroup?     @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  fields    ListField[]
+  views     ListView[]
+  items     ListItem[]
   favorites ListFavorite[]
 
   @@unique([hiveId, creatorId, systemKey])
@@ -622,23 +622,23 @@ model ActivityEvent {
 /// Retention: rows expire after REENCRYPT_BACKUP_RETENTION_DAYS days (default 30).
 /// Run `db:reencrypt-cleanup` to delete expired rows after confirmed stability.
 model ReencryptBackup {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// Name of the table that was updated, e.g. "users" or "events".
-  tableName      String   @map("table_name") @db.Text
+  tableName     String   @map("table_name") @db.Text
   /// UUID of the affected row in that table.
-  recordId       String   @map("record_id") @db.Uuid
+  recordId      String   @map("record_id") @db.Uuid
   /// Column name that was re-encrypted, e.g. "email" or "title".
-  fieldName      String   @map("field_name") @db.Text
+  fieldName     String   @map("field_name") @db.Text
   /// The verbatim ciphertext that was in the DB before the migration.
-  oldCiphertext  String   @map("old_ciphertext") @db.Text
+  oldCiphertext String   @map("old_ciphertext") @db.Text
   /// Key version the old ciphertext was encrypted with.
-  fromVersion    Int      @map("from_version")
+  fromVersion   Int      @map("from_version")
   /// Key version the new ciphertext is encrypted with.
-  toVersion      Int      @map("to_version")
+  toVersion     Int      @map("to_version")
   /// Timestamp of the migration run that produced this row.
-  migratedAt     DateTime @default(now()) @map("migrated_at") @db.Timestamptz
+  migratedAt    DateTime @default(now()) @map("migrated_at") @db.Timestamptz
   /// When this backup row may be deleted (migratedAt + REENCRYPT_BACKUP_RETENTION_DAYS).
-  expiresAt      DateTime @map("expires_at") @db.Timestamptz
+  expiresAt     DateTime @map("expires_at") @db.Timestamptz
 
   @@index([expiresAt], name: "reencrypt_backups_expires_idx")
   @@index([tableName, recordId], name: "reencrypt_backups_record_idx")

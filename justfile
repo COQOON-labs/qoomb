@@ -309,7 +309,7 @@ _preflight:
             pnpm --filter @qoomb/api db:generate
             echo -e "\033[0;32m  ✓ Prisma client generated\033[0m"
         fi
-    elif ! diff -q apps/api/prisma/schema.prisma "$PRISMA_GENERATED/schema.prisma" >/dev/null 2>&1; then
+    elif ! diff -bq apps/api/prisma/schema.prisma "$PRISMA_GENERATED/schema.prisma" >/dev/null 2>&1; then
         echo -e "\033[1;33m  ⚠ Prisma client outdated (schema changed)\033[0m"
         if ask "Regenerate now?" required; then
             pnpm --filter @qoomb/api db:generate

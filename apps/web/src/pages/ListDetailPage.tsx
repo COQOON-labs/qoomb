@@ -56,7 +56,7 @@ const ICON_OPTIONS = [
 // ── ListDetailPage ────────────────────────────────────────────────────────────
 
 export function ListDetailPage() {
-  const { LL } = useI18nContext();
+  const { LL, locale } = useI18nContext();
   const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -407,7 +407,7 @@ export function ListDetailPage() {
         case 'checkbox':
           return val.value === 'true' ? '✓' : '✗';
         case 'date':
-          return new Date(val.value).toLocaleDateString();
+          return new Date(val.value).toLocaleDateString(locale);
         case 'person': {
           const vals = parsePersonValues(val.value);
           return vals.map((v) => personNameById.get(v) ?? v).join(', ');
@@ -416,7 +416,7 @@ export function ListDetailPage() {
           return val.value;
       }
     },
-    [personNameById]
+    [locale, personNameById]
   );
 
   // ── View-derived computations ─────────────────────────────────────────────

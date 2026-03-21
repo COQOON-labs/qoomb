@@ -133,11 +133,11 @@ export function SortableChecklistItem({
         </button>
         <button
           type="button"
-          className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+          className="opacity-0 group-hover:opacity-100 p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
           onClick={() => handleDeleteItem(item.id)}
           aria-label={LL.lists.deleteItem()}
         >
-          <TrashIcon className="w-3.5 h-3.5" />
+          <TrashIcon className="w-4 h-4" />
         </button>
       </div>
       {/* Recurrence picker */}

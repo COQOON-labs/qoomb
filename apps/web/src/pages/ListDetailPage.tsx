@@ -697,13 +697,13 @@ export function ListDetailPage() {
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                   >
-                    <Card padding="none" className="overflow-x-auto mb-4">
-                      <table className="w-full text-sm">
-                        <DndContext
-                          sensors={fieldDndSensors}
-                          collisionDetection={closestCenter}
-                          onDragEnd={handleFieldDragEnd}
-                        >
+                    <DndContext
+                      sensors={fieldDndSensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleFieldDragEnd}
+                    >
+                      <Card padding="none" className="overflow-x-auto mb-4">
+                        <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b border-border bg-muted/30">
                               <th className="w-8" aria-hidden="true" />
@@ -730,115 +730,114 @@ export function ListDetailPage() {
                               </th>
                             </tr>
                           </thead>
-                        </DndContext>
-                        <SortableContext
-                          items={sortedItems.map((i) => i.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
+                          <SortableContext
+                            items={sortedItems.map((i) => i.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <tbody>
+                              {sortedItems.map((item) => (
+                                <SortableTableRow
+                                  key={item.id}
+                                  item={item}
+                                  fields={visibleFields}
+                                  editingCell={editingCell}
+                                  cellDraft={cellDraft}
+                                  cellInputRef={cellInputRef}
+                                  getItemValue={getItemValue}
+                                  handleCellClick={handleCellClick}
+                                  handleCellSave={handleCellSave}
+                                  handleCellKeyDown={handleCellKeyDown}
+                                  handleDeleteItem={handleDeleteItem}
+                                  setCellDraft={setCellDraft}
+                                  updateItem={updateItem}
+                                  LL={LL}
+                                  persons={persons}
+                                  onCloseCell={() => setEditingCell(null)}
+                                />
+                              ))}
+                            </tbody>
+                          </SortableContext>
                           <tbody>
-                            {sortedItems.map((item) => (
-                              <SortableTableRow
-                                key={item.id}
-                                item={item}
-                                fields={visibleFields}
-                                editingCell={editingCell}
-                                cellDraft={cellDraft}
-                                cellInputRef={cellInputRef}
-                                getItemValue={getItemValue}
-                                handleCellClick={handleCellClick}
-                                handleCellSave={handleCellSave}
-                                handleCellKeyDown={handleCellKeyDown}
-                                handleDeleteItem={handleDeleteItem}
-                                setCellDraft={setCellDraft}
-                                updateItem={updateItem}
-                                LL={LL}
-                                persons={persons}
-                                onCloseCell={() => setEditingCell(null)}
-                              />
-                            ))}
-                          </tbody>
-                        </SortableContext>
-                        <tbody>
-                          {/* ── Inline add row ──────────────────────────────── */}
-                          <tr className="bg-muted/10">
-                            <td className="w-8" aria-hidden="true" />
-                            {visibleFields.map((field) => (
-                              <td key={field.id} className="px-3 py-2">
-                                {field.fieldType === 'checkbox' ? (
-                                  <input
-                                    type="checkbox"
-                                    checked={newItemValues[field.id] === 'true'}
-                                    onChange={(e) =>
-                                      setNewItemValues((prev) => ({
-                                        ...prev,
-                                        [field.id]: String(e.target.checked),
-                                      }))
-                                    }
-                                    aria-label={field.name}
-                                    className="h-4 w-4 rounded border-border"
-                                  />
-                                ) : field.fieldType === 'select' ? (
-                                  <select
-                                    value={newItemValues[field.id] ?? ''}
-                                    onChange={(e) =>
-                                      setNewItemValues((prev) => ({
-                                        ...prev,
-                                        [field.id]: e.target.value,
-                                      }))
-                                    }
-                                    className="w-full bg-transparent text-sm text-foreground outline-none"
-                                  >
-                                    <option value="">{LL.lists.selectPlaceholder()}</option>
-                                    {(
-                                      (field.config as Record<string, unknown> | null)?.options as
-                                        | string[]
-                                        | undefined
-                                    )?.map((opt) => (
-                                      <option key={opt} value={opt}>
-                                        {opt}
-                                      </option>
-                                    ))}
-                                  </select>
-                                ) : (
-                                  <input
-                                    type={
-                                      field.fieldType === 'number'
-                                        ? 'number'
-                                        : field.fieldType === 'date'
-                                          ? 'date'
-                                          : 'text'
-                                    }
-                                    placeholder={LL.lists.itemNamePlaceholder()}
-                                    value={newItemValues[field.id] ?? ''}
-                                    onChange={(e) =>
-                                      setNewItemValues((prev) => ({
-                                        ...prev,
-                                        [field.id]: e.target.value,
-                                      }))
-                                    }
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') handleAddItem();
-                                    }}
-                                    className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
-                                  />
-                                )}
+                            {/* ── Inline add row ──────────────────────────────── */}
+                            <tr className="bg-muted/10">
+                              <td className="w-8" aria-hidden="true" />
+                              {visibleFields.map((field) => (
+                                <td key={field.id} className="px-3 py-2">
+                                  {field.fieldType === 'checkbox' ? (
+                                    <input
+                                      type="checkbox"
+                                      checked={newItemValues[field.id] === 'true'}
+                                      onChange={(e) =>
+                                        setNewItemValues((prev) => ({
+                                          ...prev,
+                                          [field.id]: String(e.target.checked),
+                                        }))
+                                      }
+                                      aria-label={field.name}
+                                      className="h-4 w-4 rounded border-border"
+                                    />
+                                  ) : field.fieldType === 'select' ? (
+                                    <select
+                                      value={newItemValues[field.id] ?? ''}
+                                      onChange={(e) =>
+                                        setNewItemValues((prev) => ({
+                                          ...prev,
+                                          [field.id]: e.target.value,
+                                        }))
+                                      }
+                                      className="w-full bg-transparent text-sm text-foreground outline-none"
+                                    >
+                                      <option value="">{LL.lists.selectPlaceholder()}</option>
+                                      {(
+                                        (field.config as Record<string, unknown> | null)
+                                          ?.options as string[] | undefined
+                                      )?.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                          {opt}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <input
+                                      type={
+                                        field.fieldType === 'number'
+                                          ? 'number'
+                                          : field.fieldType === 'date'
+                                            ? 'date'
+                                            : 'text'
+                                      }
+                                      placeholder={LL.lists.itemNamePlaceholder()}
+                                      value={newItemValues[field.id] ?? ''}
+                                      onChange={(e) =>
+                                        setNewItemValues((prev) => ({
+                                          ...prev,
+                                          [field.id]: e.target.value,
+                                        }))
+                                      }
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleAddItem();
+                                      }}
+                                      className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
+                                    />
+                                  )}
+                                </td>
+                              ))}
+                              <td className="px-2 py-2">
+                                <button
+                                  type="button"
+                                  onClick={handleAddItem}
+                                  disabled={createItem.isPending}
+                                  className="p-1 rounded-md text-muted-foreground hover:text-primary transition-colors"
+                                  aria-label={LL.lists.addItem()}
+                                >
+                                  <PlusIcon className="w-3.5 h-3.5" />
+                                </button>
                               </td>
-                            ))}
-                            <td className="px-2 py-2">
-                              <button
-                                type="button"
-                                onClick={handleAddItem}
-                                disabled={createItem.isPending}
-                                className="p-1 rounded-md text-muted-foreground hover:text-primary transition-colors"
-                                aria-label={LL.lists.addItem()}
-                              >
-                                <PlusIcon className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </Card>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </Card>
+                    </DndContext>
                   </DndContext>
                 )}
 

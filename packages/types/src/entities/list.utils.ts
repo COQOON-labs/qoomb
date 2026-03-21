@@ -28,7 +28,8 @@ export type GuardResult = { allowed: true } | { allowed: false; reason: string }
  *
  * Rules (enforced on both frontend and backend):
  * 1. The last remaining field can never be deleted.
- * 2. A field that is the active `checkboxFieldId` of a checklist view cannot be deleted.
+ * 2. A field that is the active checkbox field of a checklist view cannot be deleted.
+ *    If `checkboxFieldId` is not set in config, the first checkbox field is implicit.
  * 3. A field that is the active `groupByFieldId` of a kanban view cannot be deleted.
  * 4. A field that is the active title field of a checklist view cannot be deleted.
  *    If `titleFieldId` is not set in config, the first text field is the implicit title.
@@ -49,9 +50,12 @@ export function canDeleteField(
 
   for (const view of views) {
     if (view.viewType === 'checklist') {
-      // Rule 2: active checkbox field in a checklist view
+      // Rule 2: active checkbox field in a checklist view.
+      // Fall back to the first checkbox field when checkboxFieldId is not saved
+      // (old views / null config) — same implicit selection as the frontend.
       const cbId = (view.config as { checkboxFieldId?: string } | null)?.checkboxFieldId;
-      if (cbId === fieldId) {
+      const effectiveCbId = cbId ?? allFields.find((f) => f.fieldType === 'checkbox')?.id;
+      if (effectiveCbId === fieldId) {
         return { allowed: false, reason: 'activeCheckboxField' };
       }
       // Rule 4: active title field in a checklist view.

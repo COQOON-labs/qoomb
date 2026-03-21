@@ -42,6 +42,21 @@ describe('canDeleteField', () => {
     expect(result).toEqual({ allowed: false, reason: 'activeCheckboxField' });
   });
 
+  it('blocks deleting the first checkbox field when checkboxFieldId is not configured (fallback)', () => {
+    // Old view with null config — first checkbox is the implicit active field
+    const fields = [field('cb', 'checkbox'), field('t1', 'text'), field('f3', 'number')];
+    const views: ViewInfo[] = [{ viewType: 'checklist', config: null }];
+    const result = canDeleteField('cb', fields, views);
+    expect(result).toEqual({ allowed: false, reason: 'activeCheckboxField' });
+  });
+
+  it('blocks deleting the first checkbox field when config has no checkboxFieldId', () => {
+    const fields = [field('cb', 'checkbox'), field('t1', 'text')];
+    const views: ViewInfo[] = [{ viewType: 'checklist', config: { titleFieldId: 't1' } }];
+    const result = canDeleteField('cb', fields, views);
+    expect(result).toEqual({ allowed: false, reason: 'activeCheckboxField' });
+  });
+
   it('allows deleting a checkbox field not used by any view', () => {
     const fields = [field('cb1', 'checkbox'), field('cb2', 'checkbox'), field('f3')];
     const views = [checklistView('cb1')];

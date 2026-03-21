@@ -20,7 +20,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftIcon, PencilIcon, PlusIcon, SettingsIcon } from '../components/icons';
 import { AddFieldForm } from '../components/lists/AddFieldForm';
 import { AddViewPanel } from '../components/lists/AddViewPanel';
-import { FieldEditPanel } from '../components/lists/FieldEditPanel';
 import { KanbanColumn } from '../components/lists/KanbanColumn';
 import { ListSettingsPanel } from '../components/lists/ListSettingsPanel';
 import { parsePersonValues } from '../components/lists/personField.utils';
@@ -211,7 +210,6 @@ export function ListDetailPage() {
 
   // ── Remove field ──────────────────────────────────────────────────────────
   const [confirmDeleteFieldId, setConfirmDeleteFieldId] = useState<string | null>(null);
-  const [columnMenuFieldId, setColumnMenuFieldId] = useState<string | null>(null);
 
   const createField = trpc.lists.createField.useMutation({
     onSuccess: () => {
@@ -235,30 +233,17 @@ export function ListDetailPage() {
     onSuccess: () => {
       void utils.lists.get.invalidate(id);
       void utils.lists.listItems.invalidate({ listId: id ?? '' });
-      setColumnMenuFieldId(null);
     },
     onError: () => {
       addToast(LL.lists.deleteError(), 'error');
     },
   });
 
-  const handleDeleteField = useCallback((fieldId: string) => {
-    setConfirmDeleteFieldId(fieldId);
-  }, []);
-
   const handleConfirmDeleteField = useCallback(() => {
     if (!confirmDeleteFieldId || !id) return;
     deleteField.mutate({ id: confirmDeleteFieldId, listId: id });
     setConfirmDeleteFieldId(null);
   }, [confirmDeleteFieldId, id, deleteField]);
-
-  // ── Field editing ─────────────────────────────────────────────────────────
-  const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
-
-  const handleStartEditField = useCallback((fieldId: string) => {
-    setEditingFieldId(fieldId);
-    setColumnMenuFieldId(null);
-  }, []);
 
   // ── Settings panel ────────────────────────────────────────────────────────
   const [showSettings, setShowSettings] = useState(false);
@@ -712,17 +697,7 @@ export function ListDetailPage() {
                                 strategy={horizontalListSortingStrategy}
                               >
                                 {visibleFields.map((field) => (
-                                  <SortableColumnHeader
-                                    key={field.id}
-                                    field={field}
-                                    columnMenuFieldId={columnMenuFieldId}
-                                    onToggleMenu={(fid) =>
-                                      setColumnMenuFieldId((prev) => (prev === fid ? null : fid))
-                                    }
-                                    onStartEditField={handleStartEditField}
-                                    onDeleteField={handleDeleteField}
-                                    LL={LL}
-                                  />
+                                  <SortableColumnHeader key={field.id} field={field} />
                                 ))}
                               </SortableContext>
                               <th className="w-10 px-1">
@@ -1089,25 +1064,6 @@ export function ListDetailPage() {
             onClose={() => setShowSettings(false)}
           />
         )}
-
-        {/* ── Field editing panel ───────────────────────────────────────── */}
-        {editingFieldId &&
-          (() => {
-            const field = fieldMap.get(editingFieldId);
-            if (!field || !id) return null;
-            return (
-              <FieldEditPanel
-                key={editingFieldId}
-                listId={id}
-                field={field}
-                onSuccess={() => {
-                  void utils.lists.get.invalidate(id);
-                  setEditingFieldId(null);
-                }}
-                onClose={() => setEditingFieldId(null)}
-              />
-            );
-          })()}
 
         {/* ── Confirm dialogs ───────────────────────────────────────────── */}
         <ConfirmDialog

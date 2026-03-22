@@ -27,9 +27,9 @@ on:
 permissions:
   contents: read
 
-# Explicitly opt into Node.js 24 runtime for all actions.
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+# NOTE: No top-level env/defaults — scorecard-action rejects workflows that
+# define global env vars or defaults (workflow verification would fail).
+# FORCE_JAVASCRIPT_ACTIONS_TO_NODE24 is set per-job instead.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -44,6 +44,8 @@ jobs:
     name: Trivy — Filesystem
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     permissions:
       contents: read
       security-events: write # Upload SARIF to Security tab
@@ -104,6 +106,8 @@ jobs:
     name: Trivy — Secrets
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     permissions:
       contents: read
       security-events: write

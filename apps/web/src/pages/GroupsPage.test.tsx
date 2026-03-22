@@ -89,7 +89,6 @@ const mutateFn = vi.fn();
 // ── Per-test overrides ────────────────────────────────────────────────────────
 
 let groupsOverride: { data: typeof mockGroups; isLoading: boolean } | null = null;
-let groupDetailOverride: { data: typeof mockGroupDetail | null; isLoading: boolean } | null = null;
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
@@ -120,7 +119,7 @@ vi.mock('../lib/trpc/client', () => ({
         useQuery: () => groupsOverride ?? { data: mockGroups, isLoading: false },
       },
       get: {
-        useQuery: () => groupDetailOverride ?? { data: mockGroupDetail, isLoading: false },
+        useQuery: () => ({ data: mockGroupDetail, isLoading: false }),
       },
       create: {
         useMutation: (opts?: { onSuccess?: () => void }) => ({
@@ -170,7 +169,6 @@ describe('GroupsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     groupsOverride = null;
-    groupDetailOverride = null;
   });
 
   // ── List view ───────────────────────────────────────────────────────────

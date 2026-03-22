@@ -1,10 +1,10 @@
-# Qoomb - Privacy-First Family Organization Platform
+# Qoomb — Privacy-First Hive Organisation Platform
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/COQOON-labs/qoomb/badge)](https://securityscorecards.dev/viewer/?uri=github.com/COQOON-labs/qoomb)
 [![CI](https://github.com/COQOON-labs/qoomb/actions/workflows/ci.yml/badge.svg)](https://github.com/COQOON-labs/qoomb/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/COQOON-labs/qoomb/actions/workflows/codeql.yml/badge.svg)](https://github.com/COQOON-labs/qoomb/actions/workflows/codeql.yml)
 
-A family organization platform with offline-first capabilities, hybrid encryption, and multi-tenant architecture.
+A privacy-first SaaS hive organisation platform for families and teams. Built on a TypeScript monorepo with NestJS, React 19, tRPC, Prisma, and AES-256-GCM field encryption at rest.
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ A family organization platform with offline-first capabilities, hybrid encryptio
 
 ## Quick Start
 
-### Option 1: Using justfile (Recommended) ⭐
+### Option 1: justfile (Recommended) ⭐
 
 ```bash
 # Full setup (HTTPS + local domain, macOS/Linux)
@@ -27,7 +27,7 @@ just dev-start
 
 Visit: **<https://qoomb.localhost:8443>** (also works on mobile devices)
 
-**Simple mode** (localhost only, works on all platforms including Windows):
+**Simple mode** (localhost only, works on all platforms):
 
 ```bash
 just dev-setup-simple
@@ -35,41 +35,27 @@ just dev-start-simple
 # Visit: http://localhost:5173
 ```
 
-#### Available Commands
+#### Useful justfile commands
 
 ```bash
-just help               # Show all available commands
+just help                # Show all available commands
 
-# Setup
-just dev-setup-simple   # Simple setup (Docker + DB, localhost only)
-just dev-setup          # Full setup with HTTPS (macOS/Linux, recommended)
+just dev-setup-simple    # Simple setup (Docker + DB, localhost only)
+just dev-setup           # Full setup with HTTPS (macOS/Linux, recommended)
+just dev-start           # Start with HTTPS & qoomb.localhost
+just dev-start-simple    # Start on localhost only (no HTTPS)
 
-# Development
-just dev-start          # Start with HTTPS & qoomb.localhost (recommended)
-just dev-start-simple   # Start on localhost only (no HTTPS)
-just dev-api            # Start only backend API
-just dev-web            # Start only frontend
+just docker-up           # Start PostgreSQL and Redis
+just docker-down         # Stop Docker services
+just db-migrate          # Run database migrations
+just db-studio           # Open Prisma Studio (DB GUI)
 
-# Docker
-just docker-up          # Start PostgreSQL and Redis
-just docker-down        # Stop Docker services
+just status              # Check service status
+just stop                # Stop development (Caddy)
+just clean               # Clean build artifacts
 
-# Database
-just db-migrate         # Run database migrations
-just db-studio          # Open Prisma Studio (DB GUI)
-
-# Utilities
-just status             # Check service status
-just stop               # Stop development (Caddy)
-just clean              # Clean build artifacts
-
-# Auto-approve all prompts (useful for CI/scripts)
-AUTO=1 just dev-start
-AUTO=1 just clean-all
-
-# Pre-approve dev seed data (Doe Family test users)
-SEED=1 just dev-start
-SEED=1 AUTO=1 just dev-start   # Full auto including seed
+AUTO=1 just dev-start    # Auto-approve all prompts
+SEED=1 just dev-start    # Pre-seed with Doe Family test data
 ```
 
 ### Option 2: Manual Setup
@@ -97,196 +83,171 @@ pnpm dev
 ```text
 qoomb/
 ├── apps/
-│   ├── api/                    # NestJS backend
-│   └── web/                    # React frontend (PWA)
+│   ├── api/          # NestJS backend (Fastify adapter, tRPC, Prisma)
+│   ├── web/          # React 19 PWA frontend (Vite, Tailwind v4)
+│   └── mobile/       # Capacitor wrapper (iOS / Android)
 ├── packages/
-│   ├── types/                  # Shared TypeScript types
-│   ├── validators/             # Shared Zod schemas
-│   └── config/                 # Shared configurations
-├── docker/                     # Docker configurations
-├── docker-compose.yml          # Development services
-└── CLAUDE.md                   # Detailed architecture docs
+│   ├── types/        # Shared TypeScript types + domain utilities
+│   ├── validators/   # Shared Zod schemas + sanitizers
+│   ├── ui/           # Shared React component library (CVA + Radix)
+│   └── config/       # Shared tsconfig
+├── docs/             # Architecture docs, ADRs, design system
+├── docker-compose.yml
+└── AGENTS.md         # Universal AI agent guidelines (source of truth)
 ```
 
 ## Development
 
-### pnpm Commands
-
 ```bash
-# Development
-pnpm dev                        # Start all apps in dev mode
-pnpm build                      # Build all apps
-pnpm lint                       # Lint all apps
-pnpm test                       # Run all tests
-
-# Database
-pnpm --filter @qoomb/api db:generate    # Generate Prisma client
-pnpm --filter @qoomb/api db:migrate     # Run migrations
-pnpm --filter @qoomb/api db:push        # Push schema changes
-pnpm --filter @qoomb/api db:studio      # Open Prisma Studio
-
-# Docker
-docker-compose up -d            # Start services
-docker-compose down             # Stop services
-docker-compose logs -f          # View logs
+pnpm dev              # Start all apps in dev mode
+pnpm build            # Build all apps
+pnpm lint             # Lint (ESLint + jsonc/no-comments)
+pnpm lint:json        # JSON-only lint (no comments in .json files)
+pnpm format           # Format with Prettier
+pnpm test             # Run all tests
 ```
 
-### Development Tools
+### Dev Panel (Development Mode Only)
 
-#### 🔧 Dev Panel (Development Mode Only)
+A sliding debug panel is available on the right edge of the screen in dev mode. It provides QR codes for mobile certificate setup, environment info, backend health checks, network status, and cache controls. Completely invisible in production builds.
 
-When running in development mode (`pnpm dev`), a **Dev Tools panel** is available on the right side of the screen:
+## Technology Stack
 
-**Features:**
-
-- **Mobile Setup** - QR codes for certificate installation and mobile testing
-- **Environment Info** - URLs, API endpoints, environment variables
-- **Backend Health** - Auto-refreshing health checks
-- **Network Status** - Online/offline detection and connection type
-- **Quick Actions**:
-  - Clear all caches (Service Workers, localStorage, sessionStorage)
-  - Clear console
-  - Reload page
-  - Open Prisma Studio
-  - Action logs
-
-**How to use:**
-
-1. Look for the **"🔧 DEV TOOLS"** tab on the right edge
-2. Click to open the sliding panel
-3. All debugging tools are organized in sections
-
-**Note:** The dev panel is completely invisible in production builds.
-
-### Technology Stack
-
-- **Backend**: NestJS, tRPC, Prisma, PostgreSQL (with pgvector), Redis
-- **Frontend**: React 19, Vite, TypeScript
-- **Monorepo**: Turborepo, pnpm workspaces
-- **Database**: PostgreSQL 18 with pgvector extension
-- **Cache**: Redis 8
-- **Encryption**: Hybrid (AES-256-GCM + libsodium)
-
-## Architecture
-
-See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation, including:
-
-- System overview and component diagram
-- Database schema design
-- Sync strategy (offline-first approach)
-- Encryption architecture
-- Multi-tenant isolation
-- Deployment options
+| Layer                 | Technology                                  |
+| --------------------- | ------------------------------------------- |
+| Backend               | NestJS, Fastify, tRPC, Prisma ORM           |
+| Frontend              | React 19, Vite, Tailwind CSS v4, PWA        |
+| Mobile                | Capacitor (iOS / Android)                   |
+| Database              | PostgreSQL 18 with Row-Level Security       |
+| Cache / Rate Limiting | Redis 8                                     |
+| Auth                  | JWT RS256, Passkey / WebAuthn               |
+| Encryption            | AES-256-GCM + HKDF, pluggable key providers |
+| i18n                  | typesafe-i18n (DE + EN)                     |
+| Monorepo              | Turborepo + pnpm workspaces                 |
 
 ## Features
 
 ### Phase 1: Foundation ✅
 
-- [x] Monorepo (Turborepo + pnpm workspaces)
-- [x] NestJS backend + tRPC (end-to-end type safety)
-- [x] React 19 PWA frontend (Vite + vite-plugin-pwa)
-- [x] Capacitor mobile wrapper (iOS / Android)
-- [x] Docker Compose (PostgreSQL 18 + Redis 8)
-- [x] Shared UI library (`@qoomb/ui`)
-- [x] Dev panel (debug tools, mobile QR, health checks — dev only)
+- Turborepo + pnpm monorepo, shared `@qoomb/ui` component library
+- NestJS backend with tRPC (end-to-end type safety)
+- React 19 PWA (Vite + Workbox service worker)
+- Capacitor mobile wrapper (iOS / Android)
+- Docker Compose (PostgreSQL 18 + Redis 8)
+- Dev panel (mobile QR codes, health checks, cache controls — dev only)
 
 ### Phase 2: Auth, Encryption & Core Content ✅
 
-- [x] JWT authentication (15 min access + 7 d refresh, rotation, blacklisting)
-- [x] Passkey / WebAuthn support
-- [x] Multi-tenant isolation (shared schema + Row-Level Security)
-- [x] RBAC with per-hive permission overrides
-- [x] PII encryption at rest (AES-256-GCM, per-user HKDF keys)
-- [x] Hive name encryption (hive-scoped HKDF key)
-- [x] Email blind index (HMAC-SHA256 — no plaintext email in DB)
-- [x] Pluggable key providers (Env, File, AWS KMS, Vault)
-- [x] Events module (create, list, get, update, delete + field encryption)
-- [x] Tasks module (create, list, get, update, complete, delete + field encryption)
-- [x] Persons module (list, get, update profile/role, invite, remove)
-- [x] Groups module (create, list, get, update, delete, add/remove members)
-- [x] 5-stage resource access guard (shares → private → group → admins → hive)
-- [x] CI/CD (CodeQL, Trivy, OpenSSF Scorecard, gitleaks pre-commit, dependency review)
+**Auth & Security**
 
-### Phase 3: Pages & Files 🚧
+- JWT RS256 (15 min access + 7 d refresh, rotation, Redis blacklisting)
+- Passkey / WebAuthn (register, authenticate, list, remove credentials)
+- Multi-tenant isolation: shared DB schema + Row-Level Security on every hive table
+- RBAC with per-hive permission overrides (family: parent/child; org: admin/manager/member/guest)
+- 5-stage resource access guard (shares → private → group → admins → hive)
+- CSRF guard, rate limiting (Redis), account lockout, security headers (Helmet)
+- Operator feature flags: `ALLOW_OPEN_REGISTRATION`, `ALLOW_FORGOT_PASSWORD`, `ALLOW_PASSKEYS`
+
+**Encryption**
+
+- AES-256-GCM field encryption at rest, HKDF per-hive and per-user key derivation
+- Decorator-based: `@EncryptFields` / `@DecryptFields` on service methods
+- Pluggable key providers: Environment, File, AWS KMS, HashiCorp Vault
+- HMAC-SHA256 email blind index (no plaintext email in DB)
+- Key rotation script with automatic backups (see ADR-0008)
+- 7-point self-test at startup
+
+**Persons, Events & Groups**
+
+- Persons: profile, role management, hive invitations (expire after 7 d, daily cleanup cron)
+- Events: CRUD, recurrence rule storage, visibility + share access
+- Groups: create/manage groups, add/remove members
+
+**Lists (replaces Tasks)**
+
+Generic EAV model — `List → ListField → ListItem → ListItemValue`:
+
+- **Field types**: text, number, date, checkbox, select (Notion-style dropdown), person
+- **Three views**: Table, Checklist, Kanban
+- **Table view**: drag & drop row reordering, drag & drop column reordering, inline cell editing, field visibility toggle, cell truncation
+- **Checklist view**: configurable checkbox and title fields, inline title editing (click-to-edit)
+- **Kanban view**: card-based layout per list
+- **Person fields**: multi-assignee picker with Notion-style autocomplete, free-text fallback, resolved display names
+- **Favorites**: star any list, drag-and-drop reorder, pinned at top of sidebar
+- **Settings Panel**: per-view field visibility, field deletion with guards, view-specific config
+- **Field deletion guards**: shared rule in `@qoomb/types`, enforced on both frontend (disabled button + tooltip) and backend (`PRECONDITION_FAILED`)
+- **Templates**: system lists auto-created on first access
+- **Icon picker**, archive / unarchive, full RBAC + AES-256-GCM encryption
+- i18n (DE + EN), WCAG 2.1 AA accessibility
+
+**Developer Experience**
+
+- Typesafe i18n (DE + EN) for all user-facing strings on backend and frontend
+- WCAG 2.1 AA accessibility standards
+- OpenSSF Scorecard, CodeQL SAST, Trivy (vulnerability + secrets + IaC), gitleaks pre-commit
+- Commitlint (Conventional Commits), Husky hooks (pre-commit, pre-push, commit-msg)
+- Release Please for automated semantic versioning and changelog
+
+### Phase 3: Hive Management & Communication 🚧
+
+- [ ] Hive CRUD (name, locale, settings) and settings UI
+- [ ] Invitation management UI (list pending, resend, revoke)
+- [ ] In-app notifications (bell icon, read/unread state)
+- [ ] Notification emails (event reminders, task assignments, member joined/left)
+- [ ] Email preferences (per-user opt-in/out, unsubscribe)
+- [ ] In-app messaging between hive members (encrypted)
+- [ ] Activity log ("what changed since last login")
+
+### Phase 4: Sync & Real-Time 📋
+
+- [ ] Client-side SQLite cache (wa-sqlite + OPFS in browser, native on mobile)
+- [ ] SSE change feed (Redis Pub/Sub → per-hive event stream)
+- [ ] Optimistic mutations with server confirmation, offline queue
+- [ ] Full local search (all non-file content synced to client)
+- [ ] pgvector semantic search (server-side)
+- [ ] E2E encryption option (libsodium — opt-in for ultra-sensitive content)
+
+### Phase 5: Pages & Files 📋
 
 - [ ] Pages module (Tiptap editor, tree hierarchy, version history)
+- [ ] Real-time collaborative editing (Yjs CRDT)
 - [ ] Documents module (file upload + envelope encryption)
-- [ ] Activity log (change feed — "what changed since last login")
 
-### Phase 4: Offline & Search 📋
-
-- [ ] Client-side SQLite sync (vector clock conflict resolution)
-- [ ] Full local search (all non-file content synced to client)
-- [ ] E2E encryption option (libsodium)
-- [ ] Semantic search (pgvector, server-side)
-
-### Phase 5: Calendar Integration 📋
+### Phase 6: Calendar Integration 📋
 
 - [ ] Google Calendar (OAuth + webhook)
 - [ ] Apple Calendar (CalDAV)
 - [ ] Microsoft Outlook (Graph API)
 - [ ] Bidirectional sync + conflict resolution UI
 
+## Documentation
+
+| File                                                   | Description                                     |
+| ------------------------------------------------------ | ----------------------------------------------- |
+| [AGENTS.md](AGENTS.md)                                 | Universal AI agent guidelines (source of truth) |
+| [docs/PERMISSIONS.md](docs/PERMISSIONS.md)             | RBAC architecture + guard API                   |
+| [docs/SECURITY.md](docs/SECURITY.md)                   | Security architecture                           |
+| [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)         | Tailwind v4 design tokens                       |
+| [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md) | qoomb.localhost + Caddy setup                   |
+| [docs/adr/](docs/adr/)                                 | Architecture Decision Records                   |
+
 ## License
 
 **Qoomb** is licensed under the **[Fair Source License v1.0](LICENSE.md)** with a **10-employee threshold**.
 
-### What does this mean?
+|                                |                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| ✅ Free                        | Personal use, evaluation, small orgs < 10 employees, families, non-profits, education |
+| ❌ Commercial license required | Orgs ≥ 10 employees, hosting Qoomb as SaaS, redistributing commercially               |
 
-✅ **Free to use for:**
-
-- Personal, non-commercial use
-- Development, testing, and evaluation
-- Small organizations with **< 10 employees**
-- Non-profit organizations with < 10 employees
-- Educational and research purposes
-- **Families of any size** — strictly private, non-commercial use (the 10-employee threshold does not apply to families)
-
-❌ **Requires commercial license for:**
-
-- Organizations with **≥ 10 employees** using it internally
-- Offering Qoomb as a hosted service (SaaS)
-- Redistributing Qoomb as part of a commercial product
-
-**Why Fair Source?**
-
-We believe in sustainable open-source. Small teams and individuals can use Qoomb freely. Larger organizations that benefit from Qoomb should contribute back through commercial licensing.
-
-📄 **More Information:**
-
-- [Full License Text](LICENSE.md)
-- [Commercial Licensing](COMMERCIAL-LICENSE.md)
-- Contact: <bgroener@coqoon.com>
+- [Full License](LICENSE.md) · [Commercial Licensing](COMMERCIAL-LICENSE.md) · Contact: <bgroener@coqoon.com>
 
 ## Contributing
 
-We welcome contributions from the community! By contributing, you agree that your contributions will be licensed under the same Fair Source License.
-
-**How to contribute:**
-
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feat/amazing-feature`)
-3. Follow our [Conventional Commits](https://www.conventionalcommits.org/) conventions
-4. Submit a pull request
+3. Follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …)
+4. Ensure tests pass and ESLint reports zero errors
+5. Submit a pull request
 
-📖 **Documentation:**
-
-- [Release Process](docs/RELEASING.md) - How releases are managed
-- [Contributors](CONTRIBUTORS.md) - Our amazing contributors
-- [Changelog](CHANGELOG.md) - Version history
-
-**Before contributing:**
-
-- Check existing issues and PRs
-- Discuss major changes in GitHub Discussions first
-- Ensure all tests pass and code follows our linting rules
-
-**Contributor License Agreement:**
-
-By submitting a pull request, you agree to the terms outlined in the [Contributor License Agreement](LICENSE.md#contributor-license-agreement-cla) section of the license. In summary:
-
-- You grant Benjamin Gröner a license to use your contributions
-- You certify that you have the right to submit the contribution
-- You acknowledge that Benjamin Gröner retains the right to offer commercial licenses for Qoomb, including your contributions
-
-See the full CLA terms in [LICENSE.md](LICENSE.md#contributor-license-agreement-cla).
+By submitting a PR you agree to the [Contributor License Agreement](LICENSE.md#contributor-license-agreement-cla). See [CHANGELOG.md](CHANGELOG.md) for version history and [CONTRIBUTORS.md](CONTRIBUTORS.md) for the list of contributors.

@@ -71,7 +71,10 @@ jobs:
           # (prevents GitHub's "use commit message" squash merge suggestion from
           # slipping through with a non-conventional message)
           validateSingleCommit: true
-          validateSingleCommitMatchesPrTitle: true
+          # Dependabot uses the full SHA range in PR titles for pinned actions
+          # (e.g. "from abc123... to def456...") but not in the commit message —
+          # a known Dependabot limitation with no config-based fix.
+          validateSingleCommitMatchesPrTitle: ${{ github.actor != 'dependabot[bot]' }}
 
   dependency-review:
     name: Dependency Review

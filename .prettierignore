@@ -28,6 +28,11 @@ coverage
 
 # Documentation
 CHANGELOG.md
+# GitNexus auto-generates the <!-- gitnexus:start --> block in these files
+# with compact Markdown tables. Prettier's aligned-table reformatting creates
+# permanent churn on every `npx gitnexus analyze` run.
+AGENTS.md
+CLAUDE.md
 
 # Local AI agent skills (gitignored, not part of the project)
 .claude

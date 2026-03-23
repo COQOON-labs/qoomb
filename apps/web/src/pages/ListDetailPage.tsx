@@ -17,6 +17,7 @@ import { Button, Card, ConfirmDialog } from '@qoomb/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { EmojiPicker } from '../components/EmojiPicker';
 import { ArrowLeftIcon, PencilIcon, PlusIcon, SettingsIcon } from '../components/icons';
 import { AddFieldForm } from '../components/lists/AddFieldForm';
 import { AddViewPanel } from '../components/lists/AddViewPanel';
@@ -31,27 +32,6 @@ import { AppShell } from '../layouts/AppShell';
 import { useAuth } from '../lib/auth/useAuth';
 import { addToast } from '../lib/toast';
 import { trpc } from '../lib/trpc/client';
-
-// ── Icon picker options ───────────────────────────────────────────────────────
-
-const ICON_OPTIONS = [
-  '📋',
-  '✅',
-  '🛒',
-  '📝',
-  '📅',
-  '🎯',
-  '💡',
-  '📚',
-  '🏠',
-  '💰',
-  '🍽️',
-  '🏋️',
-  '🎵',
-  '✈️',
-  '🎁',
-  '⭐',
-];
 
 // ── ListDetailPage ────────────────────────────────────────────────────────────
 
@@ -94,9 +74,14 @@ export function ListDetailPage() {
 
   // ── Add item ──────────────────────────────────────────────────────────────
   const [newItemValues, setNewItemValues] = useState<Record<string, string>>({});
+  // Ref to the table add-row <tr> — used to detect when focus leaves the row entirely
+  const addRowRef = useRef<HTMLTableRowElement>(null);
+  // Flag to suppress the next blur-submission when Escape cleared the row
+  const suppressAddRowBlur = useRef(false);
 
   const createItem = trpc.lists.createItem.useMutation({
     onSuccess: () => {
+      setLocalItemOrder(null);
       void utils.lists.listItems.invalidate({ listId: id ?? '' });
       setNewItemValues({});
     },
@@ -127,11 +112,55 @@ export function ListDetailPage() {
     createItem.mutate({ listId: id, values });
   }, [id, list, newItemValues, fieldMap, createItem]);
 
+  // Fires when focus leaves the table add-row entirely (not when tabbing between its own fields).
+  const handleAddRowBlur = useCallback(
+    (e: React.FocusEvent<HTMLTableRowElement>) => {
+      if (suppressAddRowBlur.current) {
+        suppressAddRowBlur.current = false;
+        return;
+      }
+      if (addRowRef.current?.contains(e.relatedTarget as Node)) return;
+      handleAddItem();
+    },
+    [handleAddItem]
+  );
+
+  // Returns a keydown handler for a single add-row input.
+  // isLastField: Tab on the last field submits the row and returns focus to the first input.
+  const makeAddRowKeyDownHandler = useCallback(
+    (isLastField: boolean) => (e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => {
+      if (e.key === 'Enter') {
+        handleAddItem();
+      } else if (e.key === 'Escape') {
+        suppressAddRowBlur.current = true;
+        setNewItemValues({});
+        (e.currentTarget as HTMLElement).blur();
+      } else if (isLastField && e.key === 'Tab' && !e.shiftKey) {
+        const hasContent = Object.values(newItemValues).some(
+          (v) => typeof v === 'string' && v.trim()
+        );
+        if (hasContent) {
+          e.preventDefault();
+          handleAddItem();
+          setNewItemValues({});
+          setTimeout(() => {
+            const first = addRowRef.current?.querySelector<HTMLInputElement | HTMLSelectElement>(
+              'input:not([type="checkbox"]), select'
+            );
+            first?.focus();
+          }, 0);
+        }
+      }
+    },
+    [handleAddItem, newItemValues]
+  );
+
   // ── Delete item ───────────────────────────────────────────────────────────
   const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(null);
 
   const deleteItem = trpc.lists.deleteItem.useMutation({
     onSuccess: () => {
+      setLocalItemOrder(null);
       void utils.lists.listItems.invalidate({ listId: id ?? '' });
     },
     onError: () => {
@@ -213,6 +242,7 @@ export function ListDetailPage() {
 
   const createField = trpc.lists.createField.useMutation({
     onSuccess: () => {
+      setLocalFieldOrder(null);
       void utils.lists.get.invalidate(id);
     },
     onError: () => {
@@ -231,6 +261,7 @@ export function ListDetailPage() {
 
   const deleteField = trpc.lists.deleteField.useMutation({
     onSuccess: () => {
+      setLocalFieldOrder(null);
       void utils.lists.get.invalidate(id);
       void utils.lists.listItems.invalidate({ listId: id ?? '' });
     },
@@ -268,6 +299,9 @@ export function ListDetailPage() {
   const [localItemOrder, setLocalItemOrder] = useState<string[] | null>(null);
 
   const reorderItems = trpc.lists.reorderItems.useMutation({
+    onSuccess: () => {
+      void utils.lists.listItems.invalidate({ listId: id ?? '' });
+    },
     onError: () => {
       addToast(LL.lists.updateError(), 'error');
       setLocalItemOrder(null);
@@ -304,7 +338,6 @@ export function ListDetailPage() {
 
   const reorderFields = trpc.lists.reorderFields.useMutation({
     onSuccess: () => {
-      setLocalFieldOrder(null);
       void utils.lists.get.invalidate(id);
     },
     onError: () => {
@@ -538,20 +571,12 @@ export function ListDetailPage() {
                 >
                   {list.icon ?? '📋'}
                 </button>
-                {showIconPicker && (
-                  <div className="absolute top-full left-0 mt-1 z-10 bg-background border border-border rounded-lg shadow-lg p-2 grid grid-cols-8 gap-1">
-                    {ICON_OPTIONS.map((icon) => (
-                      <button
-                        key={icon}
-                        type="button"
-                        onClick={() => handleIconSelect(icon)}
-                        className="w-8 h-8 flex items-center justify-center rounded hover:bg-muted transition-colors text-lg"
-                      >
-                        {icon}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <EmojiPicker
+                  open={showIconPicker}
+                  onSelect={handleIconSelect}
+                  onClose={() => setShowIconPicker(false)}
+                  locale={locale}
+                />
               </div>
 
               {/* Name — click to edit */}
@@ -687,13 +712,18 @@ export function ListDetailPage() {
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                   >
-                    <DndContext
-                      sensors={fieldDndSensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handleFieldDragEnd}
-                    >
-                      <Card padding="none" className="overflow-x-auto mb-4">
-                        <table className="w-full text-sm">
+                    <Card padding="none" className="overflow-x-auto mb-4">
+                      <table className="w-full text-sm">
+                        {/* Field/column DndContext wraps only thead so that SortableColumnHeader
+                            registers with the field context and SortableTableRow rows register
+                            with the outer item context. Previously the inner context wrapped the
+                            whole table, which caused row drags to fire handleFieldDragEnd (wrong
+                            handler) and snap back instead of persisting. */}
+                        <DndContext
+                          sensors={fieldDndSensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleFieldDragEnd}
+                        >
                           <thead>
                             <tr className="border-b border-border bg-muted/30">
                               <th className="w-8 px-1" aria-hidden="true" />
@@ -710,114 +740,119 @@ export function ListDetailPage() {
                               </th>
                             </tr>
                           </thead>
-                          <SortableContext
-                            items={sortedItems.map((i) => i.id)}
-                            strategy={verticalListSortingStrategy}
-                          >
-                            <tbody>
-                              {sortedItems.map((item) => (
-                                <SortableTableRow
-                                  key={item.id}
-                                  item={item}
-                                  fields={visibleFields}
-                                  editingCell={editingCell}
-                                  cellDraft={cellDraft}
-                                  cellInputRef={cellInputRef}
-                                  getItemValue={getItemValue}
-                                  handleCellClick={handleCellClick}
-                                  handleCellSave={handleCellSave}
-                                  handleCellKeyDown={handleCellKeyDown}
-                                  handleDeleteItem={handleDeleteItem}
-                                  setCellDraft={setCellDraft}
-                                  updateItem={updateItem}
-                                  LL={LL}
-                                  persons={persons}
-                                  onCloseCell={() => setEditingCell(null)}
-                                />
-                              ))}
-                            </tbody>
-                          </SortableContext>
+                        </DndContext>
+                        <SortableContext
+                          items={sortedItems.map((i) => i.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
                           <tbody>
-                            {/* ── Inline add row ──────────────────────────────── */}
-                            <tr className="bg-muted/10">
-                              <td className="w-8 px-1" aria-hidden="true" />
-                              {visibleFields.map((field) => (
-                                <td key={field.id} className="px-3 py-2.5">
-                                  {field.fieldType === 'checkbox' ? (
-                                    <input
-                                      type="checkbox"
-                                      checked={newItemValues[field.id] === 'true'}
-                                      onChange={(e) =>
-                                        setNewItemValues((prev) => ({
-                                          ...prev,
-                                          [field.id]: String(e.target.checked),
-                                        }))
-                                      }
-                                      aria-label={field.name}
-                                      className="h-4 w-4 rounded border-border"
-                                    />
-                                  ) : field.fieldType === 'select' ? (
-                                    <select
-                                      value={newItemValues[field.id] ?? ''}
-                                      onChange={(e) =>
-                                        setNewItemValues((prev) => ({
-                                          ...prev,
-                                          [field.id]: e.target.value,
-                                        }))
-                                      }
-                                      className="w-full bg-transparent text-sm text-foreground outline-none"
-                                    >
-                                      <option value="">{LL.lists.selectPlaceholder()}</option>
-                                      {(
-                                        (field.config as Record<string, unknown> | null)
-                                          ?.options as string[] | undefined
-                                      )?.map((opt) => (
-                                        <option key={opt} value={opt}>
-                                          {opt}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  ) : (
-                                    <input
-                                      type={
-                                        field.fieldType === 'number'
-                                          ? 'number'
-                                          : field.fieldType === 'date'
-                                            ? 'date'
-                                            : 'text'
-                                      }
-                                      placeholder={LL.lists.itemNamePlaceholder()}
-                                      value={newItemValues[field.id] ?? ''}
-                                      onChange={(e) =>
-                                        setNewItemValues((prev) => ({
-                                          ...prev,
-                                          [field.id]: e.target.value,
-                                        }))
-                                      }
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleAddItem();
-                                      }}
-                                      className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
-                                    />
-                                  )}
-                                </td>
-                              ))}
-                              <td className="px-1 py-2.5">
-                                <button
-                                  type="button"
-                                  onClick={handleAddItem}
-                                  disabled={createItem.isPending}
-                                  className="p-1 rounded-md text-muted-foreground hover:text-primary transition-colors"
-                                  aria-label={LL.lists.addItem()}
-                                >
-                                  <PlusIcon className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            </tr>
+                            {sortedItems.map((item) => (
+                              <SortableTableRow
+                                key={item.id}
+                                item={item}
+                                fields={visibleFields}
+                                editingCell={editingCell}
+                                cellDraft={cellDraft}
+                                cellInputRef={cellInputRef}
+                                getItemValue={getItemValue}
+                                handleCellClick={handleCellClick}
+                                handleCellSave={handleCellSave}
+                                handleCellKeyDown={handleCellKeyDown}
+                                handleDeleteItem={handleDeleteItem}
+                                setCellDraft={setCellDraft}
+                                updateItem={updateItem}
+                                LL={LL}
+                                persons={persons}
+                                onCloseCell={() => setEditingCell(null)}
+                              />
+                            ))}
                           </tbody>
-                        </table>
-                      </Card>
-                    </DndContext>
+                        </SortableContext>
+                        <tbody>
+                          {/* ── Inline add row ──────────────────────────────── */}
+                          {/* blur-to-submit: handleAddRowBlur fires when focus leaves the row entirely */}
+                          <tr ref={addRowRef} onBlur={handleAddRowBlur} className="bg-muted/10">
+                            <td className="w-8 px-1" aria-hidden="true" />
+                            {visibleFields.map((field, fIdx) => (
+                              <td key={field.id} className="px-3 py-2.5">
+                                {field.fieldType === 'checkbox' ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={newItemValues[field.id] === 'true'}
+                                    onChange={(e) =>
+                                      setNewItemValues((prev) => ({
+                                        ...prev,
+                                        [field.id]: String(e.target.checked),
+                                      }))
+                                    }
+                                    aria-label={field.name}
+                                    className="h-4 w-4 rounded border-border"
+                                  />
+                                ) : field.fieldType === 'select' ? (
+                                  <select
+                                    value={newItemValues[field.id] ?? ''}
+                                    onChange={(e) =>
+                                      setNewItemValues((prev) => ({
+                                        ...prev,
+                                        [field.id]: e.target.value,
+                                      }))
+                                    }
+                                    onKeyDown={makeAddRowKeyDownHandler(
+                                      fIdx === visibleFields.length - 1
+                                    )}
+                                    className="w-full bg-transparent text-sm text-foreground outline-none"
+                                  >
+                                    <option value="">{LL.lists.selectPlaceholder()}</option>
+                                    {(
+                                      (field.config as Record<string, unknown> | null)?.options as
+                                        | string[]
+                                        | undefined
+                                    )?.map((opt) => (
+                                      <option key={opt} value={opt}>
+                                        {opt}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <input
+                                    type={
+                                      field.fieldType === 'number'
+                                        ? 'number'
+                                        : field.fieldType === 'date'
+                                          ? 'date'
+                                          : 'text'
+                                    }
+                                    placeholder={LL.lists.itemNamePlaceholder()}
+                                    value={newItemValues[field.id] ?? ''}
+                                    onChange={(e) =>
+                                      setNewItemValues((prev) => ({
+                                        ...prev,
+                                        [field.id]: e.target.value,
+                                      }))
+                                    }
+                                    onKeyDown={makeAddRowKeyDownHandler(
+                                      fIdx === visibleFields.length - 1
+                                    )}
+                                    className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
+                                  />
+                                )}
+                              </td>
+                            ))}
+                            <td className="px-1 py-2.5">
+                              <button
+                                type="button"
+                                onClick={handleAddItem}
+                                disabled={createItem.isPending}
+                                className="p-1 rounded-md text-muted-foreground hover:text-primary transition-colors"
+                                aria-label={LL.lists.addItem()}
+                              >
+                                <PlusIcon className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </Card>
                   </DndContext>
                 )}
 
@@ -924,8 +959,28 @@ export function ListDetailPage() {
                                     [titleField.id]: e.target.value,
                                   }))
                                 }
+                                onBlur={() => {
+                                  if (suppressAddRowBlur.current) {
+                                    suppressAddRowBlur.current = false;
+                                    return;
+                                  }
+                                  handleAddItem();
+                                }}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleAddItem();
+                                  if (e.key === 'Enter') {
+                                    handleAddItem();
+                                  } else if (e.key === 'Tab' && !e.shiftKey) {
+                                    const hasContent = (newItemValues[titleField.id] ?? '').trim();
+                                    if (hasContent) {
+                                      e.preventDefault();
+                                      handleAddItem();
+                                      setNewItemValues({});
+                                    }
+                                  } else if (e.key === 'Escape') {
+                                    suppressAddRowBlur.current = true;
+                                    setNewItemValues({});
+                                    e.currentTarget.blur();
+                                  }
                                 }}
                               />
                             </div>

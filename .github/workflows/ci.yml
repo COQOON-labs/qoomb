@@ -71,7 +71,10 @@ jobs:
           # (prevents GitHub's "use commit message" squash merge suggestion from
           # slipping through with a non-conventional message)
           validateSingleCommit: true
-          validateSingleCommitMatchesPrTitle: true
+          # Dependabot uses the full SHA range in PR titles for pinned actions
+          # (e.g. "from abc123... to def456...") but not in the commit message —
+          # a known Dependabot limitation with no config-based fix.
+          validateSingleCommitMatchesPrTitle: ${{ github.actor != 'dependabot[bot]' }}
 
   dependency-review:
     name: Dependency Review
@@ -332,7 +335,7 @@ jobs:
         run: pnpm --filter @qoomb/validators test:coverage
 
       - name: Upload coverage
-        uses: codecov/codecov-action@4481f553995cc5011b158ce191746ac1a1d0f815 # v5.5.3
+        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
         if: always()
         with:
           files: |

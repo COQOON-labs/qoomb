@@ -410,7 +410,7 @@ export class ListsService {
     const items = await this.prisma.listItem.findMany({
       where: { listId, hiveId },
       include: { values: true },
-      orderBy: { sortOrder: 'asc' },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
     return this._decryptItemValues(items, hiveId);
   }
@@ -425,11 +425,20 @@ export class ListsService {
     const fields = await this.prisma.listField.findMany({ where: { listId } });
     const fieldMap = new Map(fields.map((f) => [f.id, f]));
 
+    // Place new item at the end of the list
+    const lastItem = await this.prisma.listItem.findFirst({
+      where: { listId },
+      orderBy: { sortOrder: 'desc' },
+      select: { sortOrder: true },
+    });
+    const nextSortOrder = (lastItem?.sortOrder ?? -1) + 1;
+
     const item = await this.prisma.listItem.create({
       data: {
         listId,
         hiveId,
         creatorId,
+        sortOrder: nextSortOrder,
         ...(recurrenceRule ? { recurrenceRule: recurrenceRule as Prisma.InputJsonValue } : {}),
       },
     });
@@ -505,10 +514,9 @@ export class ListsService {
   /**
    * Bulk-update sort_order for a set of items in a single transaction.
    *
-   * Called by the client when fractional indexing produces gaps smaller than
-   * an acceptable epsilon (typically < 1e-9), triggering a full rebalance to
-   * integer multiples (e.g. 1000, 2000, 3000, …). All items must belong to
-   * the given listId + hiveId — any unrecognised id is silently skipped.
+   * The client sends every item with its new integer index (0, 1, 2, …)
+   * after each drag-and-drop reorder. All items must belong to the given
+   * listId + hiveId — any unrecognised id is silently skipped.
    */
   async reorderItems(
     listId: string,
@@ -527,7 +535,7 @@ export class ListsService {
 
   /**
    * Bulk-update sort_order for a set of fields in a single transaction.
-   * Same rebalance pattern as reorderItems.
+   * Same full-list reindex pattern as reorderItems.
    */
   async reorderFields(
     listId: string,

@@ -557,10 +557,8 @@ export const listsRouter = (listsService: ListsService) =>
     /**
      * Bulk-reorder items within a list.
      *
-     * The client is responsible for fractional-indexing arithmetic. When the
-     * computed gap between neighbours falls below an acceptable epsilon
-     * (typically < 1e-9), the client normalises all positions to integer
-     * multiples (1000, 2000, …) and sends the full rebalanced list here.
+     * The client sends every item with its new integer index (0, 1, 2, …)
+     * after each drag-and-drop reorder.
      *
      * Requires: lists:edit on the list.
      */

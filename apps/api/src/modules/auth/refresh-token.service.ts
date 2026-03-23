@@ -79,9 +79,8 @@ export class RefreshTokenService {
     // Hash token for storage (SHA-256)
     const tokenHash = this.hashToken(token);
 
-    // Calculate expiration date
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + this.REFRESH_TOKEN_LIFETIME_DAYS);
+    // Calculate expiration date (fixed duration, not calendar days — avoids DST skew)
+    const expiresAt = new Date(Date.now() + this.REFRESH_TOKEN_LIFETIME_DAYS * 24 * 60 * 60 * 1000);
 
     // Store hashed token in database
     const refreshToken: RefreshToken = await this.prisma.refreshToken.create({
